@@ -53,7 +53,8 @@ export function flattenTree(
     // → 子を個別にフラット化して合成せずに返す
     if (layer.isFolder && animAncestorIds.has(layer.id)) {
       const childFlats: FlatLayer[] = []
-      for (const child of layer.children) {
+      // ツリーはトップファーストなので合成はボトムから（逆順）処理する
+      for (const child of [...layer.children].reverse()) {
         childFlats.push(...flattenLayer(child))
       }
       return childFlats
@@ -62,7 +63,8 @@ export function flattenTree(
     // 通常フォルダ（アニメ子孫なし）
     if (layer.isFolder) {
       const childFlats: FlatLayer[] = []
-      for (const child of layer.children) {
+      // ツリーはトップファーストなので合成はボトムから（逆順）処理する
+      for (const child of [...layer.children].reverse()) {
         childFlats.push(...flattenLayer(child))
       }
       if (childFlats.length === 0) return []
@@ -99,7 +101,8 @@ export function flattenTree(
   }
 
   const result: FlatLayer[] = []
-  for (const layer of rootChildren) {
+  // ツリーはトップファーストなので合成はボトムから（逆順）処理する
+  for (const layer of [...rootChildren].reverse()) {
     result.push(...flattenLayer(layer))
   }
   return result

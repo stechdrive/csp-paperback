@@ -56,9 +56,10 @@ function convertLayer(
   const height = (layer.bottom ?? 0) - top
 
   // 子レイヤーの変換
+  // ag-psdはボトムファースト順で返すので逆順にしてPhotoshop UI順（トップファースト）に統一する
   // アニメーションフォルダ内では_プレフィックスを自動マークしない
   const nextContext = animFolderContext || animFolder
-  const children: CspLayer[] = (layer.children ?? []).map(child =>
+  const children: CspLayer[] = (layer.children ?? []).slice().reverse().map(child =>
     convertLayer(child, id, depth + 1, nextContext)
   )
 
@@ -160,7 +161,8 @@ export function buildLayerTree(
   psd: Psd,
   xdts?: XdtsData
 ): CspLayer[] {
-  const children = psd.children ?? []
+  // ag-psdはボトムファースト順で返すので逆順にしてPhotoshop UI順（トップファースト）に統一する
+  const children = (psd.children ?? []).slice().reverse()
   const tree = children.map(layer => convertLayer(layer, null, 0, false))
 
   if (xdts) {
