@@ -6,8 +6,8 @@ import { SettingsDialog } from './SettingsDialog'
 import styles from './Toolbar.module.css'
 
 interface ToolbarProps {
-  onPsdFile: (file: File) => void
-  onXdtsFile: (file: File) => void
+  onPsdFile: (file: File) => Promise<void>
+  onXdtsFile: (file: File) => Promise<void>
   isLoading: boolean
   error: string | null
   onSavePsd: () => void
