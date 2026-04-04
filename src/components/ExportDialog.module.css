@@ -1,0 +1,144 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dialog {
+  background: #1e1e2e;
+  border: 1px solid #45475a;
+  border-radius: 8px;
+  width: 360px;
+  max-width: 90vw;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #cdd6f4;
+  margin-bottom: 0.25rem;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.label {
+  font-size: 0.75rem;
+  color: #6c7086;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.radioGroup {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.radioLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+  color: #cdd6f4;
+  cursor: pointer;
+}
+
+.radioLabel input {
+  cursor: pointer;
+  accent-color: #6366f1;
+}
+
+.radioLabel.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.qualityRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.qualitySlider {
+  flex: 1;
+  accent-color: #6366f1;
+}
+
+.qualityValue {
+  font-size: 0.8rem;
+  color: #89b4fa;
+  width: 3rem;
+  text-align: right;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.cancelBtn {
+  padding: 0.4rem 1rem;
+  border: 1px solid #45475a;
+  border-radius: 4px;
+  background: none;
+  color: #6c7086;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.cancelBtn:hover {
+  color: #cdd6f4;
+}
+
+.exportBtn {
+  padding: 0.4rem 1.25rem;
+  border: none;
+  border-radius: 4px;
+  background: #6366f1;
+  color: white;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.exportBtn:hover:not(:disabled) {
+  background: #4f46e5;
+}
+
+.exportBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.progress {
+  height: 4px;
+  background: #313244;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progressBar {
+  height: 100%;
+  background: #6366f1;
+  transition: width 0.2s;
+}
+
+.error {
+  font-size: 0.8rem;
+  color: #f38ba8;
+}

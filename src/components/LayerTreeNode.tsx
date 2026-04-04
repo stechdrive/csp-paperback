@@ -1,6 +1,7 @@
 import { useCallback } from 'react'
 import { useAppStore } from '../store'
 import type { CspLayer } from '../types'
+import { useDragSource } from '../hooks/useDragDrop'
 import styles from './LayerTreeNode.module.css'
 
 interface LayerTreeNodeProps {
@@ -26,6 +27,8 @@ export function LayerTreeNode({
 }: LayerTreeNodeProps) {
   const singleMarks = useAppStore(s => s.singleMarks)
   const manualAnimFolderIds = useAppStore(s => s.manualAnimFolderIds)
+
+  const { draggable, onDragStart, onDragEnd } = useDragSource({ type: 'layer', layerId: layer.id })
 
   const isSelected = selectedLayerId === layer.id
   const isUiHidden = visibilityOverrides.get(layer.id) ?? layer.uiHidden
@@ -74,7 +77,13 @@ export function LayerTreeNode({
 
   return (
     <div className={styles.node}>
-      <div className={rowClass} onClick={handleRowClick}>
+      <div
+        className={rowClass}
+        onClick={handleRowClick}
+        draggable={draggable}
+        onDragStart={onDragStart}
+        onDragEnd={onDragEnd}
+      >
         {/* インデント */}
         <div className={styles.indent} style={{ width: indentWidth }} />
 
