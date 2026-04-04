@@ -1,0 +1,127 @@
+.node {
+  user-select: none;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: 3px;
+  cursor: pointer;
+  min-height: 26px;
+}
+
+.row:hover {
+  background: #313244;
+}
+
+.rowSelected {
+  background: #313244;
+  outline: 1px solid #6366f1;
+}
+
+.rowHidden {
+  opacity: 0.4;
+}
+
+.indent {
+  flex-shrink: 0;
+}
+
+.expandBtn {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  color: #6c7086;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.expandPlaceholder {
+  width: 16px;
+  flex-shrink: 0;
+}
+
+.visibilityBtn {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  color: #89b4fa;
+  opacity: 0.6;
+}
+
+.visibilityBtn:hover {
+  opacity: 1;
+}
+
+.typeIcon {
+  font-size: 0.75rem;
+  flex-shrink: 0;
+  width: 16px;
+  text-align: center;
+}
+
+.name {
+  font-size: 0.8rem;
+  color: #cdd6f4;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nameAnim {
+  color: #89dceb;
+}
+
+.nameAutoMark {
+  color: #a6e3a1;
+}
+
+.markBtn {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  cursor: pointer;
+  padding: 0;
+  color: #6c7086;
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+
+.row:hover .markBtn,
+.rowSelected .markBtn {
+  opacity: 1;
+}
+
+.markBtnActive {
+  color: #f9e2af;
+  border-color: #f9e2af;
+  opacity: 1 !important;
+}
+
+.children {
+  /* インデントはrow側のindentスペーサーで管理 */
+}

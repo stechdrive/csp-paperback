@@ -1,0 +1,43 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #181825;
+  overflow: hidden;
+}
+
+.header {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6c7086;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border-bottom: 1px solid #313244;
+  flex-shrink: 0;
+}
+
+.canvasWrapper {
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: #11111b;
+}
+
+.canvas {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+  image-rendering: pixelated;
+}
+
+.empty {
+  color: #45475a;
+  font-size: 0.875rem;
+  text-align: center;
+  line-height: 1.8;
+}

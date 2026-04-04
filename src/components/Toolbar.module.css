@@ -1,0 +1,70 @@
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: #1e1e2e;
+  border-bottom: 1px solid #313244;
+  flex-shrink: 0;
+}
+
+.title {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #cdd6f4;
+  margin-right: 0.5rem;
+  letter-spacing: 0.05em;
+}
+
+.btn {
+  padding: 0.3rem 0.75rem;
+  font-size: 0.8rem;
+  border: 1px solid #45475a;
+  border-radius: 4px;
+  background: #313244;
+  color: #cdd6f4;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.btn:hover {
+  background: #45475a;
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btnPrimary {
+  background: #6366f1;
+  border-color: #6366f1;
+  color: white;
+}
+
+.btnPrimary:hover:not(:disabled) {
+  background: #4f46e5;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.fileInfo {
+  font-size: 0.75rem;
+  color: #6c7086;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.error {
+  font-size: 0.75rem;
+  color: #f38ba8;
+}
+
+.loading {
+  font-size: 0.75rem;
+  color: #89b4fa;
+}

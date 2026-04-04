@@ -1,0 +1,31 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #1e1e2e;
+  border-right: 1px solid #313244;
+  overflow: hidden;
+}
+
+.header {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6c7086;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border-bottom: 1px solid #313244;
+  flex-shrink: 0;
+}
+
+.placeholder {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #45475a;
+  font-size: 0.8rem;
+  text-align: center;
+  line-height: 1.8;
+  padding: 1rem;
+}
