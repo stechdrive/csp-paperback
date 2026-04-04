@@ -61,7 +61,7 @@ describe('buildLayerTree', () => {
     const tree = buildLayerTree(psd)
     // アニメフォルダはxdtsで特定されるまではただのフォルダ
     // xdts適用後にisAnimationFolderがtrueになる
-    const xdts = { tracks: [{ name: 'A', isCam: false }] }
+    const xdts = { tracks: [{ name: 'A', cellNames: [], frames: [] }], version: 5, header: { cut: '1', scene: '1' }, timeTableName: 'タイムライン1', duration: 72 }
     detectAnimationFoldersByXdts(tree, xdts)
     const animNode = tree[0]
     expect(animNode.isAnimationFolder).toBe(true)
@@ -97,27 +97,32 @@ describe('buildLayerTree', () => {
 
 describe('detectAnimationFoldersByXdts', () => {
   it('xdtsのtrack名でアニメーションフォルダを検出する', () => {
-    const psd = makePsd({ children: [makeFolder('A', []), makeFolder('B', [])] })
+    // buildLayerTree はボトムファースト→トップファーストに逆転するため
+    // psd.children の末尾が tree[0] になる
+    const psd = makePsd({ children: [makeFolder('B', []), makeFolder('A', [])] })
+    // tree[0] = A, tree[1] = B
     const tree = buildLayerTree(psd)
-    const xdts: XdtsData = { tracks: [{ name: 'A', isCam: false }, { name: 'CAM', isCam: true }] }
+    const xdts: XdtsData = { tracks: [{ name: 'A', cellNames: [], frames: [] }], version: 5, header: { cut: '1', scene: '1' }, timeTableName: 'タイムライン1', duration: 72 }
     detectAnimationFoldersByXdts(tree, xdts)
     expect(tree[0].isAnimationFolder).toBe(true)
     expect(tree[0].animationFolder?.detectedBy).toBe('xdts')
-    expect(tree[1].isAnimationFolder).toBe(false) // BはxdtsにないのでFalse
+    expect(tree[1].isAnimationFolder).toBe(false) // B はxdtsにないのでfalse
   })
 
-  it('CAMトラックはアニメーションフォルダとして検出しない', () => {
+  it('tracks配列にある名前のフォルダはすべてアニメーションフォルダとして検出する', () => {
+    // カメラワーク等の除外はパーサー側（fieldId=5）で行われるため、
+    // detectAnimationFoldersByXdts に渡された tracks はすべて検出対象
     const psd = makePsd({ children: [makeFolder('CAM', [])] })
     const tree = buildLayerTree(psd)
-    const xdts: XdtsData = { tracks: [{ name: 'CAM', isCam: true }] }
+    const xdts: XdtsData = { tracks: [{ name: 'CAM', cellNames: [], frames: [] }], version: 5, header: { cut: '1', scene: '1' }, timeTableName: 'タイムライン1', duration: 72 }
     detectAnimationFoldersByXdts(tree, xdts)
-    expect(tree[0].isAnimationFolder).toBe(false)
+    expect(tree[0].isAnimationFolder).toBe(true)
   })
 
   it('track名の照合は大文字小文字を区別しない', () => {
     const psd = makePsd({ children: [makeFolder('a', [])] })
     const tree = buildLayerTree(psd)
-    const xdts: XdtsData = { tracks: [{ name: 'A', isCam: false }] }
+    const xdts: XdtsData = { tracks: [{ name: 'A', cellNames: [], frames: [] }], version: 5, header: { cut: '1', scene: '1' }, timeTableName: 'タイムライン1', duration: 72 }
     detectAnimationFoldersByXdts(tree, xdts)
     expect(tree[0].isAnimationFolder).toBe(true)
   })

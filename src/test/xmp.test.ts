@@ -9,16 +9,15 @@ const sampleState: PersistedState = {
       id: 'vs-1',
       name: 'テストセット',
       insertionLayerId: 'layer-3',
+      insertionPosition: 'above' as const,
       memberLayerIds: ['layer-4', 'layer-5'],
       expandToAnimationCells: false,
     },
   ],
   manualAnimFolderIds: ['folder-1'],
-  folderModes: { 'folder-1': 'cell-inclusive', 'folder-2': 'normal' },
   projectSettings: {
     processTable: [{ suffix: '_en', folderNames: ['EN', 'en'] }],
-    sequenceDigits: 4,
-    defaultMode: 'cell-inclusive',
+    cellNamingMode: 'sequence',
   },
 }
 
@@ -38,7 +37,6 @@ describe('xmp', () => {
     expect(restored!.singleMarkIds).toEqual(sampleState.singleMarkIds)
     expect(restored!.virtualSets).toEqual(sampleState.virtualSets)
     expect(restored!.manualAnimFolderIds).toEqual(sampleState.manualAnimFolderIds)
-    expect(restored!.folderModes).toEqual(sampleState.folderModes)
     expect(restored!.projectSettings).toEqual(sampleState.projectSettings)
   })
 
@@ -50,6 +48,7 @@ describe('xmp', () => {
           id: 'vs-jp',
           name: '日本語セット名',
           insertionLayerId: 'layer-jp',
+          insertionPosition: 'above' as const,
           memberLayerIds: [],
           expandToAnimationCells: true,
         },
@@ -75,7 +74,6 @@ describe('xmp', () => {
       singleMarkIds: [],
       virtualSets: [],
       manualAnimFolderIds: [],
-      folderModes: {},
       projectSettings: DEFAULT_PROJECT_SETTINGS,
     }
     const xml = serializeToXmp(empty)

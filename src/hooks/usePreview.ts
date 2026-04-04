@@ -4,15 +4,15 @@ import { selectLayerTreeWithVisibility } from '../store/selectors'
 import { flattenToCanvas } from '../engine/flatten'
 
 /**
- * プレビューキャンバスへの描画を管理するフック
- * ストアの変更を監視し、200msのデバウンスで再描画する
+ * ナビゲーターキャンバスへの描画を管理するフック。
+ * 全アニメーションフォルダの選択セルを合成した「1フレーム」を表示する。
+ * 200msのデバウンスで再描画する。
  */
 export function usePreview(canvasRef: React.RefObject<HTMLCanvasElement | null>) {
   const layerTree = useAppStore(selectLayerTreeWithVisibility)
   const docWidth = useAppStore(s => s.docWidth)
   const docHeight = useAppStore(s => s.docHeight)
-  const selectedCellIndex = useAppStore(s => s.selectedCellIndex)
-  const selectedLayerId = useAppStore(s => s.selectedLayerId)
+  const selectedCells = useAppStore(s => s.selectedCells)
   const manualAnimFolderIds = useAppStore(s => s.manualAnimFolderIds)
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -25,21 +25,9 @@ export function usePreview(canvasRef: React.RefObject<HTMLCanvasElement | null>)
 
     isRenderingRef.current = true
     try {
-      // 選択セルインデックスマップを構築
-      const selectedCellIndices = new Map<string, number>()
-      if (selectedLayerId) {
-        selectedCellIndices.set(selectedLayerId, selectedCellIndex)
-      }
-      // 手動指定アニメフォルダも適用
-      for (const id of manualAnimFolderIds) {
-        if (!selectedCellIndices.has(id)) {
-          selectedCellIndices.set(id, 0)
-        }
-      }
+      // selectedCells をそのまま渡す（未登録のアニメフォルダは先頭セルを使用）
+      const result = flattenToCanvas(layerTree, docWidth, docHeight, 'white', selectedCells)
 
-      const result = flattenToCanvas(layerTree, docWidth, docHeight, 'white', selectedCellIndices)
-
-      // プレビューキャンバスに描画
       canvas.width = result.width
       canvas.height = result.height
       const ctx = canvas.getContext('2d')
@@ -50,7 +38,7 @@ export function usePreview(canvasRef: React.RefObject<HTMLCanvasElement | null>)
     } finally {
       isRenderingRef.current = false
     }
-  }, [canvasRef, layerTree, docWidth, docHeight, selectedCellIndex, selectedLayerId, manualAnimFolderIds])
+  }, [canvasRef, layerTree, docWidth, docHeight, selectedCells, manualAnimFolderIds])
 
   useEffect(() => {
     if (timerRef.current) clearTimeout(timerRef.current)

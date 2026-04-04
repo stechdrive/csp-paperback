@@ -13,13 +13,17 @@ export function FileDropZone({ onPsdFile, onXdtsFile, children }: FileDropZonePr
   const [, setDragCounter] = useState(0)
   const { t } = useLocale()
 
+  const isFileDrag = (e: DragEvent) => e.dataTransfer.types.includes('Files')
+
   const handleDragEnter = useCallback((e: DragEvent) => {
+    if (!isFileDrag(e)) return
     e.preventDefault()
     setDragCounter(c => c + 1)
     setIsDragging(true)
   }, [])
 
   const handleDragLeave = useCallback((e: DragEvent) => {
+    if (!isFileDrag(e)) return
     e.preventDefault()
     setDragCounter(c => {
       const next = c - 1
@@ -29,10 +33,12 @@ export function FileDropZone({ onPsdFile, onXdtsFile, children }: FileDropZonePr
   }, [])
 
   const handleDragOver = useCallback((e: DragEvent) => {
+    if (!isFileDrag(e)) return
     e.preventDefault()
   }, [])
 
   const handleDrop = useCallback(async (e: DragEvent) => {
+    if (!isFileDrag(e)) return
     e.preventDefault()
     setIsDragging(false)
     setDragCounter(0)

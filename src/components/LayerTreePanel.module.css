@@ -17,21 +17,21 @@
 }
 
 .title {
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   font-weight: 600;
-  color: #6c7086;
+  color: #bac2de;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   flex: 1;
 }
 
 .resetBtn {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   padding: 0.2rem 0.5rem;
   border: 1px solid #45475a;
   border-radius: 3px;
   background: none;
-  color: #6c7086;
+  color: #bac2de;
   cursor: pointer;
 }
 
@@ -48,7 +48,7 @@
 
 .empty {
   padding: 2rem 1rem;
-  color: #45475a;
+  color: #a6adc8;
   font-size: 0.8rem;
   text-align: center;
   line-height: 1.8;

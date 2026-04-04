@@ -1,16 +1,45 @@
-import type { CspLayer } from '../types'
+import type { AnimationFolderInfo, CspLayer } from '../types'
 import type { AppStore } from './index'
+
+/**
+ * selectLayerTreeWithVisibility のメモ化キャッシュ。
+ * Zustand は同じストア状態でセレクターを複数回呼ぶことがあり、
+ * 毎回新しい参照を返すと無限ループになる。
+ * 入力参照がすべて同じであれば前回の結果をそのまま返す（1-entry cache）。
+ */
+let _cache: {
+  layerTree: CspLayer[]
+  visibilityOverrides: Map<string, boolean>
+  manualAnimFolderIds: Set<string>
+  result: CspLayer[]
+} | null = null
 
 /**
  * visibilityOverrides と manualAnimFolderIds を反映したツリーを返す。
  * 元のツリーは変更せず新しいオブジェクトを返す。
- * manualAnimFolderIds に含まれるフォルダは isAnimationFolder=true として扱い、
+ * manualAnimFolderIds に含まれるフォルダは isAnimationFolder=true + animationFolder 付きとして扱い、
  * flatten/export パイプラインまで正しく伝播する。
  */
 export function selectLayerTreeWithVisibility(state: AppStore): CspLayer[] {
   const { layerTree, visibilityOverrides, manualAnimFolderIds } = state
-  if (visibilityOverrides.size === 0 && manualAnimFolderIds.size === 0) return layerTree
-  return applyOverrides(layerTree, visibilityOverrides, manualAnimFolderIds)
+
+  // 入力参照がすべて前回と同じなら前回の結果を返す（無限ループ防止）
+  if (
+    _cache !== null &&
+    _cache.layerTree === layerTree &&
+    _cache.visibilityOverrides === visibilityOverrides &&
+    _cache.manualAnimFolderIds === manualAnimFolderIds
+  ) {
+    return _cache.result
+  }
+
+  const hasOverrides = visibilityOverrides.size > 0 || manualAnimFolderIds.size > 0
+  const result = hasOverrides
+    ? applyOverrides(layerTree, visibilityOverrides, manualAnimFolderIds)
+    : layerTree
+
+  _cache = { layerTree, visibilityOverrides, manualAnimFolderIds, result }
+  return result
 }
 
 function applyOverrides(
@@ -22,22 +51,28 @@ function applyOverrides(
   const result = layers.map(layer => {
     const uiHidden = visOverrides.get(layer.id) ?? layer.uiHidden
     const isAnimationFolder = layer.isAnimationFolder || manualAnimIds.has(layer.id)
+
+    // 手動指定フォルダ（animationFolder=null）→ animationFolder オブジェクトを生成
+    let animationFolder: AnimationFolderInfo | null = layer.animationFolder
+    if (isAnimationFolder && animationFolder === null) {
+      animationFolder = { detectedBy: 'manual', trackName: layer.originalName }
+    }
+
     const children = layer.children.length > 0
       ? applyOverrides(layer.children, visOverrides, manualAnimIds)
       : layer.children
 
-    // 実際に変化があった時だけ新しいオブジェクトを作る
     if (
       uiHidden === layer.uiHidden &&
       isAnimationFolder === layer.isAnimationFolder &&
+      animationFolder === layer.animationFolder &&
       children === layer.children
     ) {
       return layer
     }
     changed = true
-    return { ...layer, uiHidden, isAnimationFolder, children }
+    return { ...layer, uiHidden, isAnimationFolder, animationFolder, children }
   })
-  // 子を含めて何も変化がなければ同じ配列参照を返す（Zustandの無限ループ防止）
   return changed ? result : layers
 }
 
@@ -131,9 +166,3 @@ export function selectProcessTableErrors(state: AppStore): Set<string> {
   return duplicates
 }
 
-/**
- * 選択されたアニメーションフォルダのモードを返す（ストアの設定 > レイヤーのデフォルト）
- */
-export function selectFolderMode(state: AppStore, layerId: string) {
-  return state.folderModes.get(layerId) ?? state.projectSettings.defaultMode
-}

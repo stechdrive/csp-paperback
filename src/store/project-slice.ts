@@ -1,13 +1,12 @@
 import type { StateCreator } from 'zustand'
-import type { ProjectSettings, ProcessFolderEntry, AnimationFolderMode } from '../types'
+import type { ProjectSettings, ProcessFolderEntry, CellNamingMode } from '../types'
 import { DEFAULT_PROJECT_SETTINGS } from '../types'
 import type { AppStore } from './index'
 
 export interface ProjectSlice {
   projectSettings: ProjectSettings
   updateProcessTable: (table: ProcessFolderEntry[]) => void
-  setSequenceDigits: (digits: number) => void
-  setDefaultMode: (mode: AnimationFolderMode) => void
+  setCellNamingMode: (mode: CellNamingMode) => void
   importSettings: (json: string) => void
   exportSettings: () => string
 }
@@ -19,12 +18,8 @@ export const createProjectSlice: StateCreator<AppStore, [], [], ProjectSlice> = 
     set({ projectSettings: { ...get().projectSettings, processTable: table } })
   },
 
-  setSequenceDigits: (digits) => {
-    set({ projectSettings: { ...get().projectSettings, sequenceDigits: digits } })
-  },
-
-  setDefaultMode: (mode) => {
-    set({ projectSettings: { ...get().projectSettings, defaultMode: mode } })
+  setCellNamingMode: (mode) => {
+    set({ projectSettings: { ...get().projectSettings, cellNamingMode: mode } })
   },
 
   importSettings: (json) => {

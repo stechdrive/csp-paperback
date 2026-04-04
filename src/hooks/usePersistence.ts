@@ -26,7 +26,6 @@ export function usePersistence() {
           ),
           virtualSets: persisted.virtualSets,
           manualAnimFolderIds: new Set(persisted.manualAnimFolderIds),
-          folderModes: new Map(Object.entries(persisted.folderModes)),
           projectSettings: persisted.projectSettings,
         })
         return
@@ -57,7 +56,6 @@ export function usePersistence() {
       singleMarkIds: Array.from(s.singleMarks.keys()),
       virtualSets: s.virtualSets,
       manualAnimFolderIds: Array.from(s.manualAnimFolderIds),
-      folderModes: Object.fromEntries(s.folderModes.entries()),
       projectSettings: s.projectSettings,
     }
 

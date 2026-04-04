@@ -17,11 +17,14 @@ describe('flattenTree', () => {
   })
 
   it('非表示レイヤーを除外する', () => {
+    // buildLayerTree は ag-psd のボトムファースト順を逆転するため
+    // psd.children の末尾が tree[0]（最上位）になる
     const psd = makePsd({ children: [
-      makeLayer({ name: 'visible', hidden: false }),
       makeLayer({ name: 'hidden', hidden: true }),
+      makeLayer({ name: 'visible', hidden: false }),
     ]})
     const tree = buildLayerTree(psd)
+    // tree[0] = visible, tree[1] = hidden
     const flat = flattenTree(tree, 100, 100)
     expect(flat).toHaveLength(1)
     expect(flat[0].sourceId).toBe(tree[0].id)
@@ -80,17 +83,19 @@ describe('flattenTree', () => {
 
   it('アニメーションフォルダを含む親フォルダは例外ルール（子を個別に展開）', () => {
     // 構造: parentFolder → [normalLayer, animFolder]
+    // buildLayerTree がボトムファースト→トップファーストに逆転するため
+    // psd.children の末尾（animFolder）が tree[0].children[0] になる
     const normalLayer = makeLayer({ name: 'normal', blendMode: 'multiply' })
     const animFolder = makeAnimationFolder('A', [makeLayer({ name: 'cell1' })])
     const parentFolder = makePassThroughFolder('parent', [normalLayer, animFolder])
     const tree = buildLayerTree(makePsd({ children: [parentFolder] }))
-    // xdts照合でアニメフォルダを設定（実際の使用時と同様）
-    const animNode = tree[0].children[1]
+    // children[0] = animFolder（逆転後のトップ）
+    const animNode = tree[0].children[0]
     animNode.isAnimationFolder = true
-    animNode.animationFolder = { mode: 'cell-inclusive', detectedBy: 'xdts', trackName: 'A' }
+    animNode.animationFolder = {  detectedBy: 'xdts', trackName: 'A' }
     const flat = flattenTree(tree, 100, 100)
     // parentFolderは例外ルールで合成されず、子が個別に返る
-    // normalLayer + animFolderの1セル = 2枚
+    // animFolderの1セル + normalLayer = 2枚
     expect(flat).toHaveLength(2)
   })
 
@@ -101,7 +106,7 @@ describe('flattenTree', () => {
     const tree = buildLayerTree(makePsd({ children: [animFolder] }))
     // アニメフォルダとして手動設定
     tree[0].isAnimationFolder = true
-    tree[0].animationFolder = { mode: 'cell-inclusive', detectedBy: 'manual', trackName: 'A' }
+    tree[0].animationFolder = {  detectedBy: 'manual', trackName: 'A' }
     const flat = flattenTree(tree, 100, 100)
     expect(flat).toHaveLength(1)
     expect(flat[0].sourceId).toBe(tree[0].id)
@@ -113,7 +118,7 @@ describe('flattenTree', () => {
     const animFolder = makeAnimationFolder('A', [cell1, cell2])
     const tree = buildLayerTree(makePsd({ children: [animFolder] }))
     tree[0].isAnimationFolder = true
-    tree[0].animationFolder = { mode: 'cell-inclusive', detectedBy: 'manual', trackName: 'A' }
+    tree[0].animationFolder = {  detectedBy: 'manual', trackName: 'A' }
     const animId = tree[0].id
     const selectedCells = new Map([[animId, 1]])
     const flat = flattenTree(tree, 100, 100, selectedCells)

@@ -36,8 +36,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.6rem;
-  color: #6c7086;
+  font-size: 0.65rem;
+  color: #bac2de;
   background: none;
   border: none;
   cursor: pointer;
@@ -77,7 +77,7 @@
 }
 
 .name {
-  font-size: 0.8rem;
+  font-size: 0.875rem;
   color: #cdd6f4;
   flex: 1;
   overflow: hidden;
@@ -93,6 +93,33 @@
   color: #a6e3a1;
 }
 
+.blendSelect {
+  height: 18px;
+  flex-shrink: 0;
+  font-size: 0.65rem;
+  background: #181825;
+  color: #bac2de;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  cursor: pointer;
+  padding: 0 2px;
+  max-width: 60px;
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+
+.row:hover .blendSelect,
+.rowSelected .blendSelect {
+  opacity: 1;
+  border-color: #45475a;
+}
+
+.blendSelect:focus {
+  opacity: 1;
+  outline: 1px solid #6366f1;
+  border-color: #6366f1;
+}
+
 .animBtn {
   width: 18px;
   height: 18px;
@@ -100,13 +127,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.65rem;
+  font-size: 0.7rem;
   background: none;
   border: 1px solid transparent;
   border-radius: 3px;
   cursor: pointer;
   padding: 0;
-  color: #6c7086;
+  color: #bac2de;
   opacity: 0;
   transition: opacity 0.1s;
 }
@@ -129,13 +156,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.65rem;
+  font-size: 0.7rem;
   background: none;
   border: 1px solid transparent;
   border-radius: 3px;
   cursor: pointer;
   padding: 0;
-  color: #6c7086;
+  color: #bac2de;
   opacity: 0;
   transition: opacity 0.1s;
 }
@@ -151,6 +178,91 @@
   opacity: 1 !important;
 }
 
+
 .children {
   /* インデントはrow側のindentスペーサーで管理 */
+}
+
+/* 選択中セルのハイライト */
+.rowCellActive {
+  background: rgba(137, 220, 235, 0.12);
+  outline: 1px solid #89dceb;
+}
+
+/* 仮想セットドラッグオーバー中のレイヤー行 */
+.rowDropTarget {
+  background: rgba(99, 102, 241, 0.06);
+}
+
+/* 仮想セット挿入ライン（ドラッグ中に表示） */
+.insertionLine {
+  height: 2px;
+  background: #6366f1;
+  margin: 0 0.4rem;
+  border-radius: 1px;
+  pointer-events: none;
+  position: relative;
+}
+
+.insertionLine::before {
+  content: '';
+  position: absolute;
+  left: -3px;
+  top: -3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #6366f1;
+}
+
+/* 仮想セットバッジ（ツリー内の挿入位置表示） */
+.vsBadge {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.4rem;
+  background: rgba(99, 102, 241, 0.1);
+  border-left: 2px solid #6366f1;
+  min-height: 22px;
+}
+
+.vsBadgeIndent {
+  flex-shrink: 0;
+}
+
+.vsBadgeIcon {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  color: #6366f1;
+  font-style: normal;
+}
+
+.vsBadgeName {
+  flex: 1;
+  font-size: 0.78rem;
+  color: #89b4fa;
+  font-style: italic;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vsBadgeClear {
+  font-size: 0.6rem;
+  background: none;
+  border: none;
+  color: #45475a;
+  cursor: pointer;
+  padding: 0 2px;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+
+.vsBadge:hover .vsBadgeClear {
+  opacity: 1;
+}
+
+.vsBadgeClear:hover {
+  color: #f38ba8;
 }

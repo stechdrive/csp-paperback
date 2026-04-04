@@ -12,8 +12,7 @@ interface SettingsDialogProps {
 export function SettingsDialog({ onClose }: SettingsDialogProps) {
   const projectSettings = useAppStore(s => s.projectSettings)
   const updateProcessTable = useAppStore(s => s.updateProcessTable)
-  const setSequenceDigits = useAppStore(s => s.setSequenceDigits)
-  const setDefaultMode = useAppStore(s => s.setDefaultMode)
+  const setCellNamingMode = useAppStore(s => s.setCellNamingMode)
   const importSettings = useAppStore(s => s.importSettings)
   const exportSettings = useAppStore(s => s.exportSettings)
   const { t } = useLocale()
@@ -116,33 +115,28 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
             <button className={styles.addRowBtn} onClick={addRow}>{t.settings.addRow}</button>
           </div>
 
-          {/* 連番桁数 */}
+          {/* セルファイル命名モード */}
           <div className={styles.section}>
-            <div className={styles.sectionTitle}>{t.settings.sequenceDigits}</div>
-            <div className={styles.row}>
-              <span className={styles.label}>{t.settings.digits}</span>
-              <input
-                type="number" min={1} max={8}
-                className={styles.input}
-                value={projectSettings.sequenceDigits}
-                onChange={e => setSequenceDigits(parseInt(e.target.value) || 4)}
-              />
-            </div>
-          </div>
-
-          {/* デフォルトモード */}
-          <div className={styles.section}>
-            <div className={styles.sectionTitle}>{t.settings.defaultMode}</div>
-            <div className={styles.row}>
-              <span className={styles.label}>{t.settings.mode}</span>
-              <select
-                className={styles.select}
-                value={projectSettings.defaultMode}
-                onChange={e => setDefaultMode(e.target.value as 'normal' | 'cell-inclusive')}
-              >
-                <option value="cell-inclusive">{t.settings.modeCellInclusive}</option>
-                <option value="normal">{t.settings.modeNormal}</option>
-              </select>
+            <div className={styles.sectionTitle}>{t.settings.cellNaming}</div>
+            <div className={styles.radioGroup}>
+              <label className={styles.radioLabel}>
+                <input
+                  type="radio"
+                  value="sequence"
+                  checked={projectSettings.cellNamingMode === 'sequence'}
+                  onChange={() => setCellNamingMode('sequence')}
+                />
+                {t.settings.cellNamingSequence}
+              </label>
+              <label className={styles.radioLabel}>
+                <input
+                  type="radio"
+                  value="cellname"
+                  checked={projectSettings.cellNamingMode === 'cellname'}
+                  onChange={() => setCellNamingMode('cellname')}
+                />
+                {t.settings.cellNamingCellname}
+              </label>
             </div>
           </div>
 

@@ -1,6 +1,6 @@
 import type { StateCreator } from 'zustand'
 import type { Psd } from 'ag-psd'
-import type { CspLayer } from '../types'
+import type { BlendMode, CspLayer } from '../types'
 import { readPsdFile } from '../utils/psd-io'
 import { buildLayerTree } from '../engine/tree-builder'
 import type { AppStore } from './index'
@@ -11,8 +11,11 @@ export interface PsdSlice {
   layerTree: CspLayer[]
   docWidth: number
   docHeight: number
+  docDpiX: number  // pixels per inch (0 = 不明)
+  docDpiY: number  // pixels per inch (0 = 不明)
   loadPsd: (buffer: ArrayBuffer, fileName: string) => void
   resetPsd: () => void
+  setLayerBlendMode: (layerId: string, blendMode: BlendMode) => void
 }
 
 export const createPsdSlice: StateCreator<AppStore, [], [], PsdSlice> = (set, get) => ({
@@ -21,22 +24,45 @@ export const createPsdSlice: StateCreator<AppStore, [], [], PsdSlice> = (set, ge
   layerTree: [],
   docWidth: 0,
   docHeight: 0,
+  docDpiX: 0,
+  docDpiY: 0,
 
   loadPsd: (buffer, fileName) => {
     const psd = readPsdFile(buffer)
     const xdts = get().xdtsData ?? undefined
     const tree = buildLayerTree(psd, xdts)
+
+    // DPI情報を取得（PPI/PPCMどちらでもPPIに統一）
+    const res = psd.imageResources?.resolutionInfo
+    const toPpi = (v: number, unit: 'PPI' | 'PPCM') =>
+      unit === 'PPCM' ? Math.round(v * 2.54) : Math.round(v)
+    const dpiX = res ? toPpi(res.horizontalResolution, res.horizontalResolutionUnit) : 0
+    const dpiY = res ? toPpi(res.verticalResolution, res.verticalResolutionUnit) : 0
+
+    // layer.expanded = true なフォルダを expandedFolders の初期値に
+    const initialExpanded = new Set<string>()
+    function collectExpanded(layers: CspLayer[]): void {
+      for (const l of layers) {
+        if (l.isFolder && l.expanded) initialExpanded.add(l.id)
+        collectExpanded(l.children)
+      }
+    }
+    collectExpanded(tree)
+
     set({
       rawPsd: psd,
       psdFileName: fileName,
       layerTree: tree,
       docWidth: psd.width,
       docHeight: psd.height,
+      docDpiX: dpiX,
+      docDpiY: dpiY,
       // PSD読み込み時にUI状態をリセット
       selectedLayerId: null,
-      selectedCellIndex: 0,
+      selectedCells: new Map(),
+      focusedAnimFolderId: null,
       visibilityOverrides: new Map(),
-      expandedFolders: new Set(),
+      expandedFolders: initialExpanded,
     })
   },
 
@@ -47,6 +73,25 @@ export const createPsdSlice: StateCreator<AppStore, [], [], PsdSlice> = (set, ge
       layerTree: [],
       docWidth: 0,
       docHeight: 0,
+      docDpiX: 0,
+      docDpiY: 0,
     })
+  },
+
+  setLayerBlendMode: (layerId, blendMode) => {
+    const updateTree = (layers: CspLayer[]): CspLayer[] =>
+      layers.map(l => {
+        if (l.id === layerId) {
+          // agPsdRef を直接変更することでPSD保存に反映
+          l.agPsdRef.blendMode = blendMode
+          return { ...l, blendMode }
+        }
+        if (l.children.length > 0) {
+          const newChildren = updateTree(l.children)
+          if (newChildren !== l.children) return { ...l, children: newChildren }
+        }
+        return l
+      })
+    set(s => ({ layerTree: updateTree(s.layerTree) }))
   },
 })

@@ -1,7 +1,5 @@
-import type { VirtualSet } from '../types'
-import type { ProjectSettings } from '../types'
+import type { VirtualSet, ProjectSettings } from '../types'
 import { DEFAULT_PROJECT_SETTINGS } from '../types/project'
-import type { AnimationFolderMode } from '../types'
 
 const CSPB_NS = 'http://ns.stechdrive.com/cspb/1.0/'
 
@@ -9,7 +7,6 @@ export interface PersistedState {
   singleMarkIds: string[]
   virtualSets: VirtualSet[]
   manualAnimFolderIds: string[]
-  folderModes: Record<string, AnimationFolderMode>
   projectSettings: ProjectSettings
 }
 
@@ -57,7 +54,6 @@ export function deserializeFromXmp(xmpXml: string): PersistedState | null {
       singleMarkIds: data.singleMarkIds,
       virtualSets: data.virtualSets ?? [],
       manualAnimFolderIds: data.manualAnimFolderIds ?? [],
-      folderModes: data.folderModes ?? {},
       projectSettings: data.projectSettings ?? DEFAULT_PROJECT_SETTINGS,
     }
   } catch {

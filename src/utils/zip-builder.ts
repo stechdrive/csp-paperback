@@ -13,7 +13,9 @@ import { resolveEntryNames } from './naming'
 export async function buildZip(
   entries: OutputEntry[],
   config: OutputConfig,
-  _psdFileName: string
+  _psdFileName: string,
+  dpiX = 0,
+  dpiY = 0,
 ): Promise<Blob> {
   const zip = new JSZip()
 
@@ -29,7 +31,7 @@ export async function buildZip(
   // 各エントリをCanvasからBlobに変換してZIPに追加
   await Promise.all(
     resolved.map(async (entry, i) => {
-      const blob = await canvasToBlob(entries[i].canvas, config.format, config.jpgQuality)
+      const blob = await canvasToBlob(entries[i].canvas, config.format, config.jpgQuality, dpiX, dpiY)
 
       const zipPath =
         config.structure === 'hierarchy' ? entry.path : entry.flatName

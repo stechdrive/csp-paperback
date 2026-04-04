@@ -10,33 +10,103 @@
   padding: 0.4rem 0.75rem;
   font-size: 0.75rem;
   font-weight: 600;
-  color: #6c7086;
+  color: #bac2de;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   border-bottom: 1px solid #313244;
   flex-shrink: 0;
 }
 
-.canvasWrapper {
-  flex: 1;
-  overflow: auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
+/* ナビゲーター: パネル幅いっぱいに表示、高さは最大40% */
+.navigatorSection {
+  flex-shrink: 0;
+  max-height: 40%;
+  padding: 0.5rem;
   background: #11111b;
+  border-bottom: 1px solid #313244;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  overflow: hidden;
 }
 
-.canvas {
+.navigatorLabel {
+  font-size: 0.7rem;
+  color: #a6adc8;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+
+.navigatorCanvas {
+  /* canvas の intrinsic サイズ（PSD解像度）を基準にアスペクト比を保ってパネル幅に収める */
   max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+  height: auto;
+  min-height: 0;
+  display: block;
+  border: 1px solid #313244;
+  border-radius: 2px;
+  background: #1e1e2e;
   image-rendering: pixelated;
 }
 
+/* 出力プレビューセクションのヘッダー */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.75rem;
+  font-size: 0.7rem;
+  color: #a6adc8;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid #313244;
+  flex-shrink: 0;
+  background: #181825;
+  overflow: hidden;
+}
+
+.dividerLabel {
+  flex-shrink: 0;
+}
+
+.fileNames {
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+  overflow: hidden;
+}
+
+.fileName {
+  font-family: monospace;
+  font-size: 0.68rem;
+  color: #bac2de;
+  background: #313244;
+  border-radius: 3px;
+  padding: 0.05rem 0.3rem;
+  white-space: nowrap;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 出力プレビュー: 残りの高さをすべて使う */
+.outputSection {
+  flex: 1;
+  overflow-y: auto;
+  background: #11111b;
+  min-height: 0;
+}
+
+.emptyWrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #11111b;
+}
+
 .empty {
-  color: #45475a;
+  color: #a6adc8;
   font-size: 0.875rem;
   text-align: center;
   line-height: 1.8;

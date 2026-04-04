@@ -35,7 +35,7 @@
 
 .label {
   font-size: 0.75rem;
-  color: #6c7086;
+  color: #bac2de;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -96,7 +96,7 @@
   border: 1px solid #45475a;
   border-radius: 4px;
   background: none;
-  color: #6c7086;
+  color: #bac2de;
   cursor: pointer;
   font-size: 0.85rem;
 }

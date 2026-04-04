@@ -23,7 +23,6 @@ beforeEach(() => {
     visibilityOverrides: new Map(),
     expandedFolders: new Set(),
     manualAnimFolderIds: new Set(),
-    folderModes: new Map(),
     projectSettings: DEFAULT_PROJECT_SETTINGS,
   })
 })

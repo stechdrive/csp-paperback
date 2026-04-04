@@ -97,10 +97,9 @@ export function detectAnimationFoldersByXdts(
   tree: CspLayer[],
   xdts: XdtsData
 ): void {
+  // パーサーでfieldId=0（CELL）のみ抽出済みなので追加フィルタ不要
   const trackNames = new Set(
-    xdts.tracks
-      .filter(t => !t.isCam)
-      .map(t => t.name.toLowerCase())
+    xdts.tracks.map(t => t.name.toLowerCase())
   )
 
   function walk(layers: CspLayer[]): void {
@@ -108,7 +107,6 @@ export function detectAnimationFoldersByXdts(
       if (layer.isFolder && trackNames.has(layer.originalName.toLowerCase())) {
         layer.isAnimationFolder = true
         layer.animationFolder = {
-          mode: 'cell-inclusive',
           detectedBy: 'xdts',
           trackName: layer.originalName,
         }

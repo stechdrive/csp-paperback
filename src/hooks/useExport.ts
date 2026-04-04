@@ -19,7 +19,7 @@ export function useExport(): UseExportResult {
 
   const startExport = useCallback(async () => {
     const state = useAppStore.getState()
-    const { docWidth, docHeight, psdFileName, outputConfig, projectSettings } = state
+    const { docWidth, docHeight, docDpiX, docDpiY, psdFileName, outputConfig, projectSettings } = state
 
     if (!psdFileName || docWidth === 0) {
       setError('PSD ファイルが読み込まれていません')
@@ -37,7 +37,7 @@ export function useExport(): UseExportResult {
       setProgress(0.1)
 
       // 全出力エントリを生成（scope=allの場合）
-      let entries = extractAllEntries(tree, projectSettings, docWidth, docHeight)
+      let entries = extractAllEntries(tree, projectSettings, docWidth, docHeight, outputConfig.background)
 
       setProgress(0.4)
 
@@ -56,7 +56,7 @@ export function useExport(): UseExportResult {
       // 各エントリに反映する処理はcell-extractor内部で済み
 
       // ZIP生成
-      const zipBlob = await buildZip(entries, outputConfig, psdFileName)
+      const zipBlob = await buildZip(entries, outputConfig, psdFileName, docDpiX, docDpiY)
       setProgress(0.95)
 
       // ダウンロード

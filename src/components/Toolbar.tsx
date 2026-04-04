@@ -1,9 +1,29 @@
 import { useRef, useState } from 'react'
 import { useAppStore } from '../store'
 import { useLocale } from '../i18n'
-import { ExportDialog } from './ExportDialog'
+import { useExport } from '../hooks/useExport'
 import { SettingsDialog } from './SettingsDialog'
 import styles from './Toolbar.module.css'
+
+function XdtsDownloadButton({ hasPsd }: { hasPsd: boolean }) {
+  const downloadXdts = useAppStore(s => s.downloadXdts)
+  const singleMarks = useAppStore(s => s.singleMarks)
+  const virtualSets = useAppStore(s => s.virtualSets)
+  const manualAnimFolderIds = useAppStore(s => s.manualAnimFolderIds)
+
+  const hasExtras =
+    [...singleMarks.values()].some(m => m.origin === 'manual') ||
+    virtualSets.length > 0 ||
+    manualAnimFolderIds.size > 0
+
+  if (!hasPsd || !hasExtras) return null
+
+  return (
+    <button className={styles.btn} onClick={downloadXdts}>
+      xdts保存
+    </button>
+  )
+}
 
 interface ToolbarProps {
   onPsdFile: (file: File) => Promise<void>
@@ -19,9 +39,9 @@ export function Toolbar({ onPsdFile, onXdtsFile, isLoading, error, onSavePsd, ha
   const xdtsFileName = useAppStore(s => s.xdtsFileName)
   const psdInputRef = useRef<HTMLInputElement>(null)
   const xdtsInputRef = useRef<HTMLInputElement>(null)
-  const [showExport, setShowExport] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const { t, locale, setLocale } = useLocale()
+  const { isExporting, progress, error: exportError, startExport } = useExport()
 
   const handlePsdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -39,6 +59,7 @@ export function Toolbar({ onPsdFile, onXdtsFile, isLoading, error, onSavePsd, ha
     <>
       <div className={styles.toolbar}>
         <span className={styles.title}>csp-paperback</span>
+        <span className={styles.version}>v{__APP_VERSION__}</span>
 
         <button
           className={styles.btn}
@@ -74,6 +95,10 @@ export function Toolbar({ onPsdFile, onXdtsFile, isLoading, error, onSavePsd, ha
 
         {isLoading && <span className={styles.loading}>{t.toolbar.loading}</span>}
         {error && <span className={styles.error}>{error}</span>}
+        {exportError && <span className={styles.error}>{exportError}</span>}
+        {isExporting && (
+          <span className={styles.loading}>{t.export.exporting} {Math.round(progress * 100)}%</span>
+        )}
         {psdFileName && !isLoading && !error && (
           <span className={styles.fileInfo}>{psdFileName}</span>
         )}
@@ -88,6 +113,7 @@ export function Toolbar({ onPsdFile, onXdtsFile, isLoading, error, onSavePsd, ha
         >
           {t.toolbar.savePsd}
         </button>
+        <XdtsDownloadButton hasPsd={hasPsd} />
         <button
           className={styles.btn}
           onClick={() => setShowSettings(true)}
@@ -96,10 +122,10 @@ export function Toolbar({ onPsdFile, onXdtsFile, isLoading, error, onSavePsd, ha
         </button>
         <button
           className={`${styles.btn} ${styles.btnPrimary}`}
-          onClick={() => setShowExport(true)}
-          disabled={!psdFileName}
+          onClick={startExport}
+          disabled={!psdFileName || isExporting}
         >
-          {t.toolbar.export}
+          {isExporting ? t.export.exporting : t.toolbar.export}
         </button>
         <button
           className={styles.langBtn}
@@ -110,7 +136,6 @@ export function Toolbar({ onPsdFile, onXdtsFile, isLoading, error, onSavePsd, ha
         </button>
       </div>
 
-      {showExport && <ExportDialog onClose={() => setShowExport(false)} />}
       {showSettings && <SettingsDialog onClose={() => setShowSettings(false)} />}
     </>
   )

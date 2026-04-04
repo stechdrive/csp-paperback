@@ -14,7 +14,7 @@ export function VirtualSetPanel() {
         <span className={styles.title}>{t.virtualSet.title}</span>
         <button
           className={styles.addBtn}
-          onClick={() => addVirtualSet(t.virtualSet.newSetName, '')}
+          onClick={() => addVirtualSet(t.virtualSet.newSetName)}
         >
           {t.virtualSet.add}
         </button>

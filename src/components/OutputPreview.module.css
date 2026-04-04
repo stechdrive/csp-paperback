@@ -1,0 +1,55 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.thumbnail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.5rem;
+  border-bottom: 1px solid #1e1e2e;
+}
+
+.thumbnail:last-child {
+  border-bottom: none;
+}
+
+/* canvas の intrinsic サイズを基準にアスペクト比を保って幅いっぱいに表示 */
+/* background は親 div (.thumbDark / .thumbCheckerboard) が担うので canvas 自体は透明 */
+.thumbCanvas {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  border: 1px solid #313244;
+  border-radius: 3px;
+  image-rendering: pixelated;
+}
+
+/* 通常モード: 暗い背景 */
+.thumbDark {
+  background: #1e1e2e;
+  line-height: 0;
+}
+
+/* 透過PNGモード: チェッカーボード */
+.thumbCheckerboard {
+  background-color: #f0f0f0;
+  background-image:
+    linear-gradient(45deg, #c8c8c8 25%, transparent 25%),
+    linear-gradient(-45deg, #c8c8c8 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #c8c8c8 75%),
+    linear-gradient(-45deg, transparent 75%, #c8c8c8 75%);
+  background-size: 12px 12px;
+  background-position: 0 0, 0 6px, 6px -6px, -6px 0;
+  line-height: 0;
+}
+
+.empty {
+  color: #a6adc8;
+  font-size: 0.8rem;
+  text-align: center;
+  line-height: 1.8;
+  padding: 2rem 1rem;
+}

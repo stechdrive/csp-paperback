@@ -3,8 +3,15 @@ import { useCallback, useState } from 'react'
 export type DragPayload =
   | { type: 'layer'; layerId: string }
   | { type: 'cell'; layerId: string; cellIndex: number }
+  | { type: 'virtualSet'; virtualSetId: string }
 
 const DRAG_DATA_KEY = 'application/csp-paperback'
+
+// ドラッグ中のペイロードをモジュールスコープで保持（dragoverではgetDataできないため）
+let _activeDragPayload: DragPayload | null = null
+export function getActiveDragPayload(): DragPayload | null {
+  return _activeDragPayload
+}
 
 export interface DragHandlers {
   draggable: true
@@ -19,18 +26,20 @@ export interface DropHandlers {
 }
 
 /**
- * レイヤーツリー → 仮想セットへのドラッグ&ドロップを管理するフック
+ * ドラッグ元として使うフック
  */
 export function useDragSource(payload: DragPayload): DragHandlers & { isDragging: boolean } {
   const [isDragging, setIsDragging] = useState(false)
 
   const onDragStart = useCallback((e: React.DragEvent) => {
+    _activeDragPayload = payload
     e.dataTransfer.setData(DRAG_DATA_KEY, JSON.stringify(payload))
     e.dataTransfer.effectAllowed = 'copy'
     setIsDragging(true)
   }, [payload])
 
   const onDragEnd = useCallback((_e: React.DragEvent) => {
+    _activeDragPayload = null
     setIsDragging(false)
   }, [])
 
@@ -43,7 +52,7 @@ export interface DropZoneResult {
 }
 
 /**
- * ドロップゾーン側のフック
+ * ドロップゾーン側のフック（仮想セットのメンバー追加など、従来の drop-only ゾーン用）
  * onDrop コールバックに DragPayload を渡す
  */
 export function useDropZone(onDrop: (payload: DragPayload) => void): DropZoneResult {

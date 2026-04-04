@@ -1,0 +1,76 @@
+.settings {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.5rem 0.75rem;
+  background: #1e1e2e;
+  border-bottom: 1px solid #313244;
+  flex-shrink: 0;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.label {
+  font-size: 0.7rem;
+  color: #a6adc8;
+  white-space: nowrap;
+  min-width: 2.5rem;
+}
+
+.toggleGroup {
+  display: flex;
+  border: 1px solid #45475a;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-right: 0.5rem;
+}
+
+.toggle {
+  padding: 0.2rem 0.5rem;
+  font-size: 0.75rem;
+  background: none;
+  border: none;
+  color: #a6adc8;
+  cursor: pointer;
+  white-space: nowrap;
+  line-height: 1.4;
+}
+
+.toggle + .toggle {
+  border-left: 1px solid #45475a;
+}
+
+.toggle:hover:not(.disabled):not(.active) {
+  background: #313244;
+  color: #cdd6f4;
+}
+
+.active {
+  background: #313244;
+  color: #cdd6f4;
+  font-weight: 600;
+}
+
+.disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.qualitySlider {
+  flex: 1;
+  accent-color: #6366f1;
+  min-width: 60px;
+  max-width: 120px;
+}
+
+.qualityValue {
+  font-size: 0.75rem;
+  color: #89b4fa;
+  width: 2.5rem;
+  text-align: right;
+}

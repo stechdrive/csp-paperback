@@ -6,7 +6,7 @@ export interface MarksSlice {
   singleMarks: Map<string, SingleMark>
   virtualSets: VirtualSet[]
   toggleSingleMark: (layerId: string) => void
-  addVirtualSet: (name: string, insertionLayerId: string) => void
+  addVirtualSet: (name: string) => void
   updateVirtualSet: (id: string, updates: Partial<Omit<VirtualSet, 'id'>>) => void
   removeVirtualSet: (id: string) => void
   addVirtualSetMember: (setId: string, layerId: string) => void
@@ -27,11 +27,12 @@ export const createMarksSlice: StateCreator<AppStore, [], [], MarksSlice> = (set
     set({ singleMarks: current })
   },
 
-  addVirtualSet: (name, insertionLayerId) => {
+  addVirtualSet: (name) => {
     const newSet: VirtualSet = {
       id: crypto.randomUUID(),
       name,
-      insertionLayerId,
+      insertionLayerId: null,
+      insertionPosition: 'above',
       memberLayerIds: [],
       expandToAnimationCells: false,
     }

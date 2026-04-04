@@ -146,7 +146,8 @@ export function resolveMarkerState(
   const virtualSets: VirtualSet[] = state.virtualSetDefs.map(def => ({
     id: crypto.randomUUID(),
     name: def.name,
-    insertionLayerId: (def.insertionLayerName && nameToId.get(def.insertionLayerName)) ?? '',
+    insertionLayerId: (def.insertionLayerName && nameToId.get(def.insertionLayerName)) ?? null,
+    insertionPosition: 'above' as const,
     memberLayerIds: def.memberLayerNames
       .map(n => nameToId.get(n))
       .filter((id): id is string => Boolean(id)),
