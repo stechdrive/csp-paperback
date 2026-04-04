@@ -2,25 +2,29 @@ import type { CspLayer } from '../types'
 import type { AppStore } from './index'
 
 /**
- * visibilityOverridesを反映した表示中レイヤーのみのツリーを返す
- * 元のツリーは変更せず、uiHiddenを上書きした新しいツリーを返す
+ * visibilityOverrides と manualAnimFolderIds を反映したツリーを返す。
+ * 元のツリーは変更せず新しいオブジェクトを返す。
+ * manualAnimFolderIds に含まれるフォルダは isAnimationFolder=true として扱い、
+ * flatten/export パイプラインまで正しく伝播する。
  */
 export function selectLayerTreeWithVisibility(state: AppStore): CspLayer[] {
-  const { layerTree, visibilityOverrides } = state
-  if (visibilityOverrides.size === 0) return layerTree
-  return applyVisibilityOverrides(layerTree, visibilityOverrides)
+  const { layerTree, visibilityOverrides, manualAnimFolderIds } = state
+  if (visibilityOverrides.size === 0 && manualAnimFolderIds.size === 0) return layerTree
+  return applyOverrides(layerTree, visibilityOverrides, manualAnimFolderIds)
 }
 
-function applyVisibilityOverrides(
+function applyOverrides(
   layers: CspLayer[],
-  overrides: Map<string, boolean>
+  visOverrides: Map<string, boolean>,
+  manualAnimIds: Set<string>,
 ): CspLayer[] {
   return layers.map(layer => {
-    const uiHidden = overrides.get(layer.id) ?? layer.uiHidden
+    const uiHidden = visOverrides.get(layer.id) ?? layer.uiHidden
+    const isAnimationFolder = layer.isAnimationFolder || manualAnimIds.has(layer.id)
     const children = layer.children.length > 0
-      ? applyVisibilityOverrides(layer.children, overrides)
+      ? applyOverrides(layer.children, visOverrides, manualAnimIds)
       : layer.children
-    return { ...layer, uiHidden, children }
+    return { ...layer, uiHidden, isAnimationFolder, children }
   })
 }
 

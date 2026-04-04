@@ -30,6 +30,7 @@ export function LayerTreeNode({
 }: LayerTreeNodeProps) {
   const singleMarks = useAppStore(s => s.singleMarks)
   const manualAnimFolderIds = useAppStore(s => s.manualAnimFolderIds)
+  const toggleManualAnimFolder = useAppStore(s => s.toggleManualAnimFolder)
   const { t } = useLocale()
 
   const { draggable, onDragStart, onDragEnd } = useDragSource({ type: 'layer', layerId: layer.id })
@@ -60,6 +61,11 @@ export function LayerTreeNode({
     e.stopPropagation()
     onToggleMark(layer.id)
   }, [layer.id, onToggleMark])
+
+  const handleAnimFolderToggle = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+    toggleManualAnimFolder(layer.id)
+  }, [layer.id, toggleManualAnimFolder])
 
   const indentWidth = layer.depth * 16
 
@@ -106,6 +112,17 @@ export function LayerTreeNode({
         <span className={nameClass} title={layer.originalName}>
           {layer.name || layer.originalName}
         </span>
+
+        {/* アニメーションフォルダ手動トグル（フォルダのみ、xdts検出済みは非表示） */}
+        {layer.isFolder && !layer.isAnimationFolder && (
+          <button
+            className={`${styles.animBtn} ${manualAnimFolderIds.has(layer.id) ? styles.animBtnActive : ''}`}
+            onClick={handleAnimFolderToggle}
+            title={manualAnimFolderIds.has(layer.id) ? 'アニメーションフォルダ解除' : 'アニメーションフォルダとして指定'}
+          >
+            🎬
+          </button>
+        )}
 
         {!layer.autoMarked && (
           <button

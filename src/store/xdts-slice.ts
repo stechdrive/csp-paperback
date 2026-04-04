@@ -19,11 +19,22 @@ export const createXdtsSlice: StateCreator<AppStore, [], [], XdtsSlice> = (set, 
     const xdts = parseXdts(text)
     set({ xdtsData: xdts, xdtsFileName: fileName })
 
+    // パース結果をコンソールに出力（デバッグ用）
+    console.log('[xdts] parsed tracks:', xdts.tracks)
+
     // PSD が読み込み済みなら xdts を反映してレイヤーツリーを再構築する
     const { rawPsd } = get()
     if (rawPsd) {
       const tree = buildLayerTree(rawPsd, xdts)
       set({ layerTree: tree })
+      console.log('[xdts] layer tree rebuilt. animation folders detected:',
+        tree.flatMap(function findAnim(l): string[] {
+          return [
+            ...(l.isAnimationFolder ? [l.originalName] : []),
+            ...l.children.flatMap(findAnim),
+          ]
+        })
+      )
     }
   },
 
