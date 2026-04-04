@@ -6,7 +6,7 @@
 
 ## English
 
-A browser-based companion tool for Clip Studio Paint's animation cell export.
+A browser-based tool for exporting composited animation cell images from Clip Studio Paint.
 
 **→ [Open the app](https://stechdrive.github.io/csp-paperback/)**
 
@@ -57,7 +57,7 @@ CSP Paperback automates that compositing step directly in your browser.
 
 ## 日本語
 
-Clip Studio Paint（CSP）のアニメーションセル書き出しを補完する、ブラウザで動くコンポジットツールです。
+Clip Studio Paint（CSP）のアニメーションセル書き出しを補完する、ブラウザで動くセルの画像書き出しツールです。
 
 **→ [アプリを開く](https://stechdrive.github.io/csp-paperback/)**
 
