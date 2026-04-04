@@ -58,7 +58,7 @@ export function Toolbar({ onPsdFile, onXdtsFile, isLoading, error, onSavePsd, ha
   return (
     <>
       <div className={styles.toolbar}>
-        <span className={styles.title}>csp-paperback</span>
+        <span className={styles.title}>CSP Paperback</span>
         <span className={styles.version}>v{__APP_VERSION__}</span>
 
         <button

@@ -1,7 +1,7 @@
 export const ja = {
   toolbar: {
     openPsd: 'PSD を開く',
-    openXdts: 'xdts を開く',
+    openXdts: 'XDTS を開く',
     savePsd: 'PSD 保存',
     settings: '設定',
     export: '出力',

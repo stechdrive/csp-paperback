@@ -3,7 +3,7 @@ import type { Translations } from './ja'
 export const en: Translations = {
   toolbar: {
     openPsd: 'Open PSD',
-    openXdts: 'Open xdts',
+    openXdts: 'Open XDTS',
     savePsd: 'Save PSD',
     settings: 'Settings',
     export: 'Export',
