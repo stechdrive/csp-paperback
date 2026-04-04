@@ -1,4 +1,4 @@
-# csp-paperback
+# CSP Paperback
 
 **English** | [日本語](#日本語)
 
@@ -14,7 +14,7 @@ A browser-based tool that fills the gaps in Clip Studio Paint's animation cell e
 
 Clip Studio Paint's animation export handles simple cases well, but falls short when your scene has a complex layer structure — multiple animation tracks, shared background/foreground elements, or layers that need to be composited in a specific order across every cell. Getting a clean, correctly-composited image per cell typically requires manual work in Photoshop or scripting.
 
-csp-paperback automates that compositing step directly in your browser.
+CSP Paperback automates that compositing step directly in your browser.
 
 ### What You Can Do
 
@@ -65,7 +65,7 @@ Clip Studio Paintのアニメーションセル出力の不備を補う、ブラ
 
 Clip Studio Paintのアニメーション書き出しは、単純な構成であれば問題ありませんが、複数のアニメーショントラック・共有の背景・前景レイヤー・セルをまたいで正確に合成する必要があるレイヤーが混在する場面では、正しく合成された画像を1セルずつ得るためにPhotoshopでの手作業やスクリプトが必要になります。
 
-csp-paperbookはそのコンポジット作業をブラウザ上で自動化します。
+CSP Paperbackはそのコンポジット作業をブラウザ上で自動化します。
 
 ### できること
 
