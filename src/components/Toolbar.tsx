@@ -9,9 +9,11 @@ interface ToolbarProps {
   onXdtsFile: (file: File) => void
   isLoading: boolean
   error: string | null
+  onSavePsd: () => void
+  hasPsd: boolean
 }
 
-export function Toolbar({ onPsdFile, onXdtsFile, isLoading, error }: ToolbarProps) {
+export function Toolbar({ onPsdFile, onXdtsFile, isLoading, error, onSavePsd, hasPsd }: ToolbarProps) {
   const psdFileName = useAppStore(s => s.psdFileName)
   const xdtsFileName = useAppStore(s => s.xdtsFileName)
   const psdInputRef = useRef<HTMLInputElement>(null)
@@ -77,6 +79,13 @@ export function Toolbar({ onPsdFile, onXdtsFile, isLoading, error }: ToolbarProp
           <span className={styles.fileInfo}>{xdtsFileName}</span>
         )}
 
+        <button
+          className={styles.btn}
+          onClick={onSavePsd}
+          disabled={!hasPsd}
+        >
+          PSD 保存
+        </button>
         <button
           className={styles.btn}
           onClick={() => setShowSettings(true)}
