@@ -18,14 +18,27 @@ function applyOverrides(
   visOverrides: Map<string, boolean>,
   manualAnimIds: Set<string>,
 ): CspLayer[] {
-  return layers.map(layer => {
+  let changed = false
+  const result = layers.map(layer => {
     const uiHidden = visOverrides.get(layer.id) ?? layer.uiHidden
     const isAnimationFolder = layer.isAnimationFolder || manualAnimIds.has(layer.id)
     const children = layer.children.length > 0
       ? applyOverrides(layer.children, visOverrides, manualAnimIds)
       : layer.children
+
+    // 実際に変化があった時だけ新しいオブジェクトを作る
+    if (
+      uiHidden === layer.uiHidden &&
+      isAnimationFolder === layer.isAnimationFolder &&
+      children === layer.children
+    ) {
+      return layer
+    }
+    changed = true
     return { ...layer, uiHidden, isAnimationFolder, children }
   })
+  // 子を含めて何も変化がなければ同じ配列参照を返す（Zustandの無限ループ防止）
+  return changed ? result : layers
 }
 
 /**
