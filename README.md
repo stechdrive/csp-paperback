@@ -19,8 +19,9 @@ CSP Paperback solves this outside the workflow: load your PSD and XDTS, and expo
 ### What You Can Do
 
 **Load your project**
-- Export your CLIP file as PSD from CSP, then drop it here
-- Optionally drop the `.xdts` timeline file (exported via *File > Export Animation > Export Timeline Information*) to sync cell selection across multiple animation tracks
+- Export your CLIP file as PSD from CSP
+- Optionally export the `.xdts` timeline file via *File > Export Animation > Export Timeline Information*
+- Open the app and drop both files to load them
 
 **Composite correctly**
 - Animation folders are detected automatically from the XDTS data, or marked manually
@@ -70,8 +71,9 @@ CSP Paperbackはその制約をPSDとXDTSを読み込むことでワークフロ
 ### できること
 
 **プロジェクトの読み込み**
-- CLIPファイルをPSD形式で書き出し、ここにドロップして読み込む
-- `.xdts`タイムラインファイル（*ファイル＞アニメーション書き出し＞タイムシート情報から出力*）を同時に読み込むと、複数のアニメーショントラックのセル選択を同期できる
+- CSPでCLIPファイルをPSD形式で書き出しておく
+- 必要に応じて *ファイル＞アニメーション書き出し＞タイムシート情報から出力* でXDTSファイルも書き出しておく
+- アプリを開き、PSDとXDTSをドロップして読み込む
 
 **正しい合成順序**
 - アニメーションフォルダはXDTSデータから自動検出、またはUI上で手動指定
