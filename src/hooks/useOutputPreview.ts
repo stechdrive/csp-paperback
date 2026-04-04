@@ -3,7 +3,9 @@ import { useAppStore } from '../store'
 import { selectLayerTreeWithVisibility } from '../store/selectors'
 import { extractCells, resolveParentSuffix, collectContextSourceLayers, collectLocalSiblingContext } from '../engine/cell-extractor'
 import { flattenTree, compositeRoot } from '../engine/flatten'
-import type { CspLayer, OutputEntry } from '../types'
+import { compositeGroup } from '../engine/compositor'
+import type { CspLayer, FlatLayer, OutputEntry } from '../types'
+import type { VirtualSetMember } from '../types/marks'
 
 export interface OutputPreviewEntry {
   canvas: HTMLCanvasElement
@@ -36,12 +38,15 @@ export function useOutputPreview(): OutputPreviewEntry[] {
     // 仮想セット選択時のプレビュー
     if (selectedVirtualSetId) {
       const vs = virtualSets.find(v => v.id === selectedVirtualSetId)
-      if (!vs || vs.memberLayerIds.length === 0) return []
-      const memberIdSet = new Set(vs.memberLayerIds)
+      if (!vs || vs.members.length === 0) return []
+      const memberIdSet = new Set(vs.members.map(m => m.layerId))
       const memberLayers = collectMembersInTreeOrder(layerTree, memberIdSet)
       if (memberLayers.length === 0) return []
       const contextFlats = flattenTree(collectContextSourceLayers(layerTree), docWidth, docHeight)
-      const memberFlats = flattenTree(memberLayers, docWidth, docHeight)
+
+      // メンバーごとに blendMode override を適用
+      const memberFlats = buildMemberFlatsWithOverride(vs.members, memberLayers, docWidth, docHeight)
+
       const canvas = compositeRoot([...contextFlats, ...memberFlats], docWidth, docHeight, outputConfig.background)
       return [{ canvas, flatName: vs.name, path: '' }]
     }
@@ -99,6 +104,48 @@ export function useOutputPreview(): OutputPreviewEntry[] {
     return entries.map(e => ({ canvas: e.canvas, flatName: e.flatName, path: e.path }))
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusedAnimFolderId, selectedVirtualSetId, virtualSets, selectedCells, layerTree, projectSettings, outputConfig, docWidth, docHeight])
+}
+
+/**
+ * VirtualSetMember の blendMode override を適用しながら FlatLayer[] を構築する。
+ * - blendMode が非 null: そのメンバーレイヤーを compositeGroup で1枚に合成してから blendMode を上書き
+ * - blendMode が null: flattenTree の結果をそのまま展開
+ */
+function buildMemberFlatsWithOverride(
+  members: VirtualSetMember[],
+  memberLayers: CspLayer[],
+  docWidth: number,
+  docHeight: number,
+): FlatLayer[] {
+  const layerMap = new Map(memberLayers.map(l => [l.id, l]))
+  const result: FlatLayer[] = []
+
+  for (const member of members) {
+    const layer = layerMap.get(member.layerId)
+    if (!layer) continue
+
+    const flats = flattenTree([layer], docWidth, docHeight)
+    if (flats.length === 0) continue
+
+    if (member.blendMode !== null) {
+      // blendMode override: 合成して1枚にしてから blendMode を上書き
+      const composited = compositeGroup(flats, docWidth, docHeight)
+      const overrideFlat: FlatLayer = {
+        canvas: composited,
+        blendMode: member.blendMode as FlatLayer['blendMode'],
+        top: 0,
+        left: 0,
+        sourceId: member.layerId,
+        clipping: false,
+      }
+      result.push(overrideFlat)
+    } else {
+      // blendMode null: そのまま展開
+      result.push(...flats)
+    }
+  }
+
+  return result
 }
 
 /** ツリー順を維持しながら memberIds に含まれるレイヤーを収集する */

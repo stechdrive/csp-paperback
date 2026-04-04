@@ -59,8 +59,8 @@ export function injectMarkerLayers(
   // VSET_ マーカー
   for (const vs of virtualSets) {
     const insertionName = vs.insertionLayerId ? idToName.get(vs.insertionLayerId) : undefined
-    const memberNames = vs.memberLayerIds
-      .map(id => idToName.get(id))
+    const memberNames = vs.members
+      .map(m => idToName.get(m.layerId))
       .filter((n): n is string => Boolean(n))
 
     const children: Layer[] = [
@@ -148,9 +148,9 @@ export function resolveMarkerState(
     name: def.name,
     insertionLayerId: (def.insertionLayerName && nameToId.get(def.insertionLayerName)) ?? null,
     insertionPosition: 'above' as const,
-    memberLayerIds: def.memberLayerNames
-      .map(n => nameToId.get(n))
-      .filter((id): id is string => Boolean(id)),
+    members: def.memberLayerNames
+      .map(n => ({ layerId: nameToId.get(n) ?? '', blendMode: null as null }))
+      .filter(m => m.layerId !== ''),
     expandToAnimationCells: false,
   }))
 

@@ -11,6 +11,8 @@ export interface MarksSlice {
   removeVirtualSet: (id: string) => void
   addVirtualSetMember: (setId: string, layerId: string) => void
   removeVirtualSetMember: (setId: string, layerId: string) => void
+  reorderVirtualSetMembers: (setId: string, newOrder: string[]) => void
+  setVirtualSetMemberBlendMode: (setId: string, layerId: string, blendMode: string | null) => void
 }
 
 export const createMarksSlice: StateCreator<AppStore, [], [], MarksSlice> = (set, get) => ({
@@ -33,7 +35,7 @@ export const createMarksSlice: StateCreator<AppStore, [], [], MarksSlice> = (set
       name,
       insertionLayerId: null,
       insertionPosition: 'above',
-      memberLayerIds: [],
+      members: [],
       expandToAnimationCells: false,
     }
     set({ virtualSets: [...get().virtualSets, newSet] })
@@ -55,8 +57,8 @@ export const createMarksSlice: StateCreator<AppStore, [], [], MarksSlice> = (set
     set({
       virtualSets: get().virtualSets.map(vs => {
         if (vs.id !== setId) return vs
-        if (vs.memberLayerIds.includes(layerId)) return vs
-        return { ...vs, memberLayerIds: [...vs.memberLayerIds, layerId] }
+        if (vs.members.some(m => m.layerId === layerId)) return vs
+        return { ...vs, members: [...vs.members, { layerId, blendMode: null }] }
       }),
     })
   },
@@ -65,7 +67,34 @@ export const createMarksSlice: StateCreator<AppStore, [], [], MarksSlice> = (set
     set({
       virtualSets: get().virtualSets.map(vs => {
         if (vs.id !== setId) return vs
-        return { ...vs, memberLayerIds: vs.memberLayerIds.filter(id => id !== layerId) }
+        return { ...vs, members: vs.members.filter(m => m.layerId !== layerId) }
+      }),
+    })
+  },
+
+  reorderVirtualSetMembers: (setId, newOrder) => {
+    set({
+      virtualSets: get().virtualSets.map(vs => {
+        if (vs.id !== setId) return vs
+        const memberMap = new Map(vs.members.map(m => [m.layerId, m]))
+        const reordered = newOrder
+          .map(id => memberMap.get(id))
+          .filter((m): m is NonNullable<typeof m> => m !== undefined)
+        return { ...vs, members: reordered }
+      }),
+    })
+  },
+
+  setVirtualSetMemberBlendMode: (setId, layerId, blendMode) => {
+    set({
+      virtualSets: get().virtualSets.map(vs => {
+        if (vs.id !== setId) return vs
+        return {
+          ...vs,
+          members: vs.members.map(m =>
+            m.layerId === layerId ? { ...m, blendMode } : m
+          ),
+        }
       }),
     })
   },

@@ -53,3 +53,30 @@
   text-align: center;
   line-height: 1.8;
 }
+
+/* 折りたたみトグルボタン */
+.collapseBtn {
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  background: none;
+  border: none;
+  color: #bac2de;
+  cursor: pointer;
+  border-radius: 3px;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.collapseBtn:hover {
+  color: #cdd6f4;
+  background: #313244;
+}
+
+/* 折りたたみ時はリストを非表示 */
+.listCollapsed {
+  display: none;
+}

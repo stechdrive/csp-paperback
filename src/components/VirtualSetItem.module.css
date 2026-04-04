@@ -140,6 +140,7 @@
   color: #a6adc8;
   transition: border-color 0.1s, background 0.1s;
   padding: 0.25rem;
+  flex-direction: column;
 }
 
 .dropZoneOver {
@@ -153,8 +154,10 @@
   flex-direction: column;
   gap: 2px;
   min-height: 32px;
+  width: 100%;
 }
 
+/* 旧スタイル（後方互換のため残置） */
 .memberItem {
   display: flex;
   align-items: center;
@@ -164,13 +167,6 @@
   background: #313244;
   font-size: 0.75rem;
   color: #cdd6f4;
-}
-
-.memberName {
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .memberRemove {
@@ -184,4 +180,94 @@
 
 .memberRemove:hover {
   color: #f38ba8;
+}
+
+/* --- 新メンバー行スタイル --- */
+
+.memberRow {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.3rem;
+  border-radius: 3px;
+  font-size: 0.75rem;
+  color: #cdd6f4;
+  background: #313244;
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+}
+
+.memberRow:hover {
+  background: #3b3c52;
+}
+
+.memberRowSelected {
+  background: rgba(99, 102, 241, 0.15);
+  outline: 1px solid rgba(99, 102, 241, 0.4);
+}
+
+.memberDragHandle {
+  cursor: grab;
+  color: #7f849c;
+  font-size: 0.9rem;
+  line-height: 1;
+  flex-shrink: 0;
+  user-select: none;
+  padding: 0 1px;
+  letter-spacing: -0.1em;
+}
+
+.memberDragHandle:hover {
+  color: #a6adc8;
+}
+
+.memberDragHandle:active {
+  cursor: grabbing;
+}
+
+.memberName {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.blendModeSelect {
+  height: 18px;
+  flex-shrink: 0;
+  font-size: 0.65rem;
+  background: #181825;
+  color: #bac2de;
+  border: 1px solid #45475a;
+  border-radius: 3px;
+  cursor: pointer;
+  padding: 0 2px;
+  max-width: 80px;
+}
+
+.blendModeSelect:focus {
+  outline: 1px solid #6366f1;
+  border-color: #6366f1;
+}
+
+/* 挿入ライン（DnD中の挿入位置表示） */
+.insertionLine {
+  height: 2px;
+  background: #6366f1;
+  margin: 0 0.2rem;
+  border-radius: 1px;
+  pointer-events: none;
+  position: relative;
+}
+
+.insertionLine::before {
+  content: '';
+  position: absolute;
+  left: -3px;
+  top: -3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #6366f1;
 }

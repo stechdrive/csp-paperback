@@ -37,7 +37,7 @@ describe('marks-slice - virtualSet', () => {
     expect(virtualSets).toHaveLength(1)
     expect(virtualSets[0].name).toBe('背景セット')
     expect(virtualSets[0].insertionLayerId).toBeNull()
-    expect(virtualSets[0].memberLayerIds).toEqual([])
+    expect(virtualSets[0].members).toEqual([])
   })
 
   it('addVirtualSetでIDが自動生成される', () => {
@@ -65,7 +65,10 @@ describe('marks-slice - virtualSet', () => {
     useAppStore.getState().addVirtualSet('セット')
     const id = useAppStore.getState().virtualSets[0].id
     useAppStore.getState().addVirtualSetMember(id, 'layer-1')
-    expect(useAppStore.getState().virtualSets[0].memberLayerIds).toContain('layer-1')
+    const members = useAppStore.getState().virtualSets[0].members
+    expect(members).toHaveLength(1)
+    expect(members[0].layerId).toBe('layer-1')
+    expect(members[0].blendMode).toBeNull()
   })
 
   it('同じメンバーを重複追加しない', () => {
@@ -73,7 +76,7 @@ describe('marks-slice - virtualSet', () => {
     const id = useAppStore.getState().virtualSets[0].id
     useAppStore.getState().addVirtualSetMember(id, 'layer-1')
     useAppStore.getState().addVirtualSetMember(id, 'layer-1')
-    expect(useAppStore.getState().virtualSets[0].memberLayerIds).toHaveLength(1)
+    expect(useAppStore.getState().virtualSets[0].members).toHaveLength(1)
   })
 
   it('removeVirtualSetMemberでメンバーを削除する', () => {
@@ -81,6 +84,38 @@ describe('marks-slice - virtualSet', () => {
     const id = useAppStore.getState().virtualSets[0].id
     useAppStore.getState().addVirtualSetMember(id, 'layer-1')
     useAppStore.getState().removeVirtualSetMember(id, 'layer-1')
-    expect(useAppStore.getState().virtualSets[0].memberLayerIds).toHaveLength(0)
+    expect(useAppStore.getState().virtualSets[0].members).toHaveLength(0)
+  })
+
+  it('reorderVirtualSetMembersでメンバーを並び替える', () => {
+    useAppStore.getState().addVirtualSet('セット')
+    const id = useAppStore.getState().virtualSets[0].id
+    useAppStore.getState().addVirtualSetMember(id, 'layer-1')
+    useAppStore.getState().addVirtualSetMember(id, 'layer-2')
+    useAppStore.getState().addVirtualSetMember(id, 'layer-3')
+    useAppStore.getState().reorderVirtualSetMembers(id, ['layer-3', 'layer-1', 'layer-2'])
+    const members = useAppStore.getState().virtualSets[0].members
+    expect(members[0].layerId).toBe('layer-3')
+    expect(members[1].layerId).toBe('layer-1')
+    expect(members[2].layerId).toBe('layer-2')
+  })
+
+  it('setVirtualSetMemberBlendModeでblendModeを更新する', () => {
+    useAppStore.getState().addVirtualSet('セット')
+    const id = useAppStore.getState().virtualSets[0].id
+    useAppStore.getState().addVirtualSetMember(id, 'layer-1')
+    useAppStore.getState().setVirtualSetMemberBlendMode(id, 'layer-1', 'multiply')
+    const members = useAppStore.getState().virtualSets[0].members
+    expect(members[0].blendMode).toBe('multiply')
+  })
+
+  it('setVirtualSetMemberBlendModeでblendModeをnullに戻せる', () => {
+    useAppStore.getState().addVirtualSet('セット')
+    const id = useAppStore.getState().virtualSets[0].id
+    useAppStore.getState().addVirtualSetMember(id, 'layer-1')
+    useAppStore.getState().setVirtualSetMemberBlendMode(id, 'layer-1', 'multiply')
+    useAppStore.getState().setVirtualSetMemberBlendMode(id, 'layer-1', null)
+    const members = useAppStore.getState().virtualSets[0].members
+    expect(members[0].blendMode).toBeNull()
   })
 })

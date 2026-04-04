@@ -1,4 +1,4 @@
-import type { VirtualSet, ProjectSettings } from '../types'
+import type { VirtualSet, VirtualSetMember, ProjectSettings } from '../types'
 import { DEFAULT_PROJECT_SETTINGS } from '../types/project'
 
 const CSPB_NS = 'http://ns.stechdrive.com/cspb/1.0/'
@@ -43,18 +43,52 @@ export function serializeToXmp(state: PersistedState): string {
   ].join('\n')
 }
 
+/** 旧形式（memberLayerIds: string[]）を新形式（members: VirtualSetMember[]）に変換する */
+function migrateVirtualSet(raw: Record<string, unknown>): VirtualSet {
+  // 新形式: members フィールドが存在する場合
+  if (Array.isArray(raw.members)) {
+    return {
+      id: String(raw.id ?? ''),
+      name: String(raw.name ?? ''),
+      insertionLayerId: (raw.insertionLayerId as string | null) ?? null,
+      insertionPosition: (raw.insertionPosition as 'above' | 'below') ?? 'above',
+      members: (raw.members as VirtualSetMember[]).map(m => ({
+        layerId: String(m.layerId ?? ''),
+        blendMode: m.blendMode ?? null,
+      })),
+      expandToAnimationCells: Boolean(raw.expandToAnimationCells ?? false),
+    }
+  }
+  // 旧形式: memberLayerIds: string[]
+  const oldIds: string[] = Array.isArray(raw.memberLayerIds) ? raw.memberLayerIds as string[] : []
+  return {
+    id: String(raw.id ?? ''),
+    name: String(raw.name ?? ''),
+    insertionLayerId: (raw.insertionLayerId as string | null) ?? null,
+    insertionPosition: (raw.insertionPosition as 'above' | 'below') ?? 'above',
+    members: oldIds.map(id => ({ layerId: id, blendMode: null })),
+    expandToAnimationCells: Boolean(raw.expandToAnimationCells ?? false),
+  }
+}
+
 export function deserializeFromXmp(xmpXml: string): PersistedState | null {
   try {
     const match = xmpXml.match(/cspb:data="([^"]+)"/)
     if (!match) return null
     const json = fromBase64(match[1])
-    const data = JSON.parse(json) as Partial<PersistedState>
+    const data = JSON.parse(json) as Partial<Record<string, unknown>>
     if (!Array.isArray(data.singleMarkIds)) return null
+
+    const rawVirtualSets: unknown[] = Array.isArray(data.virtualSets) ? data.virtualSets : []
+    const virtualSets: VirtualSet[] = rawVirtualSets.map(raw =>
+      migrateVirtualSet(raw as Record<string, unknown>)
+    )
+
     return {
-      singleMarkIds: data.singleMarkIds,
-      virtualSets: data.virtualSets ?? [],
-      manualAnimFolderIds: data.manualAnimFolderIds ?? [],
-      projectSettings: data.projectSettings ?? DEFAULT_PROJECT_SETTINGS,
+      singleMarkIds: data.singleMarkIds as string[],
+      virtualSets,
+      manualAnimFolderIds: Array.isArray(data.manualAnimFolderIds) ? data.manualAnimFolderIds as string[] : [],
+      projectSettings: (data.projectSettings as ProjectSettings) ?? DEFAULT_PROJECT_SETTINGS,
     }
   } catch {
     return null

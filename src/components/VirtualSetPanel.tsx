@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useAppStore } from '../store'
 import { useLocale } from '../i18n'
 import { VirtualSetItem } from './VirtualSetItem'
@@ -7,10 +8,18 @@ export function VirtualSetPanel() {
   const virtualSets = useAppStore(s => s.virtualSets)
   const addVirtualSet = useAppStore(s => s.addVirtualSet)
   const { t } = useLocale()
+  const [collapsed, setCollapsed] = useState(false)
 
   return (
     <div className={styles.panel}>
       <div className={styles.header}>
+        <button
+          className={styles.collapseBtn}
+          onClick={() => setCollapsed(c => !c)}
+          title={collapsed ? '展開' : '折りたたむ'}
+        >
+          {collapsed ? '▶' : '▼'}
+        </button>
         <span className={styles.title}>{t.virtualSet.title}</span>
         <button
           className={styles.addBtn}
@@ -19,7 +28,7 @@ export function VirtualSetPanel() {
           {t.virtualSet.add}
         </button>
       </div>
-      <div className={styles.list}>
+      <div className={`${styles.list} ${collapsed ? styles.listCollapsed : ''}`}>
         {virtualSets.length === 0 ? (
           <div className={styles.empty}>
             {t.virtualSet.empty.split('\n').map((line, i) => (

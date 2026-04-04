@@ -10,7 +10,10 @@ const sampleState: PersistedState = {
       name: 'テストセット',
       insertionLayerId: 'layer-3',
       insertionPosition: 'above' as const,
-      memberLayerIds: ['layer-4', 'layer-5'],
+      members: [
+        { layerId: 'layer-4', blendMode: null },
+        { layerId: 'layer-5', blendMode: null },
+      ],
       expandToAnimationCells: false,
     },
   ],
@@ -49,7 +52,7 @@ describe('xmp', () => {
           name: '日本語セット名',
           insertionLayerId: 'layer-jp',
           insertionPosition: 'above' as const,
-          memberLayerIds: [],
+          members: [],
           expandToAnimationCells: true,
         },
       ],
@@ -81,5 +84,65 @@ describe('xmp', () => {
     expect(restored).not.toBeNull()
     expect(restored!.singleMarkIds).toEqual([])
     expect(restored!.virtualSets).toEqual([])
+  })
+
+  it('旧形式（memberLayerIds）を新形式（members）に自動変換する', () => {
+    // 旧形式のデータを直接作成してシリアライズ
+    const oldFormatData = {
+      singleMarkIds: [],
+      virtualSets: [
+        {
+          id: 'vs-old',
+          name: '旧セット',
+          insertionLayerId: null,
+          insertionPosition: 'above',
+          memberLayerIds: ['layer-a', 'layer-b'],
+          expandToAnimationCells: false,
+        },
+      ],
+      manualAnimFolderIds: [],
+      projectSettings: DEFAULT_PROJECT_SETTINGS,
+    }
+    // JSON→base64→XMP形式に手動エンコード
+    const json = JSON.stringify(oldFormatData)
+    const bytes = new TextEncoder().encode(json)
+    let binary = ''
+    for (let i = 0; i < bytes.length; i++) {
+      binary += String.fromCharCode(bytes[i])
+    }
+    const b64 = btoa(binary)
+    const xml = `cspb:data="${b64}"`
+
+    const restored = deserializeFromXmp(xml)
+    expect(restored).not.toBeNull()
+    expect(restored!.virtualSets[0].members).toEqual([
+      { layerId: 'layer-a', blendMode: null },
+      { layerId: 'layer-b', blendMode: null },
+    ])
+  })
+
+  it('blendMode付きのメンバーもラウンドトリップする', () => {
+    const state: PersistedState = {
+      singleMarkIds: [],
+      virtualSets: [
+        {
+          id: 'vs-blend',
+          name: 'ブレンドセット',
+          insertionLayerId: null,
+          insertionPosition: 'above',
+          members: [
+            { layerId: 'layer-x', blendMode: 'multiply' },
+            { layerId: 'layer-y', blendMode: null },
+          ],
+          expandToAnimationCells: false,
+        },
+      ],
+      manualAnimFolderIds: [],
+      projectSettings: DEFAULT_PROJECT_SETTINGS,
+    }
+    const xml = serializeToXmp(state)
+    const restored = deserializeFromXmp(xml)
+    expect(restored!.virtualSets[0].members[0].blendMode).toBe('multiply')
+    expect(restored!.virtualSets[0].members[1].blendMode).toBeNull()
   })
 })
