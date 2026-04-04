@@ -23,7 +23,7 @@
 
 .dragHandle {
   cursor: grab;
-  color: #585b70;
+  color: #7f849c;
   font-size: 1rem;
   line-height: 1;
   flex-shrink: 0;
@@ -123,7 +123,7 @@
 /* 挿入位置：未設定の場合 */
 .insertionHint {
   font-size: 0.75rem;
-  color: #585b70;
+  color: #7f849c;
   font-style: italic;
   padding: 0.2rem 0.4rem;
 }
