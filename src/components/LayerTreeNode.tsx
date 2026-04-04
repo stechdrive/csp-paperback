@@ -14,6 +14,7 @@ interface LayerTreeNodeProps {
   onToggleMark: (id: string) => void
   expandedFolders: Set<string>
   visibilityOverrides: Map<string, boolean>
+  isCell?: boolean  // アニメーションフォルダの直接の子（セル）かどうか
 }
 
 export function LayerTreeNode({
@@ -25,6 +26,7 @@ export function LayerTreeNode({
   onToggleMark,
   expandedFolders,
   visibilityOverrides,
+  isCell = false,
 }: LayerTreeNodeProps) {
   const singleMarks = useAppStore(s => s.singleMarks)
   const manualAnimFolderIds = useAppStore(s => s.manualAnimFolderIds)
@@ -62,7 +64,8 @@ export function LayerTreeNode({
   const indentWidth = layer.depth * 16
 
   let typeIcon = '🖼'
-  if (isAnimFolder) typeIcon = '🎞'
+  if (isAnimFolder) typeIcon = '🎬'
+  else if (isCell) typeIcon = '🎞'    // アニメフォルダ直下のセル（フォルダ・単独レイヤー問わず）
   else if (layer.isFolder) typeIcon = '📁'
 
   let nameClass = styles.name
@@ -128,6 +131,7 @@ export function LayerTreeNode({
               onToggleMark={onToggleMark}
               expandedFolders={expandedFolders}
               visibilityOverrides={visibilityOverrides}
+              isCell={isAnimFolder}  // アニメフォルダの直接の子だけisCell=true
             />
           ))}
         </div>
