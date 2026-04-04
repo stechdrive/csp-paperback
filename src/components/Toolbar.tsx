@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { useAppStore } from '../store'
+import { useLocale } from '../i18n'
 import { ExportDialog } from './ExportDialog'
 import { SettingsDialog } from './SettingsDialog'
 import styles from './Toolbar.module.css'
@@ -20,6 +21,7 @@ export function Toolbar({ onPsdFile, onXdtsFile, isLoading, error, onSavePsd, ha
   const xdtsInputRef = useRef<HTMLInputElement>(null)
   const [showExport, setShowExport] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
+  const { t, locale, setLocale } = useLocale()
 
   const handlePsdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -43,7 +45,7 @@ export function Toolbar({ onPsdFile, onXdtsFile, isLoading, error, onSavePsd, ha
           onClick={() => psdInputRef.current?.click()}
           disabled={isLoading}
         >
-          PSD を開く
+          {t.toolbar.openPsd}
         </button>
         <input
           ref={psdInputRef}
@@ -58,7 +60,7 @@ export function Toolbar({ onPsdFile, onXdtsFile, isLoading, error, onSavePsd, ha
           onClick={() => xdtsInputRef.current?.click()}
           disabled={isLoading}
         >
-          xdts を開く
+          {t.toolbar.openXdts}
         </button>
         <input
           ref={xdtsInputRef}
@@ -70,7 +72,7 @@ export function Toolbar({ onPsdFile, onXdtsFile, isLoading, error, onSavePsd, ha
 
         <div className={styles.spacer} />
 
-        {isLoading && <span className={styles.loading}>読み込み中…</span>}
+        {isLoading && <span className={styles.loading}>{t.toolbar.loading}</span>}
         {error && <span className={styles.error}>{error}</span>}
         {psdFileName && !isLoading && !error && (
           <span className={styles.fileInfo}>{psdFileName}</span>
@@ -84,20 +86,27 @@ export function Toolbar({ onPsdFile, onXdtsFile, isLoading, error, onSavePsd, ha
           onClick={onSavePsd}
           disabled={!hasPsd}
         >
-          PSD 保存
+          {t.toolbar.savePsd}
         </button>
         <button
           className={styles.btn}
           onClick={() => setShowSettings(true)}
         >
-          設定
+          {t.toolbar.settings}
         </button>
         <button
           className={`${styles.btn} ${styles.btnPrimary}`}
           onClick={() => setShowExport(true)}
           disabled={!psdFileName}
         >
-          出力
+          {t.toolbar.export}
+        </button>
+        <button
+          className={styles.langBtn}
+          onClick={() => setLocale(locale === 'ja' ? 'en' : 'ja')}
+          title="Toggle language"
+        >
+          {locale === 'ja' ? 'EN' : 'JA'}
         </button>
       </div>
 

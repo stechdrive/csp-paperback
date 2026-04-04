@@ -68,3 +68,20 @@
   font-size: 0.75rem;
   color: #89b4fa;
 }
+
+.langBtn {
+  padding: 0.2rem 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  border: 1px solid #45475a;
+  border-radius: 4px;
+  background: none;
+  color: #6c7086;
+  cursor: pointer;
+  letter-spacing: 0.05em;
+}
+
+.langBtn:hover {
+  color: #cdd6f4;
+  border-color: #6c7086;
+}

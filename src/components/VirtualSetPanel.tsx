@@ -1,27 +1,30 @@
 import { useAppStore } from '../store'
+import { useLocale } from '../i18n'
 import { VirtualSetItem } from './VirtualSetItem'
 import styles from './VirtualSetPanel.module.css'
 
 export function VirtualSetPanel() {
   const virtualSets = useAppStore(s => s.virtualSets)
   const addVirtualSet = useAppStore(s => s.addVirtualSet)
+  const { t } = useLocale()
 
   return (
     <div className={styles.panel}>
       <div className={styles.header}>
-        <span className={styles.title}>仮想セット</span>
+        <span className={styles.title}>{t.virtualSet.title}</span>
         <button
           className={styles.addBtn}
-          onClick={() => addVirtualSet('新規セット', '')}
+          onClick={() => addVirtualSet(t.virtualSet.newSetName, '')}
         >
-          ＋ 追加
+          {t.virtualSet.add}
         </button>
       </div>
       <div className={styles.list}>
         {virtualSets.length === 0 ? (
           <div className={styles.empty}>
-            「＋ 追加」で仮想セットを作成し<br />
-            レイヤーをドロップしてください
+            {t.virtualSet.empty.split('\n').map((line, i) => (
+              <span key={i}>{line}{i === 0 && <br />}</span>
+            ))}
           </div>
         ) : (
           virtualSets.map(vs => (

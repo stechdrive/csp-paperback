@@ -1,4 +1,5 @@
 import { useState, useCallback, type ReactNode, type DragEvent } from 'react'
+import { useLocale } from '../i18n'
 import styles from './FileDropZone.module.css'
 
 interface FileDropZoneProps {
@@ -10,6 +11,7 @@ interface FileDropZoneProps {
 export function FileDropZone({ onPsdFile, onXdtsFile, children }: FileDropZoneProps) {
   const [isDragging, setIsDragging] = useState(false)
   const [, setDragCounter] = useState(0)
+  const { t } = useLocale()
 
   const handleDragEnter = useCallback((e: DragEvent) => {
     e.preventDefault()
@@ -56,7 +58,7 @@ export function FileDropZone({ onPsdFile, onXdtsFile, children }: FileDropZonePr
       {children}
       {isDragging && (
         <div className={styles.overlay}>
-          <div className={styles.message}>PSD / xdts をドロップ</div>
+          <div className={styles.message}>{t.dropZone.message}</div>
         </div>
       )}
     </div>

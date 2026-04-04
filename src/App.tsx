@@ -1,11 +1,12 @@
 import { useFileLoader } from './hooks/useFileLoader'
 import { usePersistence } from './hooks/usePersistence'
+import { LocaleProvider } from './i18n'
 import { FileDropZone } from './components/FileDropZone'
 import { Toolbar } from './components/Toolbar'
 import { MainLayout } from './components/MainLayout'
 import './App.css'
 
-export default function App() {
+function AppInner() {
   const { isLoading, error, loadPsdFile, loadXdtsFile } = useFileLoader()
   const { savePsd, hasPsd } = usePersistence()
 
@@ -25,5 +26,13 @@ export default function App() {
         </div>
       </div>
     </FileDropZone>
+  )
+}
+
+export default function App() {
+  return (
+    <LocaleProvider>
+      <AppInner />
+    </LocaleProvider>
   )
 }

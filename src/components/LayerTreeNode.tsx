@@ -1,5 +1,6 @@
 import { useCallback } from 'react'
 import { useAppStore } from '../store'
+import { useLocale } from '../i18n'
 import type { CspLayer } from '../types'
 import { useDragSource } from '../hooks/useDragDrop'
 import styles from './LayerTreeNode.module.css'
@@ -27,6 +28,7 @@ export function LayerTreeNode({
 }: LayerTreeNodeProps) {
   const singleMarks = useAppStore(s => s.singleMarks)
   const manualAnimFolderIds = useAppStore(s => s.manualAnimFolderIds)
+  const { t } = useLocale()
 
   const { draggable, onDragStart, onDragEnd } = useDragSource({ type: 'layer', layerId: layer.id })
 
@@ -59,12 +61,10 @@ export function LayerTreeNode({
 
   const indentWidth = layer.depth * 16
 
-  // タイプアイコン
   let typeIcon = '🖼'
   if (isAnimFolder) typeIcon = '🎞'
   else if (layer.isFolder) typeIcon = '📁'
 
-  // 名前スタイル
   let nameClass = styles.name
   if (isAnimFolder) nameClass = `${styles.name} ${styles.nameAnim}`
   else if (layer.autoMarked) nameClass = `${styles.name} ${styles.nameAutoMark}`
@@ -84,10 +84,8 @@ export function LayerTreeNode({
         onDragStart={onDragStart}
         onDragEnd={onDragEnd}
       >
-        {/* インデント */}
         <div className={styles.indent} style={{ width: indentWidth }} />
 
-        {/* 展開ボタン（フォルダのみ） */}
         {layer.isFolder ? (
           <button className={styles.expandBtn} onClick={handleExpandClick}>
             {isExpanded ? '▼' : '▶'}
@@ -96,32 +94,27 @@ export function LayerTreeNode({
           <div className={styles.expandPlaceholder} />
         )}
 
-        {/* 表示切替（目玉） */}
         <button className={styles.visibilityBtn} onClick={handleVisibilityClick}>
           {isUiHidden ? '🚫' : '👁'}
         </button>
 
-        {/* タイプアイコン */}
         <span className={styles.typeIcon}>{typeIcon}</span>
 
-        {/* レイヤー名 */}
         <span className={nameClass} title={layer.originalName}>
           {layer.name || layer.originalName}
         </span>
 
-        {/* シングルマークボタン（アニメ子孫を持つフォルダはグレーアウト） */}
         {!layer.autoMarked && (
           <button
             className={`${styles.markBtn} ${isMarked ? styles.markBtnActive : ''}`}
             onClick={handleMarkClick}
-            title={isMarked ? 'マーク解除' : 'シングルマーク'}
+            title={isMarked ? t.layerTree.unmarkTitle : t.layerTree.markTitle}
           >
             ★
           </button>
         )}
       </div>
 
-      {/* 子レイヤー */}
       {layer.isFolder && isExpanded && layer.children.length > 0 && (
         <div className={styles.children}>
           {layer.children.map(child => (

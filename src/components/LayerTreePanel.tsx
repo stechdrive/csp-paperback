@@ -1,4 +1,5 @@
 import { useAppStore } from '../store'
+import { useLocale } from '../i18n'
 import { selectLayerTreeWithVisibility } from '../store/selectors'
 import { LayerTreeNode } from './LayerTreeNode'
 import styles from './LayerTreePanel.module.css'
@@ -8,6 +9,7 @@ export function LayerTreePanel() {
   const selectedLayerId = useAppStore(s => s.selectedLayerId)
   const expandedFolders = useAppStore(s => s.expandedFolders)
   const visibilityOverrides = useAppStore(s => s.visibilityOverrides)
+  const { t } = useLocale()
 
   const selectLayer = useAppStore(s => s.selectLayer)
   const toggleLayerVisibility = useAppStore(s => s.toggleLayerVisibility)
@@ -18,15 +20,17 @@ export function LayerTreePanel() {
   return (
     <div className={styles.panel}>
       <div className={styles.header}>
-        <span className={styles.title}>レイヤー</span>
+        <span className={styles.title}>{t.layerTree.title}</span>
         <button className={styles.resetBtn} onClick={resetVisibility}>
-          初期状態に戻す
+          {t.layerTree.resetVisibility}
         </button>
       </div>
       <div className={styles.tree}>
         {tree.length === 0 ? (
           <div className={styles.empty}>
-            PSD を読み込むと<br />レイヤー構造が表示されます
+            {t.layerTree.empty.split('\n').map((line, i) => (
+              <span key={i}>{line}{i === 0 && <br />}</span>
+            ))}
           </div>
         ) : (
           tree.map(layer => (

@@ -1,5 +1,6 @@
 import { useCallback } from 'react'
 import { useAppStore } from '../store'
+import { useLocale } from '../i18n'
 import { selectLayerById } from '../store/selectors'
 import { useDropZone, type DragPayload } from '../hooks/useDragDrop'
 import type { VirtualSet } from '../types'
@@ -14,15 +15,14 @@ export function VirtualSetItem({ virtualSet }: VirtualSetItemProps) {
   const removeVirtualSet = useAppStore(s => s.removeVirtualSet)
   const addVirtualSetMember = useAppStore(s => s.addVirtualSetMember)
   const removeVirtualSetMember = useAppStore(s => s.removeVirtualSetMember)
+  const { t } = useLocale()
 
-  // 挿入位置のドロップ
   const onInsertionDrop = useCallback((payload: DragPayload) => {
     if (payload.type === 'layer') {
       updateVirtualSet(virtualSet.id, { insertionLayerId: payload.layerId })
     }
   }, [virtualSet.id, updateVirtualSet])
 
-  // メンバーのドロップ
   const onMemberDrop = useCallback((payload: DragPayload) => {
     if (payload.type === 'layer') {
       addVirtualSetMember(virtualSet.id, payload.layerId)
@@ -44,20 +44,19 @@ export function VirtualSetItem({ virtualSet }: VirtualSetItemProps) {
           className={styles.name}
           value={virtualSet.name}
           onChange={e => updateVirtualSet(virtualSet.id, { name: e.target.value })}
-          placeholder="セット名"
+          placeholder={t.virtualSet.newSetName}
         />
         <button
           className={styles.removeBtn}
           onClick={() => removeVirtualSet(virtualSet.id)}
-          title="削除"
+          title={t.virtualSet.remove}
         >
           ✕
         </button>
       </div>
 
-      {/* 差し込み階層位置 */}
       <div className={styles.section}>
-        <div className={styles.sectionLabel}>差し込み位置</div>
+        <div className={styles.sectionLabel}>{t.virtualSet.insertionLabel}</div>
         <div
           className={`${styles.dropZone} ${insertionIsOver ? styles.dropZoneOver : ''}`}
           {...insertionDropHandlers}
@@ -65,14 +64,13 @@ export function VirtualSetItem({ virtualSet }: VirtualSetItemProps) {
           {insertionLayer ? (
             <span className={styles.insertionLayer}>{insertionLayer.name}</span>
           ) : (
-            'レイヤーをドロップ'
+            t.virtualSet.insertionPlaceholder
           )}
         </div>
       </div>
 
-      {/* メンバー */}
       <div className={styles.section}>
-        <div className={styles.sectionLabel}>メンバー</div>
+        <div className={styles.sectionLabel}>{t.virtualSet.membersLabel}</div>
         <div
           className={`${styles.dropZone} ${memberIsOver ? styles.dropZoneOver : ''}`}
           {...memberDropHandlers}
@@ -95,7 +93,7 @@ export function VirtualSetItem({ virtualSet }: VirtualSetItemProps) {
               })}
             </div>
           ) : (
-            'レイヤーをドロップ'
+            t.virtualSet.membersPlaceholder
           )}
         </div>
       </div>
