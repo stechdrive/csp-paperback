@@ -28,13 +28,13 @@ CSP Paperback solves this outside the workflow: load your PSD and XDTS, and expo
 - Context layers (backgrounds, overlays, layout guides) are split by position — layers above the animation folder composite on top of each cell; layers below composite underneath
 - Blend modes are preserved exactly as authored in CSP
 
-**Virtual Sets**
-- Group any layers into a named "virtual set" and pin it to a specific insertion point in the layer tree
-- Drag the set onto the layer panel to place it — an insertion line shows exactly where it lands
-- Preview the composited result by clicking the set
+**Virtual Cels**
+- Group any layers into a named virtual cel and pin it to a specific insertion point in the layer tree
+- Drag it onto the layer panel to place it — an insertion line shows exactly where it lands
+- Preview the composited result by clicking the cel
 
-**Mark individual layers**
-- Toggle a mark on any layer to include it in the export outside of animation cells
+**Export as Single**
+- Toggle any layer to include it as a standalone export outside of animation cells
 - Supports automatic marking via `SMARK_` / `VSET_` marker layers embedded in the PSD
 
 **Export**
@@ -80,14 +80,14 @@ CSP Paperbackはその制約をPSDとXDTSを読み込むことでワークフロ
 - コンテキストレイヤー（背景・前景・レイアウト用紙など）はアニメーションフォルダとの位置関係で上下に分離して合成
 - CSPで設定したブレンドモードをそのまま維持
 
-**仮想セット**
-- 任意のレイヤーをまとめて名前付きの「仮想セット」として登録し、レイヤーツリーの特定の位置に挿入できる
-- セットのドラッグハンドルを右パネルにドロップすると挿入ラインが表示され、上・下のどちらに挿入するかを確認してから配置できる
-- セットをクリックすると合成プレビューが表示される
+**仮想セル**
+- 任意のレイヤーをまとめて名前付きの仮想セルとして登録し、レイヤーツリーの特定の位置に挿入できる
+- ドラッグハンドルを右パネルにドロップすると挿入ラインが表示され、上・下のどちらに挿入するかを確認してから配置できる
+- 仮想セルをクリックすると合成プレビューが表示される
 
-**マーク機能**
-- 任意のレイヤーにマークを付けて、アニメーションセルとは独立して書き出し対象に含める
-- PSD内に埋め込んだ `SMARK_` / `VSET_` マーカーレイヤーによる自動マーク指定にも対応
+**単体書き出し**
+- 任意のレイヤーを単体書き出し対象として指定し、アニメーションセルとは独立して書き出せる
+- PSD内に埋め込んだ `SMARK_` / `VSET_` マーカーレイヤーによる自動指定にも対応
 
 **書き出し**
 - 各セルの合成結果を書き出し前にプレビューで確認できる
