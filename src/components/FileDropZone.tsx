@@ -63,7 +63,10 @@ export function FileDropZone({ onPsdFile, onXdtsFile, children }: FileDropZonePr
       {children}
       {isDragging && (
         <div className={styles.overlay}>
-          <div className={styles.message}>{t.dropZone.message}</div>
+          <div className={styles.message}>
+            {t.dropZone.message}
+            <div className={styles.subMessage}>{t.dropZone.subMessage}</div>
+          </div>
         </div>
       )}
     </div>

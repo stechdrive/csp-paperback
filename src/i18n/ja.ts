@@ -65,7 +65,8 @@ export const ja = {
     unmarkTitle: '単体書き出し解除',
   },
   dropZone: {
-    message: 'PSD / xdts をドロップ',
+    message: 'PSD・XDTS をドロップ',
+    subMessage: '同時でも、順番でもOK',
   },
 }
 

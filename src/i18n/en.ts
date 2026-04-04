@@ -67,6 +67,7 @@ export const en: Translations = {
     unmarkTitle: 'Remove from Export',
   },
   dropZone: {
-    message: 'Drop PSD / xdts here',
+    message: 'Drop PSD / XDTS here',
+    subMessage: 'Together or one at a time',
   },
 }

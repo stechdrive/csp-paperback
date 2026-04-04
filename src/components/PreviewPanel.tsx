@@ -29,7 +29,7 @@ export function PreviewPanel() {
         <div className={styles.header}>プレビュー</div>
         <div className={styles.emptyWrapper}>
           <div className={styles.empty}>
-            PSD ファイルをドロップするか<br />「PSD を開く」ボタンで読み込んでください
+            PSD・XDTS をドロップするか<br />「PSD を開く」「XDTS を開く」ボタンで読み込んでください
           </div>
         </div>
       </div>
