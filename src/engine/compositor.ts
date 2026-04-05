@@ -1,3 +1,4 @@
+import type { LayerMaskData } from 'ag-psd'
 import type { BlendMode, FlatLayer } from '../types'
 
 /**
@@ -144,6 +145,60 @@ function applyClippingMask(
   tempCtx.drawImage(baseCanvas, 0, 0)
 
   return temp
+}
+
+/**
+ * レイヤーマスクを適用して、ドキュメントサイズの結果キャンバスを返す。
+ *
+ * ag-psd のマスクCanvasはグレースケール展開済み（R=G=B=マスク値、A=255）のため
+ * destination-in は使えず、ピクセル単位でアルファにマスク値を乗算する。
+ *
+ * - mask.defaultColor = 0（黒）: マスク範囲外は不透明度0（非表示）
+ * - mask.defaultColor = 255（白）: マスク範囲外は不透明度255（表示）
+ */
+export function applyLayerMask(
+  layerCanvas: HTMLCanvasElement,
+  layerTop: number,
+  layerLeft: number,
+  mask: LayerMaskData,
+  docWidth: number,
+  docHeight: number,
+): HTMLCanvasElement {
+  if (!mask.canvas || mask.disabled) return layerCanvas
+
+  const maskTop = mask.positionRelativeToLayer
+    ? layerTop + (mask.top ?? 0)
+    : (mask.top ?? 0)
+  const maskLeft = mask.positionRelativeToLayer
+    ? layerLeft + (mask.left ?? 0)
+    : (mask.left ?? 0)
+
+  // レイヤーをドキュメント座標に配置
+  const result = createCanvas(docWidth, docHeight)
+  const ctx = result.getContext('2d')!
+  ctx.drawImage(layerCanvas, layerLeft, layerTop)
+
+  // マスクをドキュメント座標に配置
+  // defaultColor=255（白）の場合、マスク範囲外は完全表示（白で塗りつぶし）
+  const maskOnDoc = createCanvas(docWidth, docHeight)
+  const maskCtx = maskOnDoc.getContext('2d')!
+  if ((mask.defaultColor ?? 0) === 255) {
+    maskCtx.fillStyle = '#ffffff'
+    maskCtx.fillRect(0, 0, docWidth, docHeight)
+  }
+  maskCtx.drawImage(mask.canvas, maskLeft, maskTop)
+
+  // ピクセル単位でアルファにマスク値（Rチャンネル）を乗算
+  const resultData = ctx.getImageData(0, 0, docWidth, docHeight)
+  const maskData = maskCtx.getImageData(0, 0, docWidth, docHeight)
+  const rd = resultData.data
+  const md = maskData.data
+  for (let i = 0; i < rd.length; i += 4) {
+    rd[i + 3] = (rd[i + 3] * md[i]) >> 8
+  }
+  ctx.putImageData(resultData, 0, 0)
+
+  return result
 }
 
 /**

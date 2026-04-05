@@ -1,6 +1,6 @@
 import type { CspLayer, FlatLayer } from '../types'
 import { collectAnimFolderAncestorIds } from './tree-builder'
-import { compositeGroup, compositeStack, createCanvas } from './compositor'
+import { applyLayerMask, compositeGroup, compositeStack, createCanvas } from './compositor'
 
 /**
  * コアフラット化アルゴリズム
@@ -46,9 +46,13 @@ export function flattenTree(
       const selectedCell = visibleChildren[Math.min(cellIndex, visibleChildren.length - 1)]
       const cellFlats = flattenLayer(selectedCell)
       if (cellFlats.length === 0) return []
-      const cellCanvas = compositeGroup(cellFlats, docWidth, docHeight)
+      const rawCanvas = compositeGroup(cellFlats, docWidth, docHeight)
+      const maskData = layer.agPsdRef.mask
+      const finalCanvas = (maskData?.canvas && !maskData.disabled)
+        ? applyLayerMask(rawCanvas, 0, 0, maskData, docWidth, docHeight)
+        : rawCanvas
       return [{
-        canvas: cellCanvas,
+        canvas: finalCanvas,
         blendMode: layer.blendMode,
         opacity: effectiveOpacity,
         top: 0,
@@ -80,12 +84,17 @@ export function flattenTree(
 
       if (layer.blendMode === 'pass through') {
         // Pass Through: 子をそのまま親のスタックに展開（中間キャンバスなし）
+        // フォルダマスクはPass Throughでは子ごとに適用できないためスキップ（v1制限）
         return childFlats
       } else {
         // 非Pass Through: 子を合成して1枚のFlatLayerに
-        const groupCanvas = compositeGroup(childFlats, docWidth, docHeight)
+        const rawCanvas = compositeGroup(childFlats, docWidth, docHeight)
+        const maskData = layer.agPsdRef.mask
+        const finalCanvas = (maskData?.canvas && !maskData.disabled)
+          ? applyLayerMask(rawCanvas, 0, 0, maskData, docWidth, docHeight)
+          : rawCanvas
         return [{
-          canvas: groupCanvas,
+          canvas: finalCanvas,
           blendMode: layer.blendMode,
           opacity: effectiveOpacity,
           top: 0,
@@ -100,12 +109,18 @@ export function flattenTree(
     const canvas = layer.agPsdRef.canvas
     if (!canvas) return []
 
+    const maskData = layer.agPsdRef.mask
+    const hasMask = !!(maskData?.canvas && !maskData.disabled)
+    const finalCanvas = hasMask
+      ? applyLayerMask(canvas, layer.top, layer.left, maskData!, docWidth, docHeight)
+      : canvas
+
     return [{
-      canvas,
+      canvas: finalCanvas,
       blendMode: layer.blendMode,
       opacity: effectiveOpacity,
-      top: layer.top,
-      left: layer.left,
+      top: hasMask ? 0 : layer.top,
+      left: hasMask ? 0 : layer.left,
       sourceId: layer.id,
       clipping: layer.clipping,
     }]
