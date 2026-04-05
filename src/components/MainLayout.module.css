@@ -1,7 +1,37 @@
 .layout {
-  display: grid;
-  grid-template-columns: 250px 1fr 300px;
-  grid-template-rows: 1fr;
+  display: flex;
   height: 100%;
+  overflow: hidden;
+}
+
+.leftPane {
+  flex-shrink: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.resizeHandle {
+  width: 4px;
+  flex-shrink: 0;
+  cursor: col-resize;
+  background: #313244;
+  transition: background 0.15s;
+}
+
+.resizeHandle:hover,
+.resizeHandle:active {
+  background: #6366f1;
+}
+
+.centerPane {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.rightPane {
+  width: 300px;
+  flex-shrink: 0;
   overflow: hidden;
 }
