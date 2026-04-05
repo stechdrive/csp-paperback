@@ -53,8 +53,8 @@ export const ja = {
     insertionLabel: '挿入位置',
     insertionHint: '⠿ を右ペインにドラッグして設定',
     dragHandleTitle: '右ペインのレイヤーツリーにドラッグして挿入位置を設定',
-    membersLabel: 'メンバー',
-    membersPlaceholder: 'レイヤーをドロップ',
+    layersLabel: 'レイヤー',
+    layersPlaceholder: 'レイヤーをドロップ',
     remove: '削除',
   },
   layerTree: {

@@ -41,6 +41,9 @@ export function VirtualSetItem({ virtualSet }: VirtualSetItemProps) {
   const isSelected = selectedVirtualSetId === virtualSet.id
   const { t } = useLocale()
 
+  // 折りたたみ
+  const [collapsed, setCollapsed] = useState(false)
+
   // 多選択状態
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [lastClickedId, setLastClickedId] = useState<string | null>(null)
@@ -198,6 +201,14 @@ export function VirtualSetItem({ virtualSet }: VirtualSetItemProps) {
       onClick={() => setSelectedVirtualSet(virtualSet.id)}
     >
       <div className={styles.header}>
+        {/* 折りたたみボタン */}
+        <button
+          className={styles.collapseBtn}
+          onClick={e => { e.stopPropagation(); setCollapsed(c => !c) }}
+          title={collapsed ? '展開' : '折りたたむ'}
+        >
+          {collapsed ? '▶' : '▼'}
+        </button>
         {/* ドラッグハンドル：右ペインにドラッグして挿入位置を設定 */}
         <div
           className={styles.dragHandle}
@@ -223,6 +234,8 @@ export function VirtualSetItem({ virtualSet }: VirtualSetItemProps) {
         </button>
       </div>
 
+      {!collapsed && (
+      <>
       {/* 挿入位置：右ペインへのドラッグで設定。現在の設定を表示するだけ */}
       <div className={styles.section}>
         <div className={styles.sectionLabel}>{t.virtualSet.insertionLabel}</div>
@@ -237,7 +250,7 @@ export function VirtualSetItem({ virtualSet }: VirtualSetItemProps) {
       </div>
 
       <div className={styles.section}>
-        <div className={styles.sectionLabel}>{t.virtualSet.membersLabel}</div>
+        <div className={styles.sectionLabel}>{t.virtualSet.layersLabel}</div>
         <div
           className={`${styles.dropZone} ${memberIsOver ? styles.dropZoneOver : ''}`}
           {...memberDropHandlers}
@@ -304,10 +317,12 @@ export function VirtualSetItem({ virtualSet }: VirtualSetItemProps) {
               })}
             </div>
           ) : (
-            t.virtualSet.membersPlaceholder
+            t.virtualSet.layersPlaceholder
           )}
         </div>
       </div>
+      </>
+      )}
     </div>
   )
 }

@@ -10,8 +10,10 @@ const LEFT_MAX = 600
 
 export function MainLayout() {
   const [leftWidth, setLeftWidth] = useState(LEFT_DEFAULT)
+  const [leftCollapsed, setLeftCollapsed] = useState(false)
 
   const handleResizeMouseDown = useCallback((e: React.MouseEvent) => {
+    if (leftCollapsed) return
     const startX = e.clientX
     const startWidth = leftWidth
 
@@ -30,14 +32,29 @@ export function MainLayout() {
     document.body.style.cursor = 'col-resize'
     document.body.style.userSelect = 'none'
     e.preventDefault()
-  }, [leftWidth])
+  }, [leftWidth, leftCollapsed])
 
   return (
     <div className={styles.layout}>
-      <div className={styles.leftPane} style={{ width: leftWidth }}>
+      <div
+        className={styles.leftPane}
+        style={{ width: leftCollapsed ? 0 : leftWidth }}
+      >
         <VirtualSetPanel />
       </div>
-      <div className={styles.resizeHandle} onMouseDown={handleResizeMouseDown} />
+      <div
+        className={`${styles.resizeHandleWrapper} ${leftCollapsed ? styles.resizeHandleCollapsed : ''}`}
+        onMouseDown={handleResizeMouseDown}
+      >
+        <button
+          className={styles.collapseToggle}
+          onClick={() => setLeftCollapsed(c => !c)}
+          onMouseDown={e => e.stopPropagation()}
+          title={leftCollapsed ? '左ペインを展開' : '左ペインを折りたたむ'}
+        >
+          {leftCollapsed ? '›' : '‹'}
+        </button>
+      </div>
       <div className={styles.centerPane}>
         <PreviewPanel />
       </div>

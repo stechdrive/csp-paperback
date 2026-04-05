@@ -55,8 +55,8 @@ export const en: Translations = {
     insertionLabel: 'Insertion Point',
     insertionHint: 'Drag ⠿ to the layer tree to set',
     dragHandleTitle: 'Drag to the layer tree to set insertion point',
-    membersLabel: 'Members',
-    membersPlaceholder: 'Drop layers here',
+    layersLabel: 'Layers',
+    layersPlaceholder: 'Drop layers here',
     remove: 'Remove',
   },
   layerTree: {

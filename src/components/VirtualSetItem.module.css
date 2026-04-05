@@ -21,6 +21,27 @@
   gap: 0.4rem;
 }
 
+.collapseBtn {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  background: none;
+  border: none;
+  color: #7f849c;
+  cursor: pointer;
+  border-radius: 3px;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.collapseBtn:hover {
+  color: #cdd6f4;
+  background: #313244;
+}
+
 .dragHandle {
   cursor: grab;
   color: #7f849c;
@@ -128,7 +149,7 @@
   padding: 0.2rem 0.4rem;
 }
 
-/* メンバードロップゾーン */
+/* レイヤードロップゾーン */
 .dropZone {
   min-height: 32px;
   border: 1px dashed #45475a;
@@ -141,6 +162,12 @@
   transition: border-color 0.1s, background 0.1s;
   padding: 0.25rem;
   flex-direction: column;
+}
+
+/* レイヤーがある場合はトップ揃え */
+.dropZone:has(.memberList) {
+  align-items: stretch;
+  justify-content: flex-start;
 }
 
 .dropZoneOver {

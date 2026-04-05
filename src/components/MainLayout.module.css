@@ -9,19 +9,65 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  transition: width 0.15s ease;
 }
 
-.resizeHandle {
+.resizeHandleWrapper {
   width: 4px;
   flex-shrink: 0;
+  position: relative;
   cursor: col-resize;
   background: #313244;
   transition: background 0.15s;
 }
 
-.resizeHandle:hover,
-.resizeHandle:active {
+.resizeHandleWrapper:hover,
+.resizeHandleWrapper:active {
   background: #6366f1;
+}
+
+.resizeHandleCollapsed {
+  cursor: default;
+  background: #313244;
+}
+
+.resizeHandleCollapsed:hover {
+  background: #45475a;
+}
+
+/* リサイズハンドル上に表示される折りたたみボタン */
+.collapseToggle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 16px;
+  height: 32px;
+  background: #45475a;
+  border: none;
+  color: #9399b2;
+  cursor: pointer;
+  border-radius: 3px;
+  font-size: 0.75rem;
+  line-height: 1;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s, color 0.15s;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.resizeHandleWrapper:hover .collapseToggle {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.collapseToggle:hover {
+  background: #6366f1;
+  color: #fff;
 }
 
 .centerPane {
