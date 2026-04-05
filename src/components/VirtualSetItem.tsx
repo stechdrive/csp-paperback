@@ -12,30 +12,30 @@ interface VirtualSetItemProps {
 
 const BLEND_MODE_OPTIONS: { value: string; label: string }[] = [
   { value: 'normal', label: '通常' },
-  { value: 'multiply', label: 'Multiply' },
-  { value: 'screen', label: 'Screen' },
-  { value: 'overlay', label: 'Overlay' },
-  { value: 'darken', label: 'Darken' },
-  { value: 'lighten', label: 'Lighten' },
-  { value: 'color-dodge', label: 'Color Dodge' },
-  { value: 'color-burn', label: 'Color Burn' },
-  { value: 'hard-light', label: 'Hard Light' },
-  { value: 'soft-light', label: 'Soft Light' },
-  { value: 'difference', label: 'Difference' },
-  { value: 'exclusion', label: 'Exclusion' },
+  { value: 'multiply', label: '乗算' },
+  { value: 'screen', label: 'スクリーン' },
+  { value: 'overlay', label: 'オーバーレイ' },
+  { value: 'darken', label: '暗く' },
+  { value: 'lighten', label: '明るく' },
+  { value: 'color-dodge', label: '覆い焼き' },
+  { value: 'color-burn', label: '焼き込み' },
+  { value: 'hard-light', label: 'ハードライト' },
+  { value: 'soft-light', label: 'ソフトライト' },
+  { value: 'difference', label: '差の絶対値' },
+  { value: 'exclusion', label: '除外' },
 ]
 
-/** CspLayerのblendMode値（スペース区切り）をUIラベルに変換 */
+/** CspLayerのblendMode値（スペース区切り）をUIラベ���に変換 */
 function layerBlendModeLabel(blendMode: string | undefined): string {
-  if (!blendMode) return 'Normal'
+  if (!blendMode) return '通常'
   const map: Record<string, string> = {
-    'normal': '通常', 'multiply': 'Multiply', 'screen': 'Screen',
-    'overlay': 'Overlay', 'darken': 'Darken', 'lighten': 'Lighten',
-    'color dodge': 'Color Dodge', 'color burn': 'Color Burn',
-    'hard light': 'Hard Light', 'soft light': 'Soft Light',
-    'difference': 'Difference', 'exclusion': 'Exclusion',
-    'pass through': '通過', 'hue': 'Hue', 'saturation': 'Saturation',
-    'color': 'Color', 'luminosity': 'Luminosity',
+    'normal': '通常', 'multiply': '乗算', 'screen': 'スクリーン',
+    'overlay': 'オーバーレイ', 'darken': '暗く', 'lighten': '明るく',
+    'color dodge': '覆い焼き', 'color burn': '焼き込み',
+    'hard light': 'ハードライト', 'soft light': 'ソフトライト',
+    'difference': '差の絶対値', 'exclusion': '除外',
+    'pass through': '通過', 'hue': '色相', 'saturation': '彩度',
+    'color': 'カラー', 'luminosity': '輝度',
   }
   return map[blendMode] ?? blendMode
 }
