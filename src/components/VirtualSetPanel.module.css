@@ -81,3 +81,23 @@
   display: none;
 }
 
+/* ─── モバイル最適化 ─── */
+@media (max-width: 768px) {
+  .header {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .addBtn {
+    font-size: 0.75rem;
+    padding: 0.35rem 0.7rem;
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+  }
+
+  .collapseBtn {
+    width: 28px;
+    height: 28px;
+    font-size: 0.75rem;
+  }
+}

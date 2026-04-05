@@ -310,3 +310,47 @@
   min-width: 4.5em;
   text-align: right;
 }
+
+/* ─── モバイル最適化 ─── */
+@media (max-width: 768px) {
+  .resizeHandle {
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .resizeHandle::after {
+    content: '';
+    width: 32px;
+    height: 3px;
+    background: #585b70;
+    border-radius: 2px;
+  }
+
+  .seekBar {
+    padding: 0.4rem 0.5rem;
+  }
+
+  .seekTrack {
+    height: 12px;
+    border-radius: 6px;
+  }
+
+  .seekFill {
+    border-radius: 6px;
+  }
+
+  .seekThumb {
+    width: 20px;
+    height: 20px;
+  }
+
+  .seekLabel {
+    font-size: 0.72rem;
+  }
+
+  .fileName {
+    max-width: 140px;
+  }
+}

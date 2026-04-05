@@ -100,3 +100,29 @@
   -webkit-appearance: none;
   margin: 0;
 }
+
+/* ─── モバイル最適化 ─── */
+@media (max-width: 768px) {
+  .opacityScrubber {
+    height: 32px;
+  }
+
+  .opacityScrubberTrack {
+    height: 8px;
+    border-radius: 4px;
+  }
+
+  .opacityScrubberFill {
+    border-radius: 4px;
+  }
+
+  .blendSelect {
+    min-height: 32px;
+    font-size: 0.8rem;
+  }
+
+  .opacityEditInput {
+    height: 32px;
+    font-size: 0.8rem;
+  }
+}

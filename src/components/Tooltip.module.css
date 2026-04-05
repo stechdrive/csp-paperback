@@ -78,3 +78,10 @@
   border-bottom-color: #24273a;
   z-index: 1;
 }
+
+/* モバイルではツールチップを非表示（hoverが不自然） */
+@media (max-width: 768px) {
+  .tooltip {
+    display: none !important;
+  }
+}

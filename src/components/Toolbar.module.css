@@ -12,7 +12,15 @@
   .toolbar {
     flex-wrap: wrap;
     gap: 0.4rem;
-    padding: 0.5rem 0.6rem;
+    padding: 0.4rem 0.5rem;
+  }
+
+  .title {
+    display: none;
+  }
+
+  .version {
+    display: none;
   }
 
   .spacer {
@@ -30,8 +38,12 @@
   .btn {
     padding: 0.4rem 0.65rem;
     font-size: 0.8rem;
-    /* タッチターゲット確保 */
     min-height: 36px;
+  }
+
+  .langBtn {
+    min-height: 36px;
+    padding: 0.35rem 0.6rem;
   }
 }
 

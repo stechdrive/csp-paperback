@@ -69,6 +69,26 @@ export function PreviewPanel() {
     window.addEventListener('mouseup', onUp)
   }, [navHeight])
 
+  const handleResizeTouchStart = useCallback((e: React.TouchEvent) => {
+    resizingRef.current = true
+    const startY = e.touches[0].clientY
+    const startH = navHeight
+
+    const onMove = (ev: TouchEvent) => {
+      if (!resizingRef.current) return
+      ev.preventDefault()
+      const h = Math.max(NAV_HEIGHT_MIN, Math.min(NAV_HEIGHT_MAX, startH + ev.touches[0].clientY - startY))
+      setNavHeight(h)
+    }
+    const onEnd = () => {
+      resizingRef.current = false
+      window.removeEventListener('touchmove', onMove)
+      window.removeEventListener('touchend', onEnd)
+    }
+    window.addEventListener('touchmove', onMove, { passive: false })
+    window.addEventListener('touchend', onEnd)
+  }, [navHeight])
+
   if (docWidth === 0) {
     return (
       <div className={styles.panel}>
@@ -131,7 +151,7 @@ export function PreviewPanel() {
         </div>
       )}
       <NavigatorCanvas height={navHeight} />
-      <div className={styles.resizeHandle} onMouseDown={handleResizeMouseDown} />
+      <div className={styles.resizeHandle} onMouseDown={handleResizeMouseDown} onTouchStart={handleResizeTouchStart} />
       <ExportSettings />
       <div className={styles.divider}>
         <span className={styles.dividerLabel}>出力プレビュー</span>

@@ -106,6 +106,8 @@
     flex: 1;
     min-height: 0;
     transition: none !important;
+    border-left: none !important;
+    border-right: none !important;
   }
 
   /* タブで非アクティブなパネルを隠す */

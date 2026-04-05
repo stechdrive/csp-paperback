@@ -318,3 +318,71 @@
 .vsBadgeClear:hover {
   color: #f38ba8;
 }
+
+/* ─── モバイル最適化 ─── */
+@media (max-width: 768px) {
+  .row {
+    min-height: 36px;
+    gap: 0.35rem;
+    padding: 0.3rem 0.5rem;
+  }
+
+  .expandBtn {
+    width: 28px;
+    height: 28px;
+  }
+
+  .expandPlaceholder {
+    width: 28px;
+  }
+
+  .visibilityBtn {
+    width: 28px;
+    height: 28px;
+    font-size: 0.85rem;
+  }
+
+  .animBtn {
+    width: 28px;
+    height: 28px;
+    font-size: 0.85rem;
+    opacity: 1;
+  }
+
+  .markBtn {
+    width: 28px;
+    height: 28px;
+    font-size: 0.85rem;
+    opacity: 1;
+  }
+
+  .blendSelect {
+    height: 24px;
+    font-size: 0.7rem;
+    opacity: 1;
+    border-color: #45475a;
+  }
+
+  .name {
+    font-size: 0.9rem;
+  }
+
+  .vsBadge {
+    min-height: 32px;
+    padding: 0.25rem 0.5rem;
+  }
+
+  .vsBadgeClear {
+    opacity: 1;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .vsBadgeDragHandle {
+    opacity: 1;
+    padding: 0.2rem;
+  }
+}

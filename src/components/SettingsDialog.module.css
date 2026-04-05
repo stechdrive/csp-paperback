@@ -225,3 +225,93 @@
   font-size: 0.75rem;
   color: #f38ba8;
 }
+
+/* ─── モバイル最適化 ─── */
+@media (max-width: 768px) {
+  .dialog {
+    width: 100vw;
+    max-width: 100vw;
+    max-height: 100dvh;
+    height: 100dvh;
+    border-radius: 0;
+    border: none;
+  }
+
+  .header {
+    padding: 0.75rem 1rem;
+  }
+
+  .body {
+    padding: 1rem;
+    gap: 1rem;
+  }
+
+  .row {
+    flex-wrap: wrap;
+  }
+
+  .label {
+    width: auto;
+    flex-shrink: 0;
+  }
+
+  .input {
+    min-height: 36px;
+  }
+
+  .select {
+    min-height: 36px;
+  }
+
+  .tableHeader {
+    grid-template-columns: 70px 1fr auto auto;
+    font-size: 0.7rem;
+  }
+
+  .tableRow {
+    grid-template-columns: 70px 1fr auto auto;
+  }
+
+  .tableInput {
+    min-height: 32px;
+  }
+
+  .removeRowBtn {
+    min-width: 28px;
+    min-height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .addRowBtn {
+    min-height: 36px;
+    padding: 0.35rem 0.75rem;
+  }
+
+  .closeBtn {
+    min-width: 36px;
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .radioLabel {
+    min-height: 32px;
+  }
+
+  .ioBtn {
+    min-height: 36px;
+    padding: 0.4rem 0.8rem;
+  }
+
+  .doneBtn {
+    min-height: 36px;
+    padding: 0.5rem 1.5rem;
+  }
+
+  .footer {
+    padding: 0.75rem 1rem;
+  }
+}
