@@ -251,74 +251,77 @@ export function VirtualSetItem({ virtualSet }: VirtualSetItemProps) {
 
       <div className={styles.section}>
         <div className={styles.sectionLabel}>{t.virtualSet.layersLabel}</div>
+        {/* レイヤーリスト：アイテム数に応じて縦に伸長 */}
+        {virtualSet.members.length > 0 && (
+          <div
+            className={styles.memberList}
+            onDragOver={handleListDragOver}
+            onDrop={handleMemberDrop}
+            onDragLeave={handleListDragLeave}
+          >
+            {virtualSet.members.map((member, index) => {
+              const layer = selectLayerById(useAppStore.getState(), member.layerId)
+              const isRowSelected = selectedIds.has(member.layerId)
+              const showLineAbove = insertLineIndex === index && insertLinePosition === 'above'
+              const showLineBelow = insertLineIndex === index && insertLinePosition === 'below'
+              return (
+                <div key={member.layerId}>
+                  {showLineAbove && <div className={styles.insertionLine} />}
+                  <div
+                    className={`${styles.memberRow} ${isRowSelected ? styles.memberRowSelected : ''}`}
+                    onClick={e => handleMemberClick(e, member.layerId)}
+                    draggable
+                    onDragStart={e => handleMemberDragStart(e, member.layerId)}
+                    onDragEnd={handleMemberDragEnd}
+                    onDragOver={e => handleMemberDragOver(e, index)}
+                  >
+                    <div className={styles.memberDragHandle}>⠿</div>
+                    <span className={styles.memberName}>{layer?.name ?? member.layerId}</span>
+                    <select
+                      className={styles.blendModeSelect}
+                      value={member.blendMode ?? ''}
+                      onChange={e => {
+                        e.stopPropagation()
+                        const val = e.target.value === '' ? null : e.target.value
+                        setVirtualSetMemberBlendMode(virtualSet.id, member.layerId, val)
+                      }}
+                      onClick={e => e.stopPropagation()}
+                    >
+                      {BLEND_MODES.map(bm => (
+                        <option key={bm.value ?? '__null__'} value={bm.value ?? ''}>
+                          {bm.label}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      className={styles.memberRemove}
+                      onClick={e => {
+                        e.stopPropagation()
+                        removeVirtualSetMember(virtualSet.id, member.layerId)
+                        setSelectedIds(prev => {
+                          const next = new Set(prev)
+                          next.delete(member.layerId)
+                          return next
+                        })
+                      }}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  {showLineBelow && <div className={styles.insertionLine} />}
+                </div>
+              )
+            })}
+          </div>
+        )}
+        {/* ドロップゾーン：常にリストの下に表示（追加用） */}
         <div
           className={`${styles.dropZone} ${memberIsOver ? styles.dropZoneOver : ''}`}
           {...memberDropHandlers}
         >
-          {virtualSet.members.length > 0 ? (
-            <div
-              className={styles.memberList}
-              onDragOver={handleListDragOver}
-              onDrop={handleMemberDrop}
-              onDragLeave={handleListDragLeave}
-            >
-              {virtualSet.members.map((member, index) => {
-                const layer = selectLayerById(useAppStore.getState(), member.layerId)
-                const isRowSelected = selectedIds.has(member.layerId)
-                const showLineAbove = insertLineIndex === index && insertLinePosition === 'above'
-                const showLineBelow = insertLineIndex === index && insertLinePosition === 'below'
-                return (
-                  <div key={member.layerId}>
-                    {showLineAbove && <div className={styles.insertionLine} />}
-                    <div
-                      className={`${styles.memberRow} ${isRowSelected ? styles.memberRowSelected : ''}`}
-                      onClick={e => handleMemberClick(e, member.layerId)}
-                      draggable
-                      onDragStart={e => handleMemberDragStart(e, member.layerId)}
-                      onDragEnd={handleMemberDragEnd}
-                      onDragOver={e => handleMemberDragOver(e, index)}
-                    >
-                      <div className={styles.memberDragHandle}>⠿</div>
-                      <span className={styles.memberName}>{layer?.name ?? member.layerId}</span>
-                      <select
-                        className={styles.blendModeSelect}
-                        value={member.blendMode ?? ''}
-                        onChange={e => {
-                          e.stopPropagation()
-                          const val = e.target.value === '' ? null : e.target.value
-                          setVirtualSetMemberBlendMode(virtualSet.id, member.layerId, val)
-                        }}
-                        onClick={e => e.stopPropagation()}
-                      >
-                        {BLEND_MODES.map(bm => (
-                          <option key={bm.value ?? '__null__'} value={bm.value ?? ''}>
-                            {bm.label}
-                          </option>
-                        ))}
-                      </select>
-                      <button
-                        className={styles.memberRemove}
-                        onClick={e => {
-                          e.stopPropagation()
-                          removeVirtualSetMember(virtualSet.id, member.layerId)
-                          setSelectedIds(prev => {
-                            const next = new Set(prev)
-                            next.delete(member.layerId)
-                            return next
-                          })
-                        }}
-                      >
-                        ✕
-                      </button>
-                    </div>
-                    {showLineBelow && <div className={styles.insertionLine} />}
-                  </div>
-                )
-              })}
-            </div>
-          ) : (
-            t.virtualSet.layersPlaceholder
-          )}
+          {virtualSet.members.length === 0
+            ? t.virtualSet.layersPlaceholder
+            : '＋ レイヤーをドロップして追加'}
         </div>
       </div>
       </>
