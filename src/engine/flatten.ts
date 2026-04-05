@@ -16,18 +16,42 @@ import { compositeGroup, compositeStack, createCanvas } from './compositor'
 
 /**
  * ルート直下のレイヤー群をフラット化してFlatLayer[]を返す
+ *
+ * extraIgnoreOpacityIds: 不透明度を100%として扱うレイヤーIDの追加セット（工程フォルダ等）。
+ * アニメーションフォルダとその直接の子（セルフォルダ・単体セルレイヤー）は
+ * 常に100%として扱う（構造的コンテナ）。
  */
 export function flattenTree(
   rootChildren: CspLayer[],
   docWidth: number,
   docHeight: number,
-  selectedCellIndices?: Map<string, number> // アニメフォルダID→選択セルインデックス（プレビュー用）
+  selectedCellIndices?: Map<string, number>, // アニメフォルダID→選択セルインデックス（プレビュー用）
+  extraIgnoreOpacityIds?: Set<string>,       // 追加の不透明度無視ID（工程フォルダ等）
 ): FlatLayer[] {
   const animAncestorIds = collectAnimFolderAncestorIds(rootChildren)
+
+  // 構造的コンテナのIDを収集し、不透明度を100%として扱う対象に追加する。
+  // アニメフォルダ本体とその直接の子（セルフォルダ or 単体セルレイヤー）が対象。
+  const ignoreOpacityIds = new Set<string>(extraIgnoreOpacityIds ?? [])
+  function collectStructuralIds(layers: CspLayer[]): void {
+    for (const layer of layers) {
+      if (layer.isAnimationFolder) {
+        ignoreOpacityIds.add(layer.id)
+        for (const child of layer.children) {
+          ignoreOpacityIds.add(child.id)  // セルフォルダ or 単体セルレイヤー
+        }
+      }
+      collectStructuralIds(layer.children)
+    }
+  }
+  collectStructuralIds(rootChildren)
 
   function flattenLayer(layer: CspLayer): FlatLayer[] {
     // 非表示は合成不参加
     if (layer.hidden || layer.uiHidden) return []
+
+    // 構造的コンテナは100%、アートワークコンテンツはオパシティを尊重
+    const effectiveOpacity = ignoreOpacityIds.has(layer.id) ? 100 : layer.opacity
 
     // アニメーションフォルダ（例外：アニメフォルダ自身はcell-extractorが担当）
     // プレビュー目的では選択セルを合成して1枚にする
@@ -42,7 +66,7 @@ export function flattenTree(
       return [{
         canvas: cellCanvas,
         blendMode: layer.blendMode,
-        opacity: layer.opacity,
+        opacity: effectiveOpacity,
         top: 0,
         left: 0,
         sourceId: layer.id,
@@ -79,7 +103,7 @@ export function flattenTree(
         return [{
           canvas: groupCanvas,
           blendMode: layer.blendMode,
-          opacity: layer.opacity,
+          opacity: effectiveOpacity,
           top: 0,
           left: 0,
           sourceId: layer.id,
@@ -95,7 +119,7 @@ export function flattenTree(
     return [{
       canvas,
       blendMode: layer.blendMode,
-      opacity: layer.opacity,
+      opacity: effectiveOpacity,
       top: layer.top,
       left: layer.left,
       sourceId: layer.id,

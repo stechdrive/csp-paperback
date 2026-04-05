@@ -44,7 +44,8 @@ export function extractCells(
 
     if (!cell.isFolder) {
       // 単体レイヤー: XDTSキーフレーム画像 → そのまま1セル出力
-      const cellFlats = flattenCellContent([cell], docWidth, docHeight)
+      // 単体セルレイヤーはアニメフォルダの直接の子として構造的コンテナ扱い（100%）
+      const cellFlats = flattenCellContent([cell], docWidth, docHeight, new Set([cell.id]))
       const canvas = compositeWithContext(cellFlats, lowerContextLayers, upperContextLayers, docWidth, docHeight, background)
       const fileName = `${trackName}_${cellLabel}${parentSuffix}.jpg`
       entries.push({
@@ -74,6 +75,7 @@ export function extractCells(
       }
 
       // 本体（processTableに非マッチ、または工程フォルダが存在しない場合）
+      // bodyLayersはアートワークコンテンツ → オパシティを尊重（ignoreOpacityIds不要）
       if (bodyLayers.length > 0 || processGroups.size === 0) {
         const bodyFlats = flattenCellContent(bodyLayers, docWidth, docHeight)
         const canvas = compositeWithContext(bodyFlats, lowerContextLayers, upperContextLayers, docWidth, docHeight, background)
@@ -87,8 +89,10 @@ export function extractCells(
       }
 
       // 工程別出力
+      // 工程フォルダ本体は構造的コンテナとして100%、中身のアートワークはオパシティを尊重
       for (const [suffix, processLayers] of processGroups) {
-        const processFlats = flattenCellContent(processLayers, docWidth, docHeight)
+        const processIgnoreIds = new Set(processLayers.map(p => p.id))
+        const processFlats = flattenCellContent(processLayers, docWidth, docHeight, processIgnoreIds)
         const canvas = compositeWithContext(processFlats, lowerContextLayers, upperContextLayers, docWidth, docHeight, background)
         const fileName = `${trackName}_${cellLabel}${parentSuffix}${suffix}.jpg`
         entries.push({
@@ -353,13 +357,16 @@ export function extractVirtualSetEntries(
 
 /**
  * セルのレイヤー群をFlatLayerに変換（内部合成）
+ *
+ * ignoreOpacityIds: 不透明度を100%として扱うレイヤーID（工程フォルダ本体・単体セルレイヤー等）
  */
 function flattenCellContent(
   layers: CspLayer[],
   docWidth: number,
   docHeight: number,
+  ignoreOpacityIds?: Set<string>,
 ): FlatLayer[] {
-  return flattenTree(layers, docWidth, docHeight)
+  return flattenTree(layers, docWidth, docHeight, undefined, ignoreOpacityIds)
 }
 
 /**
