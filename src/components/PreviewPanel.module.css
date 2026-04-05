@@ -28,18 +28,32 @@
   letter-spacing: 0;
 }
 
-/* ナビゲーター: パネル幅いっぱいに表示、高さは最大40% */
+/* ナビゲーター: パネル幅いっぱいに表示、高さはリサイズハンドルで可変 */
 .navigatorSection {
   flex-shrink: 0;
-  max-height: 40%;
   padding: 0.5rem;
   background: #11111b;
-  border-bottom: 1px solid #313244;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.3rem;
   overflow: hidden;
+  /* height は JS で制御 */
+}
+
+/* ナビゲーターと書き出し設定の間のリサイズハンドル */
+.resizeHandle {
+  flex-shrink: 0;
+  height: 4px;
+  background: #313244;
+  cursor: ns-resize;
+  border-top: 1px solid #45475a;
+  border-bottom: 1px solid #45475a;
+  transition: background 0.1s;
+}
+
+.resizeHandle:hover {
+  background: #585b70;
 }
 
 .navigatorLabel {

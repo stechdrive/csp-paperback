@@ -16,10 +16,12 @@
   border-bottom: none;
 }
 
-/* canvas の intrinsic サイズを基準にアスペクト比を保って幅いっぱいに表示 */
+/* canvas の intrinsic サイズを基準にアスペクト比を保って幅・高さ両方に収める（contain） */
 /* background は親 div (.thumbDark / .thumbCheckerboard) が担うので canvas 自体は透明 */
 .thumbCanvas {
   max-width: 100%;
+  max-height: 70vh;
+  width: auto;
   height: auto;
   display: block;
   border: 1px solid #313244;

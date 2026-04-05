@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useState, useCallback } from 'react'
 import { useAppStore } from '../store'
 import { usePreview } from '../hooks/usePreview'
 import { useOutputPreview } from '../hooks/useOutputPreview'
@@ -6,16 +6,20 @@ import { OutputPreview } from './OutputPreview'
 import { ExportSettings } from './ExportSettings'
 import styles from './PreviewPanel.module.css'
 
-function NavigatorCanvas() {
+function NavigatorCanvas({ height }: { height: number }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   usePreview(canvasRef)
   return (
-    <div className={styles.navigatorSection}>
+    <div className={styles.navigatorSection} style={{ height }}>
       <div className={styles.navigatorLabel}>全体（ナビゲーター）</div>
       <canvas ref={canvasRef} className={styles.navigatorCanvas} />
     </div>
   )
 }
+
+const NAV_HEIGHT_DEFAULT = 160
+const NAV_HEIGHT_MIN = 40
+const NAV_HEIGHT_MAX = 600
 
 export function PreviewPanel() {
   const docWidth = useAppStore(s => s.docWidth)
@@ -24,6 +28,29 @@ export function PreviewPanel() {
   const focusedAnimFolderId = useAppStore(s => s.focusedAnimFolderId)
   const structure = useAppStore(s => s.outputConfig.structure)
   const entries = useOutputPreview()
+
+  const [navHeight, setNavHeight] = useState(NAV_HEIGHT_DEFAULT)
+  const resizingRef = useRef(false)
+
+  const handleResizeMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    resizingRef.current = true
+    const startY = e.clientY
+    const startH = navHeight
+
+    const onMove = (ev: MouseEvent) => {
+      if (!resizingRef.current) return
+      const h = Math.max(NAV_HEIGHT_MIN, Math.min(NAV_HEIGHT_MAX, startH + ev.clientY - startY))
+      setNavHeight(h)
+    }
+    const onUp = () => {
+      resizingRef.current = false
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+    }
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+  }, [navHeight])
 
   if (docWidth === 0) {
     return (
@@ -87,7 +114,8 @@ export function PreviewPanel() {
           XDTS / CSPB 未読込 — ドロップするとアニメーションセルを自動検出
         </div>
       )}
-      <NavigatorCanvas />
+      <NavigatorCanvas height={navHeight} />
+      <div className={styles.resizeHandle} onMouseDown={handleResizeMouseDown} />
       <ExportSettings />
       <div className={styles.divider}>
         <span className={styles.dividerLabel}>出力プレビュー</span>
