@@ -45,6 +45,7 @@ export const createMarksSlice: StateCreator<AppStore, [], [], MarksSlice> = (set
   virtualSets: [],
 
   toggleSingleMark: (layerId) => {
+    get().pushHistory()
     const current = new Map(get().singleMarks)
     if (current.has(layerId)) {
       current.delete(layerId)
@@ -55,6 +56,7 @@ export const createMarksSlice: StateCreator<AppStore, [], [], MarksSlice> = (set
   },
 
   addVirtualSet: (name) => {
+    get().pushHistory()
     const newSet: VirtualSet = {
       id: crypto.randomUUID(),
       name,
@@ -68,6 +70,7 @@ export const createMarksSlice: StateCreator<AppStore, [], [], MarksSlice> = (set
   },
 
   updateVirtualSet: (id, updates) => {
+    get().pushHistory()
     set({
       virtualSets: get().virtualSets.map(vs =>
         vs.id === id ? { ...vs, ...updates } : vs
@@ -76,6 +79,7 @@ export const createMarksSlice: StateCreator<AppStore, [], [], MarksSlice> = (set
   },
 
   removeVirtualSet: (id) => {
+    get().pushHistory()
     set({ virtualSets: get().virtualSets.filter(vs => vs.id !== id) })
   },
 
@@ -85,6 +89,7 @@ export const createMarksSlice: StateCreator<AppStore, [], [], MarksSlice> = (set
     if (!vs) return
     if (vs.members.some(m => m.layerId === layerId)) return
 
+    get().pushHistory()
     // 追加するレイヤー（フォルダも含む）のサブツリーについて、
     // 現在のグローバル表示状態を初期オーバーライドとして取得する
     const layer = findLayerInTree(state.layerTree, layerId)
@@ -106,6 +111,7 @@ export const createMarksSlice: StateCreator<AppStore, [], [], MarksSlice> = (set
   },
 
   removeVirtualSetMember: (setId, layerId) => {
+    get().pushHistory()
     set({
       virtualSets: get().virtualSets.map(vs => {
         if (vs.id !== setId) return vs
@@ -115,6 +121,7 @@ export const createMarksSlice: StateCreator<AppStore, [], [], MarksSlice> = (set
   },
 
   reorderVirtualSetMembers: (setId, newOrder) => {
+    get().pushHistory()
     set({
       virtualSets: get().virtualSets.map(vs => {
         if (vs.id !== setId) return vs
@@ -128,6 +135,7 @@ export const createMarksSlice: StateCreator<AppStore, [], [], MarksSlice> = (set
   },
 
   setVirtualSetMemberBlendMode: (setId, layerId, blendMode) => {
+    get().pushHistory()
     set({
       virtualSets: get().virtualSets.map(vs => {
         if (vs.id !== setId) return vs
@@ -142,6 +150,7 @@ export const createMarksSlice: StateCreator<AppStore, [], [], MarksSlice> = (set
   },
 
   setVirtualSetMemberOpacity: (setId, layerId, opacity) => {
+    get().pushHistory()
     set({
       virtualSets: get().virtualSets.map(vs => {
         if (vs.id !== setId) return vs
@@ -156,6 +165,7 @@ export const createMarksSlice: StateCreator<AppStore, [], [], MarksSlice> = (set
   },
 
   setVirtualSetVisibilityOverride: (setId, layerId, visible) => {
+    get().pushHistory()
     set({
       virtualSets: get().virtualSets.map(vs => {
         if (vs.id !== setId) return vs

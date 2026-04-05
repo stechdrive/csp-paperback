@@ -58,12 +58,16 @@ export const createPsdSlice: StateCreator<AppStore, [], [], PsdSlice> = (set, ge
       docHeight: psd.height,
       docDpiX: dpiX,
       docDpiY: dpiY,
-      // PSD読み込み時にUI状態をリセット
+      // PSD読み込み時にUI状態・履歴をリセット（レイヤーIDが変わるため履歴は無効）
       selectedLayerId: null,
       selectedCells: new Map(),
       focusedAnimFolderId: null,
       visibilityOverrides: new Map(),
       expandedFolders: initialExpanded,
+      _past: [],
+      _future: [],
+      canUndo: false,
+      canRedo: false,
     })
   },
 

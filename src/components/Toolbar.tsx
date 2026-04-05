@@ -36,9 +36,13 @@ interface ToolbarProps {
   notification: string | null
   onSavePsd: () => void
   hasPsd: boolean
+  canUndo: boolean
+  canRedo: boolean
+  onUndo: () => void
+  onRedo: () => void
 }
 
-export function Toolbar({ onPsdFile, onXdtsFile, onCspbFile, onSaveCspb, isLoading, error, notification, hasPsd }: ToolbarProps) {
+export function Toolbar({ onPsdFile, onXdtsFile, onCspbFile, onSaveCspb, isLoading, error, notification, hasPsd, canUndo, canRedo, onUndo, onRedo }: ToolbarProps) {
   const psdFileName = useAppStore(s => s.psdFileName)
   const xdtsFileName = useAppStore(s => s.xdtsFileName)
   const importSettings = useAppStore(s => s.importSettings)
@@ -84,6 +88,13 @@ export function Toolbar({ onPsdFile, onXdtsFile, onCspbFile, onSaveCspb, isLoadi
           style={{ display: 'none' }}
           onChange={handleOpenFiles}
         />
+
+        <Tooltip content="元に戻す (Ctrl+Z)" placement="bottom">
+          <button className={styles.btn} onClick={onUndo} disabled={!canUndo}>↩</button>
+        </Tooltip>
+        <Tooltip content="やり直し (Ctrl+Shift+Z)" placement="bottom">
+          <button className={styles.btn} onClick={onRedo} disabled={!canRedo}>↪</button>
+        </Tooltip>
 
         <div className={styles.spacer} />
 

@@ -15,6 +15,7 @@ export const createOutputSlice: StateCreator<AppStore, [], [], OutputSlice> = (s
   outputConfig: DEFAULT_OUTPUT_CONFIG,
 
   setFormat: (format) => {
+    get().pushHistory()
     const current = get().outputConfig
     set({
       outputConfig: {
@@ -30,15 +31,17 @@ export const createOutputSlice: StateCreator<AppStore, [], [], OutputSlice> = (s
     const current = get().outputConfig
     // JPGのときは透明を選べない
     if (current.format === 'jpg' && background === 'transparent') return
+    get().pushHistory()
     set({ outputConfig: { ...current, background } })
   },
 
   setStructure: (structure) => {
+    get().pushHistory()
     set({ outputConfig: { ...get().outputConfig, structure } })
   },
 
-
   setJpgQuality: (jpgQuality) => {
+    get().pushHistory()
     set({ outputConfig: { ...get().outputConfig, jpgQuality: Math.max(0, Math.min(1, jpgQuality)) } })
   },
 })

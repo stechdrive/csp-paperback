@@ -128,6 +128,7 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
   },
 
   toggleLayerVisibility: (layerId) => {
+    get().pushHistory()
     const current = new Map(get().visibilityOverrides)
     // 実効的な非表示状態を判定: 既存 override があればその値、なければ PSD の hidden/uiHidden を参照
     const layer = findLayerById(get().layerTree, layerId)
@@ -175,6 +176,7 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
   },
 
   resetVisibility: () => {
+    get().pushHistory()
     set({ visibilityOverrides: new Map() })
   },
 })
