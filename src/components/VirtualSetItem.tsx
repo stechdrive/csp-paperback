@@ -3,7 +3,7 @@ import { useAppStore } from '../store'
 import { useLocale } from '../i18n'
 import { selectLayerById } from '../store/selectors'
 import { useDragSource, useDropZone, type DragPayload } from '../hooks/useDragDrop'
-import type { VirtualSet } from '../types'
+import type { CspLayer, VirtualSet } from '../types'
 import styles from './VirtualSetItem.module.css'
 
 interface VirtualSetItemProps {
@@ -29,6 +29,78 @@ const BLEND_MODES: { value: string | null; label: string }[] = [
 // モジュールレベルのDnD状態
 let _draggingMemberInfo: { setId: string; layerIds: string[] } | null = null
 
+// =========================================================
+// ミニツリー：フォルダ展開時の子ノード表示
+// =========================================================
+interface VsMemberNodeProps {
+  layer: CspLayer
+  vsId: string
+  overrides: Record<string, boolean>
+  expandedIds: Set<string>
+  onToggleExpand: (id: string) => void
+  onToggleVisibility: (layerId: string, visible: boolean) => void
+  depth: number
+}
+
+function VsMemberNode({
+  layer,
+  vsId: _vsId,
+  overrides,
+  expandedIds,
+  onToggleExpand,
+  onToggleVisibility,
+  depth,
+}: VsMemberNodeProps) {
+  // VS固有オーバーライドがあればそれを使い、なければレイヤー本来の状態を使う
+  const visible = overrides[layer.id] ?? (!layer.hidden && !layer.uiHidden)
+  const isExpanded = expandedIds.has(layer.id)
+
+  return (
+    <>
+      <div
+        className={`${styles.vsTreeNode} ${!visible ? styles.vsTreeNodeHidden : ''}`}
+        style={{ paddingLeft: `${4 + depth * 14}px` }}
+      >
+        {layer.isFolder ? (
+          <button
+            className={styles.vsExpandBtn}
+            onClick={e => { e.stopPropagation(); onToggleExpand(layer.id) }}
+          >
+            {isExpanded ? '▼' : '▶'}
+          </button>
+        ) : (
+          <div className={styles.vsExpandPlaceholder} />
+        )}
+        <button
+          className={`${styles.vsVisibilityBtn} ${!visible ? styles.vsVisibilityHidden : ''}`}
+          onClick={e => { e.stopPropagation(); onToggleVisibility(layer.id, !visible) }}
+          title={visible ? '非表示にする' : '表示にする'}
+        >
+          {visible ? '👁' : '🚫'}
+        </button>
+        <span className={styles.vsLayerName} title={layer.originalName}>
+          {layer.name || layer.originalName}
+        </span>
+      </div>
+      {layer.isFolder && isExpanded && layer.children.map(child => (
+        <VsMemberNode
+          key={child.id}
+          layer={child}
+          vsId={_vsId}
+          overrides={overrides}
+          expandedIds={expandedIds}
+          onToggleExpand={onToggleExpand}
+          onToggleVisibility={onToggleVisibility}
+          depth={depth + 1}
+        />
+      ))}
+    </>
+  )
+}
+
+// =========================================================
+// メインコンポーネント
+// =========================================================
 export function VirtualSetItem({ virtualSet }: VirtualSetItemProps) {
   const updateVirtualSet = useAppStore(s => s.updateVirtualSet)
   const removeVirtualSet = useAppStore(s => s.removeVirtualSet)
@@ -36,12 +108,13 @@ export function VirtualSetItem({ virtualSet }: VirtualSetItemProps) {
   const removeVirtualSetMember = useAppStore(s => s.removeVirtualSetMember)
   const reorderVirtualSetMembers = useAppStore(s => s.reorderVirtualSetMembers)
   const setVirtualSetMemberBlendMode = useAppStore(s => s.setVirtualSetMemberBlendMode)
+  const setVirtualSetVisibilityOverride = useAppStore(s => s.setVirtualSetVisibilityOverride)
   const selectedVirtualSetId = useAppStore(s => s.selectedVirtualSetId)
   const setSelectedVirtualSet = useAppStore(s => s.setSelectedVirtualSet)
   const isSelected = selectedVirtualSetId === virtualSet.id
   const { t } = useLocale()
 
-  // 折りたたみ
+  // アイテム折りたたみ
   const [collapsed, setCollapsed] = useState(false)
 
   // 多選択状態
@@ -51,6 +124,9 @@ export function VirtualSetItem({ virtualSet }: VirtualSetItemProps) {
   // メンバー行ドラッグ挿入ライン
   const [insertLineIndex, setInsertLineIndex] = useState<number | null>(null)
   const [insertLinePosition, setInsertLinePosition] = useState<'above' | 'below'>('below')
+
+  // フォルダメンバーの展開状態（ミニツリー用）
+  const [vsExpandedIds, setVsExpandedIds] = useState<Set<string>>(new Set())
 
   // 仮想セット自体をドラッグして右ペインに挿入位置を設定するためのドラッグソース
   const { draggable, onDragStart, onDragEnd } = useDragSource({
@@ -86,42 +162,47 @@ export function VirtualSetItem({ virtualSet }: VirtualSetItemProps) {
     const ids = members.map(m => m.layerId)
 
     if (e.shiftKey && lastClickedId) {
-      // Shift+クリック: 範囲選択
       const lastIndex = ids.indexOf(lastClickedId)
       const currentIndex = ids.indexOf(layerId)
       const [start, end] = lastIndex <= currentIndex
         ? [lastIndex, currentIndex]
         : [currentIndex, lastIndex]
-      const rangeIds = ids.slice(start, end + 1)
-      setSelectedIds(new Set(rangeIds))
+      setSelectedIds(new Set(ids.slice(start, end + 1)))
     } else if (e.ctrlKey || e.metaKey) {
-      // Ctrl/Cmd+クリック: 個別トグル
       setSelectedIds(prev => {
         const next = new Set(prev)
-        if (next.has(layerId)) {
-          next.delete(layerId)
-        } else {
-          next.add(layerId)
-        }
+        if (next.has(layerId)) next.delete(layerId)
+        else next.add(layerId)
         return next
       })
       setLastClickedId(layerId)
     } else {
-      // 通常クリック: 単独選択
       setSelectedIds(new Set([layerId]))
       setLastClickedId(layerId)
     }
   }, [virtualSet.members, lastClickedId])
 
+  // フォルダの展開トグル（ミニツリー用）
+  const toggleVsExpanded = useCallback((id: string) => {
+    setVsExpandedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
+
+  // 可視性トグル
+  const handleToggleVisibility = useCallback((layerId: string, visible: boolean) => {
+    setVirtualSetVisibilityOverride(virtualSet.id, layerId, visible)
+  }, [virtualSet.id, setVirtualSetVisibilityOverride])
+
   // メンバーDnDハンドラ
   const handleMemberDragStart = useCallback((e: React.DragEvent, layerId: string) => {
     e.stopPropagation()
-    const dragIds = selectedIds.has(layerId)
-      ? Array.from(selectedIds)
-      : [layerId]
+    const dragIds = selectedIds.has(layerId) ? Array.from(selectedIds) : [layerId]
     _draggingMemberInfo = { setId: virtualSet.id, layerIds: dragIds }
     e.dataTransfer.effectAllowed = 'move'
-    // ダミーデータ（同一コンポーネント内DnD用）
     e.dataTransfer.setData('application/x-member-drag', virtualSet.id)
   }, [virtualSet.id, selectedIds])
 
@@ -154,19 +235,10 @@ export function VirtualSetItem({ virtualSet }: VirtualSetItemProps) {
 
     const draggingIds = new Set(_draggingMemberInfo.layerIds)
     const currentIds = virtualSet.members.map(m => m.layerId)
-
-    // 挿入先インデックスを計算（ドラッグ中のアイテムを除いた配列での位置）
     const remaining = currentIds.filter(id => !draggingIds.has(id))
-
-    // insertLineIndex はドラッグ元を含む元の配列のインデックス
-    // above: そのインデックスの前に挿入、below: そのインデックスの後に挿入
     const targetId = currentIds[insertLineIndex]
-    let insertPos = targetId
-      ? remaining.indexOf(targetId)
-      : remaining.length
-
+    let insertPos = targetId ? remaining.indexOf(targetId) : remaining.length
     if (insertPos === -1) insertPos = remaining.length
-
     const finalInsertPos = insertLinePosition === 'below' ? insertPos + 1 : insertPos
 
     const newOrder = [
@@ -181,7 +253,6 @@ export function VirtualSetItem({ virtualSet }: VirtualSetItemProps) {
   }, [virtualSet.id, virtualSet.members, insertLineIndex, insertLinePosition, reorderVirtualSetMembers])
 
   const handleListDragLeave = useCallback((e: React.DragEvent) => {
-    // リスト外に出た場合はラインを消す
     const related = e.relatedTarget as HTMLElement | null
     if (!related || !(e.currentTarget as HTMLElement).contains(related)) {
       setInsertLineIndex(null)
@@ -189,7 +260,6 @@ export function VirtualSetItem({ virtualSet }: VirtualSetItemProps) {
   }, [])
 
   const handleListDragOver = useCallback((e: React.DragEvent) => {
-    // メンバー行以外のエリア（リストの末尾）へのドラッグを処理
     if (!_draggingMemberInfo || _draggingMemberInfo.setId !== virtualSet.id) return
     e.preventDefault()
     e.stopPropagation()
@@ -209,7 +279,7 @@ export function VirtualSetItem({ virtualSet }: VirtualSetItemProps) {
         >
           {collapsed ? '▶' : '▼'}
         </button>
-        {/* ドラッグハンドル：右ペインにドラッグして挿入位置を設定 */}
+        {/* ドラッグハンドル */}
         <div
           className={styles.dragHandle}
           draggable={draggable}
@@ -235,96 +305,144 @@ export function VirtualSetItem({ virtualSet }: VirtualSetItemProps) {
       </div>
 
       {!collapsed && (
-      <>
-      {/* 挿入位置：右ペインへのドラッグで設定。現在の設定を表示するだけ */}
-      <div className={styles.section}>
-        <div className={styles.sectionLabel}>{t.virtualSet.insertionLabel}</div>
-        {insertionText ? (
-          <div className={styles.insertionInfo}>
-            <span className={styles.insertionText}>{insertionText}</span>
-            <button className={styles.clearBtn} onClick={e => { e.stopPropagation(); handleClearInsertion() }} title="クリア">✕</button>
+        <>
+          {/* 挿入位置 */}
+          <div className={styles.section}>
+            <div className={styles.sectionLabel}>{t.virtualSet.insertionLabel}</div>
+            {insertionText ? (
+              <div className={styles.insertionInfo}>
+                <span className={styles.insertionText}>{insertionText}</span>
+                <button className={styles.clearBtn} onClick={e => { e.stopPropagation(); handleClearInsertion() }} title="クリア">✕</button>
+              </div>
+            ) : (
+              <div className={styles.insertionHint}>{t.virtualSet.insertionHint}</div>
+            )}
           </div>
-        ) : (
-          <div className={styles.insertionHint}>{t.virtualSet.insertionHint}</div>
-        )}
-      </div>
 
-      <div className={styles.section}>
-        <div className={styles.sectionLabel}>{t.virtualSet.layersLabel}</div>
-        {/* レイヤーリスト：アイテム数に応じて縦に伸長 */}
-        {virtualSet.members.length > 0 && (
-          <div
-            className={styles.memberList}
-            onDragOver={handleListDragOver}
-            onDrop={handleMemberDrop}
-            onDragLeave={handleListDragLeave}
-          >
-            {virtualSet.members.map((member, index) => {
-              const layer = selectLayerById(useAppStore.getState(), member.layerId)
-              const isRowSelected = selectedIds.has(member.layerId)
-              const showLineAbove = insertLineIndex === index && insertLinePosition === 'above'
-              const showLineBelow = insertLineIndex === index && insertLinePosition === 'below'
-              return (
-                <div key={member.layerId}>
-                  {showLineAbove && <div className={styles.insertionLine} />}
-                  <div
-                    className={`${styles.memberRow} ${isRowSelected ? styles.memberRowSelected : ''}`}
-                    onClick={e => handleMemberClick(e, member.layerId)}
-                    draggable
-                    onDragStart={e => handleMemberDragStart(e, member.layerId)}
-                    onDragEnd={handleMemberDragEnd}
-                    onDragOver={e => handleMemberDragOver(e, index)}
-                  >
-                    <div className={styles.memberDragHandle}>⠿</div>
-                    <span className={styles.memberName}>{layer?.name ?? member.layerId}</span>
-                    <select
-                      className={styles.blendModeSelect}
-                      value={member.blendMode ?? ''}
-                      onChange={e => {
-                        e.stopPropagation()
-                        const val = e.target.value === '' ? null : e.target.value
-                        setVirtualSetMemberBlendMode(virtualSet.id, member.layerId, val)
-                      }}
-                      onClick={e => e.stopPropagation()}
-                    >
-                      {BLEND_MODES.map(bm => (
-                        <option key={bm.value ?? '__null__'} value={bm.value ?? ''}>
-                          {bm.label}
-                        </option>
+          {/* レイヤーセクション */}
+          <div className={styles.section}>
+            <div className={styles.sectionLabel}>{t.virtualSet.layersLabel}</div>
+
+            {/* メンバーリスト（縦に自由伸長） */}
+            {virtualSet.members.length > 0 && (
+              <div
+                className={styles.memberList}
+                onDragOver={handleListDragOver}
+                onDrop={handleMemberDrop}
+                onDragLeave={handleListDragLeave}
+              >
+                {virtualSet.members.map((member, index) => {
+                  const layer = selectLayerById(useAppStore.getState(), member.layerId)
+                  const isRowSelected = selectedIds.has(member.layerId)
+                  const showLineAbove = insertLineIndex === index && insertLinePosition === 'above'
+                  const showLineBelow = insertLineIndex === index && insertLinePosition === 'below'
+                  const isExpanded = vsExpandedIds.has(member.layerId)
+                  // VS固有オーバーライド → なければレイヤー本来の状態
+                  const visible = virtualSet.visibilityOverrides[member.layerId]
+                    ?? (layer ? !layer.hidden && !layer.uiHidden : true)
+
+                  return (
+                    <div key={member.layerId}>
+                      {showLineAbove && <div className={styles.insertionLine} />}
+                      <div
+                        className={`${styles.memberRow} ${isRowSelected ? styles.memberRowSelected : ''} ${!visible ? styles.memberRowHidden : ''}`}
+                        onClick={e => handleMemberClick(e, member.layerId)}
+                        draggable
+                        onDragStart={e => handleMemberDragStart(e, member.layerId)}
+                        onDragEnd={handleMemberDragEnd}
+                        onDragOver={e => handleMemberDragOver(e, index)}
+                      >
+                        <div className={styles.memberDragHandle}>⠿</div>
+
+                        {/* フォルダなら展開ボタン */}
+                        {layer?.isFolder ? (
+                          <button
+                            className={styles.memberExpandBtn}
+                            onClick={e => { e.stopPropagation(); toggleVsExpanded(member.layerId) }}
+                            title={isExpanded ? '折りたたむ' : '展開'}
+                          >
+                            {isExpanded ? '▼' : '▶'}
+                          </button>
+                        ) : (
+                          <div className={styles.memberExpandPlaceholder} />
+                        )}
+
+                        {/* 可視性トグル */}
+                        <button
+                          className={`${styles.memberVisibilityBtn} ${!visible ? styles.memberVisibilityHidden : ''}`}
+                          onClick={e => { e.stopPropagation(); handleToggleVisibility(member.layerId, !visible) }}
+                          title={visible ? '非表示にする' : '表示にする'}
+                        >
+                          {visible ? '👁' : '🚫'}
+                        </button>
+
+                        <span className={styles.memberName}>{layer?.name ?? member.layerId}</span>
+
+                        <select
+                          className={styles.blendModeSelect}
+                          value={member.blendMode ?? ''}
+                          onChange={e => {
+                            e.stopPropagation()
+                            const val = e.target.value === '' ? null : e.target.value
+                            setVirtualSetMemberBlendMode(virtualSet.id, member.layerId, val)
+                          }}
+                          onClick={e => e.stopPropagation()}
+                        >
+                          {BLEND_MODES.map(bm => (
+                            <option key={bm.value ?? '__null__'} value={bm.value ?? ''}>
+                              {bm.label}
+                            </option>
+                          ))}
+                        </select>
+
+                        <button
+                          className={styles.memberRemove}
+                          onClick={e => {
+                            e.stopPropagation()
+                            removeVirtualSetMember(virtualSet.id, member.layerId)
+                            setSelectedIds(prev => {
+                              const next = new Set(prev)
+                              next.delete(member.layerId)
+                              return next
+                            })
+                          }}
+                        >
+                          ✕
+                        </button>
+                      </div>
+
+                      {/* フォルダ展開時：子ノードをミニツリー表示 */}
+                      {layer?.isFolder && isExpanded && layer.children.map(child => (
+                        <VsMemberNode
+                          key={child.id}
+                          layer={child}
+                          vsId={virtualSet.id}
+                          overrides={virtualSet.visibilityOverrides}
+                          expandedIds={vsExpandedIds}
+                          onToggleExpand={toggleVsExpanded}
+                          onToggleVisibility={handleToggleVisibility}
+                          depth={1}
+                        />
                       ))}
-                    </select>
-                    <button
-                      className={styles.memberRemove}
-                      onClick={e => {
-                        e.stopPropagation()
-                        removeVirtualSetMember(virtualSet.id, member.layerId)
-                        setSelectedIds(prev => {
-                          const next = new Set(prev)
-                          next.delete(member.layerId)
-                          return next
-                        })
-                      }}
-                    >
-                      ✕
-                    </button>
-                  </div>
-                  {showLineBelow && <div className={styles.insertionLine} />}
-                </div>
-              )
-            })}
+
+                      {showLineBelow && <div className={styles.insertionLine} />}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+
+            {/* 追加用ドロップゾーン（常に表示） */}
+            <div
+              className={`${styles.dropZone} ${memberIsOver ? styles.dropZoneOver : ''}`}
+              {...memberDropHandlers}
+            >
+              {virtualSet.members.length === 0
+                ? t.virtualSet.layersPlaceholder
+                : '＋ レイヤーをドロップして追加'}
+            </div>
           </div>
-        )}
-        {/* ドロップゾーン：常にリストの下に表示（追加用） */}
-        <div
-          className={`${styles.dropZone} ${memberIsOver ? styles.dropZoneOver : ''}`}
-          {...memberDropHandlers}
-        >
-          {virtualSet.members.length === 0
-            ? t.virtualSet.layersPlaceholder
-            : '＋ レイヤーをドロップして追加'}
-        </div>
-      </div>
-      </>
+        </>
       )}
     </div>
   )

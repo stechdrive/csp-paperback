@@ -215,6 +215,66 @@
   outline: 1px solid rgba(99, 102, 241, 0.4);
 }
 
+.memberRowHidden {
+  opacity: 0.45;
+}
+
+/* メンバー行のフォルダ展開ボタン */
+.memberExpandBtn {
+  width: 14px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.55rem;
+  background: none;
+  border: none;
+  color: #7f849c;
+  cursor: pointer;
+  border-radius: 2px;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.memberExpandBtn:hover {
+  color: #cdd6f4;
+  background: #45475a;
+}
+
+.memberExpandPlaceholder {
+  width: 14px;
+  flex-shrink: 0;
+}
+
+/* メンバー行の可視性ボタン */
+.memberVisibilityBtn {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-radius: 2px;
+  flex-shrink: 0;
+  padding: 0;
+  line-height: 1;
+  opacity: 0.6;
+  transition: opacity 0.1s;
+}
+
+.memberVisibilityBtn:hover {
+  opacity: 1;
+  background: #45475a;
+}
+
+.memberVisibilityHidden {
+  opacity: 1;
+  color: #f38ba8;
+}
+
 .memberDragHandle {
   cursor: grab;
   color: #7f849c;
@@ -257,6 +317,83 @@
 .blendModeSelect:focus {
   outline: 1px solid #6366f1;
   border-color: #6366f1;
+}
+
+/* ミニツリーノード（フォルダ展開時の子レイヤー表示） */
+.vsTreeNode {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding-top: 0.1rem;
+  padding-bottom: 0.1rem;
+  padding-right: 0.3rem;
+  font-size: 0.72rem;
+  color: #a6adc8;
+  background: #1e1e2e;
+  border-top: 1px solid #252538;
+}
+
+.vsTreeNodeHidden {
+  opacity: 0.4;
+}
+
+.vsExpandBtn {
+  width: 12px;
+  height: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.5rem;
+  background: none;
+  border: none;
+  color: #6c7086;
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.vsExpandBtn:hover {
+  color: #cdd6f4;
+}
+
+.vsExpandPlaceholder {
+  width: 12px;
+  flex-shrink: 0;
+}
+
+.vsVisibilityBtn {
+  width: 14px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-radius: 2px;
+  flex-shrink: 0;
+  padding: 0;
+  line-height: 1;
+  opacity: 0.5;
+  transition: opacity 0.1s;
+}
+
+.vsVisibilityBtn:hover {
+  opacity: 1;
+  background: #313244;
+}
+
+.vsVisibilityHidden {
+  opacity: 1;
+  color: #f38ba8;
+}
+
+.vsLayerName {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* 挿入ライン（DnD中の挿入位置表示） */
