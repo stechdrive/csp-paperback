@@ -38,11 +38,11 @@
   .btn {
     padding: 0.4rem 0.65rem;
     font-size: 0.8rem;
-    min-height: 36px;
+    min-height: 2.25rem;
   }
 
   .langBtn {
-    min-height: 36px;
+    min-height: 2.25rem;
     padding: 0.35rem 0.6rem;
   }
 }

@@ -130,7 +130,7 @@
   .mobileTabBar {
     display: flex;
     flex-shrink: 0;
-    height: 56px;
+    height: 3.5rem;
     background: #1e1e2e;
     border-top: 1px solid #313244;
     /* iOS ホームインジケーター対応 */

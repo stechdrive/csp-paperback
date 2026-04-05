@@ -256,58 +256,58 @@
   }
 
   .input {
-    min-height: 36px;
+    min-height: 2.25rem;
   }
 
   .select {
-    min-height: 36px;
+    min-height: 2.25rem;
   }
 
   .tableHeader {
-    grid-template-columns: 70px 1fr auto auto;
+    grid-template-columns: 4.375rem 1fr auto auto;
     font-size: 0.7rem;
   }
 
   .tableRow {
-    grid-template-columns: 70px 1fr auto auto;
+    grid-template-columns: 4.375rem 1fr auto auto;
   }
 
   .tableInput {
-    min-height: 32px;
+    min-height: 2rem;
   }
 
   .removeRowBtn {
-    min-width: 28px;
-    min-height: 28px;
+    min-width: 1.75rem;
+    min-height: 1.75rem;
     display: flex;
     align-items: center;
     justify-content: center;
   }
 
   .addRowBtn {
-    min-height: 36px;
+    min-height: 2.25rem;
     padding: 0.35rem 0.75rem;
   }
 
   .closeBtn {
-    min-width: 36px;
-    min-height: 36px;
+    min-width: 2.25rem;
+    min-height: 2.25rem;
     display: flex;
     align-items: center;
     justify-content: center;
   }
 
   .radioLabel {
-    min-height: 32px;
+    min-height: 2rem;
   }
 
   .ioBtn {
-    min-height: 36px;
+    min-height: 2.25rem;
     padding: 0.4rem 0.8rem;
   }
 
   .doneBtn {
-    min-height: 36px;
+    min-height: 2.25rem;
     padding: 0.5rem 1.5rem;
   }
 

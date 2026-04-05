@@ -322,42 +322,42 @@
 /* ─── モバイル最適化 ─── */
 @media (pointer: coarse) and (max-width: 1024px) {
   .row {
-    min-height: 36px;
+    min-height: 2.25rem;
     gap: 0.35rem;
     padding: 0.3rem 0.5rem;
   }
 
   .expandBtn {
-    width: 28px;
-    height: 28px;
+    width: 1.75rem;
+    height: 1.75rem;
   }
 
   .expandPlaceholder {
-    width: 28px;
+    width: 1.75rem;
   }
 
   .visibilityBtn {
-    width: 28px;
-    height: 28px;
+    width: 1.75rem;
+    height: 1.75rem;
     font-size: 0.85rem;
   }
 
   .animBtn {
-    width: 28px;
-    height: 28px;
+    width: 1.75rem;
+    height: 1.75rem;
     font-size: 0.85rem;
     opacity: 1;
   }
 
   .markBtn {
-    width: 28px;
-    height: 28px;
+    width: 1.75rem;
+    height: 1.75rem;
     font-size: 0.85rem;
     opacity: 1;
   }
 
   .blendSelect {
-    height: 24px;
+    height: 1.5rem;
     font-size: 0.7rem;
     opacity: 1;
     border-color: #45475a;
@@ -368,14 +368,14 @@
   }
 
   .vsBadge {
-    min-height: 32px;
+    min-height: 2rem;
     padding: 0.25rem 0.5rem;
   }
 
   .vsBadgeClear {
     opacity: 1;
-    width: 28px;
-    height: 28px;
+    width: 1.75rem;
+    height: 1.75rem;
     display: flex;
     align-items: center;
     justify-content: center;
