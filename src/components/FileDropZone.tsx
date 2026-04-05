@@ -49,8 +49,11 @@ export function FileDropZone({ onPsdFile, onXdtsFile, onCspbFile, children }: Fi
     const xdtsFiles = files.filter(f => f.name.toLowerCase().endsWith('.xdts'))
     const cspbFiles = files.filter(f => f.name.toLowerCase().endsWith('.cspb'))
 
+    // cspb が含まれる場合は xdts を無視（cspb に xdts が内包されているため）
     // xdts を先に読み込むことで PSD 解析時にアニメーションフォルダ検出が効く
-    for (const file of xdtsFiles) await onXdtsFile(file)
+    if (cspbFiles.length === 0) {
+      for (const file of xdtsFiles) await onXdtsFile(file)
+    }
     for (const file of psdFiles) await onPsdFile(file)
     for (const file of cspbFiles) await onCspbFile(file)
   }, [onPsdFile, onXdtsFile, onCspbFile])
