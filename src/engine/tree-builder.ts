@@ -88,7 +88,7 @@ function convertLayer(
     autoMarked,
     virtualSetMembership: [],
     uiHidden: false,
-    expanded: depth < 2, // 初期状態は浅い階層のみ展開
+    expanded: layer.sectionDivider?.type === 1, // OpenFolder(1)=展開, ClosedFolder(2)=折りたたみ
     hasAdjustmentLayer: hasAdjustment(layer),
   }
 }

@@ -60,7 +60,7 @@ export function useOutputPreview(): OutputPreviewEntry[] {
         const { lower, upper } = collectMarkedLayerContext(selectedLayerId, layerTree, docWidth, docHeight)
         const layerFlats = flattenTree([markedLayer], docWidth, docHeight)
         const canvas = compositeRoot([...lower, ...layerFlats, ...upper], docWidth, docHeight, outputConfig.background)
-        const fileName = `${markedLayer.name}.jpg`
+        const fileName = `${markedLayer.originalName}.jpg`
         return [{ canvas, flatName: fileName, path: fileName }]
       }
     }

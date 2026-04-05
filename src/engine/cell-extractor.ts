@@ -433,7 +433,7 @@ export function extractMarkedLayers(
       if (layer.autoMarked || layer.singleMark) {
         const layerFlats = flattenTree([layer], docWidth, docHeight)
         const canvas = compositeWithContext(layerFlats, contextFlats, [], docWidth, docHeight)
-        const fileName = `${layer.name}.jpg`
+        const fileName = `${layer.originalName}.jpg`
         entries.push({
           path: fileName,
           flatName: fileName,
@@ -518,7 +518,7 @@ export function extractAllEntries(
         const { lower, upper } = collectMarkedLayerContext(layer.id, tree, docWidth, docHeight)
         const layerFlats = flattenTree([layer], docWidth, docHeight)
         const canvas = compositeWithContext(layerFlats, lower, upper, docWidth, docHeight, background)
-        const fileName = `${layer.name}.jpg`
+        const fileName = `${layer.originalName}.jpg`
         entries.push({ path: fileName, flatName: fileName, canvas, sourceLayerId: layer.id })
 
         // フォルダなら子も走査して内包マーク済みレイヤーを出力する。

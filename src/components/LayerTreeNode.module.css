@@ -36,12 +36,24 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.65rem;
-  color: #bac2de;
   background: none;
   border: none;
   cursor: pointer;
   padding: 0;
+  color: #bac2de;
+}
+
+.expandChevron {
+  display: block;
+  width: 10px;
+  height: 10px;
+  transition: transform 0.15s ease;
+  transform: rotate(0deg);
+  flex-shrink: 0;
+}
+
+.expandChevronOpen {
+  transform: rotate(90deg);
 }
 
 .expandPlaceholder {
@@ -62,11 +74,10 @@
   cursor: pointer;
   padding: 0;
   color: #89b4fa;
-  opacity: 0.6;
 }
 
 .visibilityBtn:hover {
-  opacity: 1;
+  color: #cdd6f4;
 }
 
 .typeIcon {
@@ -74,6 +85,11 @@
   flex-shrink: 0;
   width: 16px;
   text-align: center;
+}
+
+.typeIconCell {
+  font-size: 0.95rem;
+  filter: drop-shadow(0 0 3px #a6e3a1aa);
 }
 
 .name {
@@ -90,6 +106,10 @@
 }
 
 .nameAutoMark {
+  color: #a6e3a1;
+}
+
+.nameCell {
   color: #a6e3a1;
 }
 

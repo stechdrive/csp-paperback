@@ -18,6 +18,7 @@ export function LayerTreePanel() {
   const selectLayer = useAppStore(s => s.selectLayer)
   const toggleLayerVisibility = useAppStore(s => s.toggleLayerVisibility)
   const toggleFolderExpanded = useAppStore(s => s.toggleFolderExpanded)
+  const toggleFolderExpandedRecursive = useAppStore(s => s.toggleFolderExpandedRecursive)
   const toggleSingleMark = useAppStore(s => s.toggleSingleMark)
   const resetVisibility = useAppStore(s => s.resetVisibility)
   const setLayerBlendMode = useAppStore(s => s.setLayerBlendMode)
@@ -72,6 +73,7 @@ export function LayerTreePanel() {
               onSelect={selectLayer}
               onToggleVisibility={toggleLayerVisibility}
               onToggleExpanded={toggleFolderExpanded}
+              onToggleExpandedRecursive={toggleFolderExpandedRecursive}
               onToggleMark={toggleSingleMark}
               expandedFolders={expandedFolders}
               visibilityOverrides={visibilityOverrides}

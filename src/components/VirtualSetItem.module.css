@@ -306,18 +306,12 @@
   flex-shrink: 0;
   padding: 0;
   line-height: 1;
-  opacity: 0.6;
-  transition: opacity 0.1s;
+  color: #89b4fa;
 }
 
 .memberVisibilityBtn:hover {
-  opacity: 1;
+  color: #cdd6f4;
   background: #45475a;
-}
-
-.memberVisibilityHidden {
-  opacity: 1;
-  color: #f38ba8;
 }
 
 .memberDragHandle {
@@ -449,18 +443,12 @@
   flex-shrink: 0;
   padding: 0;
   line-height: 1;
-  opacity: 0.5;
-  transition: opacity 0.1s;
+  color: #89b4fa;
 }
 
 .vsVisibilityBtn:hover {
-  opacity: 1;
+  color: #cdd6f4;
   background: #313244;
-}
-
-.vsVisibilityHidden {
-  opacity: 1;
-  color: #f38ba8;
 }
 
 .vsLayerName {

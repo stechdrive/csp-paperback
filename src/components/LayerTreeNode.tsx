@@ -5,12 +5,20 @@ import { useDragSource, getActiveDragPayload } from '../hooks/useDragDrop'
 import { Tooltip } from './Tooltip'
 import styles from './LayerTreeNode.module.css'
 
+// 目玉アイコンをなぞって一括トグルするためのモジュールレベルドラッグ状態
+// targetHidden: ドラッグ開始時に決定した「適用する非表示状態」
+const visibilityDrag = { active: false, targetHidden: false }
+if (typeof window !== 'undefined') {
+  window.addEventListener('mouseup', () => { visibilityDrag.active = false })
+}
+
 interface LayerTreeNodeProps {
   layer: CspLayer
   selectedLayerId: string | null
   onSelect: (id: string) => void
   onToggleVisibility: (id: string) => void
   onToggleExpanded: (id: string) => void
+  onToggleExpandedRecursive: (id: string) => void
   onToggleMark: (id: string) => void
   expandedFolders: Set<string>
   visibilityOverrides: Map<string, boolean>
@@ -68,6 +76,7 @@ export function LayerTreeNode({
   onSelect,
   onToggleVisibility,
   onToggleExpanded,
+  onToggleExpandedRecursive,
   onToggleMark,
   expandedFolders,
   visibilityOverrides,
@@ -123,15 +132,31 @@ export function LayerTreeNode({
     }
   }, [layer, isCell, animParentId, onSelect, selectAnimCell, setFocusedAnimFolder])
 
-  const handleVisibilityClick = useCallback((e: React.MouseEvent) => {
+  const handleVisibilityMouseDown = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
+    e.preventDefault() // テキスト選択を防ぐ
+    visibilityDrag.active = true
+    visibilityDrag.targetHidden = !isUiHidden // 現在の逆状態をドラッグ中の適用値とする
     onToggleVisibility(layer.id)
-  }, [layer.id, onToggleVisibility])
+  }, [layer.id, isUiHidden, onToggleVisibility])
+
+  const handleVisibilityMouseEnter = useCallback((e: React.MouseEvent) => {
+    if (!visibilityDrag.active) return
+    e.stopPropagation()
+    // ドラッグ中は targetHidden と現在の状態が違う場合のみ適用（同じなら skip）
+    if (isUiHidden !== visibilityDrag.targetHidden) {
+      onToggleVisibility(layer.id)
+    }
+  }, [layer.id, isUiHidden, onToggleVisibility])
 
   const handleExpandClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
-    onToggleExpanded(layer.id)
-  }, [layer.id, onToggleExpanded])
+    if (e.altKey) {
+      onToggleExpandedRecursive(layer.id)
+    } else {
+      onToggleExpanded(layer.id)
+    }
+  }, [layer.id, onToggleExpanded, onToggleExpandedRecursive])
 
   const handleMarkClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
@@ -179,6 +204,7 @@ export function LayerTreeNode({
   let nameClass = styles.name
   if (isAnimFolder) nameClass = `${styles.name} ${styles.nameAnim}`
   else if (layer.autoMarked) nameClass = `${styles.name} ${styles.nameAutoMark}`
+  else if (isCell) nameClass = `${styles.name} ${styles.nameCell}`
 
   const isCellActive = isCell && animParentId != null && (() => {
     if (focusedAnimFolderId !== animParentId) return false
@@ -228,19 +254,30 @@ export function LayerTreeNode({
 
         {layer.isFolder ? (
           <button className={styles.expandBtn} onClick={handleExpandClick}>
-            {isExpanded ? '▼' : '▶'}
+            <svg
+              className={`${styles.expandChevron} ${isExpanded ? styles.expandChevronOpen : ''}`}
+              viewBox="0 0 10 10"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path d="M3 2 L7 5 L3 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
           </button>
         ) : (
           <div className={styles.expandPlaceholder} />
         )}
 
-        <Tooltip content={isUiHidden ? 'プレビューに表示する（出力には影響しません）' : 'プレビューから非表示にする（出力には影響しません）'}>
-          <button className={styles.visibilityBtn} onClick={handleVisibilityClick}>
-            {isUiHidden ? '🚫' : '👁'}
+        <Tooltip content={isUiHidden ? 'プレビューに表示する' : 'プレビューから非表示にする'}>
+          <button
+            className={styles.visibilityBtn}
+            onMouseDown={handleVisibilityMouseDown}
+            onMouseEnter={handleVisibilityMouseEnter}
+          >
+            {isUiHidden ? '' : '👁'}
           </button>
         </Tooltip>
 
-        <span className={styles.typeIcon}>{typeIcon}</span>
+        <span className={`${styles.typeIcon} ${isCell ? styles.typeIconCell : ''}`}>{typeIcon}</span>
 
         <span className={nameClass} title={layer.originalName}>
           {layer.autoMarked ? layer.originalName : (layer.name || layer.originalName)}
@@ -287,6 +324,7 @@ export function LayerTreeNode({
               onSelect={onSelect}
               onToggleVisibility={onToggleVisibility}
               onToggleExpanded={onToggleExpanded}
+              onToggleExpandedRecursive={onToggleExpandedRecursive}
               onToggleMark={onToggleMark}
               expandedFolders={expandedFolders}
               visibilityOverrides={visibilityOverrides}

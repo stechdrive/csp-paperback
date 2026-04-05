@@ -14,6 +14,13 @@ interface VirtualSetItemProps {
 // モジュールレベルのDnD状態
 let _draggingMemberInfo: { setId: string; layerIds: string[] } | null = null
 
+// 目玉アイコンなぞり一括トグル用ドラッグ状態（右ツリーと同じパターン）
+// targetVisible: ドラッグ開始時に決定した「適用する表示状態」
+const vsVisibilityDrag = { active: false, targetVisible: true }
+if (typeof window !== 'undefined') {
+  window.addEventListener('mouseup', () => { vsVisibilityDrag.active = false })
+}
+
 // =========================================================
 // ミニツリー：フォルダ展開時の子ノード表示
 // =========================================================
@@ -57,11 +64,24 @@ function VsMemberNode({
           <div className={styles.vsExpandPlaceholder} />
         )}
         <button
-          className={`${styles.vsVisibilityBtn} ${!visible ? styles.vsVisibilityHidden : ''}`}
-          onClick={e => { e.stopPropagation(); onToggleVisibility(layer.id, !visible) }}
+          className={styles.vsVisibilityBtn}
+          onMouseDown={e => {
+            e.stopPropagation()
+            e.preventDefault()
+            vsVisibilityDrag.active = true
+            vsVisibilityDrag.targetVisible = !visible
+            onToggleVisibility(layer.id, !visible)
+          }}
+          onMouseEnter={e => {
+            if (!vsVisibilityDrag.active) return
+            e.stopPropagation()
+            if (visible !== vsVisibilityDrag.targetVisible) {
+              onToggleVisibility(layer.id, vsVisibilityDrag.targetVisible)
+            }
+          }}
           title={visible ? '非表示にする' : '表示にする'}
         >
-          {visible ? '👁' : '🚫'}
+          {visible ? '👁' : ''}
         </button>
         <span className={styles.vsLayerName} title={layer.originalName}>
           {layer.name || layer.originalName}
@@ -382,11 +402,24 @@ export function VirtualSetItem({ virtualSet }: VirtualSetItemProps) {
 
                         {/* 可視性トグル */}
                         <button
-                          className={`${styles.memberVisibilityBtn} ${!visible ? styles.memberVisibilityHidden : ''}`}
-                          onClick={e => { e.stopPropagation(); handleToggleVisibility(member.layerId, !visible) }}
+                          className={styles.memberVisibilityBtn}
+                          onMouseDown={e => {
+                            e.stopPropagation()
+                            e.preventDefault()
+                            vsVisibilityDrag.active = true
+                            vsVisibilityDrag.targetVisible = !visible
+                            handleToggleVisibility(member.layerId, !visible)
+                          }}
+                          onMouseEnter={e => {
+                            if (!vsVisibilityDrag.active) return
+                            e.stopPropagation()
+                            if (visible !== vsVisibilityDrag.targetVisible) {
+                              handleToggleVisibility(member.layerId, vsVisibilityDrag.targetVisible)
+                            }
+                          }}
                           title={visible ? '非表示にする' : '表示にする'}
                         >
-                          {visible ? '👁' : '🚫'}
+                          {visible ? '👁' : ''}
                         </button>
 
                         <span className={styles.memberName}>{layer?.name ?? member.layerId}</span>

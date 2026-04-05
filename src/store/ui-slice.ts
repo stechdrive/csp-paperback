@@ -29,6 +29,7 @@ export interface UiSlice {
   setSelectedVirtualSet: (id: string | null) => void
   toggleLayerVisibility: (layerId: string) => void
   toggleFolderExpanded: (layerId: string) => void
+  toggleFolderExpandedRecursive: (layerId: string) => void
   resetVisibility: () => void
 }
 
@@ -143,6 +144,32 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
       current.delete(layerId)
     } else {
       current.add(layerId)
+    }
+    set({ expandedFolders: current })
+  },
+
+  toggleFolderExpandedRecursive: (layerId) => {
+    const { layerTree, expandedFolders } = get()
+    const root = findLayerById(layerTree, layerId)
+    if (!root) return
+
+    // クリックしたフォルダの現在状態で開閉方向を決定
+    const willExpand = !expandedFolders.has(layerId)
+
+    // 対象フォルダ以下のすべてのフォルダIDを収集
+    function collectFolderIds(layer: CspLayer): string[] {
+      const ids: string[] = layer.isFolder ? [layer.id] : []
+      for (const child of layer.children) {
+        ids.push(...collectFolderIds(child))
+      }
+      return ids
+    }
+
+    const ids = collectFolderIds(root)
+    const current = new Set(expandedFolders)
+    for (const id of ids) {
+      if (willExpand) current.add(id)
+      else current.delete(id)
     }
     set({ expandedFolders: current })
   },

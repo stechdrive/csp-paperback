@@ -240,7 +240,7 @@ describe('extractMarkedLayers', () => {
     const tree = buildLayerTree(psd)
     const result = extractMarkedLayers(tree, 100, 100)
     expect(result).toHaveLength(1)
-    expect(result[0].flatName).toBe('撮影指示.jpg')
+    expect(result[0].flatName).toBe('_撮影指示.jpg')
   })
 
   it('非表示レイヤーを除外する', () => {
