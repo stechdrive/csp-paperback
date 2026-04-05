@@ -183,7 +183,7 @@
 }
 
 /* ─── モバイル最適化 ─── */
-@media (max-width: 768px) {
+@media (pointer: coarse) and (max-width: 1024px) {
   .dialog {
     width: 100vw;
     max-width: 100vw;

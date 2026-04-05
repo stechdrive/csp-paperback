@@ -102,7 +102,7 @@
 }
 
 /* ─── モバイル最適化 ─── */
-@media (max-width: 768px) {
+@media (pointer: coarse) and (max-width: 1024px) {
   .opacityScrubber {
     height: 32px;
   }

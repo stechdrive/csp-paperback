@@ -312,7 +312,7 @@
 }
 
 /* ─── モバイル最適化 ─── */
-@media (max-width: 768px) {
+@media (pointer: coarse) and (max-width: 1024px) {
   .resizeHandle {
     height: 20px;
     display: flex;

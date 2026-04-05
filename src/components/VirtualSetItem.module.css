@@ -154,7 +154,7 @@
   display: none;
 }
 
-@media (max-width: 768px) {
+@media (pointer: coarse) and (max-width: 1024px) {
   .insertionBySelection {
     display: flex;
     align-items: center;
@@ -480,7 +480,7 @@
 }
 
 /* ─── モバイル最適化 ─── */
-@media (max-width: 768px) {
+@media (pointer: coarse) and (max-width: 1024px) {
   .header {
     padding: 0.5rem 0.7rem;
     gap: 0.5rem;

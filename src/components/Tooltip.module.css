@@ -80,7 +80,7 @@
 }
 
 /* モバイルではツールチップを非表示（hoverが不自然） */
-@media (max-width: 768px) {
+@media (pointer: coarse) and (max-width: 1024px) {
   .tooltip {
     display: none !important;
   }

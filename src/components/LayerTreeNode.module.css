@@ -320,7 +320,7 @@
 }
 
 /* ─── モバイル最適化 ─── */
-@media (max-width: 768px) {
+@media (pointer: coarse) and (max-width: 1024px) {
   .row {
     min-height: 36px;
     gap: 0.35rem;

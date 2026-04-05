@@ -8,7 +8,7 @@
   flex-shrink: 0;
 }
 
-@media (max-width: 768px) {
+@media (pointer: coarse) and (max-width: 1024px) {
   .toolbar {
     flex-wrap: wrap;
     gap: 0.4rem;
