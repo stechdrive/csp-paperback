@@ -1,7 +1,7 @@
 import type { CspLayer, FlatLayer, OutputEntry, ProjectSettings } from '../types'
 import type { VirtualSet } from '../types/marks'
 import { flattenTree } from './flatten'
-import { compositeStack, createCanvas } from './compositor'
+import { applyLayerMask, compositeGroup, compositeStack, createCanvas } from './compositor'
 import { collectMembersInTreeOrder, buildMemberFlatsWithOverride } from '../utils/virtual-set-utils'
 
 /**
@@ -45,7 +45,8 @@ export function extractCells(
     if (!cell.isFolder) {
       // 単体レイヤー: XDTSキーフレーム画像 → そのまま1セル出力
       // 単体セルレイヤーはアニメフォルダの直接の子として構造的コンテナ扱い（100%）
-      const cellFlats = flattenCellContent([cell], docWidth, docHeight, new Set([cell.id]))
+      const rawFlats = flattenCellContent([cell], docWidth, docHeight, new Set([cell.id]))
+      const cellFlats = applyContainerMasks(rawFlats, cell, animFolder, docWidth, docHeight)
       const canvas = compositeWithContext(cellFlats, lowerContextLayers, upperContextLayers, docWidth, docHeight, background)
       const fileName = `${trackName}_${cellLabel}${parentSuffix}.jpg`
       entries.push({
@@ -77,7 +78,8 @@ export function extractCells(
       // 本体（processTableに非マッチ、または工程フォルダが存在しない場合）
       // bodyLayersはアートワークコンテンツ → オパシティを尊重（ignoreOpacityIds不要）
       if (bodyLayers.length > 0 || processGroups.size === 0) {
-        const bodyFlats = flattenCellContent(bodyLayers, docWidth, docHeight)
+        const rawBodyFlats = flattenCellContent(bodyLayers, docWidth, docHeight)
+        const bodyFlats = applyContainerMasks(rawBodyFlats, cell, animFolder, docWidth, docHeight)
         const canvas = compositeWithContext(bodyFlats, lowerContextLayers, upperContextLayers, docWidth, docHeight, background)
         const fileName = `${trackName}_${cellLabel}${parentSuffix}.jpg`
         entries.push({
@@ -92,7 +94,8 @@ export function extractCells(
       // 工程フォルダ本体は構造的コンテナとして100%、中身のアートワークはオパシティを尊重
       for (const [suffix, processLayers] of processGroups) {
         const processIgnoreIds = new Set(processLayers.map(p => p.id))
-        const processFlats = flattenCellContent(processLayers, docWidth, docHeight, processIgnoreIds)
+        const rawProcessFlats = flattenCellContent(processLayers, docWidth, docHeight, processIgnoreIds)
+        const processFlats = applyContainerMasks(rawProcessFlats, cell, animFolder, docWidth, docHeight)
         const canvas = compositeWithContext(processFlats, lowerContextLayers, upperContextLayers, docWidth, docHeight, background)
         const fileName = `${trackName}_${cellLabel}${parentSuffix}${suffix}.jpg`
         entries.push({
@@ -353,6 +356,46 @@ export function extractVirtualSetEntries(
 
   resolveFlatNameCollisions(entries)
   return entries
+}
+
+/**
+ * セルフラットにセルフォルダ・アニメフォルダのマスクを適用する。
+ *
+ * global preview（flattenLayer経由）と一致させるため:
+ * - 非Pass Throughセルフォルダのマスクを先に適用（対象はフォルダセルのみ）
+ * - アニメフォルダのマスクをその外側に適用
+ *
+ * Pass Throughセルフォルダのマスクは flattenLayer と同様にスキップ（v1制限）。
+ */
+function applyContainerMasks(
+  flats: FlatLayer[],
+  cell: CspLayer,
+  animFolder: CspLayer,
+  docWidth: number,
+  docHeight: number,
+): FlatLayer[] {
+  let result = flats
+  if (result.length === 0) return result
+
+  // セルフォルダのマスク（非pass-throughフォルダセルのみ）
+  if (cell.isFolder && cell.blendMode !== 'pass through') {
+    const cellMask = cell.agPsdRef.mask
+    if (cellMask?.canvas && !cellMask.disabled) {
+      const composited = compositeGroup(result, docWidth, docHeight)
+      const masked = applyLayerMask(composited, 0, 0, cellMask, docWidth, docHeight)
+      result = [{ canvas: masked, blendMode: 'normal', opacity: 100, top: 0, left: 0, sourceId: cell.id, clipping: false }]
+    }
+  }
+
+  // アニメフォルダのマスク
+  const animMask = animFolder.agPsdRef.mask
+  if (animMask?.canvas && !animMask.disabled) {
+    const composited = compositeGroup(result, docWidth, docHeight)
+    const masked = applyLayerMask(composited, 0, 0, animMask, docWidth, docHeight)
+    result = [{ canvas: masked, blendMode: 'normal', opacity: 100, top: 0, left: 0, sourceId: animFolder.id, clipping: false }]
+  }
+
+  return result
 }
 
 /**
