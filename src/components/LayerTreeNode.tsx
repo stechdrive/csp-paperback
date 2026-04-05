@@ -44,9 +44,31 @@ function VirtualSetBadge({ vs, indentWidth, onClear }: {
   indentWidth: number
   onClear: () => void
 }) {
+  const setSelectedVirtualSet = useAppStore(s => s.setSelectedVirtualSet)
+  const { draggable, onDragStart, onDragEnd } = useDragSource({ type: 'virtualSet', virtualSetId: vs.id })
+
+  const handleDragStart = useCallback((e: React.DragEvent) => {
+    e.stopPropagation()
+    onDragStart(e)
+  }, [onDragStart])
+
   return (
-    <div className={styles.vsBadge}>
+    <div
+      className={styles.vsBadge}
+      onClick={e => { e.stopPropagation(); setSelectedVirtualSet(vs.id) }}
+      title={vs.name}
+    >
       <div className={styles.vsBadgeIndent} style={{ width: indentWidth }} />
+      {/* ドラッグハンドル：ドラッグして挿入位置を変更 */}
+      <span
+        className={styles.vsBadgeDragHandle}
+        draggable={draggable}
+        onDragStart={handleDragStart}
+        onDragEnd={onDragEnd}
+        title="ドラッグして挿入位置を変更"
+      >
+        ⠿
+      </span>
       <span className={styles.vsBadgeIcon}>⊞</span>
       <span className={styles.vsBadgeName}>{vs.name}</span>
       <button

@@ -97,7 +97,7 @@ export const createMarksSlice: StateCreator<AppStore, [], [], MarksSlice> = (set
         if (v.id !== setId) return v
         return {
           ...v,
-          members: [...v.members, { layerId, blendMode: null }],
+          members: [{ layerId, blendMode: null }, ...v.members],  // 先頭に追加（上レイヤー扱い）
           visibilityOverrides: newOverrides,
         }
       }),

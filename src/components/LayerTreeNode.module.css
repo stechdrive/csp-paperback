@@ -224,10 +224,35 @@
   background: rgba(99, 102, 241, 0.1);
   border-left: 2px solid #6366f1;
   min-height: 22px;
+  cursor: pointer;
+}
+
+.vsBadge:hover {
+  background: rgba(99, 102, 241, 0.18);
 }
 
 .vsBadgeIndent {
   flex-shrink: 0;
+}
+
+.vsBadgeDragHandle {
+  cursor: grab;
+  color: #6366f1;
+  font-size: 0.9rem;
+  line-height: 1;
+  flex-shrink: 0;
+  user-select: none;
+  padding: 0 1px;
+  letter-spacing: -0.1em;
+  opacity: 0.6;
+}
+
+.vsBadge:hover .vsBadgeDragHandle {
+  opacity: 1;
+}
+
+.vsBadgeDragHandle:active {
+  cursor: grabbing;
 }
 
 .vsBadgeIcon {
