@@ -83,7 +83,7 @@ export function Toolbar({ onPsdFile, onXdtsFile, onCspbFile, onSaveCspb, isLoadi
         <input
           ref={openInputRef}
           type="file"
-          accept=".psd,.xdts,.cspb,.json"
+          accept=".psd,.xdts,.cspb,.json,*/*"
           multiple
           style={{ display: 'none' }}
           onChange={handleOpenFiles}
