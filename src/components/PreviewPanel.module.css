@@ -20,14 +20,6 @@
   flex-shrink: 0;
 }
 
-.headerSub {
-  font-size: 0.65rem;
-  font-weight: 400;
-  color: #6c7086;
-  text-transform: none;
-  letter-spacing: 0;
-}
-
 /* ナビゲーター: パネル幅いっぱいに表示、高さはリサイズハンドルで可変 */
 .navigatorSection {
   flex-shrink: 0;
@@ -35,10 +27,17 @@
   background: #11111b;
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 0.3rem;
-  overflow: hidden;
   /* height は JS で制御 */
+}
+
+/* ナビゲーターキャンバスのズーム/パン用ビューポート */
+.navigatorViewport {
+  flex: 1;
+  min-height: 0;
+  height: 0; /* flex:1 で引き伸ばされつつ、子の max-height:100% をパーセント解決させるため */
+  overflow: hidden;
+  position: relative;
 }
 
 /* ナビゲーターと書き出し設定の間のリサイズハンドル */
@@ -61,13 +60,27 @@
   color: #a6adc8;
   letter-spacing: 0.04em;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.zoomBadge {
+  font-size: 0.62rem;
+  color: #cdd6f4;
+  background: rgba(30, 30, 46, 0.9);
+  border: 1px solid #45475a;
+  border-radius: 3px;
+  padding: 0.05rem 0.3rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .navigatorCanvas {
-  /* canvas の intrinsic サイズ（PSD解像度）を基準にアスペクト比を保ってパネル幅に収める */
+  /* 幅・高さ両方に収まるように contain 表示（CSS が初期フィットを担い、zoom/pan は上乗せ） */
   max-width: 100%;
+  max-height: 100%;
+  width: auto;
   height: auto;
-  min-height: 0;
   display: block;
   border: 1px solid #313244;
   border-radius: 2px;
@@ -88,6 +101,17 @@
   flex-shrink: 0;
   background: #181825;
   overflow: hidden;
+}
+
+.outputZoomBadge {
+  font-size: 0.62rem;
+  color: #cdd6f4;
+  background: rgba(30, 30, 46, 0.9);
+  border: 1px solid #45475a;
+  border-radius: 3px;
+  padding: 0.05rem 0.3rem;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
 }
 
 .dividerLabel {
@@ -117,9 +141,11 @@
 /* 出力プレビュー: 残りの高さをすべて使う */
 .outputSection {
   flex: 1;
-  overflow-y: auto;
+  overflow: hidden;
   background: #11111b;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .emptyWrapper {

@@ -1,3 +1,12 @@
+/* ズーム/パンの外側コンテナ：outputSection を埋め尽くす */
+.zoomPanOuter {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+  background: #11111b;
+}
+
 .list {
   display: flex;
   flex-direction: column;
@@ -16,12 +25,9 @@
   border-bottom: none;
 }
 
-/* canvas の intrinsic サイズを基準にアスペクト比を保って幅・高さ両方に収める（contain） */
-/* background は親 div (.thumbDark / .thumbCheckerboard) が担うので canvas 自体は透明 */
+/* canvas の intrinsic サイズを基準にアスペクト比を保ってコンテナ幅に収める */
 .thumbCanvas {
   max-width: 100%;
-  max-height: 70vh;
-  width: auto;
   height: auto;
   display: block;
   border: 1px solid #313244;
@@ -55,3 +61,4 @@
   line-height: 1.8;
   padding: 2rem 1rem;
 }
+

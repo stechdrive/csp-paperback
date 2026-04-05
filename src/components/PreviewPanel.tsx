@@ -1,18 +1,31 @@
-import { useRef, useState, useCallback } from 'react'
+import React, { useRef, useState, useCallback } from 'react'
 import { useAppStore } from '../store'
 import { usePreview } from '../hooks/usePreview'
 import { useOutputPreview } from '../hooks/useOutputPreview'
+import { useZoomPan } from '../hooks/useZoomPan'
 import { OutputPreview } from './OutputPreview'
 import { ExportSettings } from './ExportSettings'
 import styles from './PreviewPanel.module.css'
 
 function NavigatorCanvas({ height }: { height: number }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const { containerRef, contentStyle, containerStyle, onMouseDown, zoom } = useZoomPan()
   usePreview(canvasRef)
+
   return (
     <div className={styles.navigatorSection} style={{ height }}>
-      <div className={styles.navigatorLabel}>全体（ナビゲーター）</div>
-      <canvas ref={canvasRef} className={styles.navigatorCanvas} />
+      <div className={styles.navigatorLabel}>
+        全体（ナビゲーター）
+        {zoom !== 1 && <span className={styles.zoomBadge}>{Math.round(zoom * 100)}%</span>}
+      </div>
+      <div
+        ref={containerRef as React.RefCallback<HTMLDivElement>}
+        className={styles.navigatorViewport}
+        style={containerStyle}
+        onMouseDown={onMouseDown}
+      >
+        <canvas ref={canvasRef} className={styles.navigatorCanvas} style={contentStyle} />
+      </div>
     </div>
   )
 }
@@ -28,6 +41,7 @@ export function PreviewPanel() {
   const focusedAnimFolderId = useAppStore(s => s.focusedAnimFolderId)
   const structure = useAppStore(s => s.outputConfig.structure)
   const entries = useOutputPreview()
+  const outputZoomPan = useZoomPan()
 
   const [navHeight, setNavHeight] = useState(NAV_HEIGHT_DEFAULT)
   const resizingRef = useRef(false)
@@ -106,7 +120,6 @@ export function PreviewPanel() {
     <div className={styles.panel}>
       <div className={styles.header}>
         <span>プレビュー</span>
-        <span className={styles.headerSub}>書き出し設定</span>
       </div>
       {/* PSD のみ読み込み済み（XDTS なし）バナー */}
       {!xdtsData && (
@@ -119,6 +132,9 @@ export function PreviewPanel() {
       <ExportSettings />
       <div className={styles.divider}>
         <span className={styles.dividerLabel}>出力プレビュー</span>
+        {outputZoomPan.zoom !== 1 && (
+          <span className={styles.outputZoomBadge}>{Math.round(outputZoomPan.zoom * 100)}%</span>
+        )}
         {entries.length > 0 && (
           <div className={styles.fileNames}>
             {entries.map((e, i) => (
@@ -130,7 +146,7 @@ export function PreviewPanel() {
         )}
       </div>
       <div className={styles.outputSection}>
-        <OutputPreview entries={entries} focusedAnimFolderId={focusedAnimFolderId} />
+        <OutputPreview entries={entries} focusedAnimFolderId={focusedAnimFolderId} zoomPan={outputZoomPan} />
       </div>
     </div>
   )
