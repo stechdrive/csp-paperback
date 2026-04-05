@@ -16,4 +16,5 @@ export interface XdtsData {
   header: { cut: string; scene: string }
   timeTableName: string                 // timeTables[0].name
   duration: number                      // timeTables[0].duration（総コマ数）
+  fps: number                           // フレームレート（timeTables[0].frameRate、デフォルト24）
 }

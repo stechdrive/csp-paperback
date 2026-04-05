@@ -16,7 +16,7 @@ function makeSettingsWithTable(entries: { suffix: string; folderNames: string[] 
 }
 
 function detectAnim(tree: ReturnType<typeof buildLayerTree>, trackName: string) {
-  const xdts: XdtsData = { tracks: [{ name: trackName, cellNames: [], frames: [] }], version: 5, header: { cut: '1', scene: '1' }, timeTableName: 'タイムライン1', duration: 72 }
+  const xdts: XdtsData = { tracks: [{ name: trackName, cellNames: [], frames: [] }], version: 5, header: { cut: '1', scene: '1' }, timeTableName: 'タイムライン1', duration: 72, fps: 24 }
   detectAnimationFoldersByXdts(tree, xdts)
 }
 
@@ -225,7 +225,7 @@ describe('extractAllEntries', () => {
 })
 
 function detectAnimInTree(layers: ReturnType<typeof buildLayerTree>, trackName: string) {
-  const xdts: XdtsData = { tracks: [{ name: trackName, cellNames: [], frames: [] }], version: 5, header: { cut: '1', scene: '1' }, timeTableName: 'タイムライン1', duration: 72 }
+  const xdts: XdtsData = { tracks: [{ name: trackName, cellNames: [], frames: [] }], version: 5, header: { cut: '1', scene: '1' }, timeTableName: 'タイムライン1', duration: 72, fps: 24 }
   detectAnimationFoldersByXdts(layers, xdts)
   for (const layer of layers) {
     if (layer.isFolder && !layer.isAnimationFolder) {

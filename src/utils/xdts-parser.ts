@@ -48,6 +48,7 @@ export function parseXdts(text: string): XdtsData {
   }
   const timeTableName: string = firstTable?.name ?? 'タイムライン1'
   const duration: number = firstTable?.duration ?? 72
+  const fps: number = firstTable?.frameRate ?? 24
 
   for (const timeTable of data.timeTables ?? []) {
     // fieldId → トラック名配列のマップを構築
@@ -92,7 +93,7 @@ export function parseXdts(text: string): XdtsData {
     }
   }
 
-  return { tracks, version, header, timeTableName, duration }
+  return { tracks, version, header, timeTableName, duration, fps }
 }
 
 /**
