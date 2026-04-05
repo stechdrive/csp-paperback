@@ -402,9 +402,8 @@ export function VirtualSetItem({ virtualSet }: VirtualSetItemProps) {
                           }}
                           onClick={e => e.stopPropagation()}
                         >
-                          {/* null = レイヤー本来のモードを継承。実際のモード名を括弧内に表示 */}
                           <option value="">
-                            {layerBlendModeLabel(layer?.blendMode)}（継承）
+                            {layerBlendModeLabel(layer?.blendMode)}
                           </option>
                           {BLEND_MODE_OPTIONS.map(bm => (
                             <option key={bm.value} value={bm.value}>
