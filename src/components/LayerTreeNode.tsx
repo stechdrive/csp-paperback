@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import { useAppStore } from '../store'
 import type { CspLayer, VirtualSet } from '../types'
+import { isUnsupportedBlendMode } from '../engine/compositor'
 import { useDragSource, getActiveDragPayload } from '../hooks/useDragDrop'
 import { Tooltip } from './Tooltip'
 import styles from './LayerTreeNode.module.css'
@@ -283,6 +284,11 @@ export function LayerTreeNode({
           {layer.autoMarked ? layer.originalName : (layer.name || layer.originalName)}
         </span>
 
+        {isUnsupportedBlendMode(layer.blendMode) && (
+          <Tooltip content={`合成モード「${layer.blendMode}」は未対応のため通常合成で代替されます`}>
+            <span className={styles.blendWarn}>⚠</span>
+          </Tooltip>
+        )}
 
         {!layer.autoMarked && !layer.isAnimationFolder && (
           <Tooltip content={isMarked

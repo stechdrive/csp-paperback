@@ -169,6 +169,13 @@
   opacity: 1 !important;
 }
 
+.blendWarn {
+  font-size: 0.7rem;
+  flex-shrink: 0;
+  color: #f9e2af;
+  cursor: default;
+}
+
 .markBtn {
   width: 18px;
   height: 18px;

@@ -42,6 +42,11 @@ export function blendModeToCompositeOp(mode: BlendMode): GlobalCompositeOperatio
   }
 }
 
+/** Canvas APIでネイティブ対応していない合成モードかどうかを返す */
+export function isUnsupportedBlendMode(mode: BlendMode): boolean {
+  return blendModeToCompositeOp(mode) === null
+}
+
 export function createCanvas(width: number, height: number): HTMLCanvasElement {
   const canvas = document.createElement('canvas')
   canvas.width = width
