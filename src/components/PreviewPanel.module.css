@@ -261,3 +261,52 @@
   padding: 0.3rem 0.75rem;
   flex-shrink: 0;
 }
+
+/* タイムラインシークバー */
+.seekBar {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.5rem;
+  flex-shrink: 0;
+}
+
+.seekTrack {
+  flex: 1;
+  height: 6px;
+  background: #313244;
+  border-radius: 3px;
+  position: relative;
+  cursor: pointer;
+}
+
+.seekFill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: #6366f1;
+  border-radius: 3px;
+  pointer-events: none;
+}
+
+.seekThumb {
+  position: absolute;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  background: #cdd6f4;
+  border: 2px solid #6366f1;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.seekLabel {
+  font-size: 0.68rem;
+  color: #a6adc8;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+  min-width: 4.5em;
+  text-align: right;
+}

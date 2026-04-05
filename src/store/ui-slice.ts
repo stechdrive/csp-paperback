@@ -17,6 +17,8 @@ export interface UiSlice {
   selectedVsMemberId: string | null
   visibilityOverrides: Map<string, boolean>  // layerId → uiHidden
   expandedFolders: Set<string>
+  /** タイムラインの現在フレーム（0-based） */
+  currentFrame: number
   selectLayer: (layerId: string | null) => void
   setSelectedVsMember: (setId: string | null, memberId: string | null) => void
   /**
@@ -25,6 +27,8 @@ export interface UiSlice {
    * 他トラックのセルをホールドルールで解決して selectedCells をまとめて更新する。
    */
   selectAnimCell: (animFolderId: string, cellIndex: number) => void
+  /** タイムラインのフレーム位置から全トラックのセルを解決して selectedCells を更新する */
+  seekToFrame: (frameIndex: number) => void
   setFocusedAnimFolder: (id: string | null) => void
   setSelectedVirtualSet: (id: string | null) => void
   toggleLayerVisibility: (layerId: string) => void
@@ -68,6 +72,7 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
   selectedVsMemberId: null,
   visibilityOverrides: new Map(),
   expandedFolders: new Set(),
+  currentFrame: 0,
 
   selectLayer: (layerId) => {
     set({ selectedLayerId: layerId })
@@ -81,6 +86,7 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
     const { xdtsData, layerTree, manualAnimFolderIds, selectedCells } = get()
     const newSelectedCells = new Map(selectedCells)
     newSelectedCells.set(animFolderId, cellIndex)
+    let resolvedFrame = -1
 
     if (xdtsData && xdtsData.tracks.length > 0) {
       // 選択されたセルの名前を取得
@@ -96,6 +102,7 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
         if (track) {
           const frameIndex = findFirstFrameOfCell(track, cellName)
           if (frameIndex >= 0) {
+            resolvedFrame = frameIndex
             // そのフレームでの全トラックのセルをホールドルールで解決
             const resolved = resolveCellsAtFrame(xdtsData.tracks, frameIndex)
             for (const [trackName, resolvedCellName] of resolved) {
@@ -116,7 +123,28 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
       }
     }
 
-    set({ selectedCells: newSelectedCells, focusedAnimFolderId: animFolderId, selectedVirtualSetId: null })
+    const update: Partial<AppStore> = { selectedCells: newSelectedCells, focusedAnimFolderId: animFolderId, selectedVirtualSetId: null }
+    if (resolvedFrame >= 0) update.currentFrame = resolvedFrame
+    set(update as AppStore)
+  },
+
+  seekToFrame: (frameIndex) => {
+    const { xdtsData, layerTree, manualAnimFolderIds } = get()
+    if (!xdtsData || xdtsData.duration <= 0) return
+    const clamped = Math.max(0, Math.min(xdtsData.duration - 1, frameIndex))
+    const resolved = resolveCellsAtFrame(xdtsData.tracks, clamped)
+    const newSelectedCells = new Map<string, number>()
+    for (const [trackName, cellName] of resolved) {
+      const folder = findAnimFolderByTrackName(layerTree, trackName, manualAnimFolderIds)
+      if (!folder) continue
+      if (cellName === null) {
+        newSelectedCells.set(folder.id, 0)
+      } else {
+        const idx = folder.children.findIndex(c => c.originalName === cellName)
+        if (idx >= 0) newSelectedCells.set(folder.id, idx)
+      }
+    }
+    set({ currentFrame: clamped, selectedCells: newSelectedCells })
   },
 
   setFocusedAnimFolder: (id) => {

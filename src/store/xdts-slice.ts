@@ -18,7 +18,7 @@ export const createXdtsSlice: StateCreator<AppStore, [], [], XdtsSlice> = (set, 
 
   loadXdts: (text, fileName) => {
     const xdts = parseXdts(text)
-    set({ xdtsData: xdts, xdtsFileName: fileName })
+    set({ xdtsData: xdts, xdtsFileName: fileName, currentFrame: 0 })
 
     // PSD 読み込み前に XDTS が来た場合は loadPsd 側で反映されるので何もしない
     const { layerTree } = get()
@@ -33,7 +33,7 @@ export const createXdtsSlice: StateCreator<AppStore, [], [], XdtsSlice> = (set, 
 
   clearXdts: () => {
     const { layerTree } = get()
-    set({ xdtsData: null, xdtsFileName: null })
+    set({ xdtsData: null, xdtsFileName: null, currentFrame: 0 })
     if (layerTree.length > 0) {
       clearXdtsAnimFolders(layerTree)
       set({ layerTree: [...layerTree] })
