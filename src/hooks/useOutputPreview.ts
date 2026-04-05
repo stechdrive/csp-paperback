@@ -1,10 +1,17 @@
 import { useMemo } from 'react'
 import { useAppStore } from '../store'
 import { selectLayerTreeWithVisibility } from '../store/selectors'
-import { extractCells, resolveParentSuffix, collectContextSourceLayers, collectLocalSiblingContext, collectMarkedLayerContext } from '../engine/cell-extractor'
+import {
+  extractCells,
+  extractVirtualSetEntries,
+  resolveParentSuffix,
+  collectContextSourceLayers,
+  collectLocalSiblingContext,
+  collectMarkedLayerContext,
+} from '../engine/cell-extractor'
 import { flattenTree, compositeRoot } from '../engine/flatten'
 import { collectMembersInTreeOrder, buildMemberFlatsWithOverride } from '../utils/virtual-set-utils'
-import type { CspLayer, OutputEntry } from '../types'
+import type { CspLayer, OutputEntry, ProjectSettings, OutputConfig } from '../types'
 
 export interface OutputPreviewEntry {
   canvas: HTMLCanvasElement
@@ -13,12 +20,18 @@ export interface OutputPreviewEntry {
 }
 
 /**
- * focusedAnimFolderIdのアニメーションフォルダについて、
- * 選択中のセルの出力エントリ（canvas + ファイル名）を返す。
+ * 選択状態に応じた出力プレビューエントリを返す。
  *
- * コンテキストは2層構造:
- * - グローバル: アニメ子孫を持たないルート直下レイヤー群（レイアウト用紙・背景原図等）
- * - ローカル: フォーカス中フォルダと同じアニメ包含フォルダ内の兄弟非アニメレイヤー群
+ * すべてのパスが実出力（extractCells / extractVirtualSetEntries / collectMarkedLayerContext）と
+ * 同一の関数を経由するため、プレビューと実出力の一致が構造的に保証される。
+ *
+ * ルーティング:
+ *   1. 仮想セット選択（配置済み）  → extractVirtualSetEntries（ZIP出力と同一）
+ *   1. 仮想セット選択（未配置）    → グローバルコンテキストで仮プレビュー（ZIP対象外）
+ *   2. アニメセル選択              → extractCells（ZIP出力と同一）
+ *   3. autoMarked/singleMark
+ *      └ アニメセル内部のレイヤー  → extractCells（セル特定後にフィルタ）
+ *      └ アニメセル外のレイヤー    → collectMarkedLayerContext（extractAllEntriesと同一）
  */
 export function useOutputPreview(): OutputPreviewEntry[] {
   const layerTree = useAppStore(selectLayerTreeWithVisibility)
@@ -35,94 +48,180 @@ export function useOutputPreview(): OutputPreviewEntry[] {
   return useMemo(() => {
     if (docWidth === 0 || docHeight === 0) return []
 
-    // 仮想セット選択時のプレビュー
+    // ── 1. 仮想セット選択 ──────────────────────────────────────────────────
     if (selectedVirtualSetId) {
       const vs = virtualSets.find(v => v.id === selectedVirtualSetId)
       if (!vs || vs.members.length === 0) return []
+
+      if (vs.insertionLayerId) {
+        // 配置済み: ZIP出力と同じ extractVirtualSetEntries を使用
+        const entries = extractVirtualSetEntries(
+          layerTree, [vs], docWidth, docHeight, outputConfig.background,
+        )
+        return entries.map(e => ({ canvas: e.canvas, flatName: e.flatName, path: e.path }))
+      }
+
+      // 未配置: グローバルコンテキストで仮プレビュー（ZIP出力対象外）
       const memberIdSet = new Set(vs.members.map(m => m.layerId))
       const memberLayers = collectMembersInTreeOrder(layerTree, memberIdSet)
       if (memberLayers.length === 0) return []
       const contextFlats = flattenTree(collectContextSourceLayers(layerTree), docWidth, docHeight)
-
-      // メンバーごとに blendMode override と visibilityOverrides を適用
-      const memberFlats = buildMemberFlatsWithOverride(vs.members, memberLayers, docWidth, docHeight, vs.visibilityOverrides)
-
-      const canvas = compositeRoot([...contextFlats, ...memberFlats], docWidth, docHeight, outputConfig.background)
+      const memberFlats = buildMemberFlatsWithOverride(
+        vs.members, memberLayers, docWidth, docHeight, vs.visibilityOverrides,
+      )
+      const canvas = compositeRoot(
+        [...contextFlats, ...memberFlats], docWidth, docHeight, outputConfig.background,
+      )
       return [{ canvas, flatName: vs.name, path: '' }]
     }
 
-    // autoMarked / singleMark レイヤー選択時のプレビュー
-    if (!focusedAnimFolderId && selectedLayerId) {
-      const markedLayer = findLayerById(layerTree, selectedLayerId)
-      if (markedLayer && (markedLayer.autoMarked || markedLayer.singleMark)) {
-        // パス全段階コンテキスト収集: PSDのZ順に従って upper/lower を正しく分類
-        // extractAllEntries の inheritedLower/Upper と同等のロジック
-        const { lower, upper } = collectMarkedLayerContext(selectedLayerId, layerTree, docWidth, docHeight)
-        const layerFlats = flattenTree([markedLayer], docWidth, docHeight)
-        const canvas = compositeRoot([...lower, ...layerFlats, ...upper], docWidth, docHeight, outputConfig.background)
-        const fileName = `${markedLayer.originalName}.jpg`
-        return [{ canvas, flatName: fileName, path: fileName }]
-      }
+    // ── 2. アニメーションフォルダ選択（直接セルクリック） ──────────────────
+    if (focusedAnimFolderId) {
+      return previewAnimFolder(
+        focusedAnimFolderId,
+        selectedCells.get(focusedAnimFolderId),
+        null,
+        layerTree, projectSettings, outputConfig, docWidth, docHeight,
+      )
     }
 
-    if (!focusedAnimFolderId) return []
+    if (!selectedLayerId) return []
 
-    const animFolder = findLayerById(layerTree, focusedAnimFolderId)
-    if (!animFolder || !animFolder.isAnimationFolder) return []
+    // ── 3a. autoMarked/singleMark がアニメセル内にある場合 ─────────────────
+    // （例: アニメセル内の工程フォルダ _k など）
+    // extractCells を経由することで実出力と一致を保証する
+    const animCellCtx = findAnimCellAncestor(selectedLayerId, layerTree)
+    if (animCellCtx) {
+      return previewAnimFolder(
+        animCellCtx.animFolderId,
+        animCellCtx.cellChildIndex,
+        selectedLayerId,
+        layerTree, projectSettings, outputConfig, docWidth, docHeight,
+      )
+    }
 
-    // グローバルコンテキスト（アニメ子孫フォルダを含まないルート直下レイヤー群）
-    const contextSourceLayers = collectContextSourceLayers(layerTree)
-    const contextFlats = flattenTree(contextSourceLayers, docWidth, docHeight)
+    // ── 3b. autoMarked/singleMark（アニメセル外） ──────────────────────────
+    // extractAllEntries と同じ collectMarkedLayerContext を使用
+    const markedLayer = findLayerById(layerTree, selectedLayerId)
+    if (markedLayer && (markedLayer.autoMarked || markedLayer.singleMark)) {
+      const { lower, upper } = collectMarkedLayerContext(selectedLayerId, layerTree, docWidth, docHeight)
+      const layerFlats = flattenTree([markedLayer], docWidth, docHeight)
+      const canvas = compositeRoot(
+        [...lower, ...layerFlats, ...upper], docWidth, docHeight, outputConfig.background,
+      )
+      const fileName = `${markedLayer.originalName}.jpg`
+      return [{ canvas, flatName: fileName, path: fileName }]
+    }
 
-    // ローカルコンテキスト（フォーカス中アニメフォルダの兄弟非アニメレイヤー群）
-    // lower: アニメフォルダより下にある兄弟 → セルの下に合成
-    // upper: アニメフォルダより上にある兄弟 → セルの上に合成
-    const { lower: localLowerFlats, upper: localUpperFlats } =
-      collectLocalSiblingContext(focusedAnimFolderId, layerTree, docWidth, docHeight)
-    const lowerContextFlats = localLowerFlats.length > 0
-      ? [...contextFlats, ...localLowerFlats]
-      : contextFlats
+    return []
+  }, [
+    focusedAnimFolderId, selectedVirtualSetId, selectedLayerId,
+    virtualSets, selectedCells, layerTree, projectSettings, outputConfig,
+    docWidth, docHeight,
+  ])
+}
 
-    // 選択中のセルを特定
-    // selectedCells のインデックスは animFolder.children（非表示含む全子）の位置。
-    // visibleChildren は非表示を除いた配列なのでインデックスが異なる場合がある。
-    const cellIndex = selectedCells.get(focusedAnimFolderId) ?? 0
-    const visibleChildren = animFolder.children.filter(c => !c.hidden && !c.uiHidden)
-    if (visibleChildren.length === 0) return []
+/**
+ * 指定アニメーションフォルダの選択セルを extractCells で描画しフィルタリングする。
+ *
+ * filterSourceLayerId が指定された場合（工程フォルダ直接クリック時）、
+ * その sourceLayerId に一致するエントリのみを返す。
+ * 一致なしの場合はセル全エントリにフォールバック。
+ */
+function previewAnimFolder(
+  animFolderId: string,
+  rawCellIndex: number | undefined,
+  filterSourceLayerId: string | null,
+  layerTree: CspLayer[],
+  projectSettings: ProjectSettings,
+  outputConfig: OutputConfig,
+  docWidth: number,
+  docHeight: number,
+): OutputPreviewEntry[] {
+  const animFolder = findLayerById(layerTree, animFolderId)
+  if (!animFolder || !animFolder.isAnimationFolder) return []
 
-    const targetCell = animFolder.children[cellIndex]
-    const visibleIdx = targetCell ? visibleChildren.findIndex(c => c.id === targetCell.id) : -1
-    // 選択セルが非表示の場合は先頭可視セルにフォールバック
-    const clampedIndex = visibleIdx >= 0 ? visibleIdx : 0
-    const selectedCell = visibleChildren[clampedIndex]
+  const contextSourceLayers = collectContextSourceLayers(layerTree)
+  const contextFlats = flattenTree(contextSourceLayers, docWidth, docHeight)
+  const { lower: localLowerFlats, upper: localUpperFlats } =
+    collectLocalSiblingContext(animFolderId, layerTree, docWidth, docHeight)
+  const lowerContextFlats = localLowerFlats.length > 0
+    ? [...contextFlats, ...localLowerFlats]
+    : contextFlats
 
-    // ルート直下の親フォルダに基づくparentSuffixを解決
-    const parentSuffix = resolveParentSuffix(
-      focusedAnimFolderId, layerTree, projectSettings.processTable
-    )
+  const visibleChildren = animFolder.children.filter(c => !c.hidden && !c.uiHidden)
+  if (visibleChildren.length === 0) return []
 
-    // 全セルを抽出して選択セル分だけフィルタリング
-    const allEntries: OutputEntry[] = extractCells(
-      animFolder, projectSettings, docWidth, docHeight, lowerContextFlats,
-      parentSuffix, undefined, outputConfig.background,
-      localUpperFlats,
-    )
+  // selectedCells のインデックスは全 children 基準なので visible に変換
+  const cellIndex = rawCellIndex ?? 0
+  const targetCell = animFolder.children[cellIndex]
+  const visibleIdx = targetCell ? visibleChildren.findIndex(c => c.id === targetCell.id) : -1
+  const clampedIndex = visibleIdx >= 0 ? visibleIdx : 0
+  const selectedCell = visibleChildren[clampedIndex]
 
-    // 連番モード: clampedIndex+1 を4桁ゼロ埋め / セル名モード: originalName
-    const namingMode = projectSettings.cellNamingMode ?? 'sequence'
-    const cellLabel = namingMode === 'sequence'
-      ? String(visibleChildren.length - clampedIndex).padStart(4, '0')
-      : selectedCell.originalName
-    const prefix = `${animFolder.originalName}_${cellLabel}${parentSuffix}`
+  const parentSuffix = resolveParentSuffix(animFolderId, layerTree, projectSettings.processTable)
 
-    const entries = allEntries.filter(e =>
-      e.flatName === `${prefix}.jpg` ||
-      e.flatName.startsWith(`${prefix}_`)
-    )
+  const allEntries: OutputEntry[] = extractCells(
+    animFolder, projectSettings, docWidth, docHeight, lowerContextFlats,
+    parentSuffix, undefined, outputConfig.background, localUpperFlats,
+  )
 
-    return entries.map(e => ({ canvas: e.canvas, flatName: e.flatName, path: e.path }))
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [focusedAnimFolderId, selectedVirtualSetId, selectedLayerId, virtualSets, selectedCells, layerTree, projectSettings, outputConfig, docWidth, docHeight])
+  // 選択セルのエントリに絞り込む
+  const namingMode = projectSettings.cellNamingMode ?? 'sequence'
+  const cellLabel = namingMode === 'sequence'
+    ? String(visibleChildren.length - clampedIndex).padStart(4, '0')
+    : selectedCell.originalName
+  const prefix = `${animFolder.originalName}_${cellLabel}${parentSuffix}`
+
+  let entries = allEntries.filter(e =>
+    e.flatName === `${prefix}.jpg` || e.flatName.startsWith(`${prefix}_`),
+  )
+
+  // さらに sourceLayerId で絞り込む（工程フォルダ直接選択時）
+  if (filterSourceLayerId) {
+    const filtered = entries.filter(e => e.sourceLayerId === filterSourceLayerId)
+    if (filtered.length > 0) entries = filtered
+    // 一致なし（本体レイヤー等）の場合はセル全エントリをフォールバック表示
+  }
+
+  return entries.map(e => ({ canvas: e.canvas, flatName: e.flatName, path: e.path }))
+}
+
+/**
+ * レイヤーがアニメーションフォルダのセル内部にある場合、
+ * そのアニメフォルダ ID とセルの children インデックスを返す。
+ *
+ * アニメフォルダの直接の子（isCell=true）ではなく、
+ * セルフォルダの内部にあるレイヤー（工程フォルダ等）を対象とする。
+ */
+function findAnimCellAncestor(
+  layerId: string,
+  tree: CspLayer[],
+): { animFolderId: string; cellChildIndex: number } | null {
+  function walk(
+    layers: CspLayer[],
+    ctx: { animFolderId: string; cellChildIndex: number } | null,
+  ): { animFolderId: string; cellChildIndex: number } | null {
+    for (const layer of layers) {
+      if (layer.id === layerId) return ctx
+      if (!layer.isFolder) continue
+
+      if (layer.isAnimationFolder) {
+        // アニメフォルダの直接の子はセル。その内部を ctx に設定して再帰。
+        for (let i = 0; i < layer.children.length; i++) {
+          const cell = layer.children[i]
+          if (!cell.isFolder) continue
+          const result = walk(cell.children, { animFolderId: layer.id, cellChildIndex: i })
+          if (result) return result
+        }
+      } else {
+        const result = walk(layer.children, ctx)
+        if (result) return result
+      }
+    }
+    return null
+  }
+  return walk(tree, null)
 }
 
 function findLayerById(layers: CspLayer[], id: string): CspLayer | null {
@@ -133,4 +232,3 @@ function findLayerById(layers: CspLayer[], id: string): CspLayer | null {
   }
   return null
 }
-
