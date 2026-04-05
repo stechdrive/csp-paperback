@@ -17,24 +17,56 @@ export function collectMembersInTreeOrder(layers: CspLayer[], memberIds: Set<str
 }
 
 /**
- * VirtualSetMember の blendMode override を適用しながら FlatLayer[] を構築する。
+ * 仮想セル固有の表示非表示オーバーライドをレイヤーサブツリーに再帰適用する。
+ * 変更がない場合は元の参照をそのまま返す（不要な再レンダリング防止）。
+ */
+function applyVsVisibilityOverrides(
+  layer: CspLayer,
+  overrides: Record<string, boolean>,
+): CspLayer {
+  const overrideVal = overrides[layer.id]
+  const uiHidden = overrideVal !== undefined ? !overrideVal : layer.uiHidden
+
+  if (layer.children.length === 0) {
+    if (uiHidden === layer.uiHidden) return layer
+    return { ...layer, uiHidden }
+  }
+
+  const children = layer.children.map(c => applyVsVisibilityOverrides(c, overrides))
+  const childrenChanged = children.some((c, i) => c !== layer.children[i])
+
+  if (uiHidden === layer.uiHidden && !childrenChanged) return layer
+  return { ...layer, uiHidden, children }
+}
+
+/**
+ * VirtualSetMember の blendMode override と visibilityOverrides を適用しながら
+ * FlatLayer[] を構築する。
  * - blendMode が非 null: そのメンバーレイヤーを compositeGroup で1枚に合成してから blendMode を上書き
  * - blendMode が null: flattenTree の結果をそのまま展開
+ * - visibilityOverrides: メンバー内各レイヤーの表示非表示を個別制御（フォルダ対応）
  */
 export function buildMemberFlatsWithOverride(
   members: VirtualSetMember[],
   memberLayers: CspLayer[],
   docWidth: number,
   docHeight: number,
+  visibilityOverrides: Record<string, boolean> = {},
 ): FlatLayer[] {
   const layerMap = new Map(memberLayers.map(l => [l.id, l]))
+  const hasOverrides = Object.keys(visibilityOverrides).length > 0
   const result: FlatLayer[] = []
 
   for (const member of members) {
     const layer = layerMap.get(member.layerId)
     if (!layer) continue
 
-    const flats = flattenTree([layer], docWidth, docHeight)
+    // 仮想セル固有の表示状態を適用
+    const effectiveLayer = hasOverrides
+      ? applyVsVisibilityOverrides(layer, visibilityOverrides)
+      : layer
+
+    const flats = flattenTree([effectiveLayer], docWidth, docHeight)
     if (flats.length === 0) continue
 
     if (member.blendMode !== null) {

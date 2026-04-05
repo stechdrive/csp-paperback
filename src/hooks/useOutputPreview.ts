@@ -43,8 +43,8 @@ export function useOutputPreview(): OutputPreviewEntry[] {
       if (memberLayers.length === 0) return []
       const contextFlats = flattenTree(collectContextSourceLayers(layerTree), docWidth, docHeight)
 
-      // メンバーごとに blendMode override を適用
-      const memberFlats = buildMemberFlatsWithOverride(vs.members, memberLayers, docWidth, docHeight)
+      // メンバーごとに blendMode override と visibilityOverrides を適用
+      const memberFlats = buildMemberFlatsWithOverride(vs.members, memberLayers, docWidth, docHeight, vs.visibilityOverrides)
 
       const canvas = compositeRoot([...contextFlats, ...memberFlats], docWidth, docHeight, outputConfig.background)
       return [{ canvas, flatName: vs.name, path: '' }]

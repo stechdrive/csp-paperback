@@ -1,5 +1,6 @@
 import type { StateCreator } from 'zustand'
 import type { SingleMark, VirtualSet } from '../types'
+import type { CspLayer } from '../types'
 import type { AppStore } from './index'
 
 export interface MarksSlice {
@@ -13,6 +14,29 @@ export interface MarksSlice {
   removeVirtualSetMember: (setId: string, layerId: string) => void
   reorderVirtualSetMembers: (setId: string, newOrder: string[]) => void
   setVirtualSetMemberBlendMode: (setId: string, layerId: string, blendMode: string | null) => void
+  setVirtualSetVisibilityOverride: (setId: string, layerId: string, visible: boolean) => void
+}
+
+function findLayerInTree(layers: CspLayer[], id: string): CspLayer | null {
+  for (const l of layers) {
+    if (l.id === id) return l
+    const found = findLayerInTree(l.children, id)
+    if (found) return found
+  }
+  return null
+}
+
+/** レイヤー（フォルダを含む）のサブツリー全体の現在の表示状態をオーバーライドマップに書き込む */
+function captureVisibilitySnapshot(
+  layer: CspLayer,
+  globalOverrides: Map<string, boolean>,
+  out: Record<string, boolean>,
+): void {
+  const globalUiHidden = globalOverrides.get(layer.id) ?? layer.uiHidden
+  out[layer.id] = !layer.hidden && !globalUiHidden
+  for (const child of layer.children) {
+    captureVisibilitySnapshot(child, globalOverrides, out)
+  }
 }
 
 export const createMarksSlice: StateCreator<AppStore, [], [], MarksSlice> = (set, get) => ({
@@ -37,6 +61,7 @@ export const createMarksSlice: StateCreator<AppStore, [], [], MarksSlice> = (set
       insertionPosition: 'above',
       members: [],
       expandToAnimationCells: false,
+      visibilityOverrides: {},
     }
     set({ virtualSets: [...get().virtualSets, newSet] })
   },
@@ -54,11 +79,27 @@ export const createMarksSlice: StateCreator<AppStore, [], [], MarksSlice> = (set
   },
 
   addVirtualSetMember: (setId, layerId) => {
+    const state = get()
+    const vs = state.virtualSets.find(v => v.id === setId)
+    if (!vs) return
+    if (vs.members.some(m => m.layerId === layerId)) return
+
+    // 追加するレイヤー（フォルダも含む）のサブツリーについて、
+    // 現在のグローバル表示状態を初期オーバーライドとして取得する
+    const layer = findLayerInTree(state.layerTree, layerId)
+    const newOverrides = { ...vs.visibilityOverrides }
+    if (layer) {
+      captureVisibilitySnapshot(layer, state.visibilityOverrides, newOverrides)
+    }
+
     set({
-      virtualSets: get().virtualSets.map(vs => {
-        if (vs.id !== setId) return vs
-        if (vs.members.some(m => m.layerId === layerId)) return vs
-        return { ...vs, members: [...vs.members, { layerId, blendMode: null }] }
+      virtualSets: state.virtualSets.map(v => {
+        if (v.id !== setId) return v
+        return {
+          ...v,
+          members: [...v.members, { layerId, blendMode: null }],
+          visibilityOverrides: newOverrides,
+        }
       }),
     })
   },
@@ -94,6 +135,18 @@ export const createMarksSlice: StateCreator<AppStore, [], [], MarksSlice> = (set
           members: vs.members.map(m =>
             m.layerId === layerId ? { ...m, blendMode } : m
           ),
+        }
+      }),
+    })
+  },
+
+  setVirtualSetVisibilityOverride: (setId, layerId, visible) => {
+    set({
+      virtualSets: get().virtualSets.map(vs => {
+        if (vs.id !== setId) return vs
+        return {
+          ...vs,
+          visibilityOverrides: { ...vs.visibilityOverrides, [layerId]: visible },
         }
       }),
     })

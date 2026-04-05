@@ -57,6 +57,7 @@ function migrateVirtualSet(raw: Record<string, unknown>): VirtualSet {
         blendMode: m.blendMode ?? null,
       })),
       expandToAnimationCells: Boolean(raw.expandToAnimationCells ?? false),
+      visibilityOverrides: (raw.visibilityOverrides as Record<string, boolean>) ?? {},
     }
   }
   // 旧形式: memberLayerIds: string[]
@@ -68,6 +69,7 @@ function migrateVirtualSet(raw: Record<string, unknown>): VirtualSet {
     insertionPosition: (raw.insertionPosition as 'above' | 'below') ?? 'above',
     members: oldIds.map(id => ({ layerId: id, blendMode: null })),
     expandToAnimationCells: Boolean(raw.expandToAnimationCells ?? false),
+    visibilityOverrides: {},
   }
 }
 

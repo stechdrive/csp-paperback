@@ -15,6 +15,7 @@ const sampleState: PersistedState = {
         { layerId: 'layer-5', blendMode: null },
       ],
       expandToAnimationCells: false,
+      visibilityOverrides: {},
     },
   ],
   manualAnimFolderIds: ['folder-1'],
@@ -54,6 +55,7 @@ describe('xmp', () => {
           insertionPosition: 'above' as const,
           members: [],
           expandToAnimationCells: true,
+          visibilityOverrides: {},
         },
       ],
     }
@@ -135,6 +137,7 @@ describe('xmp', () => {
             { layerId: 'layer-y', blendMode: null },
           ],
           expandToAnimationCells: false,
+          visibilityOverrides: {},
         },
       ],
       manualAnimFolderIds: [],

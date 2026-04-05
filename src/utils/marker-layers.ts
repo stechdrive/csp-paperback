@@ -152,6 +152,7 @@ export function resolveMarkerState(
       .map(n => ({ layerId: nameToId.get(n) ?? '', blendMode: null as null }))
       .filter(m => m.layerId !== ''),
     expandToAnimationCells: false,
+    visibilityOverrides: {},
   }))
 
   return { singleMarks, virtualSets }

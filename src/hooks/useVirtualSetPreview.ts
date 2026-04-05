@@ -26,7 +26,7 @@ export function useVirtualSetPreview(vsId: string | null): HTMLCanvasElement | n
     if (memberLayers.length === 0) return null
 
     const contextFlats = flattenTree(collectContextSourceLayers(layerTree), docWidth, docHeight)
-    const memberFlats = buildMemberFlatsWithOverride(vs.members, memberLayers, docWidth, docHeight)
+    const memberFlats = buildMemberFlatsWithOverride(vs.members, memberLayers, docWidth, docHeight, vs.visibilityOverrides)
     return compositeRoot([...contextFlats, ...memberFlats], docWidth, docHeight, outputConfig.background)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vsId, virtualSets, layerTree, outputConfig, docWidth, docHeight])

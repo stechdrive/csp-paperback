@@ -13,6 +13,7 @@ export interface VirtualSet {
   name: string
   insertionLayerId: string | null  // 差し込み階層位置のレイヤーID（未設定はnull）
   insertionPosition: 'above' | 'below' // insertionLayerIdの上/下どちらに差し込むか
-  members: VirtualSetMember[]    // メンバーレイヤー一覧
+  members: VirtualSetMember[]    // メンバーレイヤー一覧（フォルダも可）
   expandToAnimationCells: boolean // 差し込み位置がアニメフォルダなら全セルに展開
+  visibilityOverrides: Record<string, boolean> // layerId → 表示(true)/非表示(false)
 }
