@@ -20,8 +20,8 @@ CSP Paperback solves this outside the workflow: load your PSD and XDTS, and expo
 
 **Load your project**
 - Export your CLIP file as PSD from CSP
-- Optionally export the `.xdts` timeline file via *File > Export Animation > Export Timeline Information*
-- Open the app and drop both files to load them
+- Optionally export the `.xdts` timeline file via *File > Export Animation > Export Timeline Information*, or drop a `.cspb` file alongside the PSD — no separate XDTS export needed
+- Open the app and drop the files to load them
 
 **Composite correctly**
 - Animation folders are detected automatically from the XDTS data, or marked manually
@@ -43,6 +43,9 @@ CSP Paperback solves this outside the workflow: load your PSD and XDTS, and expo
 - File naming: sequential numbers or original CSP cell names
 - Per-process suffix support via a configurable process table (e.g. `_en`, `_lo`)
 
+**Undo / Redo**
+- Ctrl+Z / Ctrl+Shift+Z to undo or redo any editing operation (marks, virtual sets, visibility, settings)
+
 **Persistence**
 - All settings (marks, virtual sets, process table) are saved inside the PSD file as XMP metadata
 - No account, no server — everything runs in the browser and nothing leaves your machine
@@ -53,6 +56,7 @@ CSP Paperback solves this outside the workflow: load your PSD and XDTS, and expo
 |------|---------|
 | `.psd` | Required. Your CLIP file exported as PSD from Clip Studio Paint. |
 | `.xdts` | Optional. Timeline data exported via *File > Export Animation > Export Timeline Information*. Used for multi-track cell synchronisation. |
+| `.cspb` | Optional. Drop alongside the PSD to load timeline data directly — no separate XDTS export needed. |
 
 ---
 
@@ -72,8 +76,8 @@ CSP Paperbackはその制約をPSDとXDTSを読み込むことでワークフロ
 
 **プロジェクトの読み込み**
 - CSPでCLIPファイルをPSD形式で書き出しておく
-- 必要に応じて *ファイル＞アニメーション書き出し＞タイムシート情報から出力* でXDTSファイルも書き出しておく
-- アプリを開き、PSDとXDTSをドロップして読み込む
+- タイムラインデータは *ファイル＞アニメーション書き出し＞タイムシート情報から出力* でXDTSを書き出すか、CSPBファイルをPSDと一緒にドロップすれば別途書き出し不要
+- アプリを開き、ファイルをドロップして読み込む
 
 **正しい合成順序**
 - アニメーションフォルダはXDTSデータから自動検出、またはUI上で手動指定
@@ -95,6 +99,9 @@ CSP Paperbackはその制約をPSDとXDTSを読み込むことでワークフロ
 - ファイル命名：連番またはCSPのセル名
 - プロセステーブルで修正工程名のサフィックスを設定して書き出し（例：`_en`、`_lo`）
 
+**Undo / Redo**
+- Ctrl+Z / Ctrl+Shift+Z で操作を取り消し・やり直せる（マーク・仮想セット・表示切替・設定など全操作対応）
+
 **設定の永続化**
 - マーク・仮想セット・プロセステーブルなど、すべての設定をPSDファイルのXMPメタデータとして保存
 - アカウント不要・サーバー不要。すべてブラウザ内で完結し、データは外部に送信されない
@@ -105,6 +112,7 @@ CSP Paperbackはその制約をPSDとXDTSを読み込むことでワークフロ
 |---------|------|
 | `.psd` | 必須。CLIPファイルをPSD形式で書き出したもの。 |
 | `.xdts` | 任意。*ファイル＞アニメーション書き出し＞タイムシート情報から出力*で書き出すタイムラインデータ。複数トラックのセル同期に使用。 |
+| `.cspb` | 任意。PSDと一緒にドロップするとタイムラインデータを直接読み込める。XDTSの別途書き出し不要。 |
 
 ---
 
