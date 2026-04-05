@@ -57,7 +57,8 @@ export function buildMemberFlatsWithOverride(
   const hasOverrides = Object.keys(visibilityOverrides).length > 0
   const result: FlatLayer[] = []
 
-  for (const member of members) {
+  // UI上のリスト順（上が上レイヤー）に合わせ、下のレイヤーから先に合成する
+  for (const member of [...members].reverse()) {
     const layer = layerMap.get(member.layerId)
     if (!layer) continue
 
