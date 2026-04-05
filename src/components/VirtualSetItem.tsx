@@ -10,8 +10,7 @@ interface VirtualSetItemProps {
   virtualSet: VirtualSet
 }
 
-const BLEND_MODES: { value: string | null; label: string }[] = [
-  { value: null, label: 'レイヤー設定' },
+const BLEND_MODE_OPTIONS: { value: string; label: string }[] = [
   { value: 'normal', label: 'Normal' },
   { value: 'multiply', label: 'Multiply' },
   { value: 'screen', label: 'Screen' },
@@ -25,6 +24,21 @@ const BLEND_MODES: { value: string | null; label: string }[] = [
   { value: 'difference', label: 'Difference' },
   { value: 'exclusion', label: 'Exclusion' },
 ]
+
+/** CspLayerのblendMode値（スペース区切り）をUIラベルに変換 */
+function layerBlendModeLabel(blendMode: string | undefined): string {
+  if (!blendMode) return 'Normal'
+  const map: Record<string, string> = {
+    'normal': 'Normal', 'multiply': 'Multiply', 'screen': 'Screen',
+    'overlay': 'Overlay', 'darken': 'Darken', 'lighten': 'Lighten',
+    'color dodge': 'Color Dodge', 'color burn': 'Color Burn',
+    'hard light': 'Hard Light', 'soft light': 'Soft Light',
+    'difference': 'Difference', 'exclusion': 'Exclusion',
+    'pass through': '通過', 'hue': 'Hue', 'saturation': 'Saturation',
+    'color': 'Color', 'luminosity': 'Luminosity',
+  }
+  return map[blendMode] ?? blendMode
+}
 
 // モジュールレベルのDnD状態
 let _draggingMemberInfo: { setId: string; layerIds: string[] } | null = null
@@ -388,8 +402,12 @@ export function VirtualSetItem({ virtualSet }: VirtualSetItemProps) {
                           }}
                           onClick={e => e.stopPropagation()}
                         >
-                          {BLEND_MODES.map(bm => (
-                            <option key={bm.value ?? '__null__'} value={bm.value ?? ''}>
+                          {/* null = レイヤー本来のモードを継承。実際のモード名を括弧内に表示 */}
+                          <option value="">
+                            {layerBlendModeLabel(layer?.blendMode)}（継承）
+                          </option>
+                          {BLEND_MODE_OPTIONS.map(bm => (
+                            <option key={bm.value} value={bm.value}>
                               {bm.label}
                             </option>
                           ))}
