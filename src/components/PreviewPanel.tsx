@@ -5,11 +5,13 @@ import { useOutputPreview } from '../hooks/useOutputPreview'
 import { useZoomPan } from '../hooks/useZoomPan'
 import { OutputPreview } from './OutputPreview'
 import { ExportSettings } from './ExportSettings'
+import { TimelineSeekBar } from './TimelineSeekBar'
 import styles from './PreviewPanel.module.css'
 
 function NavigatorCanvas({ height }: { height: number }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const { containerRef, contentStyle, containerStyle, onMouseDown, zoom } = useZoomPan()
+  const xdtsData = useAppStore(s => s.xdtsData)
   usePreview(canvasRef)
 
   return (
@@ -26,11 +28,12 @@ function NavigatorCanvas({ height }: { height: number }) {
       >
         <canvas ref={canvasRef} className={styles.navigatorCanvas} style={contentStyle} />
       </div>
+      {xdtsData && xdtsData.duration > 0 && <TimelineSeekBar />}
     </div>
   )
 }
 
-const NAV_HEIGHT_DEFAULT = 160
+const NAV_HEIGHT_DEFAULT = 270
 const NAV_HEIGHT_MIN = 40
 const NAV_HEIGHT_MAX = 600
 
