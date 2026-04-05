@@ -313,19 +313,36 @@
 
 /* ─── モバイル最適化 ─── */
 @media (pointer: coarse) and (max-width: 1024px) {
-  .resizeHandle {
-    height: 1.25rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  /* ヘッダーはタブバーと重複するので非表示 */
+  .header {
+    display: none;
   }
 
-  .resizeHandle::after {
-    content: '';
-    width: 2rem;
-    height: 0.2rem;
-    background: #585b70;
-    border-radius: 0.125rem;
+  .noXdtsBanner {
+    order: 0;
+  }
+
+  /* ナビゲーター: JS の inline height を上書きし、画面上部に配置 */
+  .navigatorSection {
+    height: 30vh !important;
+    order: 1;
+  }
+
+  /* リサイズハンドルはモバイルで非表示（固定比率で配分） */
+  .resizeHandle {
+    display: none;
+  }
+
+  /* 出力プレビューヘッダー */
+  .divider {
+    order: 3;
+  }
+
+  /* 出力プレビュー: 残りの高さすべて */
+  .outputSection {
+    order: 4;
+    flex: 1;
+    min-height: 0;
   }
 
   .seekBar {

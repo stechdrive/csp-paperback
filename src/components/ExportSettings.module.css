@@ -120,6 +120,9 @@
   .settings {
     padding: 0.5rem;
     gap: 0.5rem;
+    order: 10;
+    border-bottom: none;
+    border-top: 1px solid #313244;
   }
 
   .toggle {
