@@ -12,6 +12,7 @@ export const createAnimationSlice: StateCreator<AppStore, [], [], AnimationSlice
   manualAnimFolderIds: new Set(),
 
   toggleManualAnimFolder: (layerId) => {
+    get().pushHistory()
     const current = new Set(get().manualAnimFolderIds)
     if (current.has(layerId)) {
       current.delete(layerId)

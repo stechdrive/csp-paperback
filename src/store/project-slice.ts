@@ -15,16 +15,19 @@ export const createProjectSlice: StateCreator<AppStore, [], [], ProjectSlice> = 
   projectSettings: DEFAULT_PROJECT_SETTINGS,
 
   updateProcessTable: (table) => {
+    get().pushHistory()
     set({ projectSettings: { ...get().projectSettings, processTable: table } })
   },
 
   setCellNamingMode: (mode) => {
+    get().pushHistory()
     set({ projectSettings: { ...get().projectSettings, cellNamingMode: mode } })
   },
 
   importSettings: (json) => {
     try {
       const parsed = JSON.parse(json) as ProjectSettings
+      get().pushHistory()
       set({ projectSettings: { ...DEFAULT_PROJECT_SETTINGS, ...parsed } })
     } catch {
       console.error('Failed to import project settings')

@@ -6,6 +6,7 @@ import { createMarksSlice, type MarksSlice } from './marks-slice'
 import { createProjectSlice, type ProjectSlice } from './project-slice'
 import { createOutputSlice, type OutputSlice } from './output-slice'
 import { createUiSlice, type UiSlice } from './ui-slice'
+import { createHistorySlice, type HistorySlice } from './history-slice'
 
 export type AppStore =
   PsdSlice &
@@ -14,7 +15,8 @@ export type AppStore =
   MarksSlice &
   ProjectSlice &
   OutputSlice &
-  UiSlice
+  UiSlice &
+  HistorySlice
 
 export const useAppStore = create<AppStore>()((...a) => ({
   ...createPsdSlice(...a),
@@ -24,4 +26,5 @@ export const useAppStore = create<AppStore>()((...a) => ({
   ...createProjectSlice(...a),
   ...createOutputSlice(...a),
   ...createUiSlice(...a),
+  ...createHistorySlice(...a),
 }))
