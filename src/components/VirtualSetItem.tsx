@@ -11,7 +11,7 @@ interface VirtualSetItemProps {
 }
 
 const BLEND_MODE_OPTIONS: { value: string; label: string }[] = [
-  { value: 'normal', label: 'Normal' },
+  { value: 'normal', label: '通常' },
   { value: 'multiply', label: 'Multiply' },
   { value: 'screen', label: 'Screen' },
   { value: 'overlay', label: 'Overlay' },
@@ -29,7 +29,7 @@ const BLEND_MODE_OPTIONS: { value: string; label: string }[] = [
 function layerBlendModeLabel(blendMode: string | undefined): string {
   if (!blendMode) return 'Normal'
   const map: Record<string, string> = {
-    'normal': 'Normal', 'multiply': 'Multiply', 'screen': 'Screen',
+    'normal': '通常', 'multiply': 'Multiply', 'screen': 'Screen',
     'overlay': 'Overlay', 'darken': 'Darken', 'lighten': 'Lighten',
     'color dodge': 'Color Dodge', 'color burn': 'Color Burn',
     'hard light': 'Hard Light', 'soft light': 'Soft Light',
