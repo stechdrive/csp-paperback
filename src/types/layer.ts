@@ -12,6 +12,7 @@ export interface CspLayer {
   parentId: string | null  // 循環参照回避のためIDで参照
   depth: number
   blendMode: BlendMode
+  opacity: number          // 不透明度 0〜100
   hidden: boolean
   clipping: boolean
   isFolder: boolean        // sectionDivider.type === 1 (open) or 2 (closed)
@@ -32,6 +33,7 @@ export interface CspLayer {
 export interface FlatLayer {
   canvas: HTMLCanvasElement
   blendMode: BlendMode
+  opacity: number          // 不透明度 0〜100
   top: number
   left: number
   sourceId: string

@@ -36,7 +36,7 @@ export function OutputPreview({ entries, focusedAnimFolderId }: OutputPreviewPro
   const outputConfig = useAppStore(s => s.outputConfig)
   const selectedVirtualSetId = useAppStore(s => s.selectedVirtualSetId)
   const transparent = outputConfig.format === 'png' && outputConfig.background === 'transparent'
-  if (!focusedAnimFolderId && !selectedVirtualSetId) {
+  if (!focusedAnimFolderId && !selectedVirtualSetId && entries.length === 0) {
     return (
       <div className={styles.empty}>
         レイヤーツリーのアニメフォルダでセルを選択するか<br />左ペインの仮想セットをクリックすると<br />出力プレビューを表示します

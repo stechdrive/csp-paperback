@@ -1,7 +1,7 @@
 import type { StateCreator } from 'zustand'
 import type { CspLayer, XdtsData } from '../types'
 import { parseXdts, serializeXdts } from '../utils/xdts-parser'
-import { buildLayerTree } from '../engine/tree-builder'
+import { detectAnimationFoldersByXdts, clearXdtsAnimFolders } from '../engine/tree-builder'
 import type { AppStore } from './index'
 
 export interface XdtsSlice {
@@ -20,32 +20,23 @@ export const createXdtsSlice: StateCreator<AppStore, [], [], XdtsSlice> = (set, 
     const xdts = parseXdts(text)
     set({ xdtsData: xdts, xdtsFileName: fileName })
 
-    // パース結果をコンソールに出力（デバッグ用）
-    console.log('[xdts] parsed tracks:', xdts.tracks)
+    // PSD 読み込み前に XDTS が来た場合は loadPsd 側で反映されるので何もしない
+    const { layerTree } = get()
+    if (layerTree.length === 0) return
 
-    // PSD が読み込み済みなら xdts を反映してレイヤーツリーを再構築する
-    const { rawPsd } = get()
-    if (rawPsd) {
-      const tree = buildLayerTree(rawPsd, xdts)
-      set({ layerTree: tree })
-      console.log('[xdts] layer tree rebuilt. animation folders detected:',
-        tree.flatMap(function findAnim(l): string[] {
-          return [
-            ...(l.isAnimationFolder ? [l.originalName] : []),
-            ...l.children.flatMap(findAnim),
-          ]
-        })
-      )
-    }
+    // 既存ツリーのフラグをインプレースで更新（ツリー再構築しない＝レイヤーIDを維持）
+    clearXdtsAnimFolders(layerTree)
+    detectAnimationFoldersByXdts(layerTree, xdts)
+    // シャローコピーで再レンダリングをトリガー
+    set({ layerTree: [...layerTree] })
   },
 
   clearXdts: () => {
+    const { layerTree } = get()
     set({ xdtsData: null, xdtsFileName: null })
-    // xdts クリア時も PSD が読み込み済みなら xdts なしで再構築
-    const { rawPsd } = get()
-    if (rawPsd) {
-      const tree = buildLayerTree(rawPsd, undefined)
-      set({ layerTree: tree })
+    if (layerTree.length > 0) {
+      clearXdtsAnimFolders(layerTree)
+      set({ layerTree: [...layerTree] })
     }
   },
 

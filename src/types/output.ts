@@ -1,22 +1,19 @@
 export type OutputFormat = 'jpg' | 'png'
 export type BackgroundMode = 'white' | 'transparent'
 export type StructureMode = 'hierarchy' | 'flat'
-export type OutputScope = 'all' | 'marked'
 
 export interface OutputConfig {
   format: OutputFormat
   jpgQuality: number        // 0.0 - 1.0
   background: BackgroundMode
   structure: StructureMode
-  scope: OutputScope
 }
 
 export const DEFAULT_OUTPUT_CONFIG: OutputConfig = {
   format: 'jpg',
   jpgQuality: 0.92,
   background: 'white',
-  structure: 'hierarchy',
-  scope: 'all',
+  structure: 'flat',
 }
 
 export interface OutputEntry {

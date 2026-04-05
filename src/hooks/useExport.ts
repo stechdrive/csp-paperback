@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react'
 import { useAppStore } from '../store'
 import { selectLayerTreeWithVisibility } from '../store/selectors'
-import { extractAllEntries } from '../engine/cell-extractor'
+import { extractAllEntries, extractVirtualSetEntries } from '../engine/cell-extractor'
 import { flattenTree } from '../engine/flatten'
 import { buildZip, downloadBlob, makeZipFileName } from '../utils/zip-builder'
 
@@ -41,19 +41,13 @@ export function useExport(): UseExportResult {
 
       setProgress(0.4)
 
-      // scope=markedの場合はマーク済みのみに絞る
-      if (outputConfig.scope === 'marked') {
-        const markedIds = new Set([
-          ...Array.from(state.singleMarks.keys()),
-          // _プレフィックス自動マークはextractAllEntriesに含まれる
-        ])
-        entries = entries.filter(e => markedIds.has(e.sourceLayerId))
-      }
+      // 仮想セルのエントリを追加（常に出力）
+      const vsEntries = extractVirtualSetEntries(
+        tree, state.virtualSets, docWidth, docHeight, outputConfig.background
+      )
+      entries = [...entries, ...vsEntries]
 
       setProgress(0.5)
-
-      // コンテキスト（_プレフィックス以外のルート直下フラットレイヤー）を生成して
-      // 各エントリに反映する処理はcell-extractor内部で済み
 
       // ZIP生成
       const zipBlob = await buildZip(entries, outputConfig, psdFileName, docDpiX, docDpiY)

@@ -14,6 +14,7 @@ export interface MarksSlice {
   removeVirtualSetMember: (setId: string, layerId: string) => void
   reorderVirtualSetMembers: (setId: string, newOrder: string[]) => void
   setVirtualSetMemberBlendMode: (setId: string, layerId: string, blendMode: string | null) => void
+  setVirtualSetMemberOpacity: (setId: string, layerId: string, opacity: number | null) => void
   setVirtualSetVisibilityOverride: (setId: string, layerId: string, visible: boolean) => void
 }
 
@@ -97,7 +98,7 @@ export const createMarksSlice: StateCreator<AppStore, [], [], MarksSlice> = (set
         if (v.id !== setId) return v
         return {
           ...v,
-          members: [{ layerId, blendMode: null }, ...v.members],  // 先頭に追加（上レイヤー扱い）
+          members: [{ layerId, blendMode: null, opacity: null }, ...v.members],  // 先頭に追加（上レイヤー扱い）
           visibilityOverrides: newOverrides,
         }
       }),
@@ -134,6 +135,20 @@ export const createMarksSlice: StateCreator<AppStore, [], [], MarksSlice> = (set
           ...vs,
           members: vs.members.map(m =>
             m.layerId === layerId ? { ...m, blendMode } : m
+          ),
+        }
+      }),
+    })
+  },
+
+  setVirtualSetMemberOpacity: (setId, layerId, opacity) => {
+    set({
+      virtualSets: get().virtualSets.map(vs => {
+        if (vs.id !== setId) return vs
+        return {
+          ...vs,
+          members: vs.members.map(m =>
+            m.layerId === layerId ? { ...m, opacity } : m
           ),
         }
       }),

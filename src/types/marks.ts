@@ -6,6 +6,7 @@ export interface SingleMark {
 export interface VirtualSetMember {
   layerId: string
   blendMode: string | null  // null = レイヤー元の合成モードを使用
+  opacity: number | null    // null = レイヤー元の不透明度を使用（0〜100）
 }
 
 export interface VirtualSet {

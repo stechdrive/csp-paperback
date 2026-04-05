@@ -12,8 +12,7 @@ export function ExportDialog({ onClose }: ExportDialogProps) {
   const setFormat = useAppStore(s => s.setFormat)
   const setBackground = useAppStore(s => s.setBackground)
   const setStructure = useAppStore(s => s.setStructure)
-  const setScope = useAppStore(s => s.setScope)
-  const setJpgQuality = useAppStore(s => s.setJpgQuality)
+  // const setJpgQuality = useAppStore(s => s.setJpgQuality)  // JPG品質UI復活時に有効化
   const { t } = useLocale()
 
   const { isExporting, progress, error, startExport } = useExport()
@@ -45,20 +44,7 @@ export function ExportDialog({ onClose }: ExportDialogProps) {
               PNG
             </label>
           </div>
-          {outputConfig.format === 'jpg' && (
-            <div className={styles.qualityRow}>
-              <span className={styles.label}>{t.export.quality}</span>
-              <input
-                type="range" min={0.5} max={1} step={0.01}
-                value={outputConfig.jpgQuality}
-                className={styles.qualitySlider}
-                onChange={e => setJpgQuality(parseFloat(e.target.value))}
-              />
-              <span className={styles.qualityValue}>
-                {Math.round(outputConfig.jpgQuality * 100)}%
-              </span>
-            </div>
-          )}
+          {/* JPG品質スライダー: 現在UIから非表示（setJpgQuality / outputConfig.jpgQuality は維持） */}
         </div>
 
         {/* 背景 */}
@@ -83,41 +69,17 @@ export function ExportDialog({ onClose }: ExportDialogProps) {
 
         {/* 出力構造 */}
         <div className={styles.section}>
-          <div className={styles.label}>{t.export.structure}</div>
-          <div className={styles.radioGroup}>
-            <label className={styles.radioLabel}>
-              <input type="radio" name="structure" value="hierarchy"
-                checked={outputConfig.structure === 'hierarchy'}
-                onChange={() => setStructure('hierarchy')} />
-              {t.export.structureHierarchy}
-            </label>
-            <label className={styles.radioLabel}>
-              <input type="radio" name="structure" value="flat"
-                checked={outputConfig.structure === 'flat'}
-                onChange={() => setStructure('flat')} />
-              {t.export.structureFlat}
-            </label>
-          </div>
+          <label className={styles.switchRow}>
+            <span className={styles.label}>{t.export.structure}</span>
+            <span
+              className={`${styles.switch} ${outputConfig.structure === 'hierarchy' ? styles.switchOn : ''}`}
+              onClick={() => setStructure(outputConfig.structure === 'hierarchy' ? 'flat' : 'hierarchy')}
+              role="switch"
+              aria-checked={outputConfig.structure === 'hierarchy'}
+            />
+          </label>
         </div>
 
-        {/* 出力スコープ */}
-        <div className={styles.section}>
-          <div className={styles.label}>{t.export.scope}</div>
-          <div className={styles.radioGroup}>
-            <label className={styles.radioLabel}>
-              <input type="radio" name="scope" value="all"
-                checked={outputConfig.scope === 'all'}
-                onChange={() => setScope('all')} />
-              {t.export.scopeAll}
-            </label>
-            <label className={styles.radioLabel}>
-              <input type="radio" name="scope" value="marked"
-                checked={outputConfig.scope === 'marked'}
-                onChange={() => setScope('marked')} />
-              {t.export.scopeMarked}
-            </label>
-          </div>
-        </div>
 
         {/* 進捗・エラー */}
         {isExporting && (

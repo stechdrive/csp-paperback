@@ -81,3 +81,91 @@
   flex-shrink: 0;
   overflow: hidden;
 }
+
+/* ─── モバイルタブバー（デスクトップでは非表示） ─── */
+.mobileTabBar {
+  display: none;
+}
+
+/* ─── モバイルレイアウト ─── */
+@media (max-width: 768px) {
+  .layout {
+    flex-direction: column;
+  }
+
+  /* リサイズハンドルはモバイル不要 */
+  .resizeHandleWrapper {
+    display: none !important;
+  }
+
+  /* アクティブなパネルを全幅・残り高さ全体に */
+  .leftPane,
+  .centerPane,
+  .rightPane {
+    width: 100% !important;
+    flex: 1;
+    min-height: 0;
+    transition: none !important;
+  }
+
+  /* タブで非アクティブなパネルを隠す */
+  .layout[data-mobile-tab="preview"] .leftPane,
+  .layout[data-mobile-tab="preview"] .rightPane {
+    display: none;
+  }
+
+  .layout[data-mobile-tab="virtual"] .centerPane,
+  .layout[data-mobile-tab="virtual"] .rightPane {
+    display: none;
+  }
+
+  .layout[data-mobile-tab="layer"] .leftPane,
+  .layout[data-mobile-tab="layer"] .centerPane {
+    display: none;
+  }
+
+  /* ボトムタブバー */
+  .mobileTabBar {
+    display: flex;
+    flex-shrink: 0;
+    height: 56px;
+    background: #1e1e2e;
+    border-top: 1px solid #313244;
+    /* iOS ホームインジケーター対応 */
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .mobileTab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.15rem;
+    border: none;
+    background: none;
+    color: #6c7086;
+    cursor: pointer;
+    transition: color 0.1s;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .mobileTab:active {
+    background: rgba(99, 102, 241, 0.08);
+  }
+
+  .mobileTabActive {
+    color: #6366f1;
+  }
+
+  .mobileTabIcon {
+    font-size: 1.1rem;
+    line-height: 1;
+  }
+
+  .mobileTabLabel {
+    font-size: 0.6rem;
+    line-height: 1;
+    letter-spacing: 0.02em;
+  }
+}

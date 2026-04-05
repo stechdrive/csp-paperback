@@ -105,10 +105,11 @@ export function drawLayer(
 ): void {
   const compositeOp = blendModeToCompositeOp(layer.blendMode)
 
+  const alpha = layer.opacity / 100
   if (compositeOp !== null) {
     ctx.save()
     ctx.globalCompositeOperation = compositeOp
-    ctx.globalAlpha = 1.0 // 不透明度は常に100%
+    ctx.globalAlpha = alpha
     ctx.drawImage(layer.canvas, layer.left, layer.top)
     ctx.restore()
   } else {
@@ -116,7 +117,7 @@ export function drawLayer(
     // TODO: v1.1でPDF Reference 1.7準拠のピクセル演算を実装
     ctx.save()
     ctx.globalCompositeOperation = 'source-over'
-    ctx.globalAlpha = 1.0
+    ctx.globalAlpha = alpha
     ctx.drawImage(layer.canvas, layer.left, layer.top)
     ctx.restore()
   }

@@ -42,6 +42,8 @@ function convertLayer(
   // _プレフィックスを除去した表示名
   const name = originalName.startsWith('_') ? originalName.slice(1) : originalName
   const blendMode: BlendMode = (layer.blendMode ?? 'normal') as BlendMode
+  // ag-psdのopacityは0〜1（psdReader.jsで / 0xff済み）、UIは0〜100に変換
+  const opacity = Math.round((layer.opacity ?? 1) * 100)
   const hidden = layer.hidden ?? false
   const clipping = layer.clipping ?? false
   const folder = isFolder(layer)
@@ -72,6 +74,7 @@ function convertLayer(
     parentId,
     depth,
     blendMode,
+    opacity,
     hidden,
     clipping,
     isFolder: folder,
@@ -121,6 +124,19 @@ export function detectAnimationFoldersByXdts(
 }
 
 /**
+ * XDTS 検出によるアニメーションフォルダフラグをリセットする（手動指定は保持）
+ */
+export function clearXdtsAnimFolders(layers: CspLayer[]): void {
+  for (const layer of layers) {
+    if (layer.isAnimationFolder && layer.animationFolder?.detectedBy === 'xdts') {
+      layer.isAnimationFolder = false
+      layer.animationFolder = null
+    }
+    if (layer.children.length > 0) clearXdtsAnimFolders(layer.children)
+  }
+}
+
+/**
  * レイヤーがアニメーションフォルダの子孫を持つかどうかを再帰的に判定
  */
 export function hasAnimationFolderDescendant(layer: CspLayer): boolean {
@@ -165,6 +181,13 @@ export function buildLayerTree(
 
   if (xdts) {
     detectAnimationFoldersByXdts(tree, xdts)
+  }
+
+  // クリスタが自動生成する「用紙」レイヤー（最下層）を自動的に非表示に設定する。
+  // 白背景として合成されてしまうため、PNG透過出力時に意図しない結果を防ぐ。
+  const bottom = tree[tree.length - 1]
+  if (bottom && !bottom.isFolder && bottom.originalName === '用紙') {
+    bottom.uiHidden = true
   }
 
   return tree

@@ -149,6 +149,51 @@
   padding: 0.2rem 0.4rem;
 }
 
+/* 選択中レイヤーで挿入位置を設定するボタン行（モバイルのみ表示） */
+.insertionBySelection {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .insertionBySelection {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin-top: 0.3rem;
+    padding: 0.2rem 0.4rem;
+    background: rgba(137, 180, 250, 0.06);
+    border: 1px solid rgba(137, 180, 250, 0.15);
+    border-radius: 4px;
+  }
+}
+
+.insertionBySelectionName {
+  flex: 1;
+  font-size: 0.72rem;
+  color: #a6adc8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.insertionPosBtn {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.45rem;
+  background: #313244;
+  border: 1px solid #45475a;
+  border-radius: 3px;
+  color: #89b4fa;
+  cursor: pointer;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.insertionPosBtn:hover {
+  background: #45475a;
+  color: #cdd6f4;
+}
+
 /* レイヤーリスト：縦に自由に伸長する */
 .memberList {
   display: flex;
@@ -317,6 +362,35 @@
 .blendModeSelect:focus {
   outline: 1px solid #6366f1;
   border-color: #6366f1;
+}
+
+.opacityControl {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  flex-shrink: 0;
+}
+
+.opacityInput {
+  width: 2.6rem;
+  height: 18px;
+  font-size: 0.65rem;
+  background: #181825;
+  color: #bac2de;
+  border: 1px solid #45475a;
+  border-radius: 3px;
+  padding: 0 2px;
+  text-align: right;
+}
+
+.opacityInput:focus {
+  outline: 1px solid #6366f1;
+  border-color: #6366f1;
+}
+
+.opacityUnit {
+  font-size: 0.65rem;
+  color: #a6adc8;
 }
 
 /* ミニツリーノード（フォルダ展開時の子レイヤー表示） */

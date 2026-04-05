@@ -3,6 +3,7 @@ import { useAppStore } from '../store'
 import { useLocale } from '../i18n'
 import { useExport } from '../hooks/useExport'
 import { SettingsDialog } from './SettingsDialog'
+import { Tooltip } from './Tooltip'
 import styles from './Toolbar.module.css'
 
 function XdtsDownloadButton({ hasPsd }: { hasPsd: boolean }) {
@@ -20,7 +21,7 @@ function XdtsDownloadButton({ hasPsd }: { hasPsd: boolean }) {
 
   return (
     <button className={styles.btn} onClick={downloadXdts}>
-      xdts保存
+      XDTS保存
     </button>
   )
 }
@@ -28,31 +29,33 @@ function XdtsDownloadButton({ hasPsd }: { hasPsd: boolean }) {
 interface ToolbarProps {
   onPsdFile: (file: File) => Promise<void>
   onXdtsFile: (file: File) => Promise<void>
+  onCspbFile: (file: File) => Promise<void>
+  onSaveCspb: () => void
   isLoading: boolean
   error: string | null
+  notification: string | null
   onSavePsd: () => void
   hasPsd: boolean
 }
 
-export function Toolbar({ onPsdFile, onXdtsFile, isLoading, error, onSavePsd, hasPsd }: ToolbarProps) {
+export function Toolbar({ onPsdFile, onXdtsFile, onCspbFile, onSaveCspb, isLoading, error, notification, hasPsd }: ToolbarProps) {
   const psdFileName = useAppStore(s => s.psdFileName)
   const xdtsFileName = useAppStore(s => s.xdtsFileName)
-  const psdInputRef = useRef<HTMLInputElement>(null)
-  const xdtsInputRef = useRef<HTMLInputElement>(null)
+  const importSettings = useAppStore(s => s.importSettings)
+  const openInputRef = useRef<HTMLInputElement>(null)
   const [showSettings, setShowSettings] = useState(false)
-  const { t, locale, setLocale } = useLocale()
+  const { t } = useLocale()
   const { isExporting, progress, error: exportError, startExport } = useExport()
 
-  const handlePsdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) onPsdFile(file)
+  const handleOpenFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? [])
     e.target.value = ''
-  }
-
-  const handleXdtsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) onXdtsFile(file)
-    e.target.value = ''
+    const ext = (f: File) => f.name.toLowerCase().split('.').pop() ?? ''
+    // xdts → psd → cspb → json の順に処理
+    for (const f of files.filter(f => ext(f) === 'xdts')) await onXdtsFile(f)
+    for (const f of files.filter(f => ext(f) === 'psd')) await onPsdFile(f)
+    for (const f of files.filter(f => ext(f) === 'cspb')) await onCspbFile(f)
+    for (const f of files.filter(f => ext(f) === 'json')) importSettings(await f.text())
   }
 
   return (
@@ -61,34 +64,25 @@ export function Toolbar({ onPsdFile, onXdtsFile, isLoading, error, onSavePsd, ha
         <span className={styles.title}>CSP Paperback</span>
         <span className={styles.version}>v{__APP_VERSION__}</span>
 
-        <button
-          className={styles.btn}
-          onClick={() => psdInputRef.current?.click()}
-          disabled={isLoading}
+        <Tooltip
+          content={"PSD / XDTS / .cspb / 工程設定JSON を開く\n複数ファイルを同時に選択できます"}
+          placement="bottom"
         >
-          {t.toolbar.openPsd}
-        </button>
+          <button
+            className={styles.btn}
+            onClick={() => openInputRef.current?.click()}
+            disabled={isLoading}
+          >
+            ファイルを開く
+          </button>
+        </Tooltip>
         <input
-          ref={psdInputRef}
+          ref={openInputRef}
           type="file"
-          accept=".psd"
+          accept=".psd,.xdts,.cspb,.json"
+          multiple
           style={{ display: 'none' }}
-          onChange={handlePsdChange}
-        />
-
-        <button
-          className={styles.btn}
-          onClick={() => xdtsInputRef.current?.click()}
-          disabled={isLoading}
-        >
-          {t.toolbar.openXdts}
-        </button>
-        <input
-          ref={xdtsInputRef}
-          type="file"
-          accept=".xdts"
-          style={{ display: 'none' }}
-          onChange={handleXdtsChange}
+          onChange={handleOpenFiles}
         />
 
         <div className={styles.spacer} />
@@ -96,6 +90,9 @@ export function Toolbar({ onPsdFile, onXdtsFile, isLoading, error, onSavePsd, ha
         {isLoading && <span className={styles.loading}>{t.toolbar.loading}</span>}
         {error && <span className={styles.error}>{error}</span>}
         {exportError && <span className={styles.error}>{exportError}</span>}
+        {notification && !error && !exportError && (
+          <span className={styles.notification}>{notification}</span>
+        )}
         {isExporting && (
           <span className={styles.loading}>{t.export.exporting} {Math.round(progress * 100)}%</span>
         )}
@@ -106,34 +103,33 @@ export function Toolbar({ onPsdFile, onXdtsFile, isLoading, error, onSavePsd, ha
           <span className={styles.fileInfo}>{xdtsFileName}</span>
         )}
 
-        <button
-          className={styles.btn}
-          onClick={onSavePsd}
-          disabled={!hasPsd}
-        >
-          {t.toolbar.savePsd}
-        </button>
         <XdtsDownloadButton hasPsd={hasPsd} />
-        <button
-          className={styles.btn}
-          onClick={() => setShowSettings(true)}
-        >
-          {t.toolbar.settings}
-        </button>
-        <button
-          className={`${styles.btn} ${styles.btnPrimary}`}
-          onClick={startExport}
-          disabled={!psdFileName || isExporting}
-        >
-          {isExporting ? t.export.exporting : t.toolbar.export}
-        </button>
-        <button
-          className={styles.langBtn}
-          onClick={() => setLocale(locale === 'ja' ? 'en' : 'ja')}
-          title="Toggle language"
-        >
-          {locale === 'ja' ? 'EN' : 'JA'}
-        </button>
+        <Tooltip content="マーク・仮想セット・工程設定・XDTSを .cspb ファイルに保存" placement="bottom">
+          <button
+            className={styles.btn}
+            onClick={onSaveCspb}
+            disabled={!hasPsd}
+          >
+            設定保存
+          </button>
+        </Tooltip>
+        <Tooltip content="書き出し詳細設定・工程テーブルの編集" placement="bottom">
+          <button
+            className={styles.btn}
+            onClick={() => setShowSettings(true)}
+          >
+            {t.toolbar.settings}
+          </button>
+        </Tooltip>
+        <Tooltip content="書き出し設定にしたがってセル画像を ZIP で出力" placement="bottom">
+          <button
+            className={`${styles.btn} ${styles.btnPrimary}`}
+            onClick={startExport}
+            disabled={!psdFileName || isExporting}
+          >
+            {isExporting ? t.export.exporting : t.toolbar.export}
+          </button>
+        </Tooltip>
       </div>
 
       {showSettings && <SettingsDialog onClose={() => setShowSettings(false)} />}

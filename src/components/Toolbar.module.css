@@ -8,6 +8,33 @@
   flex-shrink: 0;
 }
 
+@media (max-width: 768px) {
+  .toolbar {
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    padding: 0.5rem 0.6rem;
+  }
+
+  .spacer {
+    display: none;
+  }
+
+  .fileInfo {
+    max-width: 100%;
+    width: 100%;
+    order: 10;
+    font-size: 0.7rem;
+    color: #6c7086;
+  }
+
+  .btn {
+    padding: 0.4rem 0.65rem;
+    font-size: 0.8rem;
+    /* タッチターゲット確保 */
+    min-height: 36px;
+  }
+}
+
 .title {
   font-size: 0.875rem;
   font-weight: 700;
@@ -72,6 +99,11 @@
 .loading {
   font-size: 0.8rem;
   color: #89b4fa;
+}
+
+.notification {
+  font-size: 0.8rem;
+  color: #a6e3a1;
 }
 
 .langBtn {

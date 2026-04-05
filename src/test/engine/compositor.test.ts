@@ -7,6 +7,7 @@ function makeFlatLayer(overrides: Partial<FlatLayer> = {}): FlatLayer {
   return {
     canvas: makeCanvas(),
     blendMode: 'normal',
+    opacity: 100,
     top: 0,
     left: 0,
     sourceId: 'test',

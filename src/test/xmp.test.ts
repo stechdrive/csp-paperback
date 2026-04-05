@@ -3,22 +3,23 @@ import { serializeToXmp, deserializeFromXmp, type PersistedState } from '../util
 import { DEFAULT_PROJECT_SETTINGS } from '../types/project'
 
 const sampleState: PersistedState = {
-  singleMarkIds: ['layer-1', 'layer-2'],
+  version: 2,
+  singleMarkNames: ['_原図', '_背景'],
   virtualSets: [
     {
       id: 'vs-1',
       name: 'テストセット',
-      insertionLayerId: 'layer-3',
+      insertionLayerName: 'カット01',
       insertionPosition: 'above' as const,
       members: [
-        { layerId: 'layer-4', blendMode: null },
-        { layerId: 'layer-5', blendMode: null },
+        { layerName: 'レイヤーA', blendMode: null, opacity: null },
+        { layerName: 'レイヤーB', blendMode: null, opacity: null },
       ],
       expandToAnimationCells: false,
       visibilityOverrides: {},
     },
   ],
-  manualAnimFolderIds: ['folder-1'],
+  manualAnimFolderNames: ['アニメフォルダ'],
   projectSettings: {
     processTable: [{ suffix: '_en', folderNames: ['EN', 'en'] }],
     cellNamingMode: 'sequence',
@@ -38,9 +39,10 @@ describe('xmp', () => {
     const xml = serializeToXmp(sampleState)
     const restored = deserializeFromXmp(xml)
     expect(restored).not.toBeNull()
-    expect(restored!.singleMarkIds).toEqual(sampleState.singleMarkIds)
+    expect(restored!.version).toBe(2)
+    expect(restored!.singleMarkNames).toEqual(sampleState.singleMarkNames)
     expect(restored!.virtualSets).toEqual(sampleState.virtualSets)
-    expect(restored!.manualAnimFolderIds).toEqual(sampleState.manualAnimFolderIds)
+    expect(restored!.manualAnimFolderNames).toEqual(sampleState.manualAnimFolderNames)
     expect(restored!.projectSettings).toEqual(sampleState.projectSettings)
   })
 
@@ -51,7 +53,7 @@ describe('xmp', () => {
         {
           id: 'vs-jp',
           name: '日本語セット名',
-          insertionLayerId: 'layer-jp',
+          insertionLayerName: '日本語レイヤー',
           insertionPosition: 'above' as const,
           members: [],
           expandToAnimationCells: true,
@@ -62,6 +64,7 @@ describe('xmp', () => {
     const xml = serializeToXmp(state)
     const restored = deserializeFromXmp(xml)
     expect(restored!.virtualSets[0].name).toBe('日本語セット名')
+    expect(restored!.virtualSets[0].insertionLayerName).toBe('日本語レイヤー')
   })
 
   it('cspb:data がない XMP では null を返す', () => {
@@ -76,71 +79,57 @@ describe('xmp', () => {
 
   it('空の状態もシリアライズできる', () => {
     const empty: PersistedState = {
-      singleMarkIds: [],
+      version: 2,
+      singleMarkNames: [],
       virtualSets: [],
-      manualAnimFolderIds: [],
+      manualAnimFolderNames: [],
       projectSettings: DEFAULT_PROJECT_SETTINGS,
     }
     const xml = serializeToXmp(empty)
     const restored = deserializeFromXmp(xml)
     expect(restored).not.toBeNull()
-    expect(restored!.singleMarkIds).toEqual([])
+    expect(restored!.singleMarkNames).toEqual([])
     expect(restored!.virtualSets).toEqual([])
   })
 
-  it('旧形式（memberLayerIds）を新形式（members）に自動変換する', () => {
-    // 旧形式のデータを直接作成してシリアライズ
-    const oldFormatData = {
-      singleMarkIds: [],
-      virtualSets: [
-        {
-          id: 'vs-old',
-          name: '旧セット',
-          insertionLayerId: null,
-          insertionPosition: 'above',
-          memberLayerIds: ['layer-a', 'layer-b'],
-          expandToAnimationCells: false,
-        },
-      ],
+  it('V1（旧UUID形式）の XMP は null を返してマーカーレイヤーにフォールバックさせる', () => {
+    // V1 形式: version フィールドなし、singleMarkIds がある
+    const v1Data = {
+      singleMarkIds: ['uuid-1', 'uuid-2'],
+      virtualSets: [],
       manualAnimFolderIds: [],
       projectSettings: DEFAULT_PROJECT_SETTINGS,
     }
-    // JSON→base64→XMP形式に手動エンコード
-    const json = JSON.stringify(oldFormatData)
+    const json = JSON.stringify(v1Data)
     const bytes = new TextEncoder().encode(json)
     let binary = ''
-    for (let i = 0; i < bytes.length; i++) {
-      binary += String.fromCharCode(bytes[i])
-    }
+    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i])
     const b64 = btoa(binary)
     const xml = `cspb:data="${b64}"`
 
-    const restored = deserializeFromXmp(xml)
-    expect(restored).not.toBeNull()
-    expect(restored!.virtualSets[0].members).toEqual([
-      { layerId: 'layer-a', blendMode: null },
-      { layerId: 'layer-b', blendMode: null },
-    ])
+    // V1 は null を返す（名前ベースのマーカーレイヤーにフォールバック）
+    expect(deserializeFromXmp(xml)).toBeNull()
   })
 
-  it('blendMode付きのメンバーもラウンドトリップする', () => {
+  it('blendMode 付きのメンバーもラウンドトリップする', () => {
     const state: PersistedState = {
-      singleMarkIds: [],
+      version: 2,
+      singleMarkNames: [],
       virtualSets: [
         {
           id: 'vs-blend',
           name: 'ブレンドセット',
-          insertionLayerId: null,
+          insertionLayerName: null,
           insertionPosition: 'above',
           members: [
-            { layerId: 'layer-x', blendMode: 'multiply' },
-            { layerId: 'layer-y', blendMode: null },
+            { layerName: 'レイヤーX', blendMode: 'multiply', opacity: null },
+            { layerName: 'レイヤーY', blendMode: null, opacity: null },
           ],
           expandToAnimationCells: false,
           visibilityOverrides: {},
         },
       ],
-      manualAnimFolderIds: [],
+      manualAnimFolderNames: [],
       projectSettings: DEFAULT_PROJECT_SETTINGS,
     }
     const xml = serializeToXmp(state)

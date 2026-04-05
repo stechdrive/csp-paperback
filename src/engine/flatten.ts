@@ -42,6 +42,7 @@ export function flattenTree(
       return [{
         canvas: cellCanvas,
         blendMode: layer.blendMode,
+        opacity: layer.opacity,
         top: 0,
         left: 0,
         sourceId: layer.id,
@@ -78,6 +79,7 @@ export function flattenTree(
         return [{
           canvas: groupCanvas,
           blendMode: layer.blendMode,
+          opacity: layer.opacity,
           top: 0,
           left: 0,
           sourceId: layer.id,
@@ -93,6 +95,7 @@ export function flattenTree(
     return [{
       canvas,
       blendMode: layer.blendMode,
+      opacity: layer.opacity,
       top: layer.top,
       left: layer.left,
       sourceId: layer.id,

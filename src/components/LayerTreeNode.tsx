@@ -1,29 +1,9 @@
 import { useCallback, useState } from 'react'
 import { useAppStore } from '../store'
-import { useLocale } from '../i18n'
-import type { BlendMode, CspLayer, VirtualSet } from '../types'
+import type { CspLayer, VirtualSet } from '../types'
 import { useDragSource, getActiveDragPayload } from '../hooks/useDragDrop'
+import { Tooltip } from './Tooltip'
 import styles from './LayerTreeNode.module.css'
-
-const BLEND_MODES: { value: BlendMode; label: string }[] = [
-  { value: 'normal', label: '通常' },
-  { value: 'pass through', label: '通過' },
-  { value: 'multiply', label: '乗算' },
-  { value: 'screen', label: 'スクリーン' },
-  { value: 'overlay', label: 'オーバーレイ' },
-  { value: 'darken', label: '暗く' },
-  { value: 'lighten', label: '明るく' },
-  { value: 'color dodge', label: '覆い焼き' },
-  { value: 'color burn', label: '焼き込み' },
-  { value: 'hard light', label: 'ハードライト' },
-  { value: 'soft light', label: 'ソフトライト' },
-  { value: 'difference', label: '差の絶対値' },
-  { value: 'exclusion', label: '除外' },
-  { value: 'hue', label: '色相' },
-  { value: 'saturation', label: '彩度' },
-  { value: 'color', label: 'カラー' },
-  { value: 'luminosity', label: '輝度' },
-]
 
 interface LayerTreeNodeProps {
   layer: CspLayer
@@ -96,24 +76,23 @@ export function LayerTreeNode({
 }: LayerTreeNodeProps) {
   const singleMarks = useAppStore(s => s.singleMarks)
   const manualAnimFolderIds = useAppStore(s => s.manualAnimFolderIds)
-  const toggleManualAnimFolder = useAppStore(s => s.toggleManualAnimFolder)
   const selectedCells = useAppStore(s => s.selectedCells)
   const selectAnimCell = useAppStore(s => s.selectAnimCell)
   const setFocusedAnimFolder = useAppStore(s => s.setFocusedAnimFolder)
   const focusedAnimFolderId = useAppStore(s => s.focusedAnimFolderId)
-  const setLayerBlendMode = useAppStore(s => s.setLayerBlendMode)
   const virtualSets = useAppStore(s => s.virtualSets)
   const updateVirtualSet = useAppStore(s => s.updateVirtualSet)
-  const { t } = useLocale()
-
   // 仮想セットドロップ時の挿入ライン表示状態（'above' | 'below' | null）
   const [insertPosition, setInsertPosition] = useState<'above' | 'below' | null>(null)
 
   const { draggable, onDragStart, onDragEnd } = useDragSource({ type: 'layer', layerId: layer.id })
 
   const isSelected = selectedLayerId === layer.id
-  const isUiHidden = visibilityOverrides.get(layer.id) ?? layer.uiHidden
-  const isHidden = layer.hidden || isUiHidden
+  // override があればその値、なければ PSD の hidden/uiHidden 両方を考慮した実効的な非表示状態
+  const isUiHidden = visibilityOverrides.has(layer.id)
+    ? visibilityOverrides.get(layer.id)!
+    : (layer.hidden || layer.uiHidden)
+  const isHidden = isUiHidden
   const isExpanded = expandedFolders.has(layer.id)
   const isMarked = layer.autoMarked || singleMarks.has(layer.id)
   const isAnimFolder = layer.isAnimationFolder || manualAnimFolderIds.has(layer.id)
@@ -128,12 +107,17 @@ export function LayerTreeNode({
       const { layerTree } = useAppStore.getState()
       const animFolder = findLayerById(layerTree, animParentId)
       if (animFolder) {
-        const idx = animFolder.children.indexOf(layer)
+        const idx = animFolder.children.findIndex(c => c.id === layer.id)
         if (idx >= 0) {
           selectAnimCell(animParentId, idx)
           setFocusedAnimFolder(animParentId)
         }
       }
+      onSelect(layer.id)
+    } else if (layer.autoMarked || layer.singleMark) {
+      // autoMarked/singleMark クリック時: アニメフォーカス・仮想セット選択をクリアして出力プレビューを表示
+      onSelect(layer.id)
+      setFocusedAnimFolder(null)
     } else {
       onSelect(layer.id)
     }
@@ -154,15 +138,6 @@ export function LayerTreeNode({
     onToggleMark(layer.id)
   }, [layer.id, onToggleMark])
 
-  const handleAnimFolderToggle = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation()
-    toggleManualAnimFolder(layer.id)
-  }, [layer.id, toggleManualAnimFolder])
-
-  const handleBlendModeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-    e.stopPropagation()
-    setLayerBlendMode(layer.id, e.target.value as BlendMode)
-  }, [layer.id, setLayerBlendMode])
 
   // 仮想セットのドラッグオーバー：上半分 → 'above'、下半分 → 'below'
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -210,7 +185,7 @@ export function LayerTreeNode({
     const { layerTree } = useAppStore.getState()
     const animFolder = findLayerById(layerTree, animParentId)
     if (!animFolder) return false
-    const idx = animFolder.children.indexOf(layer)
+    const idx = animFolder.children.findIndex(c => c.id === layer.id)
     return (selectedCells.get(animParentId) ?? 0) === idx
   })()
 
@@ -259,48 +234,31 @@ export function LayerTreeNode({
           <div className={styles.expandPlaceholder} />
         )}
 
-        <button className={styles.visibilityBtn} onClick={handleVisibilityClick}>
-          {isUiHidden ? '🚫' : '👁'}
-        </button>
+        <Tooltip content={isUiHidden ? 'プレビューに表示する（出力には影響しません）' : 'プレビューから非表示にする（出力には影響しません）'}>
+          <button className={styles.visibilityBtn} onClick={handleVisibilityClick}>
+            {isUiHidden ? '🚫' : '👁'}
+          </button>
+        </Tooltip>
 
         <span className={styles.typeIcon}>{typeIcon}</span>
 
         <span className={nameClass} title={layer.originalName}>
-          {layer.name || layer.originalName}
+          {layer.autoMarked ? layer.originalName : (layer.name || layer.originalName)}
         </span>
 
-        {/* 合成モード変更 */}
-        <select
-          className={styles.blendSelect}
-          value={layer.blendMode}
-          onChange={handleBlendModeChange}
-          onClick={e => e.stopPropagation()}
-          title="合成モード"
-        >
-          {BLEND_MODES.filter(m => layer.isFolder || m.value !== 'pass through').map(m => (
-            <option key={m.value} value={m.value}>{m.label}</option>
-          ))}
-        </select>
 
-        {/* アニメーションフォルダ手動トグル */}
-        {layer.isFolder && !layer.isAnimationFolder && (
-          <button
-            className={`${styles.animBtn} ${manualAnimFolderIds.has(layer.id) ? styles.animBtnActive : ''}`}
-            onClick={handleAnimFolderToggle}
-            title={manualAnimFolderIds.has(layer.id) ? 'アニメーションフォルダ解除' : 'アニメーションフォルダとして指定'}
-          >
-            🎬
-          </button>
-        )}
-
-        {!layer.autoMarked && (
-          <button
-            className={`${styles.markBtn} ${isMarked ? styles.markBtnActive : ''}`}
-            onClick={handleMarkClick}
-            title={isMarked ? t.layerTree.unmarkTitle : t.layerTree.markTitle}
-          >
-            ★
-          </button>
+        {!layer.autoMarked && !layer.isAnimationFolder && (
+          <Tooltip content={isMarked
+            ? '単体書き出しのマークを解除する'
+            : 'このレイヤーを単体書き出し対象にマークする\nタイムライン登録なしでも出力される'
+          }>
+            <button
+              className={`${styles.markBtn} ${isMarked ? styles.markBtnActive : ''}`}
+              onClick={handleMarkClick}
+            >
+              ★
+            </button>
+          </Tooltip>
         )}
       </div>
 

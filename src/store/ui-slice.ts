@@ -12,9 +12,13 @@ export interface UiSlice {
   focusedAnimFolderId: string | null
   /** 出力プレビューに表示する仮想セットのID（focusedAnimFolderIdと排他） */
   selectedVirtualSetId: string | null
+  /** 仮想セットパネルでコントロール対象のメンバー */
+  selectedVsMemberSetId: string | null
+  selectedVsMemberId: string | null
   visibilityOverrides: Map<string, boolean>  // layerId → uiHidden
   expandedFolders: Set<string>
   selectLayer: (layerId: string | null) => void
+  setSelectedVsMember: (setId: string | null, memberId: string | null) => void
   /**
    * アニメーションフォルダの選択セルを変更する。
    * XDTSが読み込まれている場合、選択セルが最初に登場するフレームを基準に
@@ -59,11 +63,17 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
   selectedCells: new Map(),
   focusedAnimFolderId: null,
   selectedVirtualSetId: null,
+  selectedVsMemberSetId: null,
+  selectedVsMemberId: null,
   visibilityOverrides: new Map(),
   expandedFolders: new Set(),
 
   selectLayer: (layerId) => {
     set({ selectedLayerId: layerId })
+  },
+
+  setSelectedVsMember: (setId, memberId) => {
+    set({ selectedVsMemberSetId: setId, selectedVsMemberId: memberId })
   },
 
   selectAnimCell: (animFolderId, cellIndex) => {
@@ -118,8 +128,12 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
 
   toggleLayerVisibility: (layerId) => {
     const current = new Map(get().visibilityOverrides)
-    const currentHidden = current.get(layerId) ?? false
-    current.set(layerId, !currentHidden)
+    // 実効的な非表示状態を判定: 既存 override があればその値、なければ PSD の hidden/uiHidden を参照
+    const layer = findLayerById(get().layerTree, layerId)
+    const effectivelyHidden = current.has(layerId)
+      ? current.get(layerId)!
+      : (layer ? (layer.hidden || layer.uiHidden) : false)
+    current.set(layerId, !effectivelyHidden)
     set({ visibilityOverrides: current })
   },
 

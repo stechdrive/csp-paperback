@@ -5,10 +5,11 @@ import styles from './FileDropZone.module.css'
 interface FileDropZoneProps {
   onPsdFile: (file: File) => Promise<void>
   onXdtsFile: (file: File) => Promise<void>
+  onCspbFile: (file: File) => Promise<void>
   children: ReactNode
 }
 
-export function FileDropZone({ onPsdFile, onXdtsFile, children }: FileDropZoneProps) {
+export function FileDropZone({ onPsdFile, onXdtsFile, onCspbFile, children }: FileDropZoneProps) {
   const [isDragging, setIsDragging] = useState(false)
   const [, setDragCounter] = useState(0)
   const { t } = useLocale()
@@ -46,11 +47,13 @@ export function FileDropZone({ onPsdFile, onXdtsFile, children }: FileDropZonePr
     const files = Array.from(e.dataTransfer.files)
     const psdFiles = files.filter(f => f.name.toLowerCase().endsWith('.psd'))
     const xdtsFiles = files.filter(f => f.name.toLowerCase().endsWith('.xdts'))
+    const cspbFiles = files.filter(f => f.name.toLowerCase().endsWith('.cspb'))
 
     // xdts を先に読み込むことで PSD 解析時にアニメーションフォルダ検出が効く
     for (const file of xdtsFiles) await onXdtsFile(file)
     for (const file of psdFiles) await onPsdFile(file)
-  }, [onPsdFile, onXdtsFile])
+    for (const file of cspbFiles) await onCspbFile(file)
+  }, [onPsdFile, onXdtsFile, onCspbFile])
 
   return (
     <div

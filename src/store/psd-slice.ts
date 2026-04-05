@@ -16,6 +16,7 @@ export interface PsdSlice {
   loadPsd: (buffer: ArrayBuffer, fileName: string) => void
   resetPsd: () => void
   setLayerBlendMode: (layerId: string, blendMode: BlendMode) => void
+  setLayerOpacity: (layerId: string, opacity: number) => void
 }
 
 export const createPsdSlice: StateCreator<AppStore, [], [], PsdSlice> = (set, get) => ({
@@ -82,9 +83,26 @@ export const createPsdSlice: StateCreator<AppStore, [], [], PsdSlice> = (set, ge
     const updateTree = (layers: CspLayer[]): CspLayer[] =>
       layers.map(l => {
         if (l.id === layerId) {
-          // agPsdRef を直接変更することでPSD保存に反映
           l.agPsdRef.blendMode = blendMode
           return { ...l, blendMode }
+        }
+        if (l.children.length > 0) {
+          const newChildren = updateTree(l.children)
+          if (newChildren !== l.children) return { ...l, children: newChildren }
+        }
+        return l
+      })
+    set(s => ({ layerTree: updateTree(s.layerTree) }))
+  },
+
+  setLayerOpacity: (layerId, opacity) => {
+    const clamped = Math.max(0, Math.min(100, opacity))
+    const updateTree = (layers: CspLayer[]): CspLayer[] =>
+      layers.map(l => {
+        if (l.id === layerId) {
+          // agPsdRef.opacity は ag-psd が 0〜1 スケールで扱う
+          l.agPsdRef.opacity = clamped / 100
+          return { ...l, opacity: clamped }
         }
         if (l.children.length > 0) {
           const newChildren = updateTree(l.children)

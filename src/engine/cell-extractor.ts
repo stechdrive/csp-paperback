@@ -1,6 +1,8 @@
 import type { CspLayer, FlatLayer, OutputEntry, ProjectSettings } from '../types'
+import type { VirtualSet } from '../types/marks'
 import { flattenTree } from './flatten'
 import { compositeStack, createCanvas } from './compositor'
+import { collectMembersInTreeOrder, buildMemberFlatsWithOverride } from '../utils/virtual-set-utils'
 
 /**
  * アニメーションフォルダからセルを抽出してOutputEntry[]を返す
@@ -37,7 +39,7 @@ export function extractCells(
     const cell = visibleChildren[cellIdx]
     const trackName = animFolder.originalName
     const cellLabel = namingMode === 'sequence'
-      ? String(cellIdx + 1).padStart(4, '0')
+      ? String(visibleChildren.length - cellIdx).padStart(4, '0')
       : cell.originalName
 
     if (!cell.isFolder) {
@@ -118,8 +120,13 @@ function buildFolderNameToSuffixMap(
 }
 
 /**
- * ルート直下フォルダからアニメフォルダIDへのparentSuffixマップを構築する
- * processTableのfolderNamesとルート直下フォルダ名を照合する
+ * アニメフォルダIDへのparentSuffixマップを構築する
+ *
+ * ツリー全体を走査し、アニメフォルダの「直接の親フォルダ名」が
+ * processTableにマッチする場合にsuffixを付与する。
+ *
+ * 例: LO/演出/B → Bの直接親は"演出" → suffix "_en"
+ *     LO/LO/A  → Aの直接親は"LO"  → processTable未登録 → suffix なし
  */
 function buildAnimParentSuffixMap(
   rootLayers: CspLayer[],
@@ -127,24 +134,23 @@ function buildAnimParentSuffixMap(
 ): Map<string, string> {
   const map = new Map<string, string>()
 
-  function collectAnimFolders(layer: CspLayer, suffix: string): void {
-    if (layer.isAnimationFolder) {
-      map.set(layer.id, suffix)
-      return
-    }
-    for (const child of layer.children) {
-      collectAnimFolders(child, suffix)
-    }
-  }
-
-  for (const rootLayer of rootLayers) {
-    if (!rootLayer.isFolder || rootLayer.isAnimationFolder) continue
-    const suffix = folderNameToSuffix.get(rootLayer.originalName.toLowerCase())
-    if (suffix !== undefined) {
-      collectAnimFolders(rootLayer, suffix)
+  function walk(layers: CspLayer[]): void {
+    for (const layer of layers) {
+      if (!layer.isFolder) continue
+      // このフォルダ直下のアニメフォルダに、このフォルダ名に対応するsuffixを付与
+      const suffix = folderNameToSuffix.get(layer.originalName.toLowerCase())
+      if (suffix !== undefined) {
+        for (const child of layer.children) {
+          if (child.isAnimationFolder) {
+            map.set(child.id, suffix)
+          }
+        }
+      }
+      walk(layer.children)
     }
   }
 
+  walk(rootLayers)
   return map
 }
 
@@ -211,6 +217,141 @@ function resolveFlatNameCollisions(entries: OutputEntry[]): void {
 }
 
 /**
+ * 仮想セルの挿入位置を基準に上下コンテキストを収集する。
+ *
+ * collectLocalSiblingContext と同じ再帰アルゴリズムで、
+ * insertionLayerId を基準点として上下コンテキストを分類する。
+ *
+ * 'above': VS は insertionLayer の直上（VS の下 = insertionLayer + それより下の兄弟）
+ * 'below': VS は insertionLayer の直下（VS の上 = insertionLayer + それより上の兄弟）
+ *
+ * アニメーションフォルダ・アニメ子孫フォルダは除外（自身の出力ロジックで別途処理）。
+ */
+function collectVsContextFlats(
+  insertionLayerId: string,
+  insertionPosition: 'above' | 'below',
+  tree: CspLayer[],
+  docWidth: number,
+  docHeight: number,
+): { lower: FlatLayer[], upper: FlatLayer[] } {
+  const lowerStack: FlatLayer[][] = []
+  const upperStack: FlatLayer[][] = []
+
+  function findAndCollect(layers: CspLayer[]): boolean {
+    for (let i = 0; i < layers.length; i++) {
+      const layer = layers[i]
+
+      if (layer.id === insertionLayerId) {
+        // 挿入レイヤーを発見: 同レベルの兄弟を上下に分類する
+        // 'above': VS の実効位置 = i-0.5 → j<i が upper、j>=i が lower（挿入レイヤー含む）
+        // 'below': VS の実効位置 = i+0.5 → j<=i が upper（挿入レイヤー含む）、j>i が lower
+        const lowerCsps: CspLayer[] = []
+        const upperCsps: CspLayer[] = []
+
+        for (let j = 0; j < layers.length; j++) {
+          const sib = layers[j]
+          if (sib.hidden || sib.uiHidden) continue
+          if (sib.isAnimationFolder || hasAnimFolderDescendant(sib)) continue
+
+          const isUpper = insertionPosition === 'above' ? j < i : j <= i
+          if (isUpper) upperCsps.push(sib)
+          else lowerCsps.push(sib)
+        }
+
+        lowerStack.push(flattenTree(lowerCsps, docWidth, docHeight))
+        upperStack.push(flattenTree(upperCsps, docWidth, docHeight))
+        return true
+      }
+
+      // フォルダを再帰探索（isAnimationFolder も探索対象に含める）
+      if (layer.isFolder && findAndCollect(layer.children)) {
+        // パス要素（layer）の兄弟を位置で分類して積む
+        const lowerCsps: CspLayer[] = []
+        const upperCsps: CspLayer[] = []
+
+        for (let j = 0; j < layers.length; j++) {
+          if (j === i) continue
+          const sib = layers[j]
+          if (sib.hidden || sib.uiHidden) continue
+          if (sib.isAnimationFolder || hasAnimFolderDescendant(sib)) continue
+
+          if (j < i) upperCsps.push(sib)
+          else lowerCsps.push(sib)
+        }
+
+        lowerStack.push(flattenTree(lowerCsps, docWidth, docHeight))
+        upperStack.push(flattenTree(upperCsps, docWidth, docHeight))
+        return true
+      }
+    }
+    return false
+  }
+
+  findAndCollect(tree)
+
+  // lowerStack: [最内側...最外側] → 外側から描画するため逆順に展開
+  const lower = [...lowerStack].reverse().flat()
+  // upperStack: [最内側...最外側] → 内側から描画（内側がVS直上）
+  const upper = upperStack.flat()
+
+  return { lower, upper }
+}
+
+/**
+ * 仮想セルを OutputEntry として抽出する。
+ *
+ * 各仮想セルについて:
+ * 1. insertionLayerId を基準に上下コンテキストを収集
+ * 2. メンバーレイヤーを buildMemberFlatsWithOverride でフラット化
+ * 3. compositeWithContext で合成して OutputEntry を生成
+ *
+ * insertionLayerId が未設定またはメンバーが空の仮想セルはスキップする。
+ */
+export function extractVirtualSetEntries(
+  tree: CspLayer[],
+  virtualSets: VirtualSet[],
+  docWidth: number,
+  docHeight: number,
+  background: 'white' | 'transparent' = 'white',
+): OutputEntry[] {
+  const entries: OutputEntry[] = []
+
+  for (const vs of virtualSets) {
+    if (!vs.insertionLayerId || vs.members.length === 0) continue
+
+    // 挿入位置から上下コンテキストを収集
+    const { lower, upper } = collectVsContextFlats(
+      vs.insertionLayerId,
+      vs.insertionPosition,
+      tree,
+      docWidth,
+      docHeight,
+    )
+
+    // VSメンバーをフラット化（visibilityOverrides・blendModeオーバーライド適用済み）
+    const memberIds = new Set(vs.members.map(m => m.layerId))
+    const memberLayers = collectMembersInTreeOrder(tree, memberIds)
+    const vsFlats = buildMemberFlatsWithOverride(
+      vs.members, memberLayers, docWidth, docHeight, vs.visibilityOverrides
+    )
+
+    if (vsFlats.length === 0 && lower.length === 0 && upper.length === 0) continue
+
+    const canvas = compositeWithContext(vsFlats, lower, upper, docWidth, docHeight, background)
+    const fileName = `${vs.name}.jpg`
+    entries.push({
+      path: fileName,
+      flatName: fileName,
+      canvas,
+      sourceLayerId: vs.id,
+    })
+  }
+
+  resolveFlatNameCollisions(entries)
+  return entries
+}
+
+/**
  * セルのレイヤー群をFlatLayerに変換（内部合成）
  */
 function flattenCellContent(
@@ -265,6 +406,7 @@ function splitSiblingsByPosition(
     const sib = layers[j]
     if (sib.hidden || sib.uiHidden) continue
     if (sib.isAnimationFolder || hasAnimFolderDescendant(sib)) continue
+    if (sib.autoMarked || sib.singleMark) continue  // マーク済みはアニメセルのコンテキストに含めない
     if (j < targetIdx) upperCsps.push(sib)  // 上にある → セルの上に描画
     else lowerCsps.push(sib)                   // 下にある → セルの下に描画
   }
@@ -350,8 +492,10 @@ export function extractAllEntries(
       const layer = layers[i]
       if (layer.hidden || layer.uiHidden) continue
 
-      if (layer.isAnimationFolder) {
-        // このアニメフォルダと同レベルの兄弟を位置で lower/upper に分類
+      if (layer.isAnimationFolder && !layer.autoMarked && !layer.singleMark) {
+        // マーク済みでないアニメフォルダ: セルを抽出して出力
+        // autoMarked/singleMark が同時に設定されている場合（_プレフィックス + XDTSトラック一致）は
+        // 単体マーク出力として扱うため、このブランチをスキップする
         const [localLower, localUpper] = splitSiblingsByPosition(layers, i, docWidth, docHeight)
         const thisLower = [...contextFlats, ...inheritedLower, ...localLower]
         const thisUpper = [...localUpper, ...inheritedUpper]
@@ -368,19 +512,27 @@ export function extractAllEntries(
       }
 
       if (layer.autoMarked || layer.singleMark) {
-        const [localLower, localUpper] = splitSiblingsByPosition(layers, i, docWidth, docHeight)
+        // プレビューと同じ collectMarkedLayerContext を使って合成コンテキストを取得する。
+        // walk の inheritedLower/Upper に依存せず、ツリー全体から正しく upper/lower を収集するため
+        // ネストされていても必ず一致した結果になる。
+        const { lower, upper } = collectMarkedLayerContext(layer.id, tree, docWidth, docHeight)
         const layerFlats = flattenTree([layer], docWidth, docHeight)
-        const thisLower = [...contextFlats, ...inheritedLower, ...localLower]
-        const thisUpper = [...localUpper, ...inheritedUpper]
-        const canvas = compositeWithContext(layerFlats, thisLower, thisUpper, docWidth, docHeight, background)
+        const canvas = compositeWithContext(layerFlats, lower, upper, docWidth, docHeight, background)
         const fileName = `${layer.name}.jpg`
         entries.push({ path: fileName, flatName: fileName, canvas, sourceLayerId: layer.id })
+
+        // フォルダなら子も走査して内包マーク済みレイヤーを出力する。
+        // 各子マーク済みレイヤーは独立して collectMarkedLayerContext を呼ぶので
+        // 継承コンテキストを渡す必要はない。
+        if (layer.isFolder) {
+          walk(layer.children, [], [])
+        }
+        continue
       }
 
       if (layer.isFolder) {
         if (hasAnimFolderDescendant(layer)) {
-          // このアニメ包含フォルダと同レベルの兄弟を位置で分類し、
-          // 子レベルの walk に継承コンテキストとして渡す
+          // アニメ包含フォルダ: 兄弟を分類して継承コンテキストとして子に渡す
           const [localLower, localUpper] = splitSiblingsByPosition(layers, i, docWidth, docHeight)
           walk(
             layer.children,
@@ -414,6 +566,9 @@ export function collectContextSourceLayers(layers: CspLayer[]): CspLayer[] {
   for (const layer of layers) {
     if (layer.hidden || layer.uiHidden) continue
     if (layer.isAnimationFolder) continue
+    // マーク済みレイヤーはグローバルコンテキストに含めない。
+    // アニメセルへの合成は splitSiblingsByPosition で兄弟として正しく処理される。
+    if (layer.autoMarked || layer.singleMark) continue
     if (!hasAnimFolderDescendant(layer)) {
       result.push(layer)
     }
@@ -462,6 +617,7 @@ export function collectLocalSiblingContext(
           const sib = layers[j]
           if (sib.hidden || sib.uiHidden) continue
           if (sib.isAnimationFolder || hasAnimFolderDescendant(sib)) continue
+          if (sib.autoMarked || sib.singleMark) continue  // マーク済みはアニメセルのコンテキストに含めない
           if (j < i) upperCsps.push(sib)  // 上にある → upper
           else lowerCsps.push(sib)          // 下にある → lower
         }
@@ -483,6 +639,60 @@ export function collectLocalSiblingContext(
   // upper配列: 内側から描画（内側がセル直上、外側が最上位） → そのまま flat
   const upper = upperStack.flat()
 
+  return { lower, upper }
+}
+
+/**
+ * マーク済みレイヤーへのパス全段階でコンテキストを収集する。
+ *
+ * collectLocalSiblingContext と同じ再帰アルゴリズムを使い、
+ * ルートから対象レイヤーへのパス上の各レベルで
+ * 非マーク・非アニメの兄弟を upper/lower に分類して積む。
+ *
+ * これにより、対象レイヤーより上位の祖先フォルダの外にある層も
+ * PSDのZ順（同レベルでの index 大小）に従って正しく upper/lower に配置できる。
+ */
+export function collectMarkedLayerContext(
+  markedLayerId: string,
+  tree: CspLayer[],
+  docWidth: number,
+  docHeight: number,
+): { lower: FlatLayer[], upper: FlatLayer[] } {
+  const lowerStack: FlatLayer[][] = []
+  const upperStack: FlatLayer[][] = []
+
+  function findAndCollect(layers: CspLayer[]): boolean {
+    for (let i = 0; i < layers.length; i++) {
+      const layer = layers[i]
+      const isTarget = layer.id === markedLayerId
+      const isPathElement = !isTarget && layer.isFolder
+
+      if (isTarget || (isPathElement && findAndCollect(layer.children))) {
+        const lowerCsps: CspLayer[] = []
+        const upperCsps: CspLayer[] = []
+        for (let j = 0; j < layers.length; j++) {
+          if (j === i) continue
+          const sib = layers[j]
+          if (sib.hidden || sib.uiHidden) continue
+          if (sib.isAnimationFolder || hasAnimFolderDescendant(sib)) continue
+          if (sib.autoMarked || sib.singleMark) continue
+          if (j < i) upperCsps.push(sib)
+          else lowerCsps.push(sib)
+        }
+        lowerStack.push(flattenTree(lowerCsps, docWidth, docHeight))
+        upperStack.push(flattenTree(upperCsps, docWidth, docHeight))
+        return true
+      }
+    }
+    return false
+  }
+
+  findAndCollect(tree)
+
+  // lowerStack: [innermost...outermost] → 外側から描画（外→内の順）→ reverse して flat
+  const lower = [...lowerStack].reverse().flat()
+  // upperStack: [innermost...outermost] → 内側から描画（内→外の順）→ そのまま flat
+  const upper = upperStack.flat()
   return { lower, upper }
 }
 

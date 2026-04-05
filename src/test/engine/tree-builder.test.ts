@@ -95,6 +95,51 @@ describe('buildLayerTree', () => {
   })
 })
 
+describe('アニメーションフォルダのセル順序（リグレッション）', () => {
+  /**
+   * ツリー表示はPSD順（トップファースト）のまま。
+   * ag-psd ボトムファースト → .reverse() → トップファースト（最新セルが先頭）。
+   * セル番号採番は extractCells 側で「length - cellIdx」として補正する。
+   */
+  it('セルがPSD順（最新=先頭、トップファースト）で格納される', () => {
+    // ag-psd ボトムファースト相当: cell1 が最下層（最古）, cell3 が最上層（最新）
+    const cell1 = makeLayer({ name: 'cell1' })
+    const cell2 = makeLayer({ name: 'cell2' })
+    const cell3 = makeLayer({ name: 'cell3' })
+    const animFolder = makeFolder('A', [cell1, cell2, cell3])
+    const psd = makePsd({ children: [animFolder] })
+    const xdts: XdtsData = {
+      tracks: [{ name: 'A', cellNames: [], frames: [] }],
+      version: 5, header: { cut: '1', scene: '1' }, timeTableName: 'タイムライン1', duration: 72,
+    }
+
+    const tree = buildLayerTree(psd, xdts)
+
+    expect(tree[0].isAnimationFolder).toBe(true)
+    // .reverse() によりトップファースト: 最新(cell3)が先頭、最古(cell1)が末尾
+    expect(tree[0].children[0].originalName).toBe('cell3') // 最新（PSD最上位）が先頭
+    expect(tree[0].children[1].originalName).toBe('cell2')
+    expect(tree[0].children[2].originalName).toBe('cell1') // 最古（PSD最下位）が末尾
+  })
+
+  it('アニメフォルダ以外のフォルダ子順序も同様にトップファースト', () => {
+    const layerA = makeLayer({ name: 'A' })
+    const layerB = makeLayer({ name: 'B' })
+    const folder = makeFolder('group', [layerA, layerB])
+    const psd = makePsd({ children: [folder] })
+    const xdts: XdtsData = {
+      tracks: [{ name: 'other', cellNames: [], frames: [] }],
+      version: 5, header: { cut: '1', scene: '1' }, timeTableName: 'タイムライン1', duration: 72,
+    }
+
+    const tree = buildLayerTree(psd, xdts)
+
+    expect(tree[0].isAnimationFolder).toBe(false)
+    expect(tree[0].children[0].originalName).toBe('B') // トップ側が先頭
+    expect(tree[0].children[1].originalName).toBe('A')
+  })
+})
+
 describe('detectAnimationFoldersByXdts', () => {
   it('xdtsのtrack名でアニメーションフォルダを検出する', () => {
     // buildLayerTree はボトムファースト→トップファーストに逆転するため

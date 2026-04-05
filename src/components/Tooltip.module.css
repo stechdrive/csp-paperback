@@ -1,0 +1,80 @@
+.tooltip {
+  position: fixed;
+  z-index: 9999;
+  background: #24273a;
+  color: #cdd6f4;
+  font-size: 0.72rem;
+  line-height: 1.6;
+  padding: 0.35rem 0.65rem;
+  border-radius: 5px;
+  border: 1px solid #45475a;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  white-space: pre;
+  pointer-events: none;
+}
+
+@keyframes fadeInTop {
+  from { opacity: 0; transform: translate(-50%, calc(-100% - 2px)); }
+  to   { opacity: 1; transform: translate(-50%, calc(-100% - 8px)); }
+}
+
+@keyframes fadeInBottom {
+  from { opacity: 0; transform: translate(-50%, 2px); }
+  to   { opacity: 1; transform: translate(-50%, 8px); }
+}
+
+/* 上方向（デフォルト）: 要素の上に表示、下矢印 */
+.top {
+  transform: translate(-50%, calc(-100% - 8px));
+  animation: fadeInTop 0.1s ease forwards;
+}
+
+.top::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: #45475a;
+}
+
+.top::before {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: -1px;
+  border: 4px solid transparent;
+  border-top-color: #24273a;
+  z-index: 1;
+}
+
+/* 下方向: 要素の下に表示、上矢印 */
+.bottom {
+  transform: translate(-50%, 8px);
+  animation: fadeInBottom 0.1s ease forwards;
+}
+
+.bottom::after {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-bottom-color: #45475a;
+}
+
+.bottom::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: -1px;
+  border: 4px solid transparent;
+  border-bottom-color: #24273a;
+  z-index: 1;
+}

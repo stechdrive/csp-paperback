@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { useAppStore } from '../store'
 import { selectLayerTreeWithVisibility } from '../store/selectors'
-import { extractCells, resolveParentSuffix, collectContextSourceLayers, collectLocalSiblingContext } from '../engine/cell-extractor'
+import { extractCells, resolveParentSuffix, collectContextSourceLayers, collectLocalSiblingContext, collectMarkedLayerContext } from '../engine/cell-extractor'
 import { flattenTree, compositeRoot } from '../engine/flatten'
 import { collectMembersInTreeOrder, buildMemberFlatsWithOverride } from '../utils/virtual-set-utils'
 import type { CspLayer, OutputEntry } from '../types'
@@ -24,6 +24,7 @@ export function useOutputPreview(): OutputPreviewEntry[] {
   const layerTree = useAppStore(selectLayerTreeWithVisibility)
   const focusedAnimFolderId = useAppStore(s => s.focusedAnimFolderId)
   const selectedVirtualSetId = useAppStore(s => s.selectedVirtualSetId)
+  const selectedLayerId = useAppStore(s => s.selectedLayerId)
   const virtualSets = useAppStore(s => s.virtualSets)
   const selectedCells = useAppStore(s => s.selectedCells)
   const projectSettings = useAppStore(s => s.projectSettings)
@@ -50,6 +51,20 @@ export function useOutputPreview(): OutputPreviewEntry[] {
       return [{ canvas, flatName: vs.name, path: '' }]
     }
 
+    // autoMarked / singleMark レイヤー選択時のプレビュー
+    if (!focusedAnimFolderId && selectedLayerId) {
+      const markedLayer = findLayerById(layerTree, selectedLayerId)
+      if (markedLayer && (markedLayer.autoMarked || markedLayer.singleMark)) {
+        // パス全段階コンテキスト収集: PSDのZ順に従って upper/lower を正しく分類
+        // extractAllEntries の inheritedLower/Upper と同等のロジック
+        const { lower, upper } = collectMarkedLayerContext(selectedLayerId, layerTree, docWidth, docHeight)
+        const layerFlats = flattenTree([markedLayer], docWidth, docHeight)
+        const canvas = compositeRoot([...lower, ...layerFlats, ...upper], docWidth, docHeight, outputConfig.background)
+        const fileName = `${markedLayer.name}.jpg`
+        return [{ canvas, flatName: fileName, path: fileName }]
+      }
+    }
+
     if (!focusedAnimFolderId) return []
 
     const animFolder = findLayerById(layerTree, focusedAnimFolderId)
@@ -69,11 +84,16 @@ export function useOutputPreview(): OutputPreviewEntry[] {
       : contextFlats
 
     // 選択中のセルを特定
+    // selectedCells のインデックスは animFolder.children（非表示含む全子）の位置。
+    // visibleChildren は非表示を除いた配列なのでインデックスが異なる場合がある。
     const cellIndex = selectedCells.get(focusedAnimFolderId) ?? 0
     const visibleChildren = animFolder.children.filter(c => !c.hidden && !c.uiHidden)
     if (visibleChildren.length === 0) return []
 
-    const clampedIndex = Math.min(cellIndex, visibleChildren.length - 1)
+    const targetCell = animFolder.children[cellIndex]
+    const visibleIdx = targetCell ? visibleChildren.findIndex(c => c.id === targetCell.id) : -1
+    // 選択セルが非表示の場合は先頭可視セルにフォールバック
+    const clampedIndex = visibleIdx >= 0 ? visibleIdx : 0
     const selectedCell = visibleChildren[clampedIndex]
 
     // ルート直下の親フォルダに基づくparentSuffixを解決
@@ -91,7 +111,7 @@ export function useOutputPreview(): OutputPreviewEntry[] {
     // 連番モード: clampedIndex+1 を4桁ゼロ埋め / セル名モード: originalName
     const namingMode = projectSettings.cellNamingMode ?? 'sequence'
     const cellLabel = namingMode === 'sequence'
-      ? String(clampedIndex + 1).padStart(4, '0')
+      ? String(visibleChildren.length - clampedIndex).padStart(4, '0')
       : selectedCell.originalName
     const prefix = `${animFolder.originalName}_${cellLabel}${parentSuffix}`
 
@@ -102,7 +122,7 @@ export function useOutputPreview(): OutputPreviewEntry[] {
 
     return entries.map(e => ({ canvas: e.canvas, flatName: e.flatName, path: e.path }))
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [focusedAnimFolderId, selectedVirtualSetId, virtualSets, selectedCells, layerTree, projectSettings, outputConfig, docWidth, docHeight])
+  }, [focusedAnimFolderId, selectedVirtualSetId, selectedLayerId, virtualSets, selectedCells, layerTree, projectSettings, outputConfig, docWidth, docHeight])
 }
 
 function findLayerById(layers: CspLayer[], id: string): CspLayer | null {
@@ -113,3 +133,4 @@ function findLayerById(layers: CspLayer[], id: string): CspLayer | null {
   }
   return null
 }
+

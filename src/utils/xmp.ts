@@ -1,12 +1,31 @@
-import type { VirtualSet, VirtualSetMember, ProjectSettings } from '../types'
+import type { VirtualSet, ProjectSettings } from '../types'
 import { DEFAULT_PROJECT_SETTINGS } from '../types/project'
 
 const CSPB_NS = 'http://ns.stechdrive.com/cspb/1.0/'
 
+// ── V2 フォーマット（名前ベース。UUIDはセッションをまたいで変わるので使わない）──
+
+export interface XmpMember {
+  layerName: string
+  blendMode: string | null
+  opacity: number | null
+}
+
+export interface XmpVirtualSet {
+  id: string                              // VS 自身の UUID（VS の同一性管理用、安定）
+  name: string
+  insertionLayerName: string | null       // レイヤーの originalName
+  insertionPosition: 'above' | 'below'
+  members: XmpMember[]
+  expandToAnimationCells: boolean
+  visibilityOverrides: Record<string, boolean>  // key = layerName
+}
+
 export interface PersistedState {
-  singleMarkIds: string[]
-  virtualSets: VirtualSet[]
-  manualAnimFolderIds: string[]
+  version: 2
+  singleMarkNames: string[]              // レイヤーの originalName
+  virtualSets: XmpVirtualSet[]
+  manualAnimFolderNames: string[]        // レイヤーの originalName
   projectSettings: ProjectSettings
 }
 
@@ -43,56 +62,101 @@ export function serializeToXmp(state: PersistedState): string {
   ].join('\n')
 }
 
-/** 旧形式（memberLayerIds: string[]）を新形式（members: VirtualSetMember[]）に変換する */
-function migrateVirtualSet(raw: Record<string, unknown>): VirtualSet {
-  // 新形式: members フィールドが存在する場合
-  if (Array.isArray(raw.members)) {
-    return {
-      id: String(raw.id ?? ''),
-      name: String(raw.name ?? ''),
-      insertionLayerId: (raw.insertionLayerId as string | null) ?? null,
-      insertionPosition: (raw.insertionPosition as 'above' | 'below') ?? 'above',
-      members: (raw.members as VirtualSetMember[]).map(m => ({
-        layerId: String(m.layerId ?? ''),
-        blendMode: m.blendMode ?? null,
-      })),
-      expandToAnimationCells: Boolean(raw.expandToAnimationCells ?? false),
-      visibilityOverrides: (raw.visibilityOverrides as Record<string, boolean>) ?? {},
-    }
-  }
-  // 旧形式: memberLayerIds: string[]
-  const oldIds: string[] = Array.isArray(raw.memberLayerIds) ? raw.memberLayerIds as string[] : []
-  return {
-    id: String(raw.id ?? ''),
-    name: String(raw.name ?? ''),
-    insertionLayerId: (raw.insertionLayerId as string | null) ?? null,
-    insertionPosition: (raw.insertionPosition as 'above' | 'below') ?? 'above',
-    members: oldIds.map(id => ({ layerId: id, blendMode: null })),
-    expandToAnimationCells: Boolean(raw.expandToAnimationCells ?? false),
-    visibilityOverrides: {},
-  }
-}
-
 export function deserializeFromXmp(xmpXml: string): PersistedState | null {
   try {
     const match = xmpXml.match(/cspb:data="([^"]+)"/)
     if (!match) return null
     const json = fromBase64(match[1])
-    const data = JSON.parse(json) as Partial<Record<string, unknown>>
-    if (!Array.isArray(data.singleMarkIds)) return null
+    const data = JSON.parse(json) as Record<string, unknown>
+
+    // V1（version フィールドなし・singleMarkIds がある旧UUID形式）→ null を返してマーカーレイヤーにフォールバック
+    if (data.version === undefined || data.version === 1) return null
+
+    if (data.version !== 2 || !Array.isArray(data.singleMarkNames)) return null
 
     const rawVirtualSets: unknown[] = Array.isArray(data.virtualSets) ? data.virtualSets : []
-    const virtualSets: VirtualSet[] = rawVirtualSets.map(raw =>
-      migrateVirtualSet(raw as Record<string, unknown>)
-    )
+    const virtualSets: XmpVirtualSet[] = rawVirtualSets.map(raw => {
+      const r = raw as Record<string, unknown>
+      const members: XmpMember[] = Array.isArray(r.members)
+        ? (r.members as Record<string, unknown>[]).map((m): XmpMember => ({
+            layerName: String(m.layerName ?? ''),
+            blendMode: (m.blendMode as string | null) ?? null,
+            opacity: typeof m.opacity === 'number' ? m.opacity : null,
+          }))
+        : []
+      return {
+        id: String(r.id ?? crypto.randomUUID()),
+        name: String(r.name ?? ''),
+        insertionLayerName: (r.insertionLayerName as string | null) ?? null,
+        insertionPosition: (r.insertionPosition as 'above' | 'below') ?? 'above',
+        members,
+        expandToAnimationCells: Boolean(r.expandToAnimationCells ?? false),
+        visibilityOverrides: (r.visibilityOverrides as Record<string, boolean>) ?? {},
+      }
+    })
 
     return {
-      singleMarkIds: data.singleMarkIds as string[],
+      version: 2,
+      singleMarkNames: (data.singleMarkNames as string[]),
       virtualSets,
-      manualAnimFolderIds: Array.isArray(data.manualAnimFolderIds) ? data.manualAnimFolderIds as string[] : [],
+      manualAnimFolderNames: Array.isArray(data.manualAnimFolderNames)
+        ? (data.manualAnimFolderNames as string[])
+        : [],
       projectSettings: (data.projectSettings as ProjectSettings) ?? DEFAULT_PROJECT_SETTINGS,
     }
   } catch {
     return null
+  }
+}
+
+// usePersistence から VirtualSet（ID ベース）を XmpVirtualSet（名前ベース）に変換するヘルパー
+export function virtualSetToXmp(
+  vs: VirtualSet,
+  idToName: Map<string, string>,
+): XmpVirtualSet {
+  return {
+    id: vs.id,
+    name: vs.name,
+    insertionLayerName: vs.insertionLayerId ? (idToName.get(vs.insertionLayerId) ?? null) : null,
+    insertionPosition: vs.insertionPosition,
+    members: vs.members
+      .map(m => ({
+        layerName: idToName.get(m.layerId) ?? '',
+        blendMode: m.blendMode,
+        opacity: m.opacity,
+      }))
+      .filter(m => m.layerName !== ''),
+    expandToAnimationCells: vs.expandToAnimationCells,
+    visibilityOverrides: Object.fromEntries(
+      Object.entries(vs.visibilityOverrides)
+        .map(([id, v]) => [idToName.get(id) ?? '', v])
+        .filter(([name]) => name !== ''),
+    ),
+  }
+}
+
+// XmpVirtualSet（名前ベース）を VirtualSet（ID ベース）に変換するヘルパー
+export function xmpToVirtualSet(
+  xvs: XmpVirtualSet,
+  nameToId: Map<string, string>,
+): VirtualSet {
+  return {
+    id: xvs.id,
+    name: xvs.name,
+    insertionLayerId: xvs.insertionLayerName ? (nameToId.get(xvs.insertionLayerName) ?? null) : null,
+    insertionPosition: xvs.insertionPosition,
+    members: xvs.members
+      .map(m => ({
+        layerId: nameToId.get(m.layerName) ?? '',
+        blendMode: m.blendMode,
+        opacity: m.opacity,
+      }))
+      .filter(m => m.layerId !== ''),
+    expandToAnimationCells: xvs.expandToAnimationCells,
+    visibilityOverrides: Object.fromEntries(
+      Object.entries(xvs.visibilityOverrides)
+        .map(([name, v]) => [nameToId.get(name) ?? '', v])
+        .filter(([id]) => id !== ''),
+    ),
   }
 }

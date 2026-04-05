@@ -1,5 +1,5 @@
 import type { StateCreator } from 'zustand'
-import type { OutputConfig, OutputFormat, BackgroundMode, StructureMode, OutputScope } from '../types'
+import type { OutputConfig, OutputFormat, BackgroundMode, StructureMode } from '../types'
 import { DEFAULT_OUTPUT_CONFIG } from '../types'
 import type { AppStore } from './index'
 
@@ -8,7 +8,6 @@ export interface OutputSlice {
   setFormat: (format: OutputFormat) => void
   setBackground: (bg: BackgroundMode) => void
   setStructure: (mode: StructureMode) => void
-  setScope: (scope: OutputScope) => void
   setJpgQuality: (quality: number) => void
 }
 
@@ -21,8 +20,8 @@ export const createOutputSlice: StateCreator<AppStore, [], [], OutputSlice> = (s
       outputConfig: {
         ...current,
         format,
-        // JPG選択時は透明背景を強制的に白に
-        background: format === 'jpg' ? 'white' : current.background,
+        // JPG選択時は白固定、PNG選択時は透明をデフォルトに
+        background: format === 'jpg' ? 'white' : 'transparent',
       },
     })
   },
@@ -38,9 +37,6 @@ export const createOutputSlice: StateCreator<AppStore, [], [], OutputSlice> = (s
     set({ outputConfig: { ...get().outputConfig, structure } })
   },
 
-  setScope: (scope) => {
-    set({ outputConfig: { ...get().outputConfig, scope } })
-  },
 
   setJpgQuality: (jpgQuality) => {
     set({ outputConfig: { ...get().outputConfig, jpgQuality: Math.max(0, Math.min(1, jpgQuality)) } })

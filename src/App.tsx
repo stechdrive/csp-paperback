@@ -7,17 +7,20 @@ import { MainLayout } from './components/MainLayout'
 import './App.css'
 
 function AppInner() {
-  const { isLoading, error, loadPsdFile, loadXdtsFile } = useFileLoader()
+  const { isLoading, error, notification, loadPsdFile, loadXdtsFile, loadCspbFile, saveCspb } = useFileLoader()
   const { savePsd, hasPsd } = usePersistence()
 
   return (
-    <FileDropZone onPsdFile={loadPsdFile} onXdtsFile={loadXdtsFile}>
+    <FileDropZone onPsdFile={loadPsdFile} onXdtsFile={loadXdtsFile} onCspbFile={loadCspbFile}>
       <div className="app-shell">
         <Toolbar
           onPsdFile={loadPsdFile}
           onXdtsFile={loadXdtsFile}
+          onCspbFile={loadCspbFile}
+          onSaveCspb={saveCspb}
           isLoading={isLoading}
           error={error}
+          notification={notification}
           onSavePsd={savePsd}
           hasPsd={hasPsd}
         />

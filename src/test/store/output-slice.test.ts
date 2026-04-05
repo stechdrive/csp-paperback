@@ -11,8 +11,7 @@ describe('output-slice', () => {
     const { outputConfig } = useAppStore.getState()
     expect(outputConfig.format).toBe('jpg')
     expect(outputConfig.background).toBe('white')
-    expect(outputConfig.structure).toBe('hierarchy')
-    expect(outputConfig.scope).toBe('all')
+    expect(outputConfig.structure).toBe('flat')
   })
 
   it('setFormatでjpgに変更すると背景が強制的にwhiteになる', () => {
@@ -21,9 +20,9 @@ describe('output-slice', () => {
     expect(useAppStore.getState().outputConfig.background).toBe('white')
   })
 
-  it('setFormatでpngに変更しても背景は変わらない', () => {
+  it('setFormatでpngに変更すると背景がtransparentになる', () => {
     useAppStore.getState().setFormat('png')
-    expect(useAppStore.getState().outputConfig.background).toBe('white')
+    expect(useAppStore.getState().outputConfig.background).toBe('transparent')
   })
 
   it('pngのときはtransparent背景を選択できる', () => {
@@ -49,8 +48,4 @@ describe('output-slice', () => {
     expect(useAppStore.getState().outputConfig.structure).toBe('flat')
   })
 
-  it('setScopeでスコープを変更する', () => {
-    useAppStore.getState().setScope('marked')
-    expect(useAppStore.getState().outputConfig.scope).toBe('marked')
-  })
 })

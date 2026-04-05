@@ -49,7 +49,11 @@ function applyOverrides(
 ): CspLayer[] {
   let changed = false
   const result = layers.map(layer => {
-    const uiHidden = visOverrides.get(layer.id) ?? layer.uiHidden
+    const hasOverride = visOverrides.has(layer.id)
+    // override が存在する場合: その値を uiHidden として使い、PSD の hidden フラグをクリアする。
+    // これにより PSD 上で非表示だったレイヤーを UI 上で表示可能にする。
+    const uiHidden = hasOverride ? visOverrides.get(layer.id)! : layer.uiHidden
+    const hidden = hasOverride ? false : layer.hidden
     const isAnimationFolder = layer.isAnimationFolder || manualAnimIds.has(layer.id)
 
     // 手動指定フォルダ（animationFolder=null）→ animationFolder オブジェクトを生成
@@ -64,6 +68,7 @@ function applyOverrides(
 
     if (
       uiHidden === layer.uiHidden &&
+      hidden === layer.hidden &&
       isAnimationFolder === layer.isAnimationFolder &&
       animationFolder === layer.animationFolder &&
       children === layer.children
@@ -71,7 +76,7 @@ function applyOverrides(
       return layer
     }
     changed = true
-    return { ...layer, uiHidden, isAnimationFolder, animationFolder, children }
+    return { ...layer, uiHidden, hidden, isAnimationFolder, animationFolder, children }
   })
   return changed ? result : layers
 }

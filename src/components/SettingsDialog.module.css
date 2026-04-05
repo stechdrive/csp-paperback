@@ -104,7 +104,7 @@
 /* processTable */
 .tableHeader {
   display: grid;
-  grid-template-columns: 100px 1fr auto;
+  grid-template-columns: 90px 1fr auto auto;
   gap: 0.4rem;
   font-size: 0.75rem;
   color: #bac2de;
@@ -113,9 +113,20 @@
 
 .tableRow {
   display: grid;
-  grid-template-columns: 100px 1fr auto;
+  grid-template-columns: 90px 1fr auto auto;
   gap: 0.4rem;
   align-items: center;
+}
+
+.sampleLabel {
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: #89b4fa;
+  white-space: nowrap;
+  padding: 0.1rem 0.3rem;
+  background: rgba(137, 180, 250, 0.08);
+  border-radius: 3px;
+  border: 1px solid rgba(137, 180, 250, 0.2);
 }
 
 .tableInput {

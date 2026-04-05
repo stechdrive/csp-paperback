@@ -66,6 +66,45 @@
   cursor: not-allowed;
 }
 
+.switchRow {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  cursor: pointer;
+}
+
+.switch {
+  display: inline-block;
+  width: 32px;
+  height: 18px;
+  border-radius: 9px;
+  background: #45475a;
+  position: relative;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.switch::after {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #cdd6f4;
+  top: 2px;
+  left: 2px;
+  transition: left 0.15s;
+}
+
+.switchOn {
+  background: #6366f1;
+}
+
+.switchOn::after {
+  left: 16px;
+}
+
 .qualityRow {
   display: flex;
   align-items: center;

@@ -12,7 +12,6 @@ interface SettingsDialogProps {
 export function SettingsDialog({ onClose }: SettingsDialogProps) {
   const projectSettings = useAppStore(s => s.projectSettings)
   const updateProcessTable = useAppStore(s => s.updateProcessTable)
-  const setCellNamingMode = useAppStore(s => s.setCellNamingMode)
   const importSettings = useAppStore(s => s.importSettings)
   const exportSettings = useAppStore(s => s.exportSettings)
   const { t } = useLocale()
@@ -73,8 +72,17 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
     input.click()
   }
 
+  const handleClose = () => {
+    const cleaned = tableRows.filter(r => r.suffix.trim() || r.folderNames.length > 0)
+    if (cleaned.length !== tableRows.length) {
+      setTableRows(cleaned)
+      updateProcessTable(cleaned)
+    }
+    onClose()
+  }
+
   return (
-    <div className={styles.overlay} onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+    <div className={styles.overlay} onClick={e => { if (e.target === e.currentTarget) handleClose() }}>
       <div className={styles.dialog}>
         <div className={styles.header}>
           <span className={styles.title}>{t.settings.title}</span>
@@ -88,6 +96,7 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
             <div className={styles.tableHeader}>
               <span>{t.settings.colSuffix}</span>
               <span>{t.settings.colFolderNames}</span>
+              <span>出力サンプル</span>
               <span></span>
             </div>
             {tableRows.map((row, i) => (
@@ -104,6 +113,9 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
                   onChange={e => handleFolderNamesChange(i, e.target.value)}
                   placeholder="EN, 演出修正, ens"
                 />
+                <span className={styles.sampleLabel}>
+                  {`A_0001${row.suffix || ''}.jpg`}
+                </span>
                 <button className={styles.removeRowBtn} onClick={() => removeRow(i)}>✕</button>
               </div>
             ))}
@@ -113,31 +125,6 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
               </div>
             )}
             <button className={styles.addRowBtn} onClick={addRow}>{t.settings.addRow}</button>
-          </div>
-
-          {/* セルファイル命名モード */}
-          <div className={styles.section}>
-            <div className={styles.sectionTitle}>{t.settings.cellNaming}</div>
-            <div className={styles.radioGroup}>
-              <label className={styles.radioLabel}>
-                <input
-                  type="radio"
-                  value="sequence"
-                  checked={projectSettings.cellNamingMode === 'sequence'}
-                  onChange={() => setCellNamingMode('sequence')}
-                />
-                {t.settings.cellNamingSequence}
-              </label>
-              <label className={styles.radioLabel}>
-                <input
-                  type="radio"
-                  value="cellname"
-                  checked={projectSettings.cellNamingMode === 'cellname'}
-                  onChange={() => setCellNamingMode('cellname')}
-                />
-                {t.settings.cellNamingCellname}
-              </label>
-            </div>
           </div>
 
           {/* JSON import/export */}
@@ -151,7 +138,7 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
         </div>
 
         <div className={styles.footer}>
-          <button className={styles.doneBtn} onClick={onClose}>{t.settings.done}</button>
+          <button className={styles.doneBtn} onClick={handleClose}>{t.settings.done}</button>
         </div>
       </div>
     </div>

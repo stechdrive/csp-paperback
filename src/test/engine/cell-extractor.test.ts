@@ -38,10 +38,12 @@ describe('extractCells', () => {
 
     const result = extractCells(tree[0], DEFAULT_SETTINGS, 100, 100, EMPTY_CONTEXT)
     expect(result).toHaveLength(2)
-    // tree[0].children[0] = '1' (reversed), [1] = '2'
-    expect(result[0].flatName).toBe('A_0001.jpg')
-    expect(result[0].path).toBe('A/A_0001.jpg')
-    expect(result[1].flatName).toBe('A_0002.jpg')
+    // 連番はアニメフォルダ内の下セルから順に 0001 を割り当てる（CSP表示順と逆）
+    // tree[0].children[0] = '1' (上), [1] = '2' (下)
+    // 上セル(index 0) → 0002, 下セル(index 1) → 0001
+    expect(result[0].flatName).toBe('A_0002.jpg')
+    expect(result[0].path).toBe('A/A_0002.jpg')
+    expect(result[1].flatName).toBe('A_0001.jpg')
   })
 
   it('非表示セルを除外する', () => {

@@ -149,7 +149,7 @@ export function resolveMarkerState(
     insertionLayerId: (def.insertionLayerName && nameToId.get(def.insertionLayerName)) ?? null,
     insertionPosition: 'above' as const,
     members: def.memberLayerNames
-      .map(n => ({ layerId: nameToId.get(n) ?? '', blendMode: null as null }))
+      .map(n => ({ layerId: nameToId.get(n) ?? '', blendMode: null as null, opacity: null as null }))
       .filter(m => m.layerId !== ''),
     expandToAnimationCells: false,
     visibilityOverrides: {},

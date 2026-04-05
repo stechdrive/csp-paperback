@@ -70,11 +70,15 @@ export function buildMemberFlatsWithOverride(
     const flats = flattenTree([effectiveLayer], docWidth, docHeight)
     if (flats.length === 0) continue
 
-    if (member.blendMode !== null) {
+    if (member.blendMode !== null || member.opacity !== null) {
+      // blendMode または opacity にオーバーライドがある場合、
+      // メンバーを1枚に合成してからオーバーライドを適用する
       const composited = compositeGroup(flats, docWidth, docHeight)
+      const baseFlat = flats[0]
       result.push({
         canvas: composited,
-        blendMode: member.blendMode as FlatLayer['blendMode'],
+        blendMode: (member.blendMode ?? baseFlat?.blendMode ?? 'normal') as FlatLayer['blendMode'],
+        opacity: member.opacity ?? baseFlat?.opacity ?? 100,
         top: 0,
         left: 0,
         sourceId: member.layerId,

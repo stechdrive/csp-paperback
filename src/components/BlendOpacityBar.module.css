@@ -1,0 +1,102 @@
+.bar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.35rem 0.5rem;
+  border-bottom: 1px solid #313244;
+  flex-shrink: 0;
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.barActive {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.blendSelect {
+  width: 100%;
+  font-size: 0.75rem;
+  padding: 0.2rem 0.3rem;
+  background: #181825;
+  border: 1px solid #45475a;
+  border-radius: 3px;
+  color: #cdd6f4;
+  cursor: pointer;
+}
+
+.blendSelect:disabled {
+  cursor: default;
+}
+
+/* ドラッグスクラバー */
+.opacityScrubber {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  height: 20px;
+  padding: 0 0.3rem;
+  border: 1px solid #45475a;
+  border-radius: 3px;
+  background: #181825;
+  cursor: ew-resize;
+  user-select: none;
+  overflow: hidden;
+}
+
+.opacityScrubberDisabled {
+  cursor: default;
+}
+
+.opacityScrubberLabel {
+  font-size: 0.68rem;
+  color: #6c7086;
+  flex-shrink: 0;
+}
+
+.opacityScrubberTrack {
+  flex: 1;
+  height: 4px;
+  background: #313244;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.opacityScrubberFill {
+  display: block;
+  height: 100%;
+  background: #6366f1;
+  border-radius: 2px;
+  transition: width 0.05s;
+}
+
+.opacityScrubberValue {
+  font-size: 0.72rem;
+  color: #cdd6f4;
+  min-width: 2.4rem;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.opacityEditInput {
+  width: 100%;
+  height: 20px;
+  font-size: 0.75rem;
+  padding: 0 0.3rem;
+  background: #181825;
+  border: 1px solid #6366f1;
+  border-radius: 3px;
+  color: #cdd6f4;
+  text-align: right;
+  outline: none;
+  /* ステッパー（上下矢印）を非表示 */
+  -webkit-appearance: none;
+  appearance: none;
+  -moz-appearance: textfield;
+}
+
+.opacityEditInput::-webkit-inner-spin-button,
+.opacityEditInput::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}

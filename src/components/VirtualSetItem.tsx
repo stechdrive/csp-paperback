@@ -3,41 +3,12 @@ import { useAppStore } from '../store'
 import { useLocale } from '../i18n'
 import { selectLayerById } from '../store/selectors'
 import { useDragSource, useDropZone, type DragPayload } from '../hooks/useDragDrop'
+import { Tooltip } from './Tooltip'
 import type { CspLayer, VirtualSet } from '../types'
 import styles from './VirtualSetItem.module.css'
 
 interface VirtualSetItemProps {
   virtualSet: VirtualSet
-}
-
-const BLEND_MODE_OPTIONS: { value: string; label: string }[] = [
-  { value: 'normal', label: '通常' },
-  { value: 'multiply', label: '乗算' },
-  { value: 'screen', label: 'スクリーン' },
-  { value: 'overlay', label: 'オーバーレイ' },
-  { value: 'darken', label: '暗く' },
-  { value: 'lighten', label: '明るく' },
-  { value: 'color-dodge', label: '覆い焼き' },
-  { value: 'color-burn', label: '焼き込み' },
-  { value: 'hard-light', label: 'ハードライト' },
-  { value: 'soft-light', label: 'ソフトライト' },
-  { value: 'difference', label: '差の絶対値' },
-  { value: 'exclusion', label: '除外' },
-]
-
-/** CspLayerのblendMode値（スペース区切り）をUIラベ���に変換 */
-function layerBlendModeLabel(blendMode: string | undefined): string {
-  if (!blendMode) return '通常'
-  const map: Record<string, string> = {
-    'normal': '通常', 'multiply': '乗算', 'screen': 'スクリーン',
-    'overlay': 'オーバーレイ', 'darken': '暗く', 'lighten': '明るく',
-    'color dodge': '覆い焼き', 'color burn': '焼き込み',
-    'hard light': 'ハードライト', 'soft light': 'ソフトライト',
-    'difference': '差の絶対値', 'exclusion': '除外',
-    'pass through': '通過', 'hue': '色相', 'saturation': '彩度',
-    'color': 'カラー', 'luminosity': '輝度',
-  }
-  return map[blendMode] ?? blendMode
 }
 
 // モジュールレベルのDnD状態
@@ -121,10 +92,11 @@ export function VirtualSetItem({ virtualSet }: VirtualSetItemProps) {
   const addVirtualSetMember = useAppStore(s => s.addVirtualSetMember)
   const removeVirtualSetMember = useAppStore(s => s.removeVirtualSetMember)
   const reorderVirtualSetMembers = useAppStore(s => s.reorderVirtualSetMembers)
-  const setVirtualSetMemberBlendMode = useAppStore(s => s.setVirtualSetMemberBlendMode)
   const setVirtualSetVisibilityOverride = useAppStore(s => s.setVirtualSetVisibilityOverride)
   const selectedVirtualSetId = useAppStore(s => s.selectedVirtualSetId)
   const setSelectedVirtualSet = useAppStore(s => s.setSelectedVirtualSet)
+  const setSelectedVsMember = useAppStore(s => s.setSelectedVsMember)
+  const selectedLayerId = useAppStore(s => s.selectedLayerId)
   const isSelected = selectedVirtualSetId === virtualSet.id
   const { t } = useLocale()
 
@@ -165,6 +137,21 @@ export function VirtualSetItem({ virtualSet }: VirtualSetItemProps) {
     ? `${insertionLayer.name} の${virtualSet.insertionPosition === 'above' ? '上' : '下'}`
     : null
 
+  // 選択中レイヤー（挿入位置を選択方式でセットするために参照）
+  const selectedLayer = selectedLayerId ? selectLayerById(state, selectedLayerId) : null
+
+  const handleSetInsertionAbove = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!selectedLayerId) return
+    updateVirtualSet(virtualSet.id, { insertionLayerId: selectedLayerId, insertionPosition: 'above' })
+  }, [virtualSet.id, selectedLayerId, updateVirtualSet])
+
+  const handleSetInsertionBelow = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!selectedLayerId) return
+    updateVirtualSet(virtualSet.id, { insertionLayerId: selectedLayerId, insertionPosition: 'below' })
+  }, [virtualSet.id, selectedLayerId, updateVirtualSet])
+
   const handleClearInsertion = useCallback(() => {
     updateVirtualSet(virtualSet.id, { insertionLayerId: null, insertionPosition: 'above' })
   }, [virtualSet.id, updateVirtualSet])
@@ -194,7 +181,9 @@ export function VirtualSetItem({ virtualSet }: VirtualSetItemProps) {
       setSelectedIds(new Set([layerId]))
       setLastClickedId(layerId)
     }
-  }, [virtualSet.members, lastClickedId])
+    // コントロールバーのターゲットを更新（最後にクリックしたメンバー）
+    setSelectedVsMember(virtualSet.id, layerId)
+  }, [virtualSet.id, virtualSet.members, lastClickedId, setSelectedVsMember])
 
   // フォルダの展開トグル（ミニツリー用）
   const toggleVsExpanded = useCallback((id: string) => {
@@ -294,28 +283,30 @@ export function VirtualSetItem({ virtualSet }: VirtualSetItemProps) {
           {collapsed ? '▶' : '▼'}
         </button>
         {/* ドラッグハンドル */}
-        <div
-          className={styles.dragHandle}
-          draggable={draggable}
-          onDragStart={onDragStart}
-          onDragEnd={onDragEnd}
-          title={t.virtualSet.dragHandleTitle}
-        >
-          ⠿
-        </div>
+        <Tooltip content={"右ペインのレイヤーにドラッグして挿入位置を設定\n※ タッチ操作の場合：レイヤータブでレイヤーを選択後、↑上 / ↓下 ボタンで設定"}>
+          <div
+            className={styles.dragHandle}
+            draggable={draggable}
+            onDragStart={onDragStart}
+            onDragEnd={onDragEnd}
+          >
+            ⠿
+          </div>
+        </Tooltip>
         <input
           className={styles.name}
           value={virtualSet.name}
           onChange={e => updateVirtualSet(virtualSet.id, { name: e.target.value })}
           placeholder={t.virtualSet.newSetName}
         />
-        <button
-          className={styles.removeBtn}
-          onClick={e => { e.stopPropagation(); removeVirtualSet(virtualSet.id) }}
-          title={t.virtualSet.remove}
-        >
-          ✕
-        </button>
+        <Tooltip content="この仮想セルを削除">
+          <button
+            className={styles.removeBtn}
+            onClick={e => { e.stopPropagation(); removeVirtualSet(virtualSet.id) }}
+          >
+            ✕
+          </button>
+        </Tooltip>
       </div>
 
       {!collapsed && (
@@ -330,6 +321,14 @@ export function VirtualSetItem({ virtualSet }: VirtualSetItemProps) {
               </div>
             ) : (
               <div className={styles.insertionHint}>{t.virtualSet.insertionHint}</div>
+            )}
+            {/* 選択中レイヤーで挿入位置を設定（DnD の代替／補助） */}
+            {selectedLayer && (
+              <div className={styles.insertionBySelection}>
+                <span className={styles.insertionBySelectionName}>{selectedLayer.name || selectedLayer.originalName}</span>
+                <button className={styles.insertionPosBtn} onClick={handleSetInsertionAbove}>↑ 上</button>
+                <button className={styles.insertionPosBtn} onClick={handleSetInsertionBelow}>↓ 下</button>
+              </div>
             )}
           </div>
 
@@ -391,26 +390,6 @@ export function VirtualSetItem({ virtualSet }: VirtualSetItemProps) {
                         </button>
 
                         <span className={styles.memberName}>{layer?.name ?? member.layerId}</span>
-
-                        <select
-                          className={styles.blendModeSelect}
-                          value={member.blendMode ?? ''}
-                          onChange={e => {
-                            e.stopPropagation()
-                            const val = e.target.value === '' ? null : e.target.value
-                            setVirtualSetMemberBlendMode(virtualSet.id, member.layerId, val)
-                          }}
-                          onClick={e => e.stopPropagation()}
-                        >
-                          <option value="">
-                            {layerBlendModeLabel(layer?.blendMode)}
-                          </option>
-                          {BLEND_MODE_OPTIONS.map(bm => (
-                            <option key={bm.value} value={bm.value}>
-                              {bm.label}
-                            </option>
-                          ))}
-                        </select>
 
                         <button
                           className={styles.memberRemove}

@@ -8,9 +8,12 @@ const LEFT_DEFAULT = 260
 const LEFT_MIN = 200
 const LEFT_MAX = 600
 
+type MobileTab = 'virtual' | 'preview' | 'layer'
+
 export function MainLayout() {
   const [leftWidth, setLeftWidth] = useState(LEFT_DEFAULT)
   const [leftCollapsed, setLeftCollapsed] = useState(false)
+  const [activeTab, setActiveTab] = useState<MobileTab>('preview')
 
   const handleResizeMouseDown = useCallback((e: React.MouseEvent) => {
     if (leftCollapsed) return
@@ -35,7 +38,7 @@ export function MainLayout() {
   }, [leftWidth, leftCollapsed])
 
   return (
-    <div className={styles.layout}>
+    <div className={styles.layout} data-mobile-tab={activeTab}>
       <div
         className={styles.leftPane}
         style={{ width: leftCollapsed ? 0 : leftWidth }}
@@ -61,6 +64,31 @@ export function MainLayout() {
       <div className={styles.rightPane}>
         <LayerTreePanel />
       </div>
+
+      {/* モバイル用ボトムタブバー */}
+      <nav className={styles.mobileTabBar}>
+        <button
+          className={`${styles.mobileTab} ${activeTab === 'virtual' ? styles.mobileTabActive : ''}`}
+          onClick={() => setActiveTab('virtual')}
+        >
+          <span className={styles.mobileTabIcon}>⊞</span>
+          <span className={styles.mobileTabLabel}>仮想セル</span>
+        </button>
+        <button
+          className={`${styles.mobileTab} ${activeTab === 'preview' ? styles.mobileTabActive : ''}`}
+          onClick={() => setActiveTab('preview')}
+        >
+          <span className={styles.mobileTabIcon}>◧</span>
+          <span className={styles.mobileTabLabel}>プレビュー</span>
+        </button>
+        <button
+          className={`${styles.mobileTab} ${activeTab === 'layer' ? styles.mobileTabActive : ''}`}
+          onClick={() => setActiveTab('layer')}
+        >
+          <span className={styles.mobileTabIcon}>☰</span>
+          <span className={styles.mobileTabLabel}>レイヤー</span>
+        </button>
+      </nav>
     </div>
   )
 }
