@@ -4,6 +4,7 @@ import { useLocale } from '../i18n'
 import { selectProcessTableErrors } from '../store/selectors'
 import type { ProcessFolderEntry } from '../types'
 import styles from './SettingsDialog.module.css'
+import { DEFAULT_PROJECT_SETTINGS } from '../types'
 
 interface SettingsDialogProps {
   onClose: () => void
@@ -12,12 +13,16 @@ interface SettingsDialogProps {
 export function SettingsDialog({ onClose }: SettingsDialogProps) {
   const projectSettings = useAppStore(s => s.projectSettings)
   const updateProcessTable = useAppStore(s => s.updateProcessTable)
+  const updateArchivePatterns = useAppStore(s => s.updateArchivePatterns)
   const importSettings = useAppStore(s => s.importSettings)
   const exportSettings = useAppStore(s => s.exportSettings)
   const { t } = useLocale()
 
   const [tableRows, setTableRows] = useState<ProcessFolderEntry[]>(
     projectSettings.processTable
+  )
+  const [archiveRows, setArchiveRows] = useState<string[]>(
+    projectSettings.archivePatterns ?? DEFAULT_PROJECT_SETTINGS.archivePatterns
   )
 
   const errors = selectProcessTableErrors(useAppStore.getState())
@@ -58,6 +63,24 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
     URL.revokeObjectURL(url)
   }
 
+  const handleArchiveChange = (i: number, value: string) => {
+    const next = archiveRows.map((p, idx) => idx === i ? value : p)
+    setArchiveRows(next)
+    updateArchivePatterns(next)
+  }
+
+  const addArchiveRow = () => {
+    const next = [...archiveRows, '']
+    setArchiveRows(next)
+    updateArchivePatterns(next)
+  }
+
+  const removeArchiveRow = (i: number) => {
+    const next = archiveRows.filter((_, idx) => idx !== i)
+    setArchiveRows(next)
+    updateArchivePatterns(next)
+  }
+
   const handleImport = () => {
     const input = document.createElement('input')
     input.type = 'file'
@@ -67,7 +90,9 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
       if (!file) return
       const text = await file.text()
       importSettings(text)
-      setTableRows(useAppStore.getState().projectSettings.processTable)
+      const s = useAppStore.getState().projectSettings
+      setTableRows(s.processTable)
+      setArchiveRows(s.archivePatterns ?? DEFAULT_PROJECT_SETTINGS.archivePatterns)
     }
     input.click()
   }
@@ -125,6 +150,24 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
               </div>
             )}
             <button className={styles.addRowBtn} onClick={addRow}>{t.settings.addRow}</button>
+          </div>
+
+          {/* アーカイブ除外パターン */}
+          <div className={styles.section}>
+            <div className={styles.sectionTitle}>{t.settings.archivePatterns}</div>
+            <div className={styles.hint}>{t.settings.archivePatternHint}</div>
+            {archiveRows.map((pattern, i) => (
+              <div key={i} className={styles.patternRow}>
+                <input
+                  className={styles.tableInput}
+                  value={pattern}
+                  onChange={e => handleArchiveChange(i, e.target.value)}
+                  placeholder={t.settings.archivePatternPlaceholder}
+                />
+                <button className={styles.removeRowBtn} onClick={() => removeArchiveRow(i)}>✕</button>
+              </div>
+            ))}
+            <button className={styles.addRowBtn} onClick={addArchiveRow}>{t.settings.addPattern}</button>
           </div>
 
           {/* JSON import/export */}

@@ -11,6 +11,8 @@ export type CellNamingMode =
 export interface ProjectSettings {
   processTable: ProcessFolderEntry[]
   cellNamingMode: CellNamingMode
+  /** _プレフィックス自動マーク・自動表示から除外するパターン（前方一致）。デフォルト: ['_old', '_pool'] */
+  archivePatterns: string[]
 }
 
 export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
@@ -22,4 +24,5 @@ export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
     { suffix: '_ss', folderNames: ['_ss', '総作監'] },
   ],
   cellNamingMode: 'sequence',
+  archivePatterns: ['_old', '_pool'],
 }

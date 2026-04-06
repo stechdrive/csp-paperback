@@ -164,6 +164,20 @@
 
 .addRowBtn:hover { color: #cdd6f4; border-color: #6c7086; }
 
+.patternRow {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.hint {
+  font-size: 0.72rem;
+  color: #6c7086;
+  margin-bottom: 0.4rem;
+  line-height: 1.4;
+}
+
 .radioGroup {
   display: flex;
   flex-direction: column;

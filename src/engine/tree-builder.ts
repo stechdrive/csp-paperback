@@ -35,7 +35,8 @@ function convertLayer(
   layer: Layer,
   parentId: string | null,
   depth: number,
-  animFolderContext: boolean // アニメーションフォルダ内かどうか（_プレフィックス無視判定用）
+  animFolderContext: boolean, // アニメーションフォルダ内かどうか（_プレフィックス無視判定用）
+  archivePatterns: string[]
 ): CspLayer {
   const id = crypto.randomUUID()
   const originalName = layer.name ?? ''
@@ -49,8 +50,9 @@ function convertLayer(
   const folder = isFolder(layer)
   const animFolder = isAnimationFolder(layer)
 
-  // _プレフィックス自動マーク（アニメーションフォルダ内は無視）
-  const autoMarked = !animFolderContext && originalName.startsWith('_') && folder
+  // _プレフィックス自動マーク（アニメーションフォルダ内・アーカイブパターン一致は除外）
+  const isArchive = archivePatterns.some(p => originalName.startsWith(p))
+  const autoMarked = !animFolderContext && originalName.startsWith('_') && folder && !isArchive
 
   const top = layer.top ?? 0
   const left = layer.left ?? 0
@@ -62,7 +64,7 @@ function convertLayer(
   // アニメーションフォルダ内では_プレフィックスを自動マークしない
   const nextContext = animFolderContext || animFolder
   const children: CspLayer[] = (layer.children ?? []).slice().reverse().map(child =>
-    convertLayer(child, id, depth + 1, nextContext)
+    convertLayer(child, id, depth + 1, nextContext, archivePatterns)
   )
 
   return {
@@ -173,11 +175,12 @@ export function collectAnimFolderAncestorIds(tree: CspLayer[]): Set<string> {
  */
 export function buildLayerTree(
   psd: Psd,
-  xdts?: XdtsData
+  xdts?: XdtsData,
+  archivePatterns: string[] = []
 ): CspLayer[] {
   // ag-psdはボトムファースト順で返すので逆順にしてPhotoshop UI順（トップファースト）に統一する
   const children = (psd.children ?? []).slice().reverse()
-  const tree = children.map(layer => convertLayer(layer, null, 0, false))
+  const tree = children.map(layer => convertLayer(layer, null, 0, false, archivePatterns))
 
   if (xdts) {
     detectAnimationFoldersByXdts(tree, xdts)
