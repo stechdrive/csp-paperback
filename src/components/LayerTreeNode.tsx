@@ -243,6 +243,7 @@ export function LayerTreeNode({
 
       <div
         className={rowClass}
+        data-layer-id={layer.id}
         onClick={handleRowClick}
         draggable={draggable}
         onDragStart={onDragStart}

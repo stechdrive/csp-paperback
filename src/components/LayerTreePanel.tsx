@@ -1,12 +1,24 @@
-import { useCallback } from 'react'
+import { useCallback, useRef } from 'react'
 import { useAppStore } from '../store'
 import { useLocale } from '../i18n'
 import { selectLayerTreeWithVisibility, selectLayerById } from '../store/selectors'
 import { LayerTreeNode } from './LayerTreeNode'
 import { BlendOpacityBar } from './BlendOpacityBar'
 import { Tooltip } from './Tooltip'
-import type { BlendMode } from '../types'
+import type { BlendMode, CspLayer } from '../types'
 import styles from './LayerTreePanel.module.css'
+
+/** 展開状態を考慮して表示中のレイヤーIDをフラットリスト化 */
+function flattenVisibleIds(layers: CspLayer[], expandedFolders: Set<string>): string[] {
+  const result: string[] = []
+  for (const layer of layers) {
+    result.push(layer.id)
+    if (layer.isFolder && expandedFolders.has(layer.id) && layer.children.length > 0) {
+      result.push(...flattenVisibleIds(layer.children, expandedFolders))
+    }
+  }
+  return result
+}
 
 export function LayerTreePanel() {
   const tree = useAppStore(selectLayerTreeWithVisibility)
@@ -25,6 +37,35 @@ export function LayerTreePanel() {
   const setLayerOpacity = useAppStore(s => s.setLayerOpacity)
 
   const selectedLayer = useAppStore(s => selectedLayerId ? selectLayerById(s, selectedLayerId) : null)
+
+  const treeRef = useRef<HTMLDivElement>(null)
+
+  /** Ctrl+スクロールでレイヤーを上下切り替え */
+  const handleWheel = useCallback((e: React.WheelEvent) => {
+    if (!e.ctrlKey || tree.length === 0) return
+    e.preventDefault()
+
+    const ids = flattenVisibleIds(tree, expandedFolders)
+    if (ids.length === 0) return
+
+    const currentIdx = selectedLayerId ? ids.indexOf(selectedLayerId) : -1
+    const direction = e.deltaY > 0 ? 1 : -1
+    let nextIdx: number
+    if (currentIdx < 0) {
+      // 未選択なら先頭 or 末尾
+      nextIdx = direction > 0 ? 0 : ids.length - 1
+    } else {
+      nextIdx = Math.max(0, Math.min(ids.length - 1, currentIdx + direction))
+    }
+
+    const nextId = ids[nextIdx]
+    if (nextId !== selectedLayerId) {
+      selectLayer(nextId)
+      // 選択先が見えるようにスクロール
+      const el = treeRef.current?.querySelector(`[data-layer-id="${nextId}"]`)
+      el?.scrollIntoView({ block: 'nearest' })
+    }
+  }, [tree, expandedFolders, selectedLayerId, selectLayer])
 
   const handleBlendModeChange = useCallback((value: string) => {
     if (!selectedLayerId) return
@@ -57,7 +98,7 @@ export function LayerTreePanel() {
         onOpacityChange={handleOpacityChange}
       />
 
-      <div className={styles.tree}>
+      <div className={styles.tree} ref={treeRef} onWheel={handleWheel}>
         {tree.length === 0 ? (
           <div className={styles.empty}>
             {t.layerTree.empty.split('\n').map((line, i) => (
