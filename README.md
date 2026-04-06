@@ -12,9 +12,9 @@ A browser-based tool for exporting composited animation cell images from Clip St
 
 ### The Problem
 
-CSP's animation export is designed around individual cels. To get a finished composite — cel, background, and correction layers merged into a single image — productions typically had to split the work across multiple tracks or fold everything into the cel itself.
+CSP's animation export is designed around individual cels. When correction layers (layout, director's notes, animation supervisor's notes) are nested inside a cel folder — the natural structure for animation production — CSP cannot export each process independently. Work-in-progress opacity settings also bleed into the output.
 
-CSP Paperback solves this outside the workflow: load your PSD and XDTS, and export finished images per cel in bulk.
+CSP Paperback solves this outside the workflow: load your PSD and XDTS, and export finished images per process, per cel, in bulk.
 
 ### What You Can Do
 
@@ -68,9 +68,9 @@ Clip Studio Paint（CSP）のアニメーションセル書き出しを補完す
 
 ### 何のためのツールか
 
-CSPのアニメーションセル書き出しは、セル単体の出力が前提です。背景や修正工程など複数のレイヤーを重ねた「1枚の完成画像」を得るには、トラックを工程ごとに分けるか、すべてをセル内に収めるかといった構造上の工夫が必要でした。
+CSPのアニメーションセル書き出しは、セル単体の出力が前提です。演出修正・作監修正など複数の工程をセルフォルダ内にまとめた構造では、工程ごとの独立した書き出しが自動化できません。また、作業中の半透明設定がそのまま出力に影響するという問題もありました。
 
-CSP Paperbackはその制約をPSDとXDTSを読み込むことでワークフロー外から解決し、セルごとの完成画像を一括書き出しします。
+CSP Paperbackはその制約をPSDとXDTSを読み込むことでワークフロー外から解決し、工程ごと・セルごとの完成画像を一括書き出しします。
 
 ### できること
 
