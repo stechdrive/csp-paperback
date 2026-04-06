@@ -1,4 +1,5 @@
 import type { AnimationFolderInfo, CspLayer } from '../types'
+import type { SingleMark } from '../types/marks'
 import type { AppStore } from './index'
 
 /**
@@ -11,6 +12,7 @@ let _cache: {
   layerTree: CspLayer[]
   visibilityOverrides: Map<string, boolean>
   manualAnimFolderIds: Set<string>
+  singleMarks: Map<string, SingleMark>
   result: CspLayer[]
 } | null = null
 
@@ -21,24 +23,25 @@ let _cache: {
  * flatten/export パイプラインまで正しく伝播する。
  */
 export function selectLayerTreeWithVisibility(state: AppStore): CspLayer[] {
-  const { layerTree, visibilityOverrides, manualAnimFolderIds } = state
+  const { layerTree, visibilityOverrides, manualAnimFolderIds, singleMarks } = state
 
   // 入力参照がすべて前回と同じなら前回の結果を返す（無限ループ防止）
   if (
     _cache !== null &&
     _cache.layerTree === layerTree &&
     _cache.visibilityOverrides === visibilityOverrides &&
-    _cache.manualAnimFolderIds === manualAnimFolderIds
+    _cache.manualAnimFolderIds === manualAnimFolderIds &&
+    _cache.singleMarks === singleMarks
   ) {
     return _cache.result
   }
 
-  const hasOverrides = visibilityOverrides.size > 0 || manualAnimFolderIds.size > 0
+  const hasOverrides = visibilityOverrides.size > 0 || manualAnimFolderIds.size > 0 || singleMarks.size > 0
   const result = hasOverrides
-    ? applyOverrides(layerTree, visibilityOverrides, manualAnimFolderIds)
+    ? applyOverrides(layerTree, visibilityOverrides, manualAnimFolderIds, singleMarks)
     : layerTree
 
-  _cache = { layerTree, visibilityOverrides, manualAnimFolderIds, result }
+  _cache = { layerTree, visibilityOverrides, manualAnimFolderIds, singleMarks, result }
   return result
 }
 
@@ -46,6 +49,7 @@ function applyOverrides(
   layers: CspLayer[],
   visOverrides: Map<string, boolean>,
   manualAnimIds: Set<string>,
+  singleMarks: Map<string, SingleMark>,
 ): CspLayer[] {
   let changed = false
   const result = layers.map(layer => {
@@ -55,6 +59,7 @@ function applyOverrides(
     const uiHidden = hasOverride ? visOverrides.get(layer.id)! : layer.uiHidden
     const hidden = hasOverride ? false : layer.hidden
     const isAnimationFolder = layer.isAnimationFolder || manualAnimIds.has(layer.id)
+    const singleMark = singleMarks.has(layer.id)
 
     // 手動指定フォルダ（animationFolder=null）→ animationFolder オブジェクトを生成
     let animationFolder: AnimationFolderInfo | null = layer.animationFolder
@@ -63,7 +68,7 @@ function applyOverrides(
     }
 
     const children = layer.children.length > 0
-      ? applyOverrides(layer.children, visOverrides, manualAnimIds)
+      ? applyOverrides(layer.children, visOverrides, manualAnimIds, singleMarks)
       : layer.children
 
     if (
@@ -71,12 +76,13 @@ function applyOverrides(
       hidden === layer.hidden &&
       isAnimationFolder === layer.isAnimationFolder &&
       animationFolder === layer.animationFolder &&
+      singleMark === layer.singleMark &&
       children === layer.children
     ) {
       return layer
     }
     changed = true
-    return { ...layer, uiHidden, hidden, isAnimationFolder, animationFolder, children }
+    return { ...layer, uiHidden, hidden, isAnimationFolder, animationFolder, singleMark, children }
   })
   return changed ? result : layers
 }
