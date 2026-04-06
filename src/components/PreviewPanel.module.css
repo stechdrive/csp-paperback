@@ -278,6 +278,7 @@
   border-radius: 3px;
   position: relative;
   cursor: pointer;
+  touch-action: none;
 }
 
 .seekFill {
@@ -346,7 +347,7 @@
   }
 
   .seekBar {
-    padding: 0.4rem 0.5rem;
+    padding: 0.75rem 0.5rem;
   }
 
   .seekTrack {
@@ -354,13 +355,20 @@
     border-radius: 0.375rem;
   }
 
+  .seekTrack::before {
+    /* タッチ判定を上下に拡張（視覚サイズは変えず当たり判定だけ広げる） */
+    content: '';
+    position: absolute;
+    inset: -0.75rem 0;
+  }
+
   .seekFill {
     border-radius: 0.375rem;
   }
 
   .seekThumb {
-    width: 1.25rem;
-    height: 1.25rem;
+    width: 1.75rem;
+    height: 1.75rem;
   }
 
   .seekLabel {

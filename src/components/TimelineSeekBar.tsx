@@ -17,13 +17,16 @@ export function TimelineSeekBar() {
     return Math.round(ratio * (duration - 1))
   }, [duration])
 
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
     e.preventDefault()
+    const target = e.currentTarget as HTMLElement
+    target.setPointerCapture(e.pointerId)
+
     const frame = calcFrame(e.clientX)
     seekToFrame(frame)
 
     let lastFrame = frame
-    const onMove = (ev: MouseEvent) => {
+    const onMove = (ev: PointerEvent) => {
       const f = calcFrame(ev.clientX)
       if (f !== lastFrame) {
         lastFrame = f
@@ -31,11 +34,14 @@ export function TimelineSeekBar() {
       }
     }
     const onUp = () => {
-      window.removeEventListener('mousemove', onMove)
-      window.removeEventListener('mouseup', onUp)
+      target.releasePointerCapture(e.pointerId)
+      target.removeEventListener('pointermove', onMove)
+      target.removeEventListener('pointerup', onUp)
+      target.removeEventListener('pointercancel', onUp)
     }
-    window.addEventListener('mousemove', onMove)
-    window.addEventListener('mouseup', onUp)
+    target.addEventListener('pointermove', onMove)
+    target.addEventListener('pointerup', onUp)
+    target.addEventListener('pointercancel', onUp)
   }, [calcFrame, seekToFrame])
 
   if (duration <= 0) return null
@@ -49,7 +55,7 @@ export function TimelineSeekBar() {
       <div
         ref={trackRef}
         className={styles.seekTrack}
-        onMouseDown={handleMouseDown}
+        onPointerDown={handlePointerDown}
       >
         <div className={styles.seekFill} style={{ width: `${percent}%` }} />
         <div className={styles.seekThumb} style={{ left: `${percent}%` }} />
