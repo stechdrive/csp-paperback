@@ -8,13 +8,45 @@ import { Tooltip } from './Tooltip'
 import type { BlendMode, CspLayer } from '../types'
 import styles from './LayerTreePanel.module.css'
 
-/** 展開状態を考慮して表示中のレイヤーIDをフラットリスト化 */
-function flattenVisibleIds(layers: CspLayer[], expandedFolders: Set<string>): string[] {
-  const result: string[] = []
+function findLayerById(layers: CspLayer[], id: string): CspLayer | null {
+  for (const l of layers) {
+    if (l.id === id) return l
+    const found = findLayerById(l.children, id)
+    if (found) return found
+  }
+  return null
+}
+
+interface FlatEntry {
+  id: string
+  layer: CspLayer
+  isCell: boolean
+  animParentId: string | undefined
+}
+
+/** 展開状態を考慮して表示中のレイヤーをフラットリスト化 */
+function flattenVisible(
+  layers: CspLayer[],
+  expandedFolders: Set<string>,
+  manualAnimFolderIds: Set<string>,
+  parentAnimId?: string,
+): FlatEntry[] {
+  const result: FlatEntry[] = []
   for (const layer of layers) {
-    result.push(layer.id)
+    const isAnimFolder = layer.isAnimationFolder || manualAnimFolderIds.has(layer.id)
+    result.push({
+      id: layer.id,
+      layer,
+      isCell: !!parentAnimId,
+      animParentId: parentAnimId,
+    })
     if (layer.isFolder && expandedFolders.has(layer.id) && layer.children.length > 0) {
-      result.push(...flattenVisibleIds(layer.children, expandedFolders))
+      result.push(...flattenVisible(
+        layer.children,
+        expandedFolders,
+        manualAnimFolderIds,
+        isAnimFolder ? layer.id : parentAnimId,
+      ))
     }
   }
   return result
@@ -27,7 +59,11 @@ export function LayerTreePanel() {
   const visibilityOverrides = useAppStore(s => s.visibilityOverrides)
   const { t } = useLocale()
 
+  const manualAnimFolderIds = useAppStore(s => s.manualAnimFolderIds)
+  const singleMarks = useAppStore(s => s.singleMarks)
   const selectLayer = useAppStore(s => s.selectLayer)
+  const selectAnimCell = useAppStore(s => s.selectAnimCell)
+  const setFocusedAnimFolder = useAppStore(s => s.setFocusedAnimFolder)
   const toggleLayerVisibility = useAppStore(s => s.toggleLayerVisibility)
   const toggleFolderExpanded = useAppStore(s => s.toggleFolderExpanded)
   const toggleFolderExpandedRecursive = useAppStore(s => s.toggleFolderExpandedRecursive)
@@ -40,32 +76,48 @@ export function LayerTreePanel() {
 
   const treeRef = useRef<HTMLDivElement>(null)
 
-  /** Ctrl+スクロールでレイヤーを上下切り替え */
+  /** Shift+スクロールでレイヤーを上下切り替え（プレビュー連動） */
   const handleWheel = useCallback((e: React.WheelEvent) => {
     if (!e.shiftKey || tree.length === 0) return
     e.preventDefault()
 
-    const ids = flattenVisibleIds(tree, expandedFolders)
-    if (ids.length === 0) return
+    const entries = flattenVisible(tree, expandedFolders, manualAnimFolderIds)
+    if (entries.length === 0) return
 
-    const currentIdx = selectedLayerId ? ids.indexOf(selectedLayerId) : -1
+    const currentIdx = selectedLayerId ? entries.findIndex(e => e.id === selectedLayerId) : -1
     const direction = e.deltaY > 0 ? 1 : -1
     let nextIdx: number
     if (currentIdx < 0) {
-      // 未選択なら先頭 or 末尾
-      nextIdx = direction > 0 ? 0 : ids.length - 1
+      nextIdx = direction > 0 ? 0 : entries.length - 1
     } else {
-      nextIdx = Math.max(0, Math.min(ids.length - 1, currentIdx + direction))
+      nextIdx = Math.max(0, Math.min(entries.length - 1, currentIdx + direction))
     }
 
-    const nextId = ids[nextIdx]
-    if (nextId !== selectedLayerId) {
-      selectLayer(nextId)
+    const entry = entries[nextIdx]
+    if (entry.id !== selectedLayerId) {
+      // handleRowClick と同じ選択ロジックでプレビューを連動
+      if (entry.isCell && entry.animParentId) {
+        const { layerTree } = useAppStore.getState()
+        const animFolder = findLayerById(layerTree, entry.animParentId)
+        if (animFolder) {
+          const idx = animFolder.children.findIndex(c => c.id === entry.id)
+          if (idx >= 0) {
+            selectAnimCell(entry.animParentId, idx)
+            setFocusedAnimFolder(entry.animParentId)
+          }
+        }
+        selectLayer(entry.id)
+      } else if (entry.layer.autoMarked || singleMarks.has(entry.id)) {
+        selectLayer(entry.id)
+        setFocusedAnimFolder(null)
+      } else {
+        selectLayer(entry.id)
+      }
       // 選択先が見えるようにスクロール
-      const el = treeRef.current?.querySelector(`[data-layer-id="${nextId}"]`)
+      const el = treeRef.current?.querySelector(`[data-layer-id="${entry.id}"]`)
       el?.scrollIntoView({ block: 'nearest' })
     }
-  }, [tree, expandedFolders, selectedLayerId, selectLayer])
+  }, [tree, expandedFolders, manualAnimFolderIds, singleMarks, selectedLayerId, selectLayer, selectAnimCell, setFocusedAnimFolder])
 
   const handleBlendModeChange = useCallback((value: string) => {
     if (!selectedLayerId) return
