@@ -40,7 +40,8 @@ export const createPsdSlice: StateCreator<AppStore, [], [], PsdSlice> = (set, ge
   loadPsd: (buffer, fileName) => {
     const psd = readPsdFile(buffer)
     const xdts = get().xdtsData ?? undefined
-    const tree = buildLayerTree(psd, xdts)
+    const archivePatterns = get().projectSettings.archivePatterns
+    const tree = buildLayerTree(psd, xdts, archivePatterns)
 
     // DPI情報を取得（PPI/PPCMどちらでもPPIに統一）
     const res = psd.imageResources?.resolutionInfo
@@ -59,6 +60,17 @@ export const createPsdSlice: StateCreator<AppStore, [], [], PsdSlice> = (set, ge
     }
     collectExpanded(tree)
 
+    // autoMarked かつ PSD上で非表示の _フォルダを自動表示（visibilityOverrides に登録）
+    // archivePatterns 一致フォルダは autoMarked=false なので自動的に除外される
+    const initialVisibility = new Map<string, boolean>()
+    function collectAutoShow(layers: CspLayer[]): void {
+      for (const l of layers) {
+        if (l.autoMarked && l.hidden) initialVisibility.set(l.id, false)
+        collectAutoShow(l.children)
+      }
+    }
+    collectAutoShow(tree)
+
     set({
       rawPsd: psd,
       psdFileName: fileName,
@@ -71,7 +83,7 @@ export const createPsdSlice: StateCreator<AppStore, [], [], PsdSlice> = (set, ge
       selectedLayerId: null,
       selectedCells: new Map(),
       focusedAnimFolderId: null,
-      visibilityOverrides: new Map(),
+      visibilityOverrides: initialVisibility,
       expandedFolders: initialExpanded,
       _past: [],
       _future: [],

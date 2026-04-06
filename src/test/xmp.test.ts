@@ -23,6 +23,7 @@ const sampleState: PersistedState = {
   projectSettings: {
     processTable: [{ suffix: '_en', folderNames: ['EN', 'en'] }],
     cellNamingMode: 'sequence',
+    archivePatterns: ['_old', '_pool'],
   },
 }
 

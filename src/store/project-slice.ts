@@ -7,6 +7,7 @@ export interface ProjectSlice {
   projectSettings: ProjectSettings
   updateProcessTable: (table: ProcessFolderEntry[]) => void
   setCellNamingMode: (mode: CellNamingMode) => void
+  updateArchivePatterns: (patterns: string[]) => void
   importSettings: (json: string) => void
   exportSettings: () => string
 }
@@ -22,6 +23,11 @@ export const createProjectSlice: StateCreator<AppStore, [], [], ProjectSlice> = 
   setCellNamingMode: (mode) => {
     get().pushHistory()
     set({ projectSettings: { ...get().projectSettings, cellNamingMode: mode } })
+  },
+
+  updateArchivePatterns: (patterns) => {
+    get().pushHistory()
+    set({ projectSettings: { ...get().projectSettings, archivePatterns: patterns } })
   },
 
   importSettings: (json) => {

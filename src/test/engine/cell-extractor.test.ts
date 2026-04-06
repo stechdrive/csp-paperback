@@ -7,12 +7,13 @@ import type { ProjectSettings, XdtsData, FlatLayer } from '../../types'
 const DEFAULT_SETTINGS: ProjectSettings = {
   processTable: [],
   cellNamingMode: 'sequence',
+  archivePatterns: [],
 }
 
 const EMPTY_CONTEXT: FlatLayer[] = []
 
 function makeSettingsWithTable(entries: { suffix: string; folderNames: string[] }[]): ProjectSettings {
-  return { processTable: entries, cellNamingMode: 'sequence' }
+  return { processTable: entries, cellNamingMode: 'sequence', archivePatterns: [] }
 }
 
 function detectAnim(tree: ReturnType<typeof buildLayerTree>, trackName: string) {
