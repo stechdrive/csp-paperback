@@ -42,7 +42,7 @@ export function LayerTreePanel() {
 
   /** Ctrl+スクロールでレイヤーを上下切り替え */
   const handleWheel = useCallback((e: React.WheelEvent) => {
-    if (!e.ctrlKey || tree.length === 0) return
+    if (!e.shiftKey || tree.length === 0) return
     e.preventDefault()
 
     const ids = flattenVisibleIds(tree, expandedFolders)
