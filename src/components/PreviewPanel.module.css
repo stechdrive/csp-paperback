@@ -38,6 +38,10 @@
   height: 0; /* flex:1 で引き伸ばされつつ、子の max-height:100% をパーセント解決させるため */
   overflow: hidden;
   position: relative;
+  /* キャンバスがビューポートより小さいとき中央配置 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* ナビゲーターと書き出し設定の間のリサイズハンドル */

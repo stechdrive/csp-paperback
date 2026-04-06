@@ -5,6 +5,10 @@
   overflow: hidden;
   position: relative;
   background: #11111b;
+  /* コンテンツがビューポートより小さいとき中央配置 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .list {
