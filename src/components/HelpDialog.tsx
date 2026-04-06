@@ -625,12 +625,96 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               <h2 className={styles.h1}>🏭 工程フォルダテーブル</h2>
 
               <p className={styles.p}>
-                アニメーションセルの中に修正工程フォルダを作って工程を分離している場合、
-                <span className={styles.strong}>工程テーブル</span>を設定することで
-                工程ごとに自動分離出力できます。
+                修正工程（演出、作監修正など）をセル出力時に自動でサフィックス付きの別ファイルとして分離出力できます。
+                <span className={styles.strong}>工程テーブル</span>にフォルダ名とサフィックスの対応を登録するだけで、
+                テンプレートの構造に関係なく同じ設定で使えます。
               </p>
 
-              <h3 className={styles.h2}>例：セルの中に「EN」フォルダがある場合</h3>
+              <div className={styles.calloutInfo}>
+                工程テーブルは<span className={styles.strong}>2つのテンプレート形式</span>に対応しています。
+                カット担当と修正担当が別フォルダで作業する「トラック分離型」でも、
+                1つのセルフォルダ内に工程サブフォルダを置く「セル内蔵型」でも、
+                同じ工程テーブル設定で自動分離出力できます。
+              </div>
+
+              {/* --- パターン1: トラック分離型 --- */}
+              <h3 className={styles.h2}>パターン1：トラック分離型</h3>
+              <p className={styles.p}>
+                カット担当者と修正担当者がそれぞれ<span className={styles.strong}>別のフォルダ</span>に
+                同じセル名の構造をコピーして作業するテンプレートです。
+                工程テーブルに登録したフォルダ名が
+                <span className={styles.em}>アニメーションフォルダの直接の親フォルダ名</span>に一致すると、
+                そのトラック全体のセルにサフィックスが付きます。
+              </p>
+
+              <div className={styles.layerDiagram}>
+                <div className={styles.layerRow}>
+                  <span className={styles.iconFolder}>📁</span>
+                  <span className={styles.layerName}>LO</span>
+                </div>
+                <div className={`${styles.layerRow} ${styles.indent1}`}>
+                  <span className={styles.iconFolder}>📁</span>
+                  <span className={styles.layerName}>EN</span>
+                  <span className={styles.labelContext}>工程（親フォルダ）</span>
+                </div>
+                <div className={`${styles.layerRow} ${styles.indent2}`}>
+                  <span className={styles.iconAnim}>📁</span>
+                  <span className={styles.layerNameAnim}>A</span>
+                  <span className={styles.labelAnim}>アニメーション</span>
+                </div>
+                <div className={`${styles.layerRow} ${styles.indent3}`}>
+                  <span className={styles.iconLayer}>◆</span>
+                  <span className={styles.layerName}>2</span>
+                  <span style={{ color: '#6c7086', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
+                    → A_0002_en.jpg
+                  </span>
+                </div>
+                <div className={`${styles.layerRow} ${styles.indent3}`}>
+                  <span className={styles.iconLayer}>◆</span>
+                  <span className={styles.layerName}>1</span>
+                  <span style={{ color: '#6c7086', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
+                    → A_0001_en.jpg
+                  </span>
+                </div>
+                <div className={`${styles.layerRow} ${styles.indent1}`}>
+                  <span className={styles.iconFolder}>📁</span>
+                  <span className={styles.layerName}>LO</span>
+                </div>
+                <div className={`${styles.layerRow} ${styles.indent2}`}>
+                  <span className={styles.iconAnim}>📁</span>
+                  <span className={styles.layerNameAnim}>A</span>
+                  <span className={styles.labelAnim}>アニメーション</span>
+                </div>
+                <div className={`${styles.layerRow} ${styles.indent3}`}>
+                  <span className={styles.iconLayer}>◆</span>
+                  <span className={styles.layerName}>2</span>
+                  <span style={{ color: '#6c7086', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
+                    → A_0002.jpg（本体）
+                  </span>
+                </div>
+                <div className={`${styles.layerRow} ${styles.indent3}`}>
+                  <span className={styles.iconLayer}>◆</span>
+                  <span className={styles.layerName}>1</span>
+                  <span style={{ color: '#6c7086', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
+                    → A_0001.jpg（本体）
+                  </span>
+                </div>
+              </div>
+
+              <p className={styles.p}>
+                親フォルダ名「EN」が工程テーブルの <code className={styles.code}>_en</code> に一致するため、
+                その中のアニメーションフォルダ A のセルは全て <code className={styles.code}>A_0001_en.jpg</code> のように出力されます。
+                一方、親フォルダ名「LO」はテーブル未登録なので本体（サフィックスなし）として出力されます。
+                セル名が同じ「1」「2」でも、フォルダ構造から自動で区別されます。
+              </p>
+
+              {/* --- パターン2: セル内蔵型 --- */}
+              <h3 className={styles.h2}>パターン2：セル内蔵型</h3>
+              <p className={styles.p}>
+                1つのアニメーションフォルダ内で、各セルフォルダの中に
+                <span className={styles.strong}>工程サブフォルダ</span>を置くテンプレートです。
+                セル内のフォルダ名が工程テーブルに一致すると、その内容だけがサフィックス付きで分離出力されます。
+              </p>
 
               <div className={styles.layerDiagram}>
                 <div className={styles.layerRow}>
@@ -645,7 +729,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 <div className={`${styles.layerRow} ${styles.indent2}`}>
                   <span className={styles.iconFolder}>📁</span>
                   <span className={styles.layerName}>EN</span>
-                  <span className={styles.labelContext}>工程</span>
+                  <span className={styles.labelContext}>工程（サブフォルダ）</span>
                 </div>
                 <div className={`${styles.layerRow} ${styles.indent3}`}>
                   <span className={styles.iconLayer}>◆</span>
@@ -661,8 +745,29 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 </div>
               </div>
 
+              <div className={styles.sectionArrow}>↓</div>
+
+              <div className={styles.outputGrid}>
+                <div className={styles.outputCard}>
+                  <div className={styles.outputThumb}>本体</div>
+                  <div className={styles.outputFilename}>A/A_0001.jpg</div>
+                </div>
+                <div className={styles.outputCard}>
+                  <div className={styles.outputThumb}>EN</div>
+                  <div className={styles.outputFilename}>A/A_0001_en.jpg</div>
+                </div>
+              </div>
+
               <p className={styles.p}>
-                設定ダイアログで以下のように工程テーブルを設定します:
+                工程フォルダ（EN）の内容はサフィックス付きの別ファイルとして出力され、
+                それ以外の作画担当者の線画・影付けレイヤーとは合成されずに分離できます。
+              </p>
+
+              {/* --- 共通設定 --- */}
+              <h3 className={styles.h2}>工程テーブルの設定</h3>
+              <p className={styles.p}>
+                設定ダイアログで以下のようにフォルダ名とサフィックスの対応を登録します。
+                フォルダ名はカンマ区切りで複数指定でき、大文字・小文字を区別しません。
               </p>
 
               <table className={styles.comparisonTable}>
@@ -682,25 +787,12 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 </tbody>
               </table>
 
-              <div className={styles.sectionArrow}>↓</div>
-
-              <h3 className={styles.h2}>出力結果</h3>
-              <div className={styles.outputGrid}>
-                <div className={styles.outputCard}>
-                  <div className={styles.outputThumb}>本体</div>
-                  <div className={styles.outputFilename}>A/A_0001.jpg</div>
-                </div>
-                <div className={styles.outputCard}>
-                  <div className={styles.outputThumb}>EN</div>
-                  <div className={styles.outputFilename}>A/A_0001_en.jpg</div>
-                </div>
+              <div className={styles.calloutTip}>
+                <span className={styles.strong}>💡 どちらの形式でも同じ工程テーブル設定が使えます。</span>
+                フォルダ名「EN」に対してサフィックス「_en」を登録しておけば、
+                トラック分離型ではアニメーションフォルダの親フォルダ名として、
+                セル内蔵型ではセル内のサブフォルダ名として、どちらでも自動的にマッチして分離出力されます。
               </div>
-
-              <p className={styles.p}>
-                工程フォルダ（EN）の内容はサフィックス付きの別ファイルとして出力され、
-                それ以外の作画担当者の線画・影付けレイヤーとは合成されずに分離できます。
-                フォルダ名はカンマ区切りで複数指定でき、大文字・小文字を区別しません。
-              </p>
             </section>
 
             {/* ===== 9. 出力設定 ===== */}
