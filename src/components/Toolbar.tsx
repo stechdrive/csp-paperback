@@ -3,6 +3,7 @@ import { useAppStore } from '../store'
 import { useLocale } from '../i18n'
 import { useExport } from '../hooks/useExport'
 import { SettingsDialog } from './SettingsDialog'
+import { HelpDialog } from './HelpDialog'
 import { Tooltip } from './Tooltip'
 import styles from './Toolbar.module.css'
 
@@ -48,6 +49,7 @@ export function Toolbar({ onPsdFile, onXdtsFile, onCspbFile, onSaveCspb, isLoadi
   const importSettings = useAppStore(s => s.importSettings)
   const openInputRef = useRef<HTMLInputElement>(null)
   const [showSettings, setShowSettings] = useState(false)
+  const [showHelp, setShowHelp] = useState(false)
   const { t } = useLocale()
   const { isExporting, progress, error: exportError, startExport } = useExport()
 
@@ -124,6 +126,14 @@ export function Toolbar({ onPsdFile, onXdtsFile, onCspbFile, onSaveCspb, isLoadi
             設定保存
           </button>
         </Tooltip>
+        <Tooltip content="使い方ヘルプを表示" placement="bottom">
+          <button
+            className={styles.btn}
+            onClick={() => setShowHelp(true)}
+          >
+            ?
+          </button>
+        </Tooltip>
         <Tooltip content="書き出し詳細設定・工程テーブルの編集" placement="bottom">
           <button
             className={styles.btn}
@@ -144,6 +154,7 @@ export function Toolbar({ onPsdFile, onXdtsFile, onCspbFile, onSaveCspb, isLoadi
       </div>
 
       {showSettings && <SettingsDialog onClose={() => setShowSettings(false)} />}
+      {showHelp && <HelpDialog onClose={() => setShowHelp(false)} />}
     </>
   )
 }

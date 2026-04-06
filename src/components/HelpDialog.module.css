@@ -1,0 +1,696 @@
+/* ─── Overlay & Dialog Shell ─── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dialog {
+  background: #1e1e2e;
+  border: 1px solid #45475a;
+  border-radius: 10px;
+  width: 820px;
+  max-width: 95vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.header {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #313244;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.headerTitle {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #cdd6f4;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.headerIcon {
+  font-size: 1.1rem;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  color: #bac2de;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0.25rem;
+}
+
+.closeBtn:hover { color: #cdd6f4; }
+
+/* ─── Layout: TOC sidebar + content ─── */
+.layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.toc {
+  width: 200px;
+  flex-shrink: 0;
+  border-right: 1px solid #313244;
+  overflow-y: auto;
+  padding: 0.75rem 0;
+  background: #181825;
+}
+
+.tocItem {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  color: #9399b2;
+  font-size: 0.75rem;
+  padding: 0.35rem 1rem;
+  cursor: pointer;
+  line-height: 1.4;
+  transition: color 0.15s, background 0.15s;
+}
+
+.tocItem:hover {
+  color: #cdd6f4;
+  background: rgba(99, 102, 241, 0.08);
+}
+
+.tocItemActive {
+  color: #89b4fa;
+  background: rgba(137, 180, 250, 0.1);
+  border-left: 2px solid #89b4fa;
+}
+
+/* ─── Content ─── */
+.content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem 2rem 2rem;
+  scroll-behavior: smooth;
+}
+
+/* ─── Typography ─── */
+.section {
+  margin-bottom: 2.5rem;
+}
+
+.section:last-child {
+  margin-bottom: 1rem;
+}
+
+.h1 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #cdd6f4;
+  margin: 0 0 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #6366f1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.h2 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #cdd6f4;
+  margin: 1.5rem 0 0.75rem;
+}
+
+.h3 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #bac2de;
+  margin: 1rem 0 0.5rem;
+}
+
+.p {
+  font-size: 0.85rem;
+  color: #bac2de;
+  line-height: 1.7;
+  margin: 0 0 0.75rem;
+}
+
+.strong {
+  color: #cdd6f4;
+  font-weight: 600;
+}
+
+.em {
+  color: #f9e2af;
+  font-style: normal;
+  font-weight: 600;
+}
+
+.code {
+  font-family: 'Cascadia Code', 'Fira Code', monospace;
+  font-size: 0.8rem;
+  background: #11111b;
+  color: #89b4fa;
+  padding: 0.15rem 0.4rem;
+  border-radius: 3px;
+  border: 1px solid rgba(137, 180, 250, 0.15);
+}
+
+/* ─── Bullet list ─── */
+.ul {
+  margin: 0.5rem 0 0.75rem 0;
+  padding-left: 1.25rem;
+  list-style: none;
+}
+
+.ul li {
+  font-size: 0.85rem;
+  color: #bac2de;
+  line-height: 1.7;
+  position: relative;
+  padding-left: 0.75rem;
+}
+
+.ul li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.55em;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #6366f1;
+}
+
+/* ─── Call-out boxes ─── */
+.callout {
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  margin: 0.75rem 0;
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+
+.calloutProblem {
+  composes: callout;
+  background: rgba(243, 139, 168, 0.08);
+  border-left: 3px solid #f38ba8;
+  color: #f5c2d0;
+}
+
+.calloutSolution {
+  composes: callout;
+  background: rgba(166, 227, 161, 0.08);
+  border-left: 3px solid #a6e3a1;
+  color: #c3ecc0;
+}
+
+.calloutInfo {
+  composes: callout;
+  background: rgba(137, 180, 250, 0.08);
+  border-left: 3px solid #89b4fa;
+  color: #b4d0fb;
+}
+
+.calloutTip {
+  composes: callout;
+  background: rgba(249, 226, 175, 0.08);
+  border-left: 3px solid #f9e2af;
+  color: #f5e4c0;
+}
+
+/* ─── Layer tree diagram ─── */
+.layerDiagram {
+  background: #11111b;
+  border: 1px solid #313244;
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  margin: 0.75rem 0;
+  font-family: 'Cascadia Code', 'Fira Code', monospace;
+  font-size: 0.78rem;
+  line-height: 1.8;
+  overflow-x: auto;
+}
+
+.layerRow {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+}
+
+.indent1 { padding-left: 1.25rem; }
+.indent2 { padding-left: 2.5rem; }
+.indent3 { padding-left: 3.75rem; }
+
+.iconFolder {
+  color: #f9e2af;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.iconLayer {
+  color: #9399b2;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.iconAnim {
+  color: #89b4fa;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.iconMark {
+  color: #f9e2af;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.iconVirtual {
+  color: #a6e3a1;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.layerName {
+  color: #cdd6f4;
+}
+
+.layerNameAnim {
+  color: #89b4fa;
+  font-weight: 600;
+}
+
+.layerNameMark {
+  color: #f9e2af;
+  font-weight: 600;
+}
+
+.layerNameVirtual {
+  color: #a6e3a1;
+  font-weight: 600;
+}
+
+.layerLabel {
+  font-size: 0.65rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  flex-shrink: 0;
+}
+
+.labelAnim {
+  composes: layerLabel;
+  background: rgba(137, 180, 250, 0.15);
+  color: #89b4fa;
+  border: 1px solid rgba(137, 180, 250, 0.25);
+}
+
+.labelMark {
+  composes: layerLabel;
+  background: rgba(249, 226, 175, 0.15);
+  color: #f9e2af;
+  border: 1px solid rgba(249, 226, 175, 0.25);
+}
+
+.labelVirtual {
+  composes: layerLabel;
+  background: rgba(166, 227, 161, 0.15);
+  color: #a6e3a1;
+  border: 1px solid rgba(166, 227, 161, 0.25);
+}
+
+.labelArchive {
+  composes: layerLabel;
+  background: rgba(108, 112, 134, 0.15);
+  color: #6c7086;
+  border: 1px solid rgba(108, 112, 134, 0.25);
+}
+
+.labelContext {
+  composes: layerLabel;
+  background: rgba(203, 166, 247, 0.15);
+  color: #cba6f7;
+  border: 1px solid rgba(203, 166, 247, 0.25);
+}
+
+/* ─── Flow diagram (input → process → output) ─── */
+.flowDiagram {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1rem 0;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.flowBox {
+  background: #11111b;
+  border: 1px solid #45475a;
+  border-radius: 6px;
+  padding: 0.6rem 1rem;
+  text-align: center;
+  min-width: 100px;
+}
+
+.flowBoxLabel {
+  font-size: 0.65rem;
+  color: #6c7086;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.25rem;
+}
+
+.flowBoxValue {
+  font-size: 0.85rem;
+  color: #cdd6f4;
+  font-weight: 600;
+}
+
+.flowArrow {
+  color: #6366f1;
+  font-size: 1.2rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* ─── Output grid ─── */
+.outputGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.6rem;
+  margin: 0.75rem 0;
+}
+
+.outputCard {
+  background: #11111b;
+  border: 1px solid #313244;
+  border-radius: 6px;
+  padding: 0.6rem;
+  text-align: center;
+}
+
+.outputThumb {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background: #181825;
+  border-radius: 4px;
+  margin-bottom: 0.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: #45475a;
+  border: 1px dashed #313244;
+}
+
+.outputFilename {
+  font-family: 'Cascadia Code', 'Fira Code', monospace;
+  font-size: 0.7rem;
+  color: #89b4fa;
+  word-break: break-all;
+}
+
+/* ─── Timesheet diagram ─── */
+.timesheetDiagram {
+  background: #11111b;
+  border: 1px solid #313244;
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  margin: 0.75rem 0;
+  overflow-x: auto;
+}
+
+.timesheetTable {
+  border-collapse: collapse;
+  font-size: 0.75rem;
+  font-family: 'Cascadia Code', 'Fira Code', monospace;
+  width: 100%;
+}
+
+.timesheetTable th {
+  padding: 0.3rem 0.6rem;
+  color: #89b4fa;
+  font-weight: 600;
+  text-align: center;
+  border-bottom: 1px solid #313244;
+  white-space: nowrap;
+}
+
+.timesheetTable td {
+  padding: 0.3rem 0.6rem;
+  color: #cdd6f4;
+  text-align: center;
+  border-bottom: 1px solid rgba(49, 50, 68, 0.5);
+}
+
+.timesheetTable tr:hover td {
+  background: rgba(99, 102, 241, 0.05);
+}
+
+.cellActive {
+  background: rgba(137, 180, 250, 0.12);
+  font-weight: 600;
+  color: #89b4fa;
+}
+
+.cellEmpty {
+  color: #45475a;
+}
+
+/* ─── Comparison table ─── */
+.comparisonTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.75rem 0;
+  font-size: 0.8rem;
+}
+
+.comparisonTable th {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  font-weight: 600;
+  color: #cdd6f4;
+  border-bottom: 2px solid #313244;
+  background: #181825;
+}
+
+.comparisonTable td {
+  padding: 0.5rem 0.75rem;
+  color: #bac2de;
+  border-bottom: 1px solid rgba(49, 50, 68, 0.5);
+  vertical-align: top;
+  line-height: 1.5;
+}
+
+.comparisonTable tr:hover td {
+  background: rgba(99, 102, 241, 0.04);
+}
+
+.checkMark { color: #a6e3a1; }
+.crossMark { color: #f38ba8; }
+
+/* ─── Step indicator ─── */
+.stepList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0.75rem 0;
+}
+
+.step {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.stepNum {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #6366f1;
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.stepBody {
+  flex: 1;
+  padding-top: 0.2rem;
+}
+
+.stepTitle {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #cdd6f4;
+  margin-bottom: 0.2rem;
+}
+
+.stepDesc {
+  font-size: 0.8rem;
+  color: #9399b2;
+  line-height: 1.5;
+}
+
+/* ─── Keyboard shortcut badges ─── */
+.kbd {
+  display: inline-block;
+  font-family: 'Cascadia Code', 'Fira Code', monospace;
+  font-size: 0.72rem;
+  padding: 0.15rem 0.4rem;
+  background: #313244;
+  border: 1px solid #45475a;
+  border-radius: 4px;
+  color: #cdd6f4;
+  box-shadow: 0 1px 0 #11111b;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+.shortcutRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0;
+  font-size: 0.82rem;
+  color: #bac2de;
+}
+
+.shortcutAction {
+  flex: 1;
+}
+
+/* ─── Visual separator (arrow between sections) ─── */
+.sectionArrow {
+  text-align: center;
+  color: #6366f1;
+  font-size: 1.5rem;
+  margin: 0.5rem 0;
+}
+
+/* ─── Footer ─── */
+.footer {
+  padding: 0.75rem 1.5rem;
+  border-top: 1px solid #313244;
+  display: flex;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+.doneBtn {
+  padding: 0.4rem 1.25rem;
+  border: none;
+  border-radius: 4px;
+  background: #6366f1;
+  color: white;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.doneBtn:hover { background: #4f46e5; }
+
+/* ─── Mobile ─── */
+@media (pointer: coarse) and (max-width: 1024px) {
+  .dialog {
+    width: 100vw;
+    max-width: 100vw;
+    max-height: 100dvh;
+    height: 100dvh;
+    border-radius: 0;
+    border: none;
+  }
+
+  .toc {
+    display: none;
+  }
+
+  .content {
+    padding: 1rem;
+  }
+
+  .header {
+    padding: 0.75rem 1rem;
+  }
+
+  .footer {
+    padding: 0.75rem 1rem;
+  }
+
+  .closeBtn {
+    min-width: 2.25rem;
+    min-height: 2.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .doneBtn {
+    min-height: 2.25rem;
+    padding: 0.5rem 1.5rem;
+  }
+
+  .flowDiagram {
+    flex-direction: column;
+  }
+
+  .flowArrow {
+    transform: rotate(90deg);
+  }
+
+  .outputGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .h1 {
+    font-size: 1.1rem;
+  }
+}
+
+/* scrollbar styling for content area */
+.content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.content::-webkit-scrollbar-thumb {
+  background: #45475a;
+  border-radius: 3px;
+}
+
+.content::-webkit-scrollbar-thumb:hover {
+  background: #6c7086;
+}
+
+.toc::-webkit-scrollbar {
+  width: 4px;
+}
+
+.toc::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.toc::-webkit-scrollbar-thumb {
+  background: #313244;
+  border-radius: 2px;
+}
