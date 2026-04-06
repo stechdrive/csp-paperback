@@ -15,7 +15,7 @@ export interface ProjectSettings {
 
 export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
   processTable: [
-    { suffix: '_en', folderNames: ['_en', '演出'] },
+    { suffix: '_e', folderNames: ['_e', '演出'] },
     { suffix: '_k',  folderNames: ['_k',  '監督'] },
     { suffix: '_s',  folderNames: ['_s',  '作監'] },
     { suffix: '_y',  folderNames: ['_y',  '料理作監'] },
