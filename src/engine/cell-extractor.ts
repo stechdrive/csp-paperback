@@ -523,9 +523,6 @@ export function extractAllEntries(
 ): OutputEntry[] {
   const entries: OutputEntry[] = []
 
-  const contextSourceLayers = collectContextSourceLayers(tree)
-  const contextFlats = flattenTree(contextSourceLayers, docWidth, docHeight)
-
   const folderNameToSuffix = buildFolderNameToSuffixMap(projectSettings.processTable)
   const animParentSuffixMap = buildAnimParentSuffixMap(tree, folderNameToSuffix)
   const animHierarchyFolderMap = buildAnimHierarchyFolderMap(tree, animParentSuffixMap)
@@ -547,7 +544,7 @@ export function extractAllEntries(
         // autoMarked/singleMark が同時に設定されている場合（_プレフィックス + XDTSトラック一致）は
         // 単体マーク出力として扱うため、このブランチをスキップする
         const [localLower, localUpper] = splitSiblingsByPosition(layers, i, docWidth, docHeight)
-        const thisLower = [...contextFlats, ...inheritedLower, ...localLower]
+        const thisLower = [...inheritedLower, ...localLower]
         const thisUpper = [...localUpper, ...inheritedUpper]
 
         const parentSuffix = animParentSuffixMap.get(layer.id) ?? ''

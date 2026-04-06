@@ -141,13 +141,8 @@ function previewAnimFolder(
   const animFolder = findLayerById(layerTree, animFolderId)
   if (!animFolder || !animFolder.isAnimationFolder) return []
 
-  const contextSourceLayers = collectContextSourceLayers(layerTree)
-  const contextFlats = flattenTree(contextSourceLayers, docWidth, docHeight)
-  const { lower: localLowerFlats, upper: localUpperFlats } =
+  const { lower: lowerContextFlats, upper: localUpperFlats } =
     collectLocalSiblingContext(animFolderId, layerTree, docWidth, docHeight)
-  const lowerContextFlats = localLowerFlats.length > 0
-    ? [...contextFlats, ...localLowerFlats]
-    : contextFlats
 
   const visibleChildren = animFolder.children.filter(c => !c.hidden && !c.uiHidden)
   if (visibleChildren.length === 0) return []
