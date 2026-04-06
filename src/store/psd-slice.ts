@@ -19,6 +19,15 @@ export interface PsdSlice {
   setLayerOpacity: (layerId: string, opacity: number) => void
 }
 
+function findFirstAnimFolder(layers: CspLayer[]): CspLayer | null {
+  for (const l of layers) {
+    if (l.isAnimationFolder) return l
+    const found = findFirstAnimFolder(l.children)
+    if (found) return found
+  }
+  return null
+}
+
 export const createPsdSlice: StateCreator<AppStore, [], [], PsdSlice> = (set, get) => ({
   rawPsd: null,
   psdFileName: null,
@@ -69,6 +78,15 @@ export const createPsdSlice: StateCreator<AppStore, [], [], PsdSlice> = (set, ge
       canUndo: false,
       canRedo: false,
     })
+
+    // XDTS既読み込みの場合、フレーム0のセルを自動選択して初期プレビューを表示
+    if (xdts) {
+      const firstAnimFolder = findFirstAnimFolder(tree)
+      if (firstAnimFolder) {
+        get().seekToFrame(0)
+        set({ focusedAnimFolderId: firstAnimFolder.id })
+      }
+    }
   },
 
   resetPsd: () => {

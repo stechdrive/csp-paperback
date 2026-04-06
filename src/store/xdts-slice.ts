@@ -29,6 +29,13 @@ export const createXdtsSlice: StateCreator<AppStore, [], [], XdtsSlice> = (set, 
     detectAnimationFoldersByXdts(layerTree, xdts)
     // シャローコピーで再レンダリングをトリガー
     set({ layerTree: [...layerTree] })
+
+    // フレーム0のセルを自動選択して初期プレビューを表示
+    const firstAnimFolder = findFirstAnimFolder(layerTree)
+    if (firstAnimFolder) {
+      get().seekToFrame(0)
+      set({ focusedAnimFolderId: firstAnimFolder.id })
+    }
   },
 
   clearXdts: () => {
@@ -78,6 +85,15 @@ export const createXdtsSlice: StateCreator<AppStore, [], [], XdtsSlice> = (set, 
     URL.revokeObjectURL(url)
   },
 })
+
+function findFirstAnimFolder(layers: CspLayer[]): CspLayer | null {
+  for (const l of layers) {
+    if (l.isAnimationFolder) return l
+    const found = findFirstAnimFolder(l.children)
+    if (found) return found
+  }
+  return null
+}
 
 function findLayerById(layers: CspLayer[], id: string): CspLayer | null {
   for (const l of layers) {
