@@ -73,8 +73,7 @@ export function compositeStack(
   }
 
   // ベースレイヤーの追跡（クリッピングマスク用）
-  let baseCanvas: HTMLCanvasElement | null = null
-  let baseIndex = -1
+  let baseLayer: FlatLayer | null = null
 
   for (let i = 0; i < layers.length; i++) {
     const layer = layers[i]
@@ -82,18 +81,16 @@ export function compositeStack(
     if (!layer.clipping) {
       // 通常レイヤー: そのまま合成してベースとして記録
       drawLayer(ctx, layer, width, height)
-      baseCanvas = layer.canvas
-      baseIndex = i
+      baseLayer = layer
     } else {
       // クリッピングレイヤー: ベースのアルファで切り抜いてから合成
-      if (baseCanvas === null) {
+      if (baseLayer === null) {
         // ベースがない場合はスキップ
         continue
       }
-      const clipped = applyClippingMask(layer, baseCanvas, width, height)
-      const clippedFlat: FlatLayer = { ...layer, canvas: clipped, clipping: false }
+      const clipped = applyClippingMask(layer, baseLayer, width, height)
+      const clippedFlat: FlatLayer = { ...layer, canvas: clipped, clipping: false, top: 0, left: 0 }
       drawLayer(ctx, clippedFlat, width, height)
-      void baseIndex // suppress unused warning
     }
   }
 
@@ -135,7 +132,7 @@ export function drawLayer(
  */
 function applyClippingMask(
   clippingLayer: FlatLayer,
-  baseCanvas: HTMLCanvasElement,
+  baseLayer: FlatLayer,
   width: number,
   height: number
 ): HTMLCanvasElement {
@@ -147,7 +144,7 @@ function applyClippingMask(
 
   // ベースレイヤーのアルファで切り抜き（destination-in）
   tempCtx.globalCompositeOperation = 'destination-in'
-  tempCtx.drawImage(baseCanvas, 0, 0)
+  tempCtx.drawImage(baseLayer.canvas, baseLayer.left, baseLayer.top)
 
   return temp
 }

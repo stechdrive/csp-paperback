@@ -116,4 +116,27 @@ describe('compositeStack', () => {
     ]
     expect(() => compositeStack(layers, 100, 100)).not.toThrow()
   })
+
+  it('位置付きレイヤーのクリッピングでベース位置とresult位置が正しい', () => {
+    const baseCanvas = makeCanvas(20, 20)
+    const clipCanvas = makeCanvas(40, 40)
+    const layers: FlatLayer[] = [
+      makeFlatLayer({ sourceId: 'base', clipping: false, canvas: baseCanvas, top: 40, left: 30 }),
+      makeFlatLayer({ sourceId: 'clipped', clipping: true, canvas: clipCanvas, top: 35, left: 25 }),
+    ]
+    const result = compositeStack(layers, 100, 100, 'transparent')
+    const ctx = result.getContext('2d')!
+
+    // drawCallsを検証: applyClippingMask内のdestination-inでベースが正しい位置に描画されているか
+    const calls = (ctx as unknown as { __getDrawCalls: () => Array<{ type: string; props: Record<string, unknown> }> }).__getDrawCalls()
+
+    // 1つ目: ベースレイヤーの通常描画 (drawLayer)
+    // 2つ目以降: クリッピング結果の描画
+    // クリッピング結果のFlatLayerはtop:0, left:0で描画されるべき
+    const lastDrawImageCall = calls.filter(c => c.type === 'drawImage').pop()
+    expect(lastDrawImageCall).toBeDefined()
+    // クリッピング結果はdoc-sizedなのでposition (0,0)で描画される
+    expect(lastDrawImageCall!.props.dx).toBe(0)
+    expect(lastDrawImageCall!.props.dy).toBe(0)
+  })
 })
