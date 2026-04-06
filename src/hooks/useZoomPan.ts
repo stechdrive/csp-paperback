@@ -76,6 +76,7 @@ export function useZoomPan() {
     transform: `translate(${view.panX}px, ${view.panY}px) scale(${view.zoom})`,
     transformOrigin: '0 0',
     willChange: 'transform',
+    imageRendering: view.zoom >= 2 ? 'pixelated' : 'auto',
   }
 
   const containerStyle: React.CSSProperties = {

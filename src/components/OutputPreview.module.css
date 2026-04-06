@@ -32,7 +32,6 @@
   display: block;
   border: 1px solid #313244;
   border-radius: 3px;
-  image-rendering: pixelated;
 }
 
 /* 通常モード: 暗い背景 */
