@@ -70,27 +70,23 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 <span className={styles.strong}>課題：</span>
                 アニメーションセル出力では「アニメーションフォルダ外のレイヤーを出力に含める」オプションが
                 あるものの、<span className={styles.strong}>ON/OFF の二択</span>しかありません。
-                「背景は含めるがエフェクトは含めない」「特定のレイヤーだけ別途出力したい」といった
+                「フレーム枠線は全てに含めたいが、撮影指示フォルダの内容は含めない」「特定のレイヤーだけ別途出力したい」といった
                 きめ細かい制御ができません。
               </div>
 
               <h3 className={styles.h2}>具体的に困るケース</h3>
               <ul className={styles.ul}>
                 <li>
-                  <span className={styles.strong}>背景（BG）</span>をセルと合成して出力したいが、
-                  エフェクトレイヤーは別ファイルにしたい
+                  <span className={styles.strong}>レイアウト用紙</span>（フレーム）をセルと合成して出力したいが、
+                  撮影指示は別ファイルに出力したいし、撮影指示をアニメーションフォルダのセルとして扱いたくはない
                 </li>
                 <li>
-                  <span className={styles.strong}>複数のアニメーションフォルダ</span>（A/B/C セル）があるとき、
-                  それぞれに異なる外部レイヤーを組み合わせたい
-                </li>
-                <li>
-                  <span className={styles.strong}>撮影指示用のレイヤー</span>（エフェクト、フレア、グロウなど）を
+                  <span className={styles.strong}>背景原図</span>（BG/BOOK）をアニメーションフォルダにすることなく、
                   セルとは独立して個別出力したい
                 </li>
                 <li>
-                  <span className={styles.strong}>工程ごとの分離出力</span>（線画、演出、彩色など）を
-                  セル単位で自動分割したい
+                  <span className={styles.strong}>修正工程ごとの自動分離出力</span>（演出、作監修正など）を
+                  セルごとに自動で接尾辞を付けてA_0001_e.jpgなどとして出力したい。
                 </li>
               </ul>
 
@@ -104,8 +100,8 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 </thead>
                 <tbody>
                   <tr>
-                    <td>BGと合成してセル出力</td>
-                    <td><span className={styles.crossMark}>△</span> 全外部レイヤー込み</td>
+                    <td>フレームと合成してセル出力</td>
+                    <td><span className={styles.crossMark}>△</span> 関係ないアニメーションフォルダ外のレイヤー込み</td>
                     <td><span className={styles.checkMark}>✓</span> 選択的に合成</td>
                   </tr>
                   <tr>
@@ -119,14 +115,9 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                     <td><span className={styles.checkMark}>✓</span> 仮想セル</td>
                   </tr>
                   <tr>
-                    <td>工程ごとの分離出力</td>
+                    <td>修正工程ごとの分離出力</td>
                     <td><span className={styles.crossMark}>✗</span> 不可</td>
-                    <td><span className={styles.checkMark}>✓</span> 工程テーブル</td>
-                  </tr>
-                  <tr>
-                    <td>DPI情報の保持</td>
-                    <td><span className={styles.checkMark}>✓</span></td>
-                    <td><span className={styles.checkMark}>✓</span> JPG/PNG共に対応</td>
+                    <td><span className={styles.checkMark}>✓</span> 工程テーブルにフォルダ名を登録することで対応</td>
                   </tr>
                 </tbody>
               </table>
@@ -151,16 +142,16 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               <ul className={styles.ul}>
                 <li>
                   <span className={styles.strong}>_フォルダ自動マーク</span> — フォルダ名の先頭に
-                  <code className={styles.code}>_</code> をつけるだけで、セルとは別に単体出力
+                  <code className={styles.code}>_</code> をつけるだけで、アニメーションフォルダにしなくても、セルとは別に単体出力
                 </li>
                 <li>
-                  <span className={styles.strong}>★ 単体出力マーク</span> — 任意のレイヤーに手動マークして個別出力
+                  <span className={styles.strong}>★ 単体出力マーク</span> — 任意のレイヤーまたはレイヤーフォルダを手動マークして個別出力
                 </li>
                 <li>
-                  <span className={styles.strong}>仮想セル</span> — 好きなレイヤーを自由に組み合わせて合成画像を出力
+                  <span className={styles.strong}>仮想セル</span> — 任意のセルとBGなどのレイヤーを自由に組み合わせて合成画像を出力
                 </li>
                 <li>
-                  <span className={styles.strong}>工程テーブル</span> — セル内のフォルダ名に応じて
+                  <span className={styles.strong}>修正工程テーブル</span> — セル内のフォルダ名に応じて、演出、作監など
                   自動でサフィックス付き分離出力
                 </li>
                 <li>
@@ -168,7 +159,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   アニメーションフォルダを自動検出
                 </li>
                 <li>
-                  <span className={styles.strong}>合成モード保持</span> — 乗算・スクリーンなどの
+                  <span className={styles.strong}>合成モード保持</span> — アニメーションセル出力時に乗算・スクリーンなどの
                   合成モードをそのまま出力
                 </li>
               </ul>
@@ -191,7 +182,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 <span className={styles.flowArrow}>→</span>
                 <div className={styles.flowBox}>
                   <div className={styles.flowBoxLabel}>Step 3</div>
-                  <div className={styles.flowBoxValue}>Paperbackで開く</div>
+                  <div className={styles.flowBoxValue}>CSP Paperbackで開く</div>
                 </div>
                 <span className={styles.flowArrow}>→</span>
                 <div className={styles.flowBox}>
@@ -206,7 +197,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   <div className={styles.stepBody}>
                     <div className={styles.stepTitle}>CSPからPSD書き出し</div>
                     <div className={styles.stepDesc}>
-                      CLIP STUDIO PAINT で ファイル → 別名で保存 → Photoshopドキュメント（.psd）で保存します。
+                      CLIP STUDIO PAINT で ファイル → 複製を保存 → Photoshopドキュメント（.psd）で保存します。
                       レイヤー構造がそのまま保持されます。
                     </div>
                   </div>
@@ -217,8 +208,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                     <div className={styles.stepTitle}>XDTSタイムシート書き出し</div>
                     <div className={styles.stepDesc}>
                       ファイル → アニメーション書き出し → タイムシート情報の書き出し → XDTS形式を選択。
-                      これによりアニメーションフォルダの検出が自動化されます。
-                      XDTSがなくても手動でアニメーションフォルダを指定できます。
+                      これによりPSDと一緒に読み込むことでアニメーションフォルダの検出が自動化されます。
                     </div>
                   </div>
                 </div>
@@ -229,7 +219,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                     <div className={styles.stepDesc}>
                       「ファイルを開く」ボタンで PSD と XDTS を同時選択して開きます
                       （ドラッグ＆ドロップにも対応）。
-                      レイヤーツリーが右ペインに表示され、アニメーションフォルダが自動検出されます。
+                      レイヤーツリーが右ペインに表示され、アニメーションフォルダが自動検出されます。出力対象のレイヤーを選ぶと出力時のプレビューが表示されます。またシークバーでタイムシートを再生した状態を確認できます。
                     </div>
                   </div>
                 </div>
@@ -239,7 +229,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                     <div className={styles.stepTitle}>必要に応じてマーク設定 → ZIP出力</div>
                     <div className={styles.stepDesc}>
                       _フォルダや★マークでの出力指定を確認し、「出力」ボタンで ZIP をダウンロード。
-                      出力形式（JPG/PNG）、背景色、フォルダ構造をカスタマイズできます。
+                      出力形式（JPG/PNG）、背景透過、出力時にセル名でフォルダを作るかをカスタマイズできます。
                     </div>
                   </div>
                 </div>
@@ -248,8 +238,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               <div className={styles.calloutTip}>
                 <span className={styles.strong}>💡 Tips：</span>
                 PSD と XDTS を同時に選択して「ファイルを開く」で読み込めます。
-                また .cspb ファイルにはマーク・仮想セル・工程設定を保存できるので、
-                次回は .cspb を開くだけで前回の設定を復元できます。
+                また .cspb ファイルとして出力設定のマーク・仮想セル・工程設定を保存できます。
               </div>
             </section>
 
@@ -265,16 +254,16 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               <div className={styles.layerDiagram}>
                 <div className={styles.layerRow}>
                   <span className={styles.iconFolder}>📁</span>
-                  <span className={styles.layerNameMark}>_エフェクト</span>
+                  <span className={styles.layerNameMark}>_撮影指示</span>
                   <span className={styles.labelMark}>★ 自動マーク</span>
                 </div>
                 <div className={`${styles.layerRow} ${styles.indent1}`}>
                   <span className={styles.iconLayer}>◆</span>
-                  <span className={styles.layerName}>フレア</span>
+                  <span className={styles.layerName}>PAN</span>
                 </div>
                 <div className={`${styles.layerRow} ${styles.indent1}`}>
                   <span className={styles.iconLayer}>◆</span>
-                  <span className={styles.layerName}>グロウ</span>
+                  <span className={styles.layerName}>SL</span>
                 </div>
                 <div className={styles.layerRow}>
                   <span className={styles.iconAnim}>📁</span>
@@ -283,7 +272,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 </div>
                 <div className={`${styles.layerRow} ${styles.indent1}`}>
                   <span className={styles.iconLayer}>◆</span>
-                  <span className={styles.layerName}>1</span>
+                  <span className={styles.layerName}>3</span>
                 </div>
                 <div className={`${styles.layerRow} ${styles.indent1}`}>
                   <span className={styles.iconLayer}>◆</span>
@@ -291,7 +280,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 </div>
                 <div className={`${styles.layerRow} ${styles.indent1}`}>
                   <span className={styles.iconLayer}>◆</span>
-                  <span className={styles.layerName}>3</span>
+                  <span className={styles.layerName}>1</span>
                 </div>
                 <div className={styles.layerRow}>
                   <span className={styles.iconAnim}>📁</span>
@@ -300,24 +289,24 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 </div>
                 <div className={`${styles.layerRow} ${styles.indent1}`}>
                   <span className={styles.iconLayer}>◆</span>
-                  <span className={styles.layerName}>1</span>
+                  <span className={styles.layerName}>2</span>
                 </div>
                 <div className={`${styles.layerRow} ${styles.indent1}`}>
                   <span className={styles.iconLayer}>◆</span>
-                  <span className={styles.layerName}>2</span>
+                  <span className={styles.layerName}>1</span>
                 </div>
                 <div className={styles.layerRow}>
                   <span className={styles.iconFolder}>📁</span>
-                  <span className={styles.layerNameMark}>_BG</span>
+                  <span className={styles.layerNameMark}>_背景原図</span>
                   <span className={styles.labelMark}>★ 自動マーク</span>
                 </div>
                 <div className={`${styles.layerRow} ${styles.indent1}`}>
                   <span className={styles.iconLayer}>◆</span>
-                  <span className={styles.layerName}>空</span>
+                  <span className={styles.layerName}>BOOK</span>
                 </div>
                 <div className={`${styles.layerRow} ${styles.indent1}`}>
                   <span className={styles.iconLayer}>◆</span>
-                  <span className={styles.layerName}>地面</span>
+                  <span className={styles.layerName}>BG</span>
                 </div>
                 <div className={styles.layerRow}>
                   <span className={styles.iconFolder}>📁</span>
@@ -326,7 +315,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 </div>
                 <div className={`${styles.layerRow} ${styles.indent1}`}>
                   <span className={styles.iconLayer}>◆</span>
-                  <span className={styles.layerName}>ボツ案...</span>
+                  <span className={styles.layerName}>不使用...</span>
                 </div>
               </div>
 
@@ -407,18 +396,18 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 </div>
                 <div className={styles.outputCard}>
                   <div className={styles.outputThumb}>★</div>
-                  <div className={styles.outputFilename}>エフェクト.jpg</div>
+                  <div className={styles.outputFilename}>_撮影指示.jpg</div>
                 </div>
                 <div className={styles.outputCard}>
                   <div className={styles.outputThumb}>★</div>
-                  <div className={styles.outputFilename}>BG.jpg</div>
+                  <div className={styles.outputFilename}>_背景原図.jpg</div>
                 </div>
               </div>
 
               <p className={styles.p}>
-                <span className={styles.em}>_エフェクト</span> と <span className={styles.em}>_BG</span> フォルダは
+                <span className={styles.em}>_撮影指示</span> と <span className={styles.em}>_背景原図</span> フォルダは
                 先頭の <code className={styles.code}>_</code> により自動マークされ、
-                セルとは独立した画像として出力されます（フォルダ名から <code className={styles.code}>_</code> は除去されます）。
+                セルとは独立した画像として出力されます。
                 一方 <span className={styles.code}>_old</span> フォルダはアーカイブ除外パターンに一致するため、出力されません。
               </p>
             </section>
@@ -436,18 +425,18 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               <div className={styles.layerDiagram}>
                 <div className={styles.layerRow}>
                   <span className={styles.iconFolder}>📁</span>
-                  <span className={styles.layerNameMark}>_BG</span>
+                  <span className={styles.layerNameMark}>_撮影指示</span>
                   <span className={styles.labelMark}>★ 自動</span>
                   <span style={{ color: '#6c7086', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
-                    → 「BG.jpg」として出力
+                    → 「_撮影指示.jpg」として出力
                   </span>
                 </div>
                 <div className={styles.layerRow}>
                   <span className={styles.iconFolder}>📁</span>
-                  <span className={styles.layerNameMark}>_エフェクト</span>
+                  <span className={styles.layerNameMark}>_原図</span>
                   <span className={styles.labelMark}>★ 自動</span>
                   <span style={{ color: '#6c7086', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
-                    → 「エフェクト.jpg」として出力
+                    → 「_原図.jpg」として出力
                   </span>
                 </div>
                 <div className={styles.layerRow}>
@@ -476,9 +465,6 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 <li>
                   <span className={styles.strong}>アニメーションフォルダの中</span>にある _フォルダは自動マークされません
                   （アニメーションセルとして扱われます）
-                </li>
-                <li>
-                  出力ファイル名からは先頭の <code className={styles.code}>_</code> が除去されます
                 </li>
                 <li>
                   <span className={styles.strong}>アーカイブ除外パターン</span>
@@ -571,7 +557,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               <p className={styles.p}>
                 <span className={styles.strong}>仮想セル</span>は、PSD 内の複数のレイヤーを
                 自由に組み合わせて<span className={styles.em}>1枚の合成画像</span>として出力する機能です。
-                CSP のアニメーションフォルダとは無関係に、任意のレイヤーを束ねることができます。
+                CSP のアニメーションフォルダとは無関係に、任意のレイヤーを束ねることができます。BGとセルをコピーせずにレイアウト画像を作りたい時などにも使用できます。
               </p>
 
               <div className={styles.stepList}>
@@ -625,15 +611,11 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   <span className={styles.strong}>表示/非表示の切り替え</span> —
                   仮想セル内でのメンバーの表示状態を個別に制御
                 </li>
-                <li>
-                  <span className={styles.strong}>アニメーションセルへの展開</span> —
-                  アニメーションフォルダに挿入した場合、全セルに自動展開するオプション
-                </li>
               </ul>
 
               <div className={styles.calloutTip}>
                 <span className={styles.strong}>💡 使用例：</span>
-                「キャラの影レイヤー（乗算）+ ハイライト（スクリーン）+ 背景の一部」のような
+                「キャラ + BG+ BOOK」のような
                 複合的な出力パターンを、仮想セルとして名前を付けて管理できます。
               </div>
             </section>
@@ -643,7 +625,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               <h2 className={styles.h1}>🏭 工程フォルダテーブル</h2>
 
               <p className={styles.p}>
-                アニメーションセルの中にフォルダを作って工程を分離している場合、
+                アニメーションセルの中に修正工程フォルダを作って工程を分離している場合、
                 <span className={styles.strong}>工程テーブル</span>を設定することで
                 工程ごとに自動分離出力できます。
               </p>
@@ -667,7 +649,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 </div>
                 <div className={`${styles.layerRow} ${styles.indent3}`}>
                   <span className={styles.iconLayer}>◆</span>
-                  <span className={styles.layerName}>演出線</span>
+                  <span className={styles.layerName}>演出修正</span>
                 </div>
                 <div className={`${styles.layerRow} ${styles.indent2}`}>
                   <span className={styles.iconLayer}>◆</span>
@@ -675,7 +657,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 </div>
                 <div className={`${styles.layerRow} ${styles.indent2}`}>
                   <span className={styles.iconLayer}>◆</span>
-                  <span className={styles.layerName}>彩色</span>
+                  <span className={styles.layerName}>影付け</span>
                 </div>
               </div>
 
@@ -716,7 +698,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
 
               <p className={styles.p}>
                 工程フォルダ（EN）の内容はサフィックス付きの別ファイルとして出力され、
-                それ以外の線画・彩色は本体ファイルに含まれます。
+                それ以外の作画担当者の線画・影付けレイヤーとは合成されずに分離できます。
                 フォルダ名はカンマ区切りで複数指定でき、大文字・小文字を区別しません。
               </p>
             </section>
@@ -726,7 +708,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               <h2 className={styles.h1}>⚙ 出力設定</h2>
 
               <p className={styles.p}>
-                プレビューパネル下部の出力設定で、出力形式をカスタマイズできます。
+                プレビューパネルの出力設定で、出力形式をカスタマイズできます。
               </p>
 
               <table className={styles.comparisonTable}>
@@ -749,10 +731,10 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                     <td>透明はPNGのみ。JPG選択時は白ベタ固定</td>
                   </tr>
                   <tr>
-                    <td><span className={styles.strong}>フォルダ構造</span></td>
+                    <td><span className={styles.strong}>フォルダ分け</span></td>
                     <td>階層 / フラット</td>
                     <td>
-                      階層: <code className={styles.code}>A/A_0001.jpg</code> のようにフォルダ分け{'\n'}
+                      階層: <code className={styles.code}>A/A_0001.jpg</code> のようにセルフォルダ名で分け{'\n'}
                       フラット: 全ファイルを同一階層に出力
                     </td>
                   </tr>
@@ -761,7 +743,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                     <td>連番 / セル名</td>
                     <td>
                       連番: <code className={styles.code}>A_0001.jpg</code>{'\n'}
-                      セル名: <code className={styles.code}>A_1.jpg</code>（セル名をそのまま使用）
+                      セル名: <code className={styles.code}>A_ア.jpg</code>（セル名をそのまま使用）
                     </td>
                   </tr>
                 </tbody>
@@ -770,7 +752,59 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               <div className={styles.calloutInfo}>
                 <span className={styles.strong}>DPI情報：</span>
                 PSD に含まれる DPI（解像度）情報は、出力する JPG/PNG ファイルにも埋め込まれます。
-                Photoshop や After Effects で開いた際に正しい解像度で表示されます。
+              </div>
+
+              <h3 className={styles.h2}>合成エンジンの不透明度ルール</h3>
+              <p className={styles.p}>
+                CSP Paperback の合成エンジンは
+                <span className={styles.em}>「一枚の紙に作画された状態を再現する」</span>
+                という考え方で設計されています。
+                アニメーション制作では、作業中の視認性のためにフォルダやセルの不透明度を下げて
+                透かし表示にすることがよくあります。
+                しかし、これは<span className={styles.strong}>作業用の設定であり、最終出力には反映すべきではありません</span>。
+              </p>
+
+              <table className={styles.comparisonTable}>
+                <thead>
+                  <tr>
+                    <th>レイヤーの種類</th>
+                    <th>不透明度の扱い</th>
+                    <th>理由</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>
+                      <span className={styles.strong}>構造コンテナ</span>
+                      <br />
+                      <span style={{ fontSize: '0.75rem', color: '#9399b2' }}>
+                        工程フォルダ本体、アニメーションフォルダ直下の単体セルレイヤー など
+                      </span>
+                    </td>
+                    <td><span className={styles.em}>100% に強制</span></td>
+                    <td>作業中の透かし設定を出力に持ち込まないため</td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <span className={styles.strong}>アートワーク</span>
+                      <br />
+                      <span style={{ fontSize: '0.75rem', color: '#9399b2' }}>
+                        セル内の線画・彩色・影付けなどの実作画レイヤー
+                      </span>
+                    </td>
+                    <td>PSD の値をそのまま保持</td>
+                    <td>作画者が意図した表現（半透明エフェクト等）を尊重するため</td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <div className={styles.calloutTip}>
+                <span className={styles.strong}>💡 なぜ便利？：</span>
+                CSP 上でセルの不透明度を下げてオニオンスキン的に前後の動きを確認する、
+                工程フォルダを薄くして下のレイヤーを透かし見する、
+                といった作業スタイルでも、出力時にいちいち不透明度を100%に戻す必要がありません。
+                CSP Paperback が構造上の「入れ物」と「中身の絵」を自動判別し、
+                入れ物の透かしだけをリセットして正しい出力を生成します。
               </div>
             </section>
 
@@ -823,7 +857,6 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 <li>
                   <span className={styles.strong}>.cspb ファイル</span> —
                   「設定保存」ボタンで、マーク・仮想セル・工程設定・XDTS を1ファイルにまとめて保存。
-                  次回は .cspb を読み込むだけで復元できます
                 </li>
                 <li>
                   <span className={styles.strong}>JSON エクスポート/インポート</span> —
@@ -831,13 +864,6 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 </li>
               </ul>
 
-              <h3 className={styles.h2}>手動アニメーションフォルダ指定</h3>
-              <p className={styles.p}>
-                XDTS がなくても、レイヤーツリーでフォルダを選択し、
-                アニメーションフォルダとして手動指定できます。
-                アニメーションフォルダとして認識されたフォルダの子レイヤーは、
-                それぞれ個別のセルとして出力されます。
-              </p>
             </section>
 
           </div>
