@@ -6,7 +6,7 @@ import type { AppStore } from './index'
 
 export interface UiSlice {
   selectedLayerId: string | null
-  /** animFolderId → 選択中のセルインデックス。未登録は先頭（0）扱い */
+  /** animFolderId → 選択中のセルインデックス。未登録は先頭（0）扱い。-1 はカラ（何も表示しない） */
   selectedCells: Map<string, number>
   /** 出力プレビューに表示するアニメーションフォルダのID */
   focusedAnimFolderId: string | null
@@ -109,8 +109,8 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
               const otherFolder = findAnimFolderByTrackName(layerTree, trackName, manualAnimFolderIds)
               if (!otherFolder) continue
               if (resolvedCellName === null) {
-                // SYMBOL_NULL_CELL: 先頭セルに戻す（空表示は未対応）
-                newSelectedCells.set(otherFolder.id, 0)
+                // SYMBOL_NULL_CELL: カラ（何も表示しない）
+                newSelectedCells.set(otherFolder.id, -1)
               } else {
                 const idx = otherFolder.children.findIndex(
                   c => c.originalName === resolvedCellName
@@ -138,7 +138,8 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
       const folder = findAnimFolderByTrackName(layerTree, trackName, manualAnimFolderIds)
       if (!folder) continue
       if (cellName === null) {
-        newSelectedCells.set(folder.id, 0)
+        // カラ（何も表示しない）
+        newSelectedCells.set(folder.id, -1)
       } else {
         const idx = folder.children.findIndex(c => c.originalName === cellName)
         if (idx >= 0) newSelectedCells.set(folder.id, idx)

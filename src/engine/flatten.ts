@@ -41,6 +41,8 @@ export function flattenTree(
     // プレビュー目的では選択セルを合成して1枚にする
     if (layer.isAnimationFolder) {
       const cellIndex = selectedCellIndices?.get(layer.id) ?? 0
+      // カラ（-1）: このトラックは何も表示しない
+      if (cellIndex < 0) return []
       const visibleChildren = layer.children.filter(c => !c.hidden && !c.uiHidden)
       if (visibleChildren.length === 0) return []
       const selectedCell = visibleChildren[Math.min(cellIndex, visibleChildren.length - 1)]
