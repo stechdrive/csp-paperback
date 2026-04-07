@@ -8,11 +8,16 @@ const LEFT_DEFAULT = 260
 const LEFT_MIN = 200
 const LEFT_MAX = 600
 
+const RIGHT_DEFAULT = 300
+const RIGHT_MIN = 200
+const RIGHT_MAX = 700
+
 type MobileTab = 'virtual' | 'preview' | 'layer'
 
 export function MainLayout() {
   const [leftWidth, setLeftWidth] = useState(LEFT_DEFAULT)
   const [leftCollapsed, setLeftCollapsed] = useState(false)
+  const [rightWidth, setRightWidth] = useState(RIGHT_DEFAULT)
   const [activeTab, setActiveTab] = useState<MobileTab>('preview')
 
   const handleResizeMouseDown = useCallback((e: React.MouseEvent) => {
@@ -36,6 +41,28 @@ export function MainLayout() {
     document.body.style.userSelect = 'none'
     e.preventDefault()
   }, [leftWidth, leftCollapsed])
+
+  const handleRightResizeMouseDown = useCallback((e: React.MouseEvent) => {
+    const startX = e.clientX
+    const startWidth = rightWidth
+
+    const onMouseMove = (ev: MouseEvent) => {
+      // 右ペインはドラッグ方向が逆（左へドラッグで広がる）
+      const next = Math.max(RIGHT_MIN, Math.min(RIGHT_MAX, startWidth - (ev.clientX - startX)))
+      setRightWidth(next)
+    }
+    const onMouseUp = () => {
+      window.removeEventListener('mousemove', onMouseMove)
+      window.removeEventListener('mouseup', onMouseUp)
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+    }
+    window.addEventListener('mousemove', onMouseMove)
+    window.addEventListener('mouseup', onMouseUp)
+    document.body.style.cursor = 'col-resize'
+    document.body.style.userSelect = 'none'
+    e.preventDefault()
+  }, [rightWidth])
 
   return (
     <div className={styles.layout} data-mobile-tab={activeTab}>
@@ -61,7 +88,11 @@ export function MainLayout() {
       <div className={styles.centerPane}>
         <PreviewPanel />
       </div>
-      <div className={styles.rightPane}>
+      <div
+        className={styles.rightResizeHandle}
+        onMouseDown={handleRightResizeMouseDown}
+      />
+      <div className={styles.rightPane} style={{ width: rightWidth }}>
         <LayerTreePanel />
       </div>
 

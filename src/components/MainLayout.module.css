@@ -76,8 +76,20 @@
   overflow: hidden;
 }
 
+.rightResizeHandle {
+  width: 4px;
+  flex-shrink: 0;
+  cursor: col-resize;
+  background: #313244;
+  transition: background 0.15s;
+}
+
+.rightResizeHandle:hover,
+.rightResizeHandle:active {
+  background: #6366f1;
+}
+
 .rightPane {
-  width: 300px;
   flex-shrink: 0;
   overflow: hidden;
 }
@@ -94,7 +106,8 @@
   }
 
   /* リサイズハンドルはモバイル不要 */
-  .resizeHandleWrapper {
+  .resizeHandleWrapper,
+  .rightResizeHandle {
     display: none !important;
   }
 
