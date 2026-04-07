@@ -236,6 +236,32 @@
   text-align: center;
 }
 
+.sampleSection {
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.sampleButton {
+  font-size: 0.78rem;
+  color: #cdd6f4;
+  background: rgba(137, 180, 250, 0.12);
+  border: 1px solid rgba(137, 180, 250, 0.3);
+  border-radius: 5px;
+  padding: 0.45rem 1rem;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.sampleButton:hover:not(:disabled) {
+  background: rgba(137, 180, 250, 0.22);
+  border-color: rgba(137, 180, 250, 0.5);
+}
+
+.sampleButton:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 /* XDTS 読み込み済みバナー（エンプティステート上部） */
 .xdtsBanner {
   display: flex;

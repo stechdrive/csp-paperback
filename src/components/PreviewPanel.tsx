@@ -6,6 +6,7 @@ import { useZoomPan } from '../hooks/useZoomPan'
 import { OutputPreview } from './OutputPreview'
 import { ExportSettings } from './ExportSettings'
 import { TimelineSeekBar } from './TimelineSeekBar'
+import { useSampleLoader } from '../hooks/useSampleLoader'
 import styles from './PreviewPanel.module.css'
 
 function NavigatorCanvas({ height }: { height: number }) {
@@ -36,6 +37,17 @@ function NavigatorCanvas({ height }: { height: number }) {
 const NAV_HEIGHT_DEFAULT = 270
 const NAV_HEIGHT_MIN = 40
 const NAV_HEIGHT_MAX = 600
+
+function SampleLoadButton() {
+  const { loadSample, loading } = useSampleLoader()
+  return (
+    <div className={styles.sampleSection}>
+      <button className={styles.sampleButton} onClick={loadSample} disabled={loading}>
+        {loading ? '読み込み中…' : 'サンプルデータで試す'}
+      </button>
+    </div>
+  )
+}
 
 export function PreviewPanel() {
   const docWidth = useAppStore(s => s.docWidth)
@@ -133,6 +145,7 @@ export function PreviewPanel() {
                 : <><div>PSD をドロップ、またはツールバーの「ファイルを開く」</div><div>XDTS / CSPB を一緒にドロップするとセルを自動検出</div></>
               }
             </div>
+            <SampleLoadButton />
           </div>
         </div>
       </div>
