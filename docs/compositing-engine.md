@@ -241,13 +241,45 @@ for each visibleCell in animFolder.children:
 
 ### 仮想セットの出力
 
+#### メンタルモデル
+
+仮想セットは **「セルが1つだけの仮想アニメーションフォルダ」** である。
+通常のアニメーションフォルダが複数セルを内包し各セルごとに出力するのに対し、仮想セットは常に1ファイルを出力する。
+
+通常のアニメフォルダとの違い：
+
+| 項目 | アニメーションフォルダ | 仮想セット |
+|------|-------------------|----------|
+| 存在 | PSDツリー上に実在 | UIで定義した仮想構造 |
+| セル数 | 複数 | 常に1つ |
+| 素材の所在 | フォルダ内に直接含む | PSD内の任意レイヤーを直接参照（コピーでもインスタンスでもない） |
+| 合成方式 | セルごとに extractCells | メンバーを非パススルーフォルダとして隔離合成 |
+| コンテキスト | 兄弟・祖先から収集 | 同じ除外ルールで insertionLayerId 基準に収集 |
+| 出力 | セル数分のファイル | 1ファイル |
+
+#### 合成ルール
+
+メンバーは **非パススルーフォルダと同じ隔離合成** で1枚に合成される（`compositeGroup`）。
+メンバー内部のblendModeは隔離合成の中で完結し、外部の兄弟コンテキストには届かない。
+合成結果は `blendMode: 'normal', opacity: 100` の単一 FlatLayer として扱われる。
+
+#### コンテキスト除外ルール
+
+`collectVsContextFlats` は `collectLocalSiblingContext` と同じ除外ルールを使う：
+- hidden / uiHidden → 除外
+- アニメーションフォルダ（＋アニメフォルダ子孫を持つフォルダ）→ 除外
+- autoMarked / singleMark → 除外
+
+#### 処理フロー
+
 `extractVirtualSetEntries` は仮想セットを `OutputEntry` に変換する。
 
 1. `insertionLayerId` を基準に `collectVsContextFlats` で upper/lower コンテキストを収集
 2. メンバーレイヤーを `buildMemberFlatsWithOverride` でフラット化
    - 仮想セット固有の visibilityOverrides を適用
    - blendMode/opacity オーバーライドがあるメンバーは1枚に合成してから適用
-3. `compositeWithContext` で最終合成
+3. メンバーを `compositeGroup` で非パススルー隔離合成
+4. `compositeWithContext` で上下コンテキストと合体して最終合成
 
 ---
 
