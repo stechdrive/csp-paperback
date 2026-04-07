@@ -341,6 +341,25 @@
   text-align: right;
 }
 
+/* ─── 書き出し設定ドロワー（モバイル用） ─── */
+.drawerWrapper {
+  order: 10;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.drawerToggle {
+  display: none;
+}
+
+.drawerBody {
+  /* デスクトップではそのまま表示 */
+}
+
+.drawerOverlay {
+  display: none;
+}
+
 /* ─── モバイル最適化 ─── */
 @media (pointer: coarse) and (max-width: 1024px) {
   /* ヘッダーはタブバーと重複するので非表示 */
@@ -406,5 +425,60 @@
 
   .fileName {
     max-width: 9rem;
+  }
+
+  /* ドロワー: 画面下部に固定、トグルで開閉 */
+  .drawerWrapper {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    order: 10;
+  }
+
+  .drawerToggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    width: 100%;
+    padding: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #cdd6f4;
+    background: #1e1e2e;
+    border: none;
+    border-top: 1px solid #45475a;
+    cursor: pointer;
+  }
+
+  .drawerToggleIcon {
+    font-size: 0.6rem;
+    color: #a6adc8;
+  }
+
+  .drawerBody {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.25s ease-out;
+    background: #1e1e2e;
+  }
+
+  .drawerOpen {
+    max-height: 200px;
+  }
+
+  .drawerOverlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background: rgba(0, 0, 0, 0.4);
+  }
+
+  /* ドロワー化したのでoutputSectionに下余白を追加（トグルボタン分） */
+  .outputSection {
+    padding-bottom: 2.5rem;
   }
 }

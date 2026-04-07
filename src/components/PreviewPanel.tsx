@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback } from 'react'
+import React, { useRef, useState, useCallback, useEffect } from 'react'
 import { useAppStore } from '../store'
 import { usePreview } from '../hooks/usePreview'
 import { useOutputPreview } from '../hooks/useOutputPreview'
@@ -45,6 +45,44 @@ function SampleLoadButton() {
       <button className={styles.sampleButton} onClick={loadSample} disabled={loading}>
         {loading ? '読み込み中…' : 'サンプルデータで試す'}
       </button>
+    </div>
+  )
+}
+
+function useIsMobile() {
+  const [mobile, setMobile] = useState(false)
+  useEffect(() => {
+    const mq = window.matchMedia('(pointer: coarse) and (max-width: 1024px)')
+    setMobile(mq.matches)
+    const handler = (e: MediaQueryListEvent) => setMobile(e.matches)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
+  return mobile
+}
+
+function ExportSettingsDrawer() {
+  const isMobile = useIsMobile()
+  const [open, setOpen] = useState(false)
+
+  if (!isMobile) {
+    return <ExportSettings />
+  }
+
+  return (
+    <div className={styles.drawerWrapper}>
+      <button
+        className={styles.drawerToggle}
+        onClick={() => setOpen(v => !v)}
+        aria-expanded={open}
+      >
+        <span className={styles.drawerToggleIcon}>{open ? '▼' : '▲'}</span>
+        書き出し設定
+      </button>
+      <div className={`${styles.drawerBody} ${open ? styles.drawerOpen : ''}`}>
+        <ExportSettings />
+      </div>
+      {open && <div className={styles.drawerOverlay} onClick={() => setOpen(false)} />}
     </div>
   )
 }
@@ -165,7 +203,7 @@ export function PreviewPanel() {
       )}
       <NavigatorCanvas height={navHeight} />
       <div className={styles.resizeHandle} onMouseDown={handleResizeMouseDown} onTouchStart={handleResizeTouchStart} />
-      <ExportSettings />
+      <ExportSettingsDrawer />
       <div className={styles.divider}>
         <span className={styles.dividerLabel}>出力プレビュー</span>
         {outputZoomPan.zoom !== 1 && (
