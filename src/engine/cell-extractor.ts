@@ -344,7 +344,19 @@ export function extractVirtualSetEntries(
 
     if (vsFlats.length === 0 && lower.length === 0 && upper.length === 0) continue
 
-    const canvas = compositeWithContext(vsFlats, lower, upper, docWidth, docHeight, background)
+    // VSメンバーをフォルダと同様に隔離合成してから配置する
+    // （パススルーではなく非パススルーフォルダと同じ挙動）
+    const vsComposite = compositeGroup(vsFlats, docWidth, docHeight)
+    const vsAsFolder: FlatLayer[] = [{
+      canvas: vsComposite,
+      blendMode: 'normal',
+      opacity: 100,
+      top: 0,
+      left: 0,
+      sourceId: vs.id,
+      clipping: false,
+    }]
+    const canvas = compositeWithContext(vsAsFolder, lower, upper, docWidth, docHeight, background)
     const fileName = `${vs.name}.jpg`
     entries.push({
       path: fileName,
