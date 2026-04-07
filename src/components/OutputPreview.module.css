@@ -11,6 +11,14 @@
   justify-content: center;
 }
 
+/* outputWrapper: zoomPanOuter + シークバーを横並びに配置 */
+.outputWrapper {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  position: relative;
+}
+
 .list {
   display: flex;
   flex-direction: column;
@@ -65,3 +73,75 @@
   padding: 2rem 1rem;
 }
 
+/* ===== 縦シークバー（モバイル用レイヤーナビゲーター） ===== */
+/* PC では非表示 */
+.seekBarVertical {
+  display: none;
+}
+
+@media (pointer: coarse) and (max-width: 1024px) {
+  .seekBarVertical {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 2.5rem;
+    z-index: 10;
+    touch-action: none;
+    opacity: 0.45;
+    transition: opacity 0.25s ease;
+  }
+
+  .seekBarVertical:active,
+  .seekBarActive {
+    opacity: 1;
+  }
+
+  .seekTrackVertical {
+    position: relative;
+    width: 4px;
+    height: 80%;
+    background: rgba(166, 173, 200, 0.25);
+    border-radius: 2px;
+  }
+
+  .seekThumbVertical {
+    position: absolute;
+    left: 50%;
+    width: 1.25rem;
+    height: 1.25rem;
+    background: #cba6f7;
+    border: 2px solid #1e1e2e;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+    transition: top 0.08s ease-out;
+  }
+
+  .seekLabelVertical {
+    position: absolute;
+    right: 3rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(30, 30, 46, 0.92);
+    color: #cdd6f4;
+    font-size: 0.7rem;
+    padding: 0.3rem 0.6rem;
+    border-radius: 4px;
+    white-space: nowrap;
+    max-width: 10rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    animation: seekLabelIn 0.15s ease-out;
+  }
+
+  @keyframes seekLabelIn {
+    from { opacity: 0; transform: translateY(-50%) translateX(4px); }
+    to { opacity: 1; transform: translateY(-50%) translateX(0); }
+  }
+}

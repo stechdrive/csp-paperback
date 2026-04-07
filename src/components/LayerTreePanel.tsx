@@ -5,52 +5,9 @@ import { selectLayerTreeWithVisibility, selectLayerById } from '../store/selecto
 import { LayerTreeNode } from './LayerTreeNode'
 import { BlendOpacityBar } from './BlendOpacityBar'
 import { Tooltip } from './Tooltip'
-import type { BlendMode, CspLayer } from '../types'
+import type { BlendMode } from '../types'
+import { flattenVisible, findLayerById } from '../utils/layerNavigation'
 import styles from './LayerTreePanel.module.css'
-
-function findLayerById(layers: CspLayer[], id: string): CspLayer | null {
-  for (const l of layers) {
-    if (l.id === id) return l
-    const found = findLayerById(l.children, id)
-    if (found) return found
-  }
-  return null
-}
-
-interface FlatEntry {
-  id: string
-  layer: CspLayer
-  isCell: boolean
-  animParentId: string | undefined
-}
-
-/** 展開状態を考慮して表示中のレイヤーをフラットリスト化 */
-function flattenVisible(
-  layers: CspLayer[],
-  expandedFolders: Set<string>,
-  manualAnimFolderIds: Set<string>,
-  parentAnimId?: string,
-): FlatEntry[] {
-  const result: FlatEntry[] = []
-  for (const layer of layers) {
-    const isAnimFolder = layer.isAnimationFolder || manualAnimFolderIds.has(layer.id)
-    result.push({
-      id: layer.id,
-      layer,
-      isCell: !!parentAnimId,
-      animParentId: parentAnimId,
-    })
-    if (layer.isFolder && expandedFolders.has(layer.id) && layer.children.length > 0) {
-      result.push(...flattenVisible(
-        layer.children,
-        expandedFolders,
-        manualAnimFolderIds,
-        isAnimFolder ? layer.id : parentAnimId,
-      ))
-    }
-  }
-  return result
-}
 
 export function LayerTreePanel() {
   const tree = useAppStore(selectLayerTreeWithVisibility)
