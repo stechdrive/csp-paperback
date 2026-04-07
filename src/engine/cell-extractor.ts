@@ -259,6 +259,7 @@ function collectVsContextFlats(
           const sib = layers[j]
           if (sib.hidden || sib.uiHidden) continue
           if (sib.isAnimationFolder || hasAnimFolderDescendant(sib)) continue
+          if (sib.autoMarked || sib.singleMark) continue
 
           const isUpper = insertionPosition === 'above' ? j < i : j <= i
           if (isUpper) upperCsps.push(sib)
@@ -281,6 +282,7 @@ function collectVsContextFlats(
           const sib = layers[j]
           if (sib.hidden || sib.uiHidden) continue
           if (sib.isAnimationFolder || hasAnimFolderDescendant(sib)) continue
+          if (sib.autoMarked || sib.singleMark) continue
 
           if (j < i) upperCsps.push(sib)
           else lowerCsps.push(sib)
