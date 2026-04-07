@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { DEFAULT_OUTPUT_CONFIG } from '../types'
+import { DEFAULT_OUTPUT_CONFIG, DEFAULT_PROJECT_SETTINGS } from '../types'
 import { createPsdSlice, type PsdSlice } from './psd-slice'
 import { createXdtsSlice, type XdtsSlice } from './xdts-slice'
 import { createAnimationSlice, type AnimationSlice } from './animation-slice'
@@ -35,14 +35,21 @@ export const useAppStore = create<AppStore>()(
     {
       name: 'csp-paperback:settings',
       version: 1,
-      partialize: (state) => ({ outputConfig: state.outputConfig }),
-      merge: (persisted, current) => ({
-        ...current,
-        outputConfig: {
-          ...DEFAULT_OUTPUT_CONFIG,
-          ...(persisted as { outputConfig?: typeof DEFAULT_OUTPUT_CONFIG })?.outputConfig,
-        },
+      partialize: (state) => ({
+        outputConfig: state.outputConfig,
+        projectSettings: state.projectSettings,
       }),
+      merge: (persisted, current) => {
+        const p = persisted as {
+          outputConfig?: typeof DEFAULT_OUTPUT_CONFIG
+          projectSettings?: typeof DEFAULT_PROJECT_SETTINGS
+        } | undefined
+        return {
+          ...current,
+          outputConfig: { ...DEFAULT_OUTPUT_CONFIG, ...p?.outputConfig },
+          projectSettings: { ...DEFAULT_PROJECT_SETTINGS, ...p?.projectSettings },
+        }
+      },
     },
   ),
 )
