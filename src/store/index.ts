@@ -1,4 +1,6 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
+import { DEFAULT_OUTPUT_CONFIG } from '../types'
 import { createPsdSlice, type PsdSlice } from './psd-slice'
 import { createXdtsSlice, type XdtsSlice } from './xdts-slice'
 import { createAnimationSlice, type AnimationSlice } from './animation-slice'
@@ -18,13 +20,29 @@ export type AppStore =
   UiSlice &
   HistorySlice
 
-export const useAppStore = create<AppStore>()((...a) => ({
-  ...createPsdSlice(...a),
-  ...createXdtsSlice(...a),
-  ...createAnimationSlice(...a),
-  ...createMarksSlice(...a),
-  ...createProjectSlice(...a),
-  ...createOutputSlice(...a),
-  ...createUiSlice(...a),
-  ...createHistorySlice(...a),
-}))
+export const useAppStore = create<AppStore>()(
+  persist(
+    (...a) => ({
+      ...createPsdSlice(...a),
+      ...createXdtsSlice(...a),
+      ...createAnimationSlice(...a),
+      ...createMarksSlice(...a),
+      ...createProjectSlice(...a),
+      ...createOutputSlice(...a),
+      ...createUiSlice(...a),
+      ...createHistorySlice(...a),
+    }),
+    {
+      name: 'csp-paperback:settings',
+      version: 1,
+      partialize: (state) => ({ outputConfig: state.outputConfig }),
+      merge: (persisted, current) => ({
+        ...current,
+        outputConfig: {
+          ...DEFAULT_OUTPUT_CONFIG,
+          ...(persisted as { outputConfig?: typeof DEFAULT_OUTPUT_CONFIG })?.outputConfig,
+        },
+      }),
+    },
+  ),
+)
