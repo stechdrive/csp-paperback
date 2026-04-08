@@ -20,6 +20,10 @@ export const en: Translations = {
     cancel: 'Cancel',
     exportZip: 'Export ZIP',
     exporting: 'Exporting…',
+    outputTarget: 'Output Target',
+    autoMark: '_Auto',
+    allOn: 'All ON',
+    allOff: 'All OFF',
   },
   settings: {
     title: 'Export Detail Settings',

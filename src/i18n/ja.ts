@@ -18,6 +18,10 @@ export const ja = {
     cancel: 'キャンセル',
     exportZip: 'ZIP 出力',
     exporting: '出力中…',
+    outputTarget: '出力対象',
+    autoMark: '_自動',
+    allOn: '全ON',
+    allOff: '全OFF',
   },
   settings: {
     title: '書き出し詳細設定',

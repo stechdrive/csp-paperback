@@ -7,6 +7,8 @@ export interface OutputConfig {
   jpgQuality: number        // 0.0 - 1.0
   background: BackgroundMode
   structure: StructureMode
+  excludedProcessSuffixes: string[]  // 出力から除外する工程サフィックス
+  excludeAutoMarked: boolean         // _プレフィックス自動マークレイヤーを除外
 }
 
 export const DEFAULT_OUTPUT_CONFIG: OutputConfig = {
@@ -14,6 +16,8 @@ export const DEFAULT_OUTPUT_CONFIG: OutputConfig = {
   jpgQuality: 0.92,
   background: 'white',
   structure: 'flat',
+  excludedProcessSuffixes: [],
+  excludeAutoMarked: false,
 }
 
 export interface OutputEntry {

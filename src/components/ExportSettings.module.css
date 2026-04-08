@@ -101,6 +101,66 @@
   left: 14px;
 }
 
+.chipGroup {
+  display: flex;
+  border: 1px solid #45475a;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-right: 0.25rem;
+}
+
+.chip {
+  padding: 0.15rem 0.4rem;
+  font-size: 0.7rem;
+  background: none;
+  border: none;
+  color: #a6adc8;
+  cursor: pointer;
+  white-space: nowrap;
+  line-height: 1.4;
+  opacity: 0.4;
+  transition: opacity 0.1s, background 0.1s;
+}
+
+.chip + .chip {
+  border-left: 1px solid #45475a;
+}
+
+.chip:hover:not(.chipIncluded) {
+  opacity: 0.6;
+  background: rgba(49, 50, 68, 0.5);
+}
+
+.chipIncluded {
+  background: #313244;
+  color: #cdd6f4;
+  opacity: 1;
+  font-weight: 600;
+}
+
+.batchBtn {
+  padding: 0.15rem 0.35rem;
+  font-size: 0.65rem;
+  background: none;
+  border: 1px solid #45475a;
+  border-radius: 3px;
+  color: #6c7086;
+  cursor: pointer;
+  white-space: nowrap;
+  line-height: 1.4;
+  transition: color 0.1s, border-color 0.1s;
+}
+
+.batchBtn:hover {
+  color: #a6adc8;
+  border-color: #585b70;
+}
+
+.batchActive {
+  color: #89b4fa;
+  border-color: #89b4fa;
+}
+
 .qualitySlider {
   flex: 1;
   accent-color: #6366f1;
@@ -153,5 +213,17 @@
 
   .qualitySlider {
     max-width: none;
+  }
+
+  .chip {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.75rem;
+    min-height: 2rem;
+  }
+
+  .batchBtn {
+    padding: 0.25rem 0.45rem;
+    font-size: 0.7rem;
+    min-height: 2rem;
   }
 }

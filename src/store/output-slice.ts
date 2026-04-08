@@ -9,6 +9,9 @@ export interface OutputSlice {
   setBackground: (bg: BackgroundMode) => void
   setStructure: (mode: StructureMode) => void
   setJpgQuality: (quality: number) => void
+  toggleProcessSuffixExclusion: (suffix: string) => void
+  setAllProcessSuffixExclusions: (suffixes: string[]) => void
+  setExcludeAutoMarked: (exclude: boolean) => void
 }
 
 export const createOutputSlice: StateCreator<AppStore, [], [], OutputSlice> = (set, get) => ({
@@ -43,5 +46,24 @@ export const createOutputSlice: StateCreator<AppStore, [], [], OutputSlice> = (s
   setJpgQuality: (jpgQuality) => {
     get().pushHistory()
     set({ outputConfig: { ...get().outputConfig, jpgQuality: Math.max(0, Math.min(1, jpgQuality)) } })
+  },
+
+  toggleProcessSuffixExclusion: (suffix) => {
+    get().pushHistory()
+    const current = get().outputConfig.excludedProcessSuffixes
+    const next = current.includes(suffix)
+      ? current.filter(s => s !== suffix)
+      : [...current, suffix]
+    set({ outputConfig: { ...get().outputConfig, excludedProcessSuffixes: next } })
+  },
+
+  setAllProcessSuffixExclusions: (suffixes) => {
+    get().pushHistory()
+    set({ outputConfig: { ...get().outputConfig, excludedProcessSuffixes: suffixes } })
+  },
+
+  setExcludeAutoMarked: (excludeAutoMarked) => {
+    get().pushHistory()
+    set({ outputConfig: { ...get().outputConfig, excludeAutoMarked } })
   },
 })

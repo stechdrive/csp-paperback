@@ -9,9 +9,13 @@ interface ExportDialogProps {
 
 export function ExportDialog({ onClose }: ExportDialogProps) {
   const outputConfig = useAppStore(s => s.outputConfig)
+  const projectSettings = useAppStore(s => s.projectSettings)
   const setFormat = useAppStore(s => s.setFormat)
   const setBackground = useAppStore(s => s.setBackground)
   const setStructure = useAppStore(s => s.setStructure)
+  const toggleProcessSuffixExclusion = useAppStore(s => s.toggleProcessSuffixExclusion)
+  const setAllProcessSuffixExclusions = useAppStore(s => s.setAllProcessSuffixExclusions)
+  const setExcludeAutoMarked = useAppStore(s => s.setExcludeAutoMarked)
   // const setJpgQuality = useAppStore(s => s.setJpgQuality)  // JPG品質UI復活時に有効化
   const { t } = useLocale()
 
@@ -80,6 +84,43 @@ export function ExportDialog({ onClose }: ExportDialogProps) {
           </label>
         </div>
 
+
+        {/* 出力対象 */}
+        <div className={styles.section}>
+          <div className={styles.label}>{t.export.outputTarget}</div>
+          <div className={styles.chipRow}>
+            <div className={styles.chipGroup}>
+              {projectSettings.processTable.map(e => {
+                const excluded = outputConfig.excludedProcessSuffixes.includes(e.suffix)
+                return (
+                  <button
+                    key={e.suffix}
+                    className={`${styles.chip} ${!excluded ? styles.chipIncluded : ''}`}
+                    onClick={() => toggleProcessSuffixExclusion(e.suffix)}
+                  >{e.suffix}</button>
+                )
+              })}
+              <button
+                className={`${styles.chip} ${!outputConfig.excludeAutoMarked ? styles.chipIncluded : ''}`}
+                onClick={() => setExcludeAutoMarked(!outputConfig.excludeAutoMarked)}
+              >{t.export.autoMark}</button>
+            </div>
+            <button
+              className={styles.batchBtn}
+              onClick={() => {
+                setAllProcessSuffixExclusions([])
+                setExcludeAutoMarked(false)
+              }}
+            >{t.export.allOn}</button>
+            <button
+              className={styles.batchBtn}
+              onClick={() => {
+                setAllProcessSuffixExclusions(projectSettings.processTable.map(e => e.suffix))
+                setExcludeAutoMarked(true)
+              }}
+            >{t.export.allOff}</button>
+          </div>
+        </div>
 
         {/* 進捗・エラー */}
         {isExporting && (

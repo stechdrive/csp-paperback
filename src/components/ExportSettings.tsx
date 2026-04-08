@@ -9,7 +9,25 @@ export function ExportSettings() {
   const setBackground = useAppStore(s => s.setBackground)
   const setStructure = useAppStore(s => s.setStructure)
   const setCellNamingMode = useAppStore(s => s.setCellNamingMode)
+  const toggleProcessSuffixExclusion = useAppStore(s => s.toggleProcessSuffixExclusion)
+  const setAllProcessSuffixExclusions = useAppStore(s => s.setAllProcessSuffixExclusions)
+  const setExcludeAutoMarked = useAppStore(s => s.setExcludeAutoMarked)
   const { t } = useLocale()
+
+  const processSuffixes = projectSettings.processTable.map(e => e.suffix)
+  const excludedSet = new Set(outputConfig.excludedProcessSuffixes)
+  const allIncluded = processSuffixes.every(s => !excludedSet.has(s)) && !outputConfig.excludeAutoMarked
+  const allExcluded = processSuffixes.every(s => excludedSet.has(s)) && outputConfig.excludeAutoMarked
+
+  const handleAllOn = () => {
+    setAllProcessSuffixExclusions([])
+    setExcludeAutoMarked(false)
+  }
+
+  const handleAllOff = () => {
+    setAllProcessSuffixExclusions(processSuffixes)
+    setExcludeAutoMarked(true)
+  }
 
   return (
     <div className={styles.settings}>
@@ -62,6 +80,32 @@ export function ExportSettings() {
             aria-checked={outputConfig.structure === 'hierarchy'}
           />
         </label>
+      </div>
+
+      <div className={styles.row}>
+        <span className={styles.label}>{t.export.outputTarget}</span>
+        <div className={styles.chipGroup}>
+          {processSuffixes.map(suffix => (
+            <button
+              key={suffix}
+              className={`${styles.chip} ${!excludedSet.has(suffix) ? styles.chipIncluded : ''}`}
+              onClick={() => toggleProcessSuffixExclusion(suffix)}
+              title={suffix}
+            >{suffix}</button>
+          ))}
+          <button
+            className={`${styles.chip} ${!outputConfig.excludeAutoMarked ? styles.chipIncluded : ''}`}
+            onClick={() => setExcludeAutoMarked(!outputConfig.excludeAutoMarked)}
+          >{t.export.autoMark}</button>
+        </div>
+        <button
+          className={`${styles.batchBtn} ${allIncluded ? styles.batchActive : ''}`}
+          onClick={handleAllOn}
+        >{t.export.allOn}</button>
+        <button
+          className={`${styles.batchBtn} ${allExcluded ? styles.batchActive : ''}`}
+          onClick={handleAllOff}
+        >{t.export.allOff}</button>
       </div>
     </div>
   )

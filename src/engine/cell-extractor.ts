@@ -534,6 +534,7 @@ export function extractAllEntries(
   docWidth: number,
   docHeight: number,
   background: 'white' | 'transparent' = 'white',
+  excludeAutoMarked = false,
 ): OutputEntry[] {
   const entries: OutputEntry[] = []
 
@@ -573,6 +574,13 @@ export function extractAllEntries(
       }
 
       if (layer.autoMarked || layer.singleMark) {
+        // 自動マークのみ（手動★なし）で除外設定の場合はスキップ
+        if (layer.autoMarked && !layer.singleMark && excludeAutoMarked) {
+          if (layer.isFolder) {
+            walk(layer.children, [], [])
+          }
+          continue
+        }
         // プレビューと同じ collectMarkedLayerContext を使って合成コンテキストを取得する。
         // walk の inheritedLower/Upper に依存せず、ツリー全体から正しく upper/lower を収集するため
         // ネストされていても必ず一致した結果になる。

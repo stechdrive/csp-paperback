@@ -37,7 +37,23 @@ export function useExport(): UseExportResult {
       setProgress(0.1)
 
       // 全出力エントリを生成（scope=allの場合）
-      let entries = extractAllEntries(tree, projectSettings, docWidth, docHeight, outputConfig.background)
+      let entries = extractAllEntries(
+        tree, projectSettings, docWidth, docHeight,
+        outputConfig.background, outputConfig.excludeAutoMarked,
+      )
+
+      // 除外された工程サフィックスをポストフィルタ
+      if (outputConfig.excludedProcessSuffixes.length > 0) {
+        const excluded = new Set(outputConfig.excludedProcessSuffixes)
+        entries = entries.filter(entry => {
+          const dotIdx = entry.flatName.lastIndexOf('.')
+          const base = dotIdx >= 0 ? entry.flatName.slice(0, dotIdx) : entry.flatName
+          for (const suffix of excluded) {
+            if (base.endsWith(suffix)) return false
+          }
+          return true
+        })
+      }
 
       setProgress(0.4)
 

@@ -123,6 +123,65 @@
   text-align: right;
 }
 
+.chipRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.chipGroup {
+  display: flex;
+  border: 1px solid #45475a;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.chip {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8rem;
+  background: none;
+  border: none;
+  color: #a6adc8;
+  cursor: pointer;
+  white-space: nowrap;
+  line-height: 1.4;
+  opacity: 0.4;
+  transition: opacity 0.1s, background 0.1s;
+}
+
+.chip + .chip {
+  border-left: 1px solid #45475a;
+}
+
+.chip:hover:not(.chipIncluded) {
+  opacity: 0.6;
+  background: rgba(49, 50, 68, 0.5);
+}
+
+.chipIncluded {
+  background: #313244;
+  color: #cdd6f4;
+  opacity: 1;
+  font-weight: 600;
+}
+
+.batchBtn {
+  padding: 0.2rem 0.45rem;
+  font-size: 0.7rem;
+  background: none;
+  border: 1px solid #45475a;
+  border-radius: 3px;
+  color: #6c7086;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.batchBtn:hover {
+  color: #a6adc8;
+  border-color: #585b70;
+}
+
 .actions {
   display: flex;
   justify-content: flex-end;
