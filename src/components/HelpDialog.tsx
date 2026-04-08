@@ -247,117 +247,194 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               <h2 className={styles.h1}>📋 サンプルで理解する</h2>
 
               <p className={styles.p}>
-                以下のようなPSDレイヤー構造とXDTSタイムシートがあるとします。
+                プレビューパネルの「サンプルデータで試す」ボタンで読み込めるサンプル（c001.psd + c001.xdts + c001.cspb）を使って、
+                各機能がどう動くかを見てみましょう。
               </p>
 
-              <h3 className={styles.h2}>PSD レイヤー構造</h3>
+              <h3 className={styles.h2}>PSD レイヤー構造（c001.psd）</h3>
               <div className={styles.layerDiagram}>
+                {/* memo */}
+                <div className={styles.layerRow}>
+                  <span className={styles.iconLayer}>◆</span>
+                  <span className={styles.layerName}>memo</span>
+                </div>
+                {/* Frame */}
+                <div className={styles.layerRow}>
+                  <span className={styles.iconFolder}>📁</span>
+                  <span className={styles.layerName}>Frame</span>
+                  <span className={styles.labelContext}>タップ穴・フレーム枠</span>
+                </div>
+                {/* _撮影指示 */}
                 <div className={styles.layerRow}>
                   <span className={styles.iconFolder}>📁</span>
                   <span className={styles.layerNameMark}>_撮影指示</span>
                   <span className={styles.labelMark}>★ 自動マーク</span>
                 </div>
                 <div className={`${styles.layerRow} ${styles.indent1}`}>
-                  <span className={styles.iconLayer}>◆</span>
-                  <span className={styles.layerName}>PAN</span>
+                  <span className={styles.iconFolder}>📁</span>
+                  <span className={styles.layerNameMark}>_PAN</span>
+                  <span style={{ color: '#6c7086', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
+                    PAN指示
+                  </span>
                 </div>
                 <div className={`${styles.layerRow} ${styles.indent1}`}>
-                  <span className={styles.iconLayer}>◆</span>
-                  <span className={styles.layerName}>SL</span>
+                  <span className={styles.iconFolder}>📁</span>
+                  <span className={styles.layerNameMark}>_SL</span>
+                  <span style={{ color: '#6c7086', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
+                    SL指示
+                  </span>
                 </div>
+                {/* LO */}
                 <div className={styles.layerRow}>
+                  <span className={styles.iconFolder}>📁</span>
+                  <span className={styles.layerName}>LO</span>
+                </div>
+                {/* LO > 演出 (process folder - track separation type) */}
+                <div className={`${styles.layerRow} ${styles.indent1}`}>
+                  <span className={styles.iconFolder}>📁</span>
+                  <span className={styles.layerName}>演出</span>
+                  <span className={styles.labelContext}>工程フォルダ（トラック分離型）</span>
+                </div>
+                <div className={`${styles.layerRow} ${styles.indent2}`}>
                   <span className={styles.iconAnim}>📁</span>
                   <span className={styles.layerNameAnim}>A</span>
                   <span className={styles.labelAnim}>アニメーション</span>
                 </div>
-                <div className={`${styles.layerRow} ${styles.indent1}`}>
-                  <span className={styles.iconLayer}>◆</span>
-                  <span className={styles.layerName}>3</span>
-                </div>
-                <div className={`${styles.layerRow} ${styles.indent1}`}>
-                  <span className={styles.iconLayer}>◆</span>
-                  <span className={styles.layerName}>2</span>
-                </div>
-                <div className={`${styles.layerRow} ${styles.indent1}`}>
-                  <span className={styles.iconLayer}>◆</span>
+                <div className={`${styles.layerRow} ${styles.indent3}`}>
+                  <span className={styles.iconLayer}>📁</span>
                   <span className={styles.layerName}>1</span>
+                  <span style={{ color: '#6c7086', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
+                    演出修正 / 演出修正用紙
+                  </span>
                 </div>
-                <div className={styles.layerRow}>
+                {/* LO > 作画 */}
+                <div className={`${styles.layerRow} ${styles.indent1}`}>
+                  <span className={styles.iconFolder}>📁</span>
+                  <span className={styles.layerName}>作画</span>
+                </div>
+                {/* 作画 > B */}
+                <div className={`${styles.layerRow} ${styles.indent2}`}>
                   <span className={styles.iconAnim}>📁</span>
                   <span className={styles.layerNameAnim}>B</span>
                   <span className={styles.labelAnim}>アニメーション</span>
                 </div>
-                <div className={`${styles.layerRow} ${styles.indent1}`}>
-                  <span className={styles.iconLayer}>◆</span>
-                  <span className={styles.layerName}>2</span>
-                </div>
-                <div className={`${styles.layerRow} ${styles.indent1}`}>
-                  <span className={styles.iconLayer}>◆</span>
+                <div className={`${styles.layerRow} ${styles.indent3}`}>
+                  <span className={styles.iconFolder}>📁</span>
                   <span className={styles.layerName}>1</span>
+                  <span style={{ color: '#6c7086', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
+                    セルフォルダ
+                  </span>
                 </div>
+                <div className={styles.layerRow} style={{ paddingLeft: '5rem' }}>
+                  <span className={styles.iconFolder}>📁</span>
+                  <span className={styles.layerName}>_s</span>
+                  <span className={styles.labelContext}>工程フォルダ（セル内蔵型）</span>
+                </div>
+                <div className={styles.layerRow} style={{ paddingLeft: '6.25rem' }}>
+                  <span className={styles.iconLayer}>◆</span>
+                  <span className={styles.layerName}>作監修正 / 作監修正用紙</span>
+                </div>
+                <div className={styles.layerRow} style={{ paddingLeft: '5rem' }}>
+                  <span className={styles.iconLayer}>◆</span>
+                  <span className={styles.layerName}>線画1</span>
+                </div>
+                <div className={styles.layerRow} style={{ paddingLeft: '5rem' }}>
+                  <span className={styles.iconFolder}>📁</span>
+                  <span className={styles.layerName}>影</span>
+                  <span style={{ color: '#6c7086', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
+                    影1 / 影2
+                  </span>
+                </div>
+                {/* 作画 > A */}
+                <div className={`${styles.layerRow} ${styles.indent2}`}>
+                  <span className={styles.iconAnim}>📁</span>
+                  <span className={styles.layerNameAnim}>A</span>
+                  <span className={styles.labelAnim}>アニメーション</span>
+                </div>
+                <div className={`${styles.layerRow} ${styles.indent3}`}>
+                  <span className={styles.iconFolder}>📁</span>
+                  <span className={styles.layerName}>1</span>
+                  <span style={{ color: '#6c7086', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
+                    線画
+                  </span>
+                </div>
+                {/* _原図 */}
                 <div className={styles.layerRow}>
                   <span className={styles.iconFolder}>📁</span>
-                  <span className={styles.layerNameMark}>_背景原図</span>
+                  <span className={styles.layerNameMark}>_原図</span>
                   <span className={styles.labelMark}>★ 自動マーク</span>
                 </div>
                 <div className={`${styles.layerRow} ${styles.indent1}`}>
-                  <span className={styles.iconLayer}>◆</span>
-                  <span className={styles.layerName}>BOOK</span>
+                  <span className={styles.iconFolder}>📁</span>
+                  <span className={styles.layerNameMark}>_BOOK1</span>
+                  <span style={{ color: '#6c7086', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
+                    BOOK1
+                  </span>
                 </div>
                 <div className={`${styles.layerRow} ${styles.indent1}`}>
-                  <span className={styles.iconLayer}>◆</span>
-                  <span className={styles.layerName}>BG</span>
+                  <span className={styles.iconFolder}>📁</span>
+                  <span className={styles.layerNameMark}>_BG</span>
+                  <span style={{ color: '#6c7086', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
+                    BG1
+                  </span>
                 </div>
+                {/* _pool */}
                 <div className={styles.layerRow}>
                   <span className={styles.iconFolder}>📁</span>
-                  <span className={styles.layerName}>_old</span>
+                  <span className={styles.layerName}>_pool</span>
                   <span className={styles.labelArchive}>除外</span>
                 </div>
-                <div className={`${styles.layerRow} ${styles.indent1}`}>
+                {/* 用紙 */}
+                <div className={styles.layerRow}>
                   <span className={styles.iconLayer}>◆</span>
-                  <span className={styles.layerName}>不使用...</span>
+                  <span className={styles.layerName} style={{ color: '#6c7086' }}>用紙</span>
+                  <span style={{ color: '#6c7086', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
+                    （自動非表示）
+                  </span>
                 </div>
               </div>
 
-              <h3 className={styles.h2}>XDTS タイムシート（抜粋）</h3>
+              <div className={styles.calloutInfo}>
+                このサンプルには CSP Paperback の主要機能がすべて詰まっています：
+                <span className={styles.strong}>_フォルダ自動マーク</span>（_撮影指示、_原図）、
+                <span className={styles.strong}>工程フォルダ</span>のトラック分離型（演出）とセル内蔵型（_s）、
+                <span className={styles.strong}>アーカイブ除外</span>（_pool）。
+                各機能の詳細は以降のセクションで解説します。
+              </div>
+
+              <h3 className={styles.h2}>XDTS タイムシート（c001.xdts）</h3>
               <p className={styles.p}>
                 XDTS ファイルにはアニメーションのタイミング情報が記録されています。
-                この例では、トラック A と B がそれぞれセルを持ちます。
+                このサンプルでは 3 つのトラック（A, B, A）があり、PSD 内の同名フォルダに対応します。
               </p>
               <div className={styles.timesheetDiagram}>
                 <table className={styles.timesheetTable}>
                   <thead>
                     <tr>
                       <th>フレーム</th>
-                      <th>A</th>
-                      <th>B</th>
+                      <th>A（演出）</th>
+                      <th>B（作画）</th>
+                      <th>A（作画）</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr>
                       <td>0</td>
                       <td className={styles.cellActive}>1</td>
+                      <td className={styles.cellEmpty}>-</td>
                       <td className={styles.cellActive}>1</td>
                     </tr>
                     <tr>
                       <td>1</td>
-                      <td className={styles.cellActive}>↓ (ホールド)</td>
-                      <td className={styles.cellActive}>↓ (ホールド)</td>
-                    </tr>
-                    <tr>
-                      <td>6</td>
-                      <td className={styles.cellActive}>2</td>
+                      <td className={styles.cellActive}>↓</td>
+                      <td className={styles.cellEmpty}>-</td>
                       <td className={styles.cellActive}>↓</td>
                     </tr>
                     <tr>
-                      <td>12</td>
-                      <td className={styles.cellActive}>3</td>
-                      <td className={styles.cellActive}>2</td>
-                    </tr>
-                    <tr>
-                      <td>…</td>
-                      <td className={styles.cellEmpty}>…</td>
-                      <td className={styles.cellEmpty}>…</td>
+                      <td>3</td>
+                      <td className={styles.cellEmpty}>-</td>
+                      <td className={styles.cellActive}>1</td>
+                      <td className={styles.cellEmpty}>-</td>
                     </tr>
                   </tbody>
                 </table>
@@ -365,26 +442,19 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
 
               <div className={styles.calloutInfo}>
                 XDTSのトラック名とPSDのフォルダ名が一致すると、自動的にアニメーションフォルダとして認識されます。
-                上の例では PSD 内の「A」フォルダと「B」フォルダがアニメーションフォルダになります。
+                同名のフォルダが複数あっても（この例では A が 2 つ）、それぞれ別のアニメーションフォルダとして扱われます。
               </div>
 
               <h3 className={styles.h2}>出力結果</h3>
               <p className={styles.p}>
-                このPSD + XDTS の組み合わせで出力すると、以下のファイルが生成されます。
+                このサンプル（PSD + XDTS + cspb設定）で出力すると、以下のファイルが生成されます。
+                工程テーブルの設定により、工程フォルダの内容はサフィックス付きで自動分離されます。
               </p>
 
               <div className={styles.outputGrid}>
                 <div className={styles.outputCard}>
                   <div className={styles.outputThumb}>A</div>
-                  <div className={styles.outputFilename}>A/A_0001.jpg</div>
-                </div>
-                <div className={styles.outputCard}>
-                  <div className={styles.outputThumb}>A</div>
-                  <div className={styles.outputFilename}>A/A_0002.jpg</div>
-                </div>
-                <div className={styles.outputCard}>
-                  <div className={styles.outputThumb}>A</div>
-                  <div className={styles.outputFilename}>A/A_0003.jpg</div>
+                  <div className={styles.outputFilename}>A/A_0001_e.jpg</div>
                 </div>
                 <div className={styles.outputCard}>
                   <div className={styles.outputThumb}>B</div>
@@ -392,7 +462,11 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 </div>
                 <div className={styles.outputCard}>
                   <div className={styles.outputThumb}>B</div>
-                  <div className={styles.outputFilename}>B/B_0002.jpg</div>
+                  <div className={styles.outputFilename}>B/B_0001_s.jpg</div>
+                </div>
+                <div className={styles.outputCard}>
+                  <div className={styles.outputThumb}>A</div>
+                  <div className={styles.outputFilename}>A/A_0001.jpg</div>
                 </div>
                 <div className={styles.outputCard}>
                   <div className={styles.outputThumb}>★</div>
@@ -400,15 +474,19 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 </div>
                 <div className={styles.outputCard}>
                   <div className={styles.outputThumb}>★</div>
-                  <div className={styles.outputFilename}>_背景原図.jpg</div>
+                  <div className={styles.outputFilename}>_原図.jpg</div>
                 </div>
               </div>
 
               <p className={styles.p}>
-                <span className={styles.em}>_撮影指示</span> と <span className={styles.em}>_背景原図</span> フォルダは
+                <span className={styles.em}>_撮影指示</span> と <span className={styles.em}>_原図</span> フォルダは
                 先頭の <code className={styles.code}>_</code> により自動マークされ、
                 セルとは独立した画像として出力されます。
-                一方 <span className={styles.code}>_old</span> フォルダはアーカイブ除外パターンに一致するため、出力されません。
+                <span className={styles.em}>演出/A</span> のセルは工程テーブルの設定（演出 → <code className={styles.code}>_e</code>）により
+                サフィックス付きの <code className={styles.code}>A_0001_e.jpg</code> として出力されます。
+                <span className={styles.em}>作画/B/1/_s</span> のセル内蔵型工程フォルダも同様に
+                <code className={styles.code}>B_0001_s.jpg</code> として分離出力されます。
+                一方 <span className={styles.code}>_pool</span> フォルダはアーカイブ除外パターンに一致するため、出力されません。
               </p>
             </section>
 
@@ -431,6 +509,19 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                     → 「_撮影指示.jpg」として出力
                   </span>
                 </div>
+                <div className={`${styles.layerRow} ${styles.indent1}`}>
+                  <span className={styles.iconFolder}>📁</span>
+                  <span className={styles.layerNameMark}>_PAN</span>
+                  <span className={styles.labelMark}>★ 自動</span>
+                  <span style={{ color: '#6c7086', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
+                    → ネストした _フォルダも個別に出力
+                  </span>
+                </div>
+                <div className={`${styles.layerRow} ${styles.indent1}`}>
+                  <span className={styles.iconFolder}>📁</span>
+                  <span className={styles.layerNameMark}>_SL</span>
+                  <span className={styles.labelMark}>★ 自動</span>
+                </div>
                 <div className={styles.layerRow}>
                   <span className={styles.iconFolder}>📁</span>
                   <span className={styles.layerNameMark}>_原図</span>
@@ -439,9 +530,19 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                     → 「_原図.jpg」として出力
                   </span>
                 </div>
+                <div className={`${styles.layerRow} ${styles.indent1}`}>
+                  <span className={styles.iconFolder}>📁</span>
+                  <span className={styles.layerNameMark}>_BOOK1</span>
+                  <span className={styles.labelMark}>★ 自動</span>
+                </div>
+                <div className={`${styles.layerRow} ${styles.indent1}`}>
+                  <span className={styles.iconFolder}>📁</span>
+                  <span className={styles.layerNameMark}>_BG</span>
+                  <span className={styles.labelMark}>★ 自動</span>
+                </div>
                 <div className={styles.layerRow}>
                   <span className={styles.iconFolder}>📁</span>
-                  <span className={styles.layerName}>_old</span>
+                  <span className={styles.layerName}>_pool</span>
                   <span className={styles.labelArchive}>除外</span>
                   <span style={{ color: '#6c7086', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
                     → 出力されない（アーカイブ除外）
@@ -449,7 +550,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 </div>
                 <div className={styles.layerRow}>
                   <span className={styles.iconFolder}>📁</span>
-                  <span className={styles.layerName}>_pool</span>
+                  <span className={styles.layerName}>_old</span>
                   <span className={styles.labelArchive}>除外</span>
                   <span style={{ color: '#6c7086', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
                     → 出力されない（アーカイブ除外）
@@ -638,7 +739,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               </div>
 
               {/* --- パターン1: トラック分離型 --- */}
-              <h3 className={styles.h2}>パターン1：トラック分離型</h3>
+              <h3 className={styles.h2}>パターン1：トラック分離型（サンプル: 演出フォルダ）</h3>
               <p className={styles.p}>
                 カット担当者と修正担当者がそれぞれ<span className={styles.strong}>別のフォルダ</span>に
                 同じセル名の構造をコピーして作業するテンプレートです。
@@ -654,7 +755,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 </div>
                 <div className={`${styles.layerRow} ${styles.indent1}`}>
                   <span className={styles.iconFolder}>📁</span>
-                  <span className={styles.layerName}>EN</span>
+                  <span className={styles.layerName}>演出</span>
                   <span className={styles.labelContext}>工程（親フォルダ）</span>
                 </div>
                 <div className={`${styles.layerRow} ${styles.indent2}`}>
@@ -663,22 +764,15 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   <span className={styles.labelAnim}>アニメーション</span>
                 </div>
                 <div className={`${styles.layerRow} ${styles.indent3}`}>
-                  <span className={styles.iconLayer}>◆</span>
-                  <span className={styles.layerName}>2</span>
-                  <span style={{ color: '#6c7086', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
-                    → A_0002_en.jpg
-                  </span>
-                </div>
-                <div className={`${styles.layerRow} ${styles.indent3}`}>
-                  <span className={styles.iconLayer}>◆</span>
+                  <span className={styles.iconFolder}>📁</span>
                   <span className={styles.layerName}>1</span>
                   <span style={{ color: '#6c7086', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
-                    → A_0001_en.jpg
+                    → A_0001_e.jpg
                   </span>
                 </div>
                 <div className={`${styles.layerRow} ${styles.indent1}`}>
                   <span className={styles.iconFolder}>📁</span>
-                  <span className={styles.layerName}>LO</span>
+                  <span className={styles.layerName}>作画</span>
                 </div>
                 <div className={`${styles.layerRow} ${styles.indent2}`}>
                   <span className={styles.iconAnim}>📁</span>
@@ -686,14 +780,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   <span className={styles.labelAnim}>アニメーション</span>
                 </div>
                 <div className={`${styles.layerRow} ${styles.indent3}`}>
-                  <span className={styles.iconLayer}>◆</span>
-                  <span className={styles.layerName}>2</span>
-                  <span style={{ color: '#6c7086', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
-                    → A_0002.jpg（本体）
-                  </span>
-                </div>
-                <div className={`${styles.layerRow} ${styles.indent3}`}>
-                  <span className={styles.iconLayer}>◆</span>
+                  <span className={styles.iconFolder}>📁</span>
                   <span className={styles.layerName}>1</span>
                   <span style={{ color: '#6c7086', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
                     → A_0001.jpg（本体）
@@ -702,14 +789,14 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               </div>
 
               <p className={styles.p}>
-                親フォルダ名「EN」が工程テーブルの <code className={styles.code}>_en</code> に一致するため、
-                その中のアニメーションフォルダ A のセルは全て <code className={styles.code}>A_0001_en.jpg</code> のように出力されます。
-                一方、親フォルダ名「LO」はテーブル未登録なので本体（サフィックスなし）として出力されます。
-                セル名が同じ「1」「2」でも、フォルダ構造から自動で区別されます。
+                親フォルダ名「演出」が工程テーブルの <code className={styles.code}>_e</code> に一致するため、
+                その中のアニメーションフォルダ A のセルは <code className={styles.code}>A_0001_e.jpg</code> のように出力されます。
+                一方、親フォルダ名「作画」はテーブル未登録なので本体（サフィックスなし）として出力されます。
+                セル名が同じ「1」でも、フォルダ構造から自動で区別されます。
               </p>
 
               {/* --- パターン2: セル内蔵型 --- */}
-              <h3 className={styles.h2}>パターン2：セル内蔵型</h3>
+              <h3 className={styles.h2}>パターン2：セル内蔵型（サンプル: _s フォルダ）</h3>
               <p className={styles.p}>
                 1つのアニメーションフォルダ内で、各セルフォルダの中に
                 <span className={styles.strong}>工程サブフォルダ</span>を置くテンプレートです。
@@ -719,7 +806,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               <div className={styles.layerDiagram}>
                 <div className={styles.layerRow}>
                   <span className={styles.iconAnim}>📁</span>
-                  <span className={styles.layerNameAnim}>A</span>
+                  <span className={styles.layerNameAnim}>B</span>
                   <span className={styles.labelAnim}>アニメーション</span>
                 </div>
                 <div className={`${styles.layerRow} ${styles.indent1}`}>
@@ -728,20 +815,23 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 </div>
                 <div className={`${styles.layerRow} ${styles.indent2}`}>
                   <span className={styles.iconFolder}>📁</span>
-                  <span className={styles.layerName}>EN</span>
+                  <span className={styles.layerName}>_s</span>
                   <span className={styles.labelContext}>工程（サブフォルダ）</span>
                 </div>
                 <div className={`${styles.layerRow} ${styles.indent3}`}>
                   <span className={styles.iconLayer}>◆</span>
-                  <span className={styles.layerName}>演出修正</span>
+                  <span className={styles.layerName}>作監修正</span>
                 </div>
                 <div className={`${styles.layerRow} ${styles.indent2}`}>
                   <span className={styles.iconLayer}>◆</span>
-                  <span className={styles.layerName}>線画</span>
+                  <span className={styles.layerName}>線画1</span>
                 </div>
                 <div className={`${styles.layerRow} ${styles.indent2}`}>
-                  <span className={styles.iconLayer}>◆</span>
-                  <span className={styles.layerName}>影付け</span>
+                  <span className={styles.iconFolder}>📁</span>
+                  <span className={styles.layerName}>影</span>
+                  <span style={{ color: '#6c7086', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
+                    影1 / 影2
+                  </span>
                 </div>
               </div>
 
@@ -750,17 +840,17 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               <div className={styles.outputGrid}>
                 <div className={styles.outputCard}>
                   <div className={styles.outputThumb}>本体</div>
-                  <div className={styles.outputFilename}>A/A_0001.jpg</div>
+                  <div className={styles.outputFilename}>B/B_0001.jpg</div>
                 </div>
                 <div className={styles.outputCard}>
-                  <div className={styles.outputThumb}>EN</div>
-                  <div className={styles.outputFilename}>A/A_0001_en.jpg</div>
+                  <div className={styles.outputThumb}>_s</div>
+                  <div className={styles.outputFilename}>B/B_0001_s.jpg</div>
                 </div>
               </div>
 
               <p className={styles.p}>
-                工程フォルダ（EN）の内容はサフィックス付きの別ファイルとして出力され、
-                それ以外の作画担当者の線画・影付けレイヤーとは合成されずに分離できます。
+                工程フォルダ（_s）の内容はサフィックス付きの別ファイルとして出力され、
+                それ以外の作画担当者の線画・影レイヤーとは合成されずに分離できます。
               </p>
 
               {/* --- 共通設定 --- */}
@@ -768,6 +858,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               <p className={styles.p}>
                 設定ダイアログで以下のようにフォルダ名とサフィックスの対応を登録します。
                 フォルダ名はカンマ区切りで複数指定でき、大文字・小文字を区別しません。
+                サンプルの c001.cspb には以下のテーブルが設定されています。
               </p>
 
               <table className={styles.comparisonTable}>
@@ -780,18 +871,27 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 </thead>
                 <tbody>
                   <tr>
-                    <td><code className={styles.code}>_en</code></td>
-                    <td>EN, 演出, ens</td>
-                    <td><code className={styles.code}>A_0001_en.jpg</code></td>
+                    <td><code className={styles.code}>_e</code></td>
+                    <td>_e, 演出</td>
+                    <td><code className={styles.code}>A_0001_e.jpg</code></td>
+                  </tr>
+                  <tr>
+                    <td><code className={styles.code}>_s</code></td>
+                    <td>_s, 作監</td>
+                    <td><code className={styles.code}>B_0001_s.jpg</code></td>
+                  </tr>
+                  <tr>
+                    <td><code className={styles.code}>_k</code></td>
+                    <td>_k, 監督</td>
+                    <td><code className={styles.code}>A_0001_k.jpg</code></td>
                   </tr>
                 </tbody>
               </table>
 
               <div className={styles.calloutTip}>
                 <span className={styles.strong}>💡 どちらの形式でも同じ工程テーブル設定が使えます。</span>
-                フォルダ名「EN」に対してサフィックス「_en」を登録しておけば、
-                トラック分離型ではアニメーションフォルダの親フォルダ名として、
-                セル内蔵型ではセル内のサブフォルダ名として、どちらでも自動的にマッチして分離出力されます。
+                サンプルでは「演出」がトラック分離型（アニメーションフォルダの親フォルダ名）として、
+                「_s」がセル内蔵型（セル内のサブフォルダ名）として、それぞれ自動的にマッチして分離出力されます。
               </div>
             </section>
 
