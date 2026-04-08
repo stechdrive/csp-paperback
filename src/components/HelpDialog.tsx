@@ -257,12 +257,13 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 <div className={styles.layerRow}>
                   <span className={styles.iconLayer}>◆</span>
                   <span className={styles.layerName}>memo</span>
+                  <span className={styles.labelContext}>コンテキスト（全出力に合成）</span>
                 </div>
                 {/* Frame */}
                 <div className={styles.layerRow}>
                   <span className={styles.iconFolder}>📁</span>
                   <span className={styles.layerName}>Frame</span>
-                  <span className={styles.labelContext}>タップ穴・フレーム枠</span>
+                  <span className={styles.labelContext}>コンテキスト（全出力に合成）</span>
                 </div>
                 {/* _撮影指示 */}
                 <div className={styles.layerRow}>
@@ -445,49 +446,102 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 同名のフォルダが複数あっても（この例では A が 2 つ）、それぞれ別のアニメーションフォルダとして扱われます。
               </div>
 
-              <h3 className={styles.h2}>出力結果</h3>
+              <h3 className={styles.h2}>出力結果と合成内訳</h3>
               <p className={styles.p}>
-                このサンプル（PSD + XDTS + cspb設定）で出力すると、以下のファイルが生成されます。
-                工程テーブルの設定により、工程フォルダの内容はサフィックス付きで自動分離されます。
+                このサンプルで出力すると、以下のファイルが生成されます。
+                各ファイルは<span className={styles.strong}>対象レイヤー</span>と
+                <span className={styles.strong}>コンテキストレイヤー</span>（memo, Frame）を合成した結果です。
+                合成式はレイヤーツリーの上（前面）→ 下（背面）の順で表記しています。
               </p>
 
-              <div className={styles.outputGrid}>
-                <div className={styles.outputCard}>
-                  <div className={styles.outputThumb}>A</div>
-                  <div className={styles.outputFilename}>A/A_0001_e.jpg</div>
+              <div className={styles.compositeList}>
+                <div className={styles.compositeItem}>
+                  <div className={styles.compositeFilename}>A/A_0001_e.jpg</div>
+                  <div className={styles.compositeFormula}>
+                    <span className={styles.compositeTarget}>演出/A/1</span>
+                    <span className={styles.compositeOp}>+</span>
+                    <span className={styles.compositeCtx}>memo</span>
+                    <span className={styles.compositeOp}>+</span>
+                    <span className={styles.compositeCtx}>Frame</span>
+                  </div>
+                  <div className={styles.compositeNote}>
+                    親フォルダ「演出」が工程テーブルの <code className={styles.code}>_e</code> に一致 → サフィックス付き
+                  </div>
                 </div>
-                <div className={styles.outputCard}>
-                  <div className={styles.outputThumb}>B</div>
-                  <div className={styles.outputFilename}>B/B_0001.jpg</div>
+                <div className={styles.compositeItem}>
+                  <div className={styles.compositeFilename}>B/B_0001.jpg</div>
+                  <div className={styles.compositeFormula}>
+                    <span className={styles.compositeTarget}>作画/B/1（_s 除外）</span>
+                    <span className={styles.compositeOp}>+</span>
+                    <span className={styles.compositeCtx}>memo</span>
+                    <span className={styles.compositeOp}>+</span>
+                    <span className={styles.compositeCtx}>Frame</span>
+                  </div>
+                  <div className={styles.compositeNote}>
+                    線画1 + 影を合成。工程サブフォルダ _s の内容は除外される
+                  </div>
                 </div>
-                <div className={styles.outputCard}>
-                  <div className={styles.outputThumb}>B</div>
-                  <div className={styles.outputFilename}>B/B_0001_s.jpg</div>
+                <div className={styles.compositeItem}>
+                  <div className={styles.compositeFilename}>B/B_0001_s.jpg</div>
+                  <div className={styles.compositeFormula}>
+                    <span className={styles.compositeTarget}>作画/B/1/_s</span>
+                    <span className={styles.compositeOp}>+</span>
+                    <span className={styles.compositeCtx}>memo</span>
+                    <span className={styles.compositeOp}>+</span>
+                    <span className={styles.compositeCtx}>Frame</span>
+                  </div>
+                  <div className={styles.compositeNote}>
+                    セル内のフォルダ「_s」が工程テーブルに一致 → サフィックス付きで分離出力
+                  </div>
                 </div>
-                <div className={styles.outputCard}>
-                  <div className={styles.outputThumb}>A</div>
-                  <div className={styles.outputFilename}>A/A_0001.jpg</div>
+                <div className={styles.compositeItem}>
+                  <div className={styles.compositeFilename}>A/A_0001.jpg</div>
+                  <div className={styles.compositeFormula}>
+                    <span className={styles.compositeTarget}>作画/A/1</span>
+                    <span className={styles.compositeOp}>+</span>
+                    <span className={styles.compositeCtx}>memo</span>
+                    <span className={styles.compositeOp}>+</span>
+                    <span className={styles.compositeCtx}>Frame</span>
+                  </div>
+                  <div className={styles.compositeNote}>
+                    親フォルダ「作画」は工程テーブル未登録 → サフィックスなし（本体）
+                  </div>
                 </div>
-                <div className={styles.outputCard}>
-                  <div className={styles.outputThumb}>★</div>
-                  <div className={styles.outputFilename}>_撮影指示.jpg</div>
+                <div className={styles.compositeItem}>
+                  <div className={styles.compositeFilename}>_撮影指示.jpg</div>
+                  <div className={styles.compositeFormula}>
+                    <span className={styles.compositeTarget}>_撮影指示</span>
+                    <span className={styles.compositeOp}>+</span>
+                    <span className={styles.compositeCtx}>memo</span>
+                    <span className={styles.compositeOp}>+</span>
+                    <span className={styles.compositeCtx}>Frame</span>
+                  </div>
+                  <div className={styles.compositeNote}>
+                    _プレフィックスにより自動マーク → セルとは独立して出力
+                  </div>
                 </div>
-                <div className={styles.outputCard}>
-                  <div className={styles.outputThumb}>★</div>
-                  <div className={styles.outputFilename}>_原図.jpg</div>
+                <div className={styles.compositeItem}>
+                  <div className={styles.compositeFilename}>_原図.jpg</div>
+                  <div className={styles.compositeFormula}>
+                    <span className={styles.compositeTarget}>_原図</span>
+                    <span className={styles.compositeOp}>+</span>
+                    <span className={styles.compositeCtx}>memo</span>
+                    <span className={styles.compositeOp}>+</span>
+                    <span className={styles.compositeCtx}>Frame</span>
+                  </div>
+                  <div className={styles.compositeNote}>
+                    _プレフィックスにより自動マーク → セルとは独立して出力
+                  </div>
                 </div>
               </div>
 
-              <p className={styles.p}>
-                <span className={styles.em}>_撮影指示</span> と <span className={styles.em}>_原図</span> フォルダは
-                先頭の <code className={styles.code}>_</code> により自動マークされ、
-                セルとは独立した画像として出力されます。
-                <span className={styles.em}>演出/A</span> のセルは工程テーブルの設定（演出 → <code className={styles.code}>_e</code>）により
-                サフィックス付きの <code className={styles.code}>A_0001_e.jpg</code> として出力されます。
-                <span className={styles.em}>作画/B/1/_s</span> のセル内蔵型工程フォルダも同様に
-                <code className={styles.code}>B_0001_s.jpg</code> として分離出力されます。
-                一方 <span className={styles.code}>_pool</span> フォルダはアーカイブ除外パターンに一致するため、出力されません。
-              </p>
+              <div className={styles.calloutTip}>
+                <span className={styles.strong}>💡 コンテキストレイヤーとは：</span>
+                ルート直下でアニメーションフォルダでも★マークでもない通常レイヤーは
+                <span className={styles.em}>コンテキストレイヤー</span>として、すべての出力画像に合成されます。
+                フレーム枠線やメモなど、全セルに共通して含めたいレイヤーをルート直下に置くだけで自動的に反映されます。
+                一方 <code className={styles.code}>_pool</code> はアーカイブ除外パターンに一致するため出力されません。
+              </div>
             </section>
 
             {/* ===== 5. _フォルダ自動マーク ===== */}
