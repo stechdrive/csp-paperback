@@ -458,11 +458,11 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 <div className={styles.compositeItem}>
                   <div className={styles.compositeFilename}>A/A_0001_e.jpg</div>
                   <div className={styles.compositeFormula}>
-                    <span className={styles.compositeTarget}>演出/A/1</span>
-                    <span className={styles.compositeOp}>+</span>
                     <span className={styles.compositeCtx}>memo</span>
                     <span className={styles.compositeOp}>+</span>
                     <span className={styles.compositeCtx}>Frame</span>
+                    <span className={styles.compositeOp}>+</span>
+                    <span className={styles.compositeTarget}>演出/A/1</span>
                   </div>
                   <div className={styles.compositeNote}>
                     親フォルダ「演出」が工程テーブルの <code className={styles.code}>_e</code> に一致 → サフィックス付き
@@ -471,11 +471,11 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 <div className={styles.compositeItem}>
                   <div className={styles.compositeFilename}>B/B_0001.jpg</div>
                   <div className={styles.compositeFormula}>
-                    <span className={styles.compositeTarget}>作画/B/1（_s 除外）</span>
-                    <span className={styles.compositeOp}>+</span>
                     <span className={styles.compositeCtx}>memo</span>
                     <span className={styles.compositeOp}>+</span>
                     <span className={styles.compositeCtx}>Frame</span>
+                    <span className={styles.compositeOp}>+</span>
+                    <span className={styles.compositeTarget}>作画/B/1（_s 除外）</span>
                   </div>
                   <div className={styles.compositeNote}>
                     線画1 + 影を合成。工程サブフォルダ _s の内容は除外される
@@ -484,11 +484,11 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 <div className={styles.compositeItem}>
                   <div className={styles.compositeFilename}>B/B_0001_s.jpg</div>
                   <div className={styles.compositeFormula}>
-                    <span className={styles.compositeTarget}>作画/B/1/_s</span>
-                    <span className={styles.compositeOp}>+</span>
                     <span className={styles.compositeCtx}>memo</span>
                     <span className={styles.compositeOp}>+</span>
                     <span className={styles.compositeCtx}>Frame</span>
+                    <span className={styles.compositeOp}>+</span>
+                    <span className={styles.compositeTarget}>作画/B/1/_s</span>
                   </div>
                   <div className={styles.compositeNote}>
                     セル内のフォルダ「_s」が工程テーブルに一致 → サフィックス付きで分離出力
@@ -497,11 +497,11 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 <div className={styles.compositeItem}>
                   <div className={styles.compositeFilename}>A/A_0001.jpg</div>
                   <div className={styles.compositeFormula}>
-                    <span className={styles.compositeTarget}>作画/A/1</span>
-                    <span className={styles.compositeOp}>+</span>
                     <span className={styles.compositeCtx}>memo</span>
                     <span className={styles.compositeOp}>+</span>
                     <span className={styles.compositeCtx}>Frame</span>
+                    <span className={styles.compositeOp}>+</span>
+                    <span className={styles.compositeTarget}>作画/A/1</span>
                   </div>
                   <div className={styles.compositeNote}>
                     親フォルダ「作画」は工程テーブル未登録 → サフィックスなし（本体）
@@ -510,11 +510,11 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 <div className={styles.compositeItem}>
                   <div className={styles.compositeFilename}>_撮影指示.jpg</div>
                   <div className={styles.compositeFormula}>
-                    <span className={styles.compositeTarget}>_撮影指示</span>
-                    <span className={styles.compositeOp}>+</span>
                     <span className={styles.compositeCtx}>memo</span>
                     <span className={styles.compositeOp}>+</span>
                     <span className={styles.compositeCtx}>Frame</span>
+                    <span className={styles.compositeOp}>+</span>
+                    <span className={styles.compositeTarget}>_撮影指示</span>
                   </div>
                   <div className={styles.compositeNote}>
                     _プレフィックスにより自動マーク → セルとは独立して出力
@@ -523,11 +523,11 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 <div className={styles.compositeItem}>
                   <div className={styles.compositeFilename}>_原図.jpg</div>
                   <div className={styles.compositeFormula}>
-                    <span className={styles.compositeTarget}>_原図</span>
-                    <span className={styles.compositeOp}>+</span>
                     <span className={styles.compositeCtx}>memo</span>
                     <span className={styles.compositeOp}>+</span>
                     <span className={styles.compositeCtx}>Frame</span>
+                    <span className={styles.compositeOp}>+</span>
+                    <span className={styles.compositeTarget}>_原図</span>
                   </div>
                   <div className={styles.compositeNote}>
                     _プレフィックスにより自動マーク → セルとは独立して出力
