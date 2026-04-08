@@ -521,6 +521,32 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   </div>
                 </div>
                 <div className={styles.compositeItem}>
+                  <div className={styles.compositeFilename}>_PAN.jpg</div>
+                  <div className={styles.compositeFormula}>
+                    <span className={styles.compositeCtx}>memo</span>
+                    <span className={styles.compositeOp}>+</span>
+                    <span className={styles.compositeCtx}>Frame</span>
+                    <span className={styles.compositeOp}>+</span>
+                    <span className={styles.compositeTarget}>_撮影指示/_PAN</span>
+                  </div>
+                  <div className={styles.compositeNote}>
+                    _撮影指示の中のネストした _フォルダも個別に自動マーク出力
+                  </div>
+                </div>
+                <div className={styles.compositeItem}>
+                  <div className={styles.compositeFilename}>_SL.jpg</div>
+                  <div className={styles.compositeFormula}>
+                    <span className={styles.compositeCtx}>memo</span>
+                    <span className={styles.compositeOp}>+</span>
+                    <span className={styles.compositeCtx}>Frame</span>
+                    <span className={styles.compositeOp}>+</span>
+                    <span className={styles.compositeTarget}>_撮影指示/_SL</span>
+                  </div>
+                  <div className={styles.compositeNote}>
+                    同上
+                  </div>
+                </div>
+                <div className={styles.compositeItem}>
                   <div className={styles.compositeFilename}>_原図.jpg</div>
                   <div className={styles.compositeFormula}>
                     <span className={styles.compositeCtx}>memo</span>
@@ -531,6 +557,32 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   </div>
                   <div className={styles.compositeNote}>
                     _プレフィックスにより自動マーク → セルとは独立して出力
+                  </div>
+                </div>
+                <div className={styles.compositeItem}>
+                  <div className={styles.compositeFilename}>_BOOK1.jpg</div>
+                  <div className={styles.compositeFormula}>
+                    <span className={styles.compositeCtx}>memo</span>
+                    <span className={styles.compositeOp}>+</span>
+                    <span className={styles.compositeCtx}>Frame</span>
+                    <span className={styles.compositeOp}>+</span>
+                    <span className={styles.compositeTarget}>_原図/_BOOK1</span>
+                  </div>
+                  <div className={styles.compositeNote}>
+                    _原図の中のネストした _フォルダも個別に自動マーク出力
+                  </div>
+                </div>
+                <div className={styles.compositeItem}>
+                  <div className={styles.compositeFilename}>_BG.jpg</div>
+                  <div className={styles.compositeFormula}>
+                    <span className={styles.compositeCtx}>memo</span>
+                    <span className={styles.compositeOp}>+</span>
+                    <span className={styles.compositeCtx}>Frame</span>
+                    <span className={styles.compositeOp}>+</span>
+                    <span className={styles.compositeTarget}>_原図/_BG</span>
+                  </div>
+                  <div className={styles.compositeNote}>
+                    同上
                   </div>
                 </div>
               </div>
