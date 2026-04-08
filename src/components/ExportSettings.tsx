@@ -1,10 +1,23 @@
+import { useMemo } from 'react'
 import { useAppStore } from '../store'
 import { useLocale } from '../i18n'
+import { Tooltip } from './Tooltip'
+import type { CspLayer } from '../types'
 import styles from './ExportSettings.module.css'
+
+function collectAutoMarkedNames(layers: CspLayer[]): string[] {
+  const names: string[] = []
+  for (const l of layers) {
+    if (l.autoMarked && !l.singleMark) names.push(l.originalName)
+    if (l.isFolder && !l.isAnimationFolder) names.push(...collectAutoMarkedNames(l.children))
+  }
+  return names
+}
 
 export function ExportSettings() {
   const outputConfig = useAppStore(s => s.outputConfig)
   const projectSettings = useAppStore(s => s.projectSettings)
+  const layerTree = useAppStore(s => s.layerTree)
   const setFormat = useAppStore(s => s.setFormat)
   const setBackground = useAppStore(s => s.setBackground)
   const setStructure = useAppStore(s => s.setStructure)
@@ -15,6 +28,8 @@ export function ExportSettings() {
   const { t } = useLocale()
 
   const processSuffixes = projectSettings.processTable.map(e => e.suffix)
+
+  const autoMarkedNames = useMemo(() => collectAutoMarkedNames(layerTree), [layerTree])
   const excludedSet = new Set(outputConfig.excludedProcessSuffixes)
   const allIncluded = processSuffixes.every(s => !excludedSet.has(s)) && !outputConfig.excludeAutoMarked
   const allExcluded = processSuffixes.every(s => excludedSet.has(s)) && outputConfig.excludeAutoMarked
@@ -85,18 +100,26 @@ export function ExportSettings() {
       <div className={styles.row}>
         <span className={styles.label}>{t.export.outputTarget}</span>
         <div className={styles.chipGroup}>
-          {processSuffixes.map(suffix => (
+          {projectSettings.processTable.map(entry => {
+            const tip = entry.folderNames.join(', ')
+            return (
+              <Tooltip key={entry.suffix} content={tip} placement="bottom">
+                <button
+                  className={`${styles.chip} ${!excludedSet.has(entry.suffix) ? styles.chipIncluded : ''}`}
+                  onClick={() => toggleProcessSuffixExclusion(entry.suffix)}
+                >{entry.suffix}</button>
+              </Tooltip>
+            )
+          })}
+          <Tooltip
+            content={autoMarkedNames.length > 0 ? autoMarkedNames.join(', ') : t.export.autoMarkNone}
+            placement="bottom"
+          >
             <button
-              key={suffix}
-              className={`${styles.chip} ${!excludedSet.has(suffix) ? styles.chipIncluded : ''}`}
-              onClick={() => toggleProcessSuffixExclusion(suffix)}
-              title={suffix}
-            >{suffix}</button>
-          ))}
-          <button
-            className={`${styles.chip} ${!outputConfig.excludeAutoMarked ? styles.chipIncluded : ''}`}
-            onClick={() => setExcludeAutoMarked(!outputConfig.excludeAutoMarked)}
-          >{t.export.autoMark}</button>
+              className={`${styles.chip} ${!outputConfig.excludeAutoMarked ? styles.chipIncluded : ''}`}
+              onClick={() => setExcludeAutoMarked(!outputConfig.excludeAutoMarked)}
+            >{t.export.autoMark}</button>
+          </Tooltip>
         </div>
         <button
           className={`${styles.batchBtn} ${allIncluded ? styles.batchActive : ''}`}

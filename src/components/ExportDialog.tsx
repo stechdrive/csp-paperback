@@ -1,7 +1,19 @@
+import { useMemo } from 'react'
 import { useAppStore } from '../store'
 import { useExport } from '../hooks/useExport'
 import { useLocale } from '../i18n'
+import { Tooltip } from './Tooltip'
+import type { CspLayer } from '../types'
 import styles from './ExportDialog.module.css'
+
+function collectAutoMarkedNames(layers: CspLayer[]): string[] {
+  const names: string[] = []
+  for (const l of layers) {
+    if (l.autoMarked && !l.singleMark) names.push(l.originalName)
+    if (l.isFolder && !l.isAnimationFolder) names.push(...collectAutoMarkedNames(l.children))
+  }
+  return names
+}
 
 interface ExportDialogProps {
   onClose: () => void
@@ -10,6 +22,7 @@ interface ExportDialogProps {
 export function ExportDialog({ onClose }: ExportDialogProps) {
   const outputConfig = useAppStore(s => s.outputConfig)
   const projectSettings = useAppStore(s => s.projectSettings)
+  const layerTree = useAppStore(s => s.layerTree)
   const setFormat = useAppStore(s => s.setFormat)
   const setBackground = useAppStore(s => s.setBackground)
   const setStructure = useAppStore(s => s.setStructure)
@@ -18,6 +31,8 @@ export function ExportDialog({ onClose }: ExportDialogProps) {
   const setExcludeAutoMarked = useAppStore(s => s.setExcludeAutoMarked)
   // const setJpgQuality = useAppStore(s => s.setJpgQuality)  // JPG品質UI復活時に有効化
   const { t } = useLocale()
+
+  const autoMarkedNames = useMemo(() => collectAutoMarkedNames(layerTree), [layerTree])
 
   const { isExporting, progress, error, startExport } = useExport()
 
@@ -90,20 +105,26 @@ export function ExportDialog({ onClose }: ExportDialogProps) {
           <div className={styles.label}>{t.export.outputTarget}</div>
           <div className={styles.chipRow}>
             <div className={styles.chipGroup}>
-              {projectSettings.processTable.map(e => {
-                const excluded = outputConfig.excludedProcessSuffixes.includes(e.suffix)
+              {projectSettings.processTable.map(entry => {
+                const excluded = outputConfig.excludedProcessSuffixes.includes(entry.suffix)
                 return (
-                  <button
-                    key={e.suffix}
-                    className={`${styles.chip} ${!excluded ? styles.chipIncluded : ''}`}
-                    onClick={() => toggleProcessSuffixExclusion(e.suffix)}
-                  >{e.suffix}</button>
+                  <Tooltip key={entry.suffix} content={entry.folderNames.join(', ')} placement="bottom">
+                    <button
+                      className={`${styles.chip} ${!excluded ? styles.chipIncluded : ''}`}
+                      onClick={() => toggleProcessSuffixExclusion(entry.suffix)}
+                    >{entry.suffix}</button>
+                  </Tooltip>
                 )
               })}
-              <button
-                className={`${styles.chip} ${!outputConfig.excludeAutoMarked ? styles.chipIncluded : ''}`}
-                onClick={() => setExcludeAutoMarked(!outputConfig.excludeAutoMarked)}
-              >{t.export.autoMark}</button>
+              <Tooltip
+                content={autoMarkedNames.length > 0 ? autoMarkedNames.join(', ') : t.export.autoMarkNone}
+                placement="bottom"
+              >
+                <button
+                  className={`${styles.chip} ${!outputConfig.excludeAutoMarked ? styles.chipIncluded : ''}`}
+                  onClick={() => setExcludeAutoMarked(!outputConfig.excludeAutoMarked)}
+                >{t.export.autoMark}</button>
+              </Tooltip>
             </div>
             <button
               className={styles.batchBtn}

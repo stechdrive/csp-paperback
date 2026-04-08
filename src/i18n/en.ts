@@ -22,6 +22,7 @@ export const en: Translations = {
     exporting: 'Exporting…',
     outputTarget: 'Output Target',
     autoMark: '_Auto',
+    autoMarkNone: 'None',
     allOn: 'All ON',
     allOff: 'All OFF',
   },

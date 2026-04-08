@@ -20,6 +20,7 @@ export const ja = {
     exporting: '出力中…',
     outputTarget: '出力対象',
     autoMark: '_自動',
+    autoMarkNone: '対象なし',
     allOn: '全ON',
     allOff: '全OFF',
   },
