@@ -2,6 +2,7 @@ import { makeZip } from 'client-zip'
 import type { OutputEntry, OutputConfig } from '../types'
 import { canvasToBlob, replaceExtension } from './image-export'
 import { resolveEntryNames } from './naming'
+import { sanitizeZipPath } from './path-sanitize'
 
 /**
  * ZIP 出力パイプライン
@@ -66,11 +67,16 @@ export function buildZipStream(
   dpiY = 0,
   onProgress?: (done: number, total: number) => void,
 ): ReadableStream<Uint8Array> {
-  // ファイル名衝突解決(フォーマット変更後の拡張子で統一してから)
+  // パスの正規化フロー:
+  // 1. 拡張子を config.format に揃える(replaceExtension)
+  // 2. Zip Slip / OS 禁則文字対策のサニタイズ(sanitizeZipPath)
+  //    - `..` セグメントや `/`,`\` の混入、Windows 予約名等を無害化
+  //    - レイヤー名や仮想セット名に危険な値が入っていても ZIP は安全に作られる
+  // 3. サニタイズ後の名前衝突を resolveEntryNames で `_2`, `_3` 付加で解決
   const normalizedEntries = entries.map(e => ({
     ...e,
-    path: replaceExtension(e.path, config.format),
-    flatName: replaceExtension(e.flatName, config.format),
+    path: sanitizeZipPath(replaceExtension(e.path, config.format)),
+    flatName: sanitizeZipPath(replaceExtension(e.flatName, config.format)),
   }))
   const resolved = resolveEntryNames(normalizedEntries)
 
