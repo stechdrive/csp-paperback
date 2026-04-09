@@ -263,6 +263,7 @@ describe('extractAllEntries', () => {
   })
 })
 
+// @ts-ignore TS6133
 function detectAnimInTree(layers: ReturnType<typeof buildLayerTree>, trackName: string) {
   const xdts: XdtsData = { tracks: [{ name: trackName, trackNo: 0, cellNames: [], frames: [] }], version: 5, header: { cut: '1', scene: '1' }, timeTableName: 'タイムライン1', duration: 72, fps: 24 }
   detectAnimationFoldersByXdts(layers, xdts)

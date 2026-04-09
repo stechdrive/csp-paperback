@@ -304,6 +304,7 @@ describe('resolveCellsAtFrame', () => {
   function makeTrack(name: string, entries: [number, string | null][]) {
     return {
       name,
+      trackNo: 0,
       cellNames: entries.flatMap(([, c]) => c ? [c] : []),
       frames: entries.map(([frameIndex, cellName]) => ({ frameIndex, cellName })),
     }
@@ -351,6 +352,7 @@ describe('findFirstFrameOfCell', () => {
   it('セルが最初に登場するフレームインデックスを返す', () => {
     const track = {
       name: 'A',
+      trackNo: 0,
       cellNames: ['A0001', 'A0002'],
       frames: [
         { frameIndex: 0, cellName: 'A0001' },
@@ -365,6 +367,7 @@ describe('findFirstFrameOfCell', () => {
   it('存在しないセル名は-1を返す', () => {
     const track = {
       name: 'A',
+      trackNo: 0,
       cellNames: ['A0001'],
       frames: [{ frameIndex: 0, cellName: 'A0001' }],
     }

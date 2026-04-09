@@ -52,6 +52,7 @@ function OverflowMenu({ children }: { children: React.ReactNode }) {
 
 // 現状 UI 非表示（#1 対応）。将来の再露出のため定義は残している。
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
+// @ts-ignore TS6133
 function XdtsDownloadButton({ hasPsd }: { hasPsd: boolean }) {
   const downloadXdts = useAppStore(s => s.downloadXdts)
   const singleMarks = useAppStore(s => s.singleMarks)
