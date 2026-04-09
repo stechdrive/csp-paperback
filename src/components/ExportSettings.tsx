@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { useAppStore } from '../store'
 import { useLocale } from '../i18n'
 import { Tooltip } from './Tooltip'
+import { UnmatchedTracksWarning } from './UnmatchedTracksWarning'
 import type { CspLayer } from '../types'
 import styles from './ExportSettings.module.css'
 
@@ -18,6 +19,7 @@ export function ExportSettings() {
   const outputConfig = useAppStore(s => s.outputConfig)
   const projectSettings = useAppStore(s => s.projectSettings)
   const layerTree = useAppStore(s => s.layerTree)
+  const unmatchedTracks = useAppStore(s => s.unmatchedTracks)
   const setFormat = useAppStore(s => s.setFormat)
   const setBackground = useAppStore(s => s.setBackground)
   const setStructure = useAppStore(s => s.setStructure)
@@ -46,6 +48,8 @@ export function ExportSettings() {
 
   return (
     <div className={styles.settings}>
+      {/* XDTS トラック不一致警告 (件数 > 0 のときだけ表示) */}
+      <UnmatchedTracksWarning unmatchedTracks={unmatchedTracks} />
       <div className={styles.row}>
         <span className={styles.label}>{t.export.format}</span>
         <div className={styles.toggleGroup}>

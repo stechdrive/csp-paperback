@@ -50,6 +50,8 @@ function OverflowMenu({ children }: { children: React.ReactNode }) {
   )
 }
 
+// 現状 UI 非表示（#1 対応）。将来の再露出のため定義は残している。
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function XdtsDownloadButton({ hasPsd }: { hasPsd: boolean }) {
   const downloadXdts = useAppStore(s => s.downloadXdts)
   const singleMarks = useAppStore(s => s.singleMarks)
@@ -218,7 +220,8 @@ export function Toolbar({ onPsdFile, onXdtsFile, onCspbFile, onSaveCspb, isLoadi
 
         {statusArea}
 
-        {!isMobile && <XdtsDownloadButton hasPsd={hasPsd} />}
+        {/* XDTS 書き出しボタンは現状ユーザが使う機会がないため UI 非表示化（#1 対応）。
+            downloadXdts() 関数本体と XdtsDownloadButton コンポーネントは将来の再露出のため残している。 */}
         {!isMobile && (
           <Tooltip content="マーク・仮想セット・工程設定・XDTSを .cspb ファイルに保存" placement="bottom">
             {saveCspbBtn}

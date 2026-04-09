@@ -8,10 +8,13 @@ import {
   collectContextSourceLayers,
   collectLocalSiblingContext,
   collectMarkedLayerContext,
+  buildParentSuffixMap,
 } from '../engine/cell-extractor'
+import { assignTracksToFolders } from '../engine/anim-folder-assignment'
+import { computeDisplayNames } from '../engine/anim-folder-display-name'
 import { flattenTree, compositeRoot } from '../engine/flatten'
 import { collectMembersInTreeOrder, buildMemberFlatsWithOverride } from '../utils/virtual-set-utils'
-import type { CspLayer, OutputEntry, ProjectSettings, OutputConfig } from '../types'
+import type { CspLayer, OutputEntry, ProjectSettings, OutputConfig, XdtsData } from '../types'
 
 export interface OutputPreviewEntry {
   canvas: HTMLCanvasElement
@@ -44,6 +47,7 @@ export function useOutputPreview(): OutputPreviewEntry[] {
   const outputConfig = useAppStore(s => s.outputConfig)
   const docWidth = useAppStore(s => s.docWidth)
   const docHeight = useAppStore(s => s.docHeight)
+  const xdtsData = useAppStore(s => s.xdtsData)
 
   return useMemo(() => {
     if (docWidth === 0 || docHeight === 0) return []
@@ -82,6 +86,7 @@ export function useOutputPreview(): OutputPreviewEntry[] {
         selectedCells.get(focusedAnimFolderId),
         null,
         layerTree, projectSettings, outputConfig, docWidth, docHeight,
+        xdtsData ?? undefined,
       )
     }
 
@@ -97,6 +102,7 @@ export function useOutputPreview(): OutputPreviewEntry[] {
         animCellCtx.cellChildIndex,
         selectedLayerId,
         layerTree, projectSettings, outputConfig, docWidth, docHeight,
+        xdtsData ?? undefined,
       )
     }
 
@@ -117,7 +123,7 @@ export function useOutputPreview(): OutputPreviewEntry[] {
   }, [
     focusedAnimFolderId, selectedVirtualSetId, selectedLayerId,
     virtualSets, selectedCells, layerTree, projectSettings, outputConfig,
-    docWidth, docHeight,
+    docWidth, docHeight, xdtsData,
   ])
 }
 
@@ -137,6 +143,7 @@ function previewAnimFolder(
   outputConfig: OutputConfig,
   docWidth: number,
   docHeight: number,
+  xdtsData?: XdtsData,
 ): OutputPreviewEntry[] {
   const animFolder = findLayerById(layerTree, animFolderId)
   if (!animFolder || !animFolder.isAnimationFolder) return []
@@ -156,9 +163,20 @@ function previewAnimFolder(
 
   const parentSuffix = resolveParentSuffix(animFolderId, layerTree, projectSettings.processTable)
 
+  // displayName を計算(extractAllEntries と同じロジック)
+  // Identity = (name, parentSuffix)。同一 identity に複数候補のあるケースのみ (n) 連番化し、
+  // process variants(同名だが parentSuffix 異なる)は両方とも base 名のまま。
+  // これによりプレビューと実出力のファイル名が構造的に一致する。
+  const parentSuffixMap = buildParentSuffixMap(layerTree, projectSettings.processTable)
+  const assignment = xdtsData
+    ? assignTracksToFolders(layerTree, xdtsData.tracks).assignment
+    : new Map<string, number>()  // XDTS 無し: 手動マークのみを想定
+  const displayNames = computeDisplayNames(layerTree, assignment, parentSuffixMap)
+  const displayName = displayNames.get(animFolderId) ?? animFolder.originalName.trim()
+
   const allEntries: OutputEntry[] = extractCells(
     animFolder, projectSettings, docWidth, docHeight, lowerContextFlats,
-    parentSuffix, undefined, outputConfig.background, localUpperFlats,
+    parentSuffix, displayName, outputConfig.background, localUpperFlats,
   )
 
   // 選択セルのエントリに絞り込む
@@ -166,7 +184,7 @@ function previewAnimFolder(
   const cellLabel = namingMode === 'sequence'
     ? String(visibleChildren.length - clampedIndex).padStart(4, '0')
     : selectedCell.originalName
-  const prefix = `${animFolder.originalName}_${cellLabel}${parentSuffix}`
+  const prefix = `${displayName}_${cellLabel}${parentSuffix}`
 
   let entries = allEntries.filter(e =>
     e.flatName === `${prefix}.jpg` || e.flatName.startsWith(`${prefix}_`),

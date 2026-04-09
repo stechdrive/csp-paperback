@@ -1,5 +1,5 @@
 import type { StateCreator } from 'zustand'
-import type { CspLayer, XdtsData } from '../types'
+import type { CspLayer, XdtsData, XdtsTrack } from '../types'
 import { parseXdts, serializeXdts } from '../utils/xdts-parser'
 import { detectAnimationFoldersByXdts, clearXdtsAnimFolders } from '../engine/tree-builder'
 import type { AppStore } from './index'
@@ -7,14 +7,25 @@ import type { AppStore } from './index'
 export interface XdtsSlice {
   xdtsData: XdtsData | null
   xdtsFileName: string | null
+  /**
+   * XDTS にあるが PSD 側に対応する anim folder 候補が見つからなかったトラック。
+   * 不一致警告 UI (ExportDialog) で表示する。
+   */
+  unmatchedTracks: XdtsTrack[]
   loadXdts: (text: string, fileName: string) => void
   clearXdts: () => void
   downloadXdts: () => void
+  setUnmatchedTracks: (tracks: XdtsTrack[]) => void
 }
 
 export const createXdtsSlice: StateCreator<AppStore, [], [], XdtsSlice> = (set, get) => ({
   xdtsData: null,
   xdtsFileName: null,
+  unmatchedTracks: [],
+
+  setUnmatchedTracks: (tracks) => {
+    set({ unmatchedTracks: tracks })
+  },
 
   loadXdts: (text, fileName) => {
     const xdts = parseXdts(text)
@@ -26,9 +37,10 @@ export const createXdtsSlice: StateCreator<AppStore, [], [], XdtsSlice> = (set, 
 
     // 既存ツリーのフラグをインプレースで更新（ツリー再構築しない＝レイヤーIDを維持）
     clearXdtsAnimFolders(layerTree)
-    detectAnimationFoldersByXdts(layerTree, xdts)
+    const assignResult = detectAnimationFoldersByXdts(layerTree, xdts)
     // シャローコピーで再レンダリングをトリガー
     set({ layerTree: [...layerTree] })
+    get().setUnmatchedTracks(assignResult.unmatchedTracks)
 
     // フレーム0のセルを自動選択して初期プレビューを表示
     const firstAnimFolder = findFirstAnimFolder(layerTree)
@@ -45,6 +57,7 @@ export const createXdtsSlice: StateCreator<AppStore, [], [], XdtsSlice> = (set, 
       clearXdtsAnimFolders(layerTree)
       set({ layerTree: [...layerTree] })
     }
+    get().setUnmatchedTracks([])
   },
 
   downloadXdts: () => {

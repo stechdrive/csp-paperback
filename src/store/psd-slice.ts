@@ -2,7 +2,7 @@ import type { StateCreator } from 'zustand'
 import type { Psd } from 'ag-psd'
 import type { BlendMode, CspLayer } from '../types'
 import { readPsdFile } from '../utils/psd-io'
-import { buildLayerTree } from '../engine/tree-builder'
+import { buildLayerTree, detectAnimationFoldersByXdts } from '../engine/tree-builder'
 import type { AppStore } from './index'
 
 export interface PsdSlice {
@@ -42,6 +42,14 @@ export const createPsdSlice: StateCreator<AppStore, [], [], PsdSlice> = (set, ge
     const xdts = get().xdtsData ?? undefined
     const archivePatterns = get().projectSettings.archivePatterns
     const tree = buildLayerTree(psd, xdts, archivePatterns)
+
+    // XDTS があれば anim folder 検出を実行し、警告 UI 用に unmatchedTracks を保存
+    if (xdts) {
+      const assignResult = detectAnimationFoldersByXdts(tree, xdts)
+      get().setUnmatchedTracks(assignResult.unmatchedTracks)
+    } else {
+      get().setUnmatchedTracks([])
+    }
 
     // DPI情報を取得（PPI/PPCMどちらでもPPIに統一）
     const res = psd.imageResources?.resolutionInfo
