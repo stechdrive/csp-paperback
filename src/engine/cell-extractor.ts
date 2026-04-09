@@ -1,8 +1,10 @@
-import type { CspLayer, FlatLayer, OutputEntry, ProjectSettings } from '../types'
+import type { CspLayer, FlatLayer, OutputEntry, ProjectSettings, XdtsData } from '../types'
 import type { VirtualSet } from '../types/marks'
 import { flattenTree } from './flatten'
 import { applyLayerMask, compositeGroup, compositeStack, createCanvas } from './compositor'
 import { collectMembersInTreeOrder, buildMemberFlatsWithOverride } from '../utils/virtual-set-utils'
+import { assignTracksToFolders } from './anim-folder-assignment'
+import { computeDisplayNames } from './anim-folder-display-name'
 
 /**
  * アニメーションフォルダからセルを抽出してOutputEntry[]を返す
@@ -10,7 +12,9 @@ import { collectMembersInTreeOrder, buildMemberFlatsWithOverride } from '../util
  * lowerContextLayers: セルの下に合成するコンテキスト（レイアウト用紙・撮影指示等）
  * upperContextLayers: セルの上に合成するコンテキスト（アニメフォルダより上にある兄弟レイヤー等）
  * parentSuffix: ルート直下の親フォルダがprocessTableにマッチした場合のサフィックス
- * hierarchyFolder: 階層出力時のフォルダ名（衝突解決済み）
+ * hierarchyFolder: 出力時のフォルダ名とファイル名プレフィックスの両方に使う displayName。
+ *   同名 anim folder は呼び出し側で (n) ナンバリング済み。末尾空白も trim 済み。
+ *   省略時は animFolder.originalName.trim() にフォールバック。
  *
  * セルの種別は構造から自動判定する:
  * - 直接子が単体レイヤー → そのまま1セルとして出力（XDTSキーフレーム画像）
@@ -29,7 +33,10 @@ export function extractCells(
 ): OutputEntry[] {
   if (!animFolder.isAnimationFolder) return []
 
-  const folderName = hierarchyFolder ?? animFolder.originalName
+  // displayName: 出力フォルダ名とファイル名プレフィックスの両方で使う単一文字列
+  // (同名 anim folder の (n) 番号付けは呼び出し側で完了済み)
+  const displayName = hierarchyFolder ?? animFolder.originalName.trim()
+  const folderName = displayName
   const visibleChildren = animFolder.children.filter(c => !c.hidden && !c.uiHidden)
   const folderNameToSuffix = buildFolderNameToSuffixMap(projectSettings.processTable)
   const namingMode = projectSettings.cellNamingMode ?? 'sequence'
@@ -37,7 +44,8 @@ export function extractCells(
 
   for (let cellIdx = 0; cellIdx < visibleChildren.length; cellIdx++) {
     const cell = visibleChildren[cellIdx]
-    const trackName = animFolder.originalName
+    // ファイル名プレフィックスはフォルダ名と同じ displayName を使う(Q3: 統一)
+    const trackName = displayName
     const cellLabel = namingMode === 'sequence'
       ? String(visibleChildren.length - cellIdx).padStart(4, '0')
       : cell.originalName
@@ -162,34 +170,35 @@ function buildAnimParentSuffixMap(
 }
 
 /**
- * アニメフォルダIDから階層出力フォルダ名へのマップを構築する
- * 衝突する場合は -2, -3 ... を末尾に付加する
+ * XDTS が無い(手動マークのみ)場合の anim folder 対応を、
+ * ツリーのボトム優先順に疑似 trackNo (0, 1, 2, ...) を振る形で構築する。
+ *
+ * 結果として computeDisplayNames に渡せる形になる。
+ * 優先度の区別(autoMarked 祖先)は無視し、単純なボトム優先だけで並べる。
  */
-function buildAnimHierarchyFolderMap(
-  tree: CspLayer[],
-  animParentSuffixMap: Map<string, string>,
-): Map<string, string> {
-  const usedBaseNameCounts = new Map<string, number>()
-  const map = new Map<string, string>()
+function buildPseudoAssignmentFromTree(tree: CspLayer[]): Map<string, number> {
+  const result = new Map<string, number>()
+  let counter = 0
 
-  function assign(layers: CspLayer[]): void {
-    for (const layer of layers) {
+  function walk(layers: CspLayer[]): void {
+    // 兄弟はボトム優先(CspLayer の children はトップファーストなので逆順に)
+    for (let i = layers.length - 1; i >= 0; i--) {
+      const layer = layers[i]
       if (layer.hidden || layer.uiHidden) continue
-      if (layer.isAnimationFolder) {
-        const parentSuffix = animParentSuffixMap.get(layer.id) ?? ''
-        const baseName = `${layer.originalName}${parentSuffix}`
-        const count = usedBaseNameCounts.get(baseName) ?? 0
-        const folderName = count === 0 ? baseName : `${baseName}-${count + 1}`
-        usedBaseNameCounts.set(baseName, count + 1)
-        map.set(layer.id, folderName)
-      } else if (layer.isFolder) {
-        assign(layer.children)
+
+      if (layer.isFolder) {
+        // post-order: 子を先に訪問
+        walk(layer.children)
+        // 自身が anim folder なら疑似 trackNo を割当
+        if (layer.isAnimationFolder) {
+          result.set(layer.id, counter++)
+        }
       }
     }
   }
 
-  assign(tree)
-  return map
+  walk(tree)
+  return result
 }
 
 /**
@@ -535,12 +544,25 @@ export function extractAllEntries(
   docHeight: number,
   background: 'white' | 'transparent' = 'white',
   excludeAutoMarked = false,
+  xdts?: XdtsData,
 ): OutputEntry[] {
   const entries: OutputEntry[] = []
 
   const folderNameToSuffix = buildFolderNameToSuffixMap(projectSettings.processTable)
   const animParentSuffixMap = buildAnimParentSuffixMap(tree, folderNameToSuffix)
-  const animHierarchyFolderMap = buildAnimHierarchyFolderMap(tree, animParentSuffixMap)
+
+  // displayName マップを構築する。
+  // 各 anim folder に対して出力フォルダ名 = ファイル名プレフィックスとなる単一の文字列を返す。
+  //
+  // Identity = (trim+lowercase name, parentSuffix)。
+  // 同名でも parentSuffix が異なれば別 identity(process variants)として扱い、
+  // 同一 identity に複数候補がある場合のみ (n) 連番で disambiguate する。
+  //
+  // XDTS がある場合: trackNo 順(ボトム優先)の割当。XDTS が無ければ疑似 trackNo。
+  const assignmentMap = xdts
+    ? assignTracksToFolders(tree, xdts.tracks).assignment
+    : buildPseudoAssignmentFromTree(tree)
+  const displayNameMap = computeDisplayNames(tree, assignmentMap, animParentSuffixMap)
 
   /**
    * inheritedLower: 祖先フォルダから継承されたlowerコンテキスト（外→内の順）
@@ -563,10 +585,12 @@ export function extractAllEntries(
         const thisUpper = [...localUpper, ...inheritedUpper]
 
         const parentSuffix = animParentSuffixMap.get(layer.id) ?? ''
-        const hierarchyFolder = animHierarchyFolderMap.get(layer.id) ?? layer.originalName
+        // displayName はフォルダ名とファイル名プレフィックスの両方に使う単一文字列。
+        // 同名 anim folder は (n) で自動ナンバリングされている。
+        const displayName = displayNameMap.get(layer.id) ?? layer.originalName.trim()
         const cellEntries = extractCells(
           layer, projectSettings, docWidth, docHeight, thisLower,
-          parentSuffix, hierarchyFolder, background,
+          parentSuffix, displayName, background,
           thisUpper,
         )
         entries.push(...cellEntries)
@@ -776,6 +800,18 @@ export function resolveParentSuffix(
   const folderNameToSuffix = buildFolderNameToSuffixMap(processTable)
   const animParentSuffixMap = buildAnimParentSuffixMap(tree, folderNameToSuffix)
   return animParentSuffixMap.get(animFolderId) ?? ''
+}
+
+/**
+ * ツリー全体の「anim folder ID → parentSuffix」Map を構築する(useOutputPreview 等の外部利用向け)。
+ * computeDisplayNames に渡すため、anim folder の identity 計算に必要。
+ */
+export function buildParentSuffixMap(
+  tree: CspLayer[],
+  processTable: ProjectSettings['processTable'],
+): Map<string, string> {
+  const folderNameToSuffix = buildFolderNameToSuffixMap(processTable)
+  return buildAnimParentSuffixMap(tree, folderNameToSuffix)
 }
 
 function hasAnimFolderDescendant(layer: CspLayer): boolean {

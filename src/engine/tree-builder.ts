@@ -1,5 +1,6 @@
 import type { Psd, Layer } from 'ag-psd'
 import type { CspLayer, BlendMode, XdtsData } from '../types'
+import { assignTracksToFolders, type AssignResult } from './anim-folder-assignment'
 
 /**
  * ag-psdのレイヤーがフォルダかどうか判定
@@ -96,24 +97,37 @@ function convertLayer(
 }
 
 /**
- * xdtsのtrack名（CAM除外）でアニメーションフォルダを特定し設定する
+ * XDTS の track 情報でアニメーションフォルダを特定し設定する。
+ *
+ * 旧実装は「名前マッチしたフォルダを全部 anim folder 化」だったが、
+ * 同名トラック問題・アーカイブ配下の誤検出等を解決するため、
+ * assignTracksToFolders による 2 段階優先度 + ボトム優先 + trim 正規化の
+ * 対応付けアルゴリズムに置き換えた。
+ *
+ * 割当されたフォルダだけに isAnimationFolder=true を立てる。
+ * 余剰候補(名前は合うが XDTS の席が足りない)は通常フォルダのまま残る。
+ *
+ * @returns AssignResult(警告 UI 用の unmatchedTracks を含む)
  */
 export function detectAnimationFoldersByXdts(
   tree: CspLayer[],
   xdts: XdtsData
-): void {
-  // パーサーでfieldId=0（CELL）のみ抽出済みなので追加フィルタ不要
-  const trackNames = new Set(
-    xdts.tracks.map(t => t.name.toLowerCase())
-  )
+): AssignResult {
+  // トラック ↔ フォルダ の対応付けを計算
+  const result = assignTracksToFolders(tree, xdts.tracks)
 
+  // 割当された layer にだけ anim folder フラグを立てる
+  // trackName は元の XDTS トラック名(raw、trim 前)を保持(UI 表示や XDTS 書き出し整合性のため)
+  const tracksByNo = new Map(xdts.tracks.map(t => [t.trackNo, t]))
   function walk(layers: CspLayer[]): void {
     for (const layer of layers) {
-      if (layer.isFolder && trackNames.has(layer.originalName.toLowerCase())) {
+      const trackNo = result.assignment.get(layer.id)
+      if (trackNo !== undefined) {
+        const track = tracksByNo.get(trackNo)
         layer.isAnimationFolder = true
         layer.animationFolder = {
           detectedBy: 'xdts',
-          trackName: layer.originalName,
+          trackName: track?.name ?? layer.originalName,
         }
       }
       if (layer.children.length > 0) {
@@ -121,8 +135,9 @@ export function detectAnimationFoldersByXdts(
       }
     }
   }
-
   walk(tree)
+
+  return result
 }
 
 /**
@@ -172,19 +187,20 @@ export function collectAnimFolderAncestorIds(tree: CspLayer[]): Set<string> {
 
 /**
  * PSDオブジェクトからCspLayerツリーを構築する
+ *
+ * 注: XDTS を渡しても anim folder 検出は行わない。呼び出し側が
+ * detectAnimationFoldersByXdts を明示的に呼ぶこと(その返り値で
+ * unmatchedTracks 警告等を受け取れる)。
+ * 後方互換のため xdts 引数は受け取るが現在は使用していない(将来の拡張用に残す)。
  */
 export function buildLayerTree(
   psd: Psd,
-  xdts?: XdtsData,
+  _xdts?: XdtsData,
   archivePatterns: string[] = []
 ): CspLayer[] {
   // ag-psdはボトムファースト順で返すので逆順にしてPhotoshop UI順（トップファースト）に統一する
   const children = (psd.children ?? []).slice().reverse()
   const tree = children.map(layer => convertLayer(layer, null, 0, false, archivePatterns))
-
-  if (xdts) {
-    detectAnimationFoldersByXdts(tree, xdts)
-  }
 
   // クリスタが自動生成する「用紙」レイヤー（最下層）を自動的に非表示に設定する。
   // 白背景として合成されてしまうため、PNG透過出力時に意図しない結果を防ぐ。

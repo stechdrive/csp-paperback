@@ -17,7 +17,7 @@ function makeSettingsWithTable(entries: { suffix: string; folderNames: string[] 
 }
 
 function detectAnim(tree: ReturnType<typeof buildLayerTree>, trackName: string) {
-  const xdts: XdtsData = { tracks: [{ name: trackName, cellNames: [], frames: [] }], version: 5, header: { cut: '1', scene: '1' }, timeTableName: 'タイムライン1', duration: 72, fps: 24 }
+  const xdts: XdtsData = { tracks: [{ name: trackName, trackNo: 0, cellNames: [], frames: [] }], version: 5, header: { cut: '1', scene: '1' }, timeTableName: 'タイムライン1', duration: 72, fps: 24 }
   detectAnimationFoldersByXdts(tree, xdts)
 }
 
@@ -130,15 +130,18 @@ describe('extractCells with parentSuffix', () => {
     expect(result[0].path).toBe('A/A_0001_en.jpg')
   })
 
-  it('hierarchyFolderがpathのフォルダ名として使われる', () => {
+  it('hierarchyFolder がフォルダ名とファイル名プレフィックスの両方に使われる (Q3 統一)', () => {
+    // #1 対応: hierarchyFolder = displayName という設計。
+    // ファイル名プレフィックスも同じ値になるため、"A_en" を渡すと
+    // path = "A_en/A_en_0001_en.jpg" になる。parentSuffix は従来どおり末尾に付く。
     const cell1 = makeLayer({ name: '1' })
     const animFolder = makeAnimationFolder('A', [cell1])
     const tree = buildLayerTree(makePsd({ children: [animFolder] }))
     detectAnim(tree, 'A')
 
     const result = extractCells(tree[0], DEFAULT_SETTINGS, 100, 100, EMPTY_CONTEXT, '_en', 'A_en')
-    expect(result[0].path).toBe('A_en/A_0001_en.jpg')
-    expect(result[0].flatName).toBe('A_0001_en.jpg')
+    expect(result[0].path).toBe('A_en/A_en_0001_en.jpg')
+    expect(result[0].flatName).toBe('A_en_0001_en.jpg')
   })
 
   it('parentSuffixと工程サフィックスが両方付加される', () => {
@@ -151,8 +154,9 @@ describe('extractCells with parentSuffix', () => {
     const settings = makeSettingsWithTable([{ suffix: '_en', folderNames: ['EN'] }])
     const result = extractCells(tree[0], settings, 100, 100, EMPTY_CONTEXT, '_layout', 'A_layout')
     const names = result.map(e => e.flatName).sort()
-    // 本体なし・工程のみ → A_0001_layout_en.jpg
-    expect(names).toContain('A_0001_layout_en.jpg')
+    // hierarchyFolder="A_layout" が displayName として使われる → プレフィックスも "A_layout"
+    // 本体なし・工程のみ → "A_layout_0001_layout_en.jpg"
+    expect(names).toContain('A_layout_0001_layout_en.jpg')
   })
 })
 
@@ -170,26 +174,39 @@ describe('extractAllEntries', () => {
     expect(result[0].flatName).toBe('A_0001_en.jpg')
   })
 
-  it('同名アニメフォルダが異なる親コンテナにある場合にフラット名衝突を解決する', () => {
+  it('同名アニメフォルダは displayName の (n) で区別される', () => {
+    // #1 対応: 同名 anim folder は "A", "A(2)" のように (n) でナンバリングされる。
+    // 旧実装では flat name 衝突を "-2" で後付け解決していたが、新実装では
+    // トラック/フォルダ識別を displayName レベルで行う。
     const cell1a = makeLayer({ name: '1' })
     const animA1 = makeAnimationFolder('A', [cell1a])
     const cell1b = makeLayer({ name: '1' })
     const animA2 = makeAnimationFolder('A', [cell1b])
-    // 両方のルートフォルダはprocessTableにマッチしない
     const root1 = makeFolder('演出工程', [animA1])
     const root2 = makeFolder('レイアウト', [animA2])
     const tree = buildLayerTree(makePsd({ children: [root2, root1] }))
-    // root1 が tree[0] (reversed), root2 が tree[1]
-    detectAnimInTree(tree, 'A')
 
-    const result = extractAllEntries(tree, DEFAULT_SETTINGS, 100, 100)
+    // XDTS で 2 トラック "A" を用意 → 両方 anim folder として割当される
+    const xdts: XdtsData = {
+      tracks: [
+        { name: 'A', trackNo: 0, cellNames: [], frames: [] },
+        { name: 'A', trackNo: 1, cellNames: [], frames: [] },
+      ],
+      version: 5, header: { cut: '1', scene: '1' }, timeTableName: 'タイムライン1', duration: 72, fps: 24,
+    }
+    detectAnimationFoldersByXdts(tree, xdts)
+
+    const result = extractAllEntries(tree, DEFAULT_SETTINGS, 100, 100, 'white', false, xdts)
     const flatNames = result.map(e => e.flatName).sort()
-    // 衝突 → 一方が A_0001.jpg、他方が A_0001-2.jpg
     expect(flatNames).toContain('A_0001.jpg')
-    expect(flatNames).toContain('A_0001-2.jpg')
+    expect(flatNames).toContain('A(2)_0001.jpg')
   })
 
-  it('同名アニメフォルダが異なるparentSuffixで区別される場合は衝突しない', () => {
+  it('同名アニメフォルダは parentSuffix が異なれば別 identity で両方 "A" (process variants)', () => {
+    // #1 対応(修正後): identity = (name, parentSuffix)。
+    // 同名でも parentSuffix が違えば process variants として別 identity とみなし、
+    // 両方とも base 名 "A" を displayName にして、parentSuffix で最終的に区別する。
+    // (c001 の 作画/A と 演出/A のような実パターン)
     const cell1a = makeLayer({ name: '1' })
     const animA1 = makeAnimationFolder('A', [cell1a])
     const cell1b = makeLayer({ name: '1' })
@@ -197,36 +214,57 @@ describe('extractAllEntries', () => {
     const root1 = makeFolder('EN', [animA1])
     const root2 = makeFolder('BG', [animA2])
     const tree = buildLayerTree(makePsd({ children: [root2, root1] }))
-    detectAnimInTree(tree, 'A')
+
+    const xdts: XdtsData = {
+      tracks: [
+        { name: 'A', trackNo: 0, cellNames: [], frames: [] },
+        { name: 'A', trackNo: 1, cellNames: [], frames: [] },
+      ],
+      version: 5, header: { cut: '1', scene: '1' }, timeTableName: 'タイムライン1', duration: 72, fps: 24,
+    }
+    detectAnimationFoldersByXdts(tree, xdts)
 
     const settings = makeSettingsWithTable([
       { suffix: '_en', folderNames: ['EN'] },
       { suffix: '_bg', folderNames: ['BG'] },
     ])
-    const result = extractAllEntries(tree, settings, 100, 100)
+    const result = extractAllEntries(tree, settings, 100, 100, 'white', false, xdts)
     const flatNames = result.map(e => e.flatName).sort()
-    expect(flatNames).toContain('A_0001_en.jpg')
+    // Identity (a, "_bg") と (a, "_en") は別なので両方 "A"、parentSuffix で分岐
     expect(flatNames).toContain('A_0001_bg.jpg')
+    expect(flatNames).toContain('A_0001_en.jpg')
+    // (n) 連番は付かない(identity が別)
+    expect(flatNames).not.toContain('A(2)_0001_en.jpg')
+    expect(flatNames).not.toContain('A(2)_0001_bg.jpg')
   })
 
-  it('階層フォルダ名の衝突が -2 で解決される', () => {
+  it('同名アニメフォルダの階層フォルダ名は (n) で区別される', () => {
+    // #1 対応: フォルダ名衝突は "-2" ではなく displayName の "(n)" で解決される
     const animA1 = makeAnimationFolder('A', [makeLayer({ name: '1' })])
     const animA2 = makeAnimationFolder('A', [makeLayer({ name: '1' })])
     const root1 = makeFolder('演出', [animA1])
     const root2 = makeFolder('レイアウト', [animA2])
     const tree = buildLayerTree(makePsd({ children: [root2, root1] }))
-    detectAnimInTree(tree, 'A')
 
-    const result = extractAllEntries(tree, DEFAULT_SETTINGS, 100, 100)
+    const xdts: XdtsData = {
+      tracks: [
+        { name: 'A', trackNo: 0, cellNames: [], frames: [] },
+        { name: 'A', trackNo: 1, cellNames: [], frames: [] },
+      ],
+      version: 5, header: { cut: '1', scene: '1' }, timeTableName: 'タイムライン1', duration: 72, fps: 24,
+    }
+    detectAnimationFoldersByXdts(tree, xdts)
+
+    const result = extractAllEntries(tree, DEFAULT_SETTINGS, 100, 100, 'white', false, xdts)
     const paths = result.map(e => e.path)
     const folderNames = paths.map(p => p.split('/')[0]).sort()
     expect(folderNames).toContain('A')
-    expect(folderNames).toContain('A-2')
+    expect(folderNames).toContain('A(2)')
   })
 })
 
 function detectAnimInTree(layers: ReturnType<typeof buildLayerTree>, trackName: string) {
-  const xdts: XdtsData = { tracks: [{ name: trackName, cellNames: [], frames: [] }], version: 5, header: { cut: '1', scene: '1' }, timeTableName: 'タイムライン1', duration: 72, fps: 24 }
+  const xdts: XdtsData = { tracks: [{ name: trackName, trackNo: 0, cellNames: [], frames: [] }], version: 5, header: { cut: '1', scene: '1' }, timeTableName: 'タイムライン1', duration: 72, fps: 24 }
   detectAnimationFoldersByXdts(layers, xdts)
   for (const layer of layers) {
     if (layer.isFolder && !layer.isAnimationFolder) {
@@ -234,6 +272,180 @@ function detectAnimInTree(layers: ReturnType<typeof buildLayerTree>, trackName: 
     }
   }
 }
+
+/**
+ * yc4_00_000_lo.psd + yc4_00_000_lo.xdts 相当のシナリオを合成して
+ * #1 対応の end-to-end 挙動を検証する。
+ *
+ * 実 PSD 構造(ag-psd から確認済み):
+ *   用紙
+ *   _原図/レイヤー4
+ *   LO
+ *     TEST(bottom of LO)
+ *       "A " (trailing space, bottom of bottom TEST) / 1 / 2
+ *       "A" (top of bottom TEST) / 1 / 2
+ *     TEST(top of LO)
+ *       演出(サクラ)
+ *       "A" (top of top TEST) / 4
+ *   _TEST/A/レイヤー1
+ *   フレーム ...
+ *   メモ ...
+ *
+ * XDTS: names ["A ", "A", "A"] (trackNo 0/1/2)
+ *
+ * 期待:
+ *   - anim folder 化: 3 つ(bottom TEST 内の "A " と "A"、top TEST 内の "A")
+ *   - _TEST/A は割当されず通常フォルダのまま
+ *   - displayName: "A", "A(2)", "A(3)" をボトム優先で割当
+ *   - 警告なし(トラック 3 つとも割当成功)
+ */
+describe('#1 対応: yc4_00_000_lo シナリオの end-to-end', () => {
+  function buildYc4Scenario() {
+    // ag-psd はボトムファースト。makePsd で渡す順序もボトムファースト
+    // (ただし makeFolder の children はそのまま渡す = 画面下が先頭)
+
+    // bottom TEST (LO の中で画面下)
+    const testBottom = makeFolder('TEST', [
+      makeFolder('A ', [  // 末尾空白、画面下
+        makeLayer({ name: '1' }),
+        makeLayer({ name: '2' }),
+      ]),
+      makeFolder('A', [   // no space、画面上
+        makeLayer({ name: '1' }),
+        makeLayer({ name: '2' }),
+      ]),
+    ])
+
+    // top TEST (LO の中で画面上)
+    const testTop = makeFolder('TEST', [
+      makeLayer({ name: '演出(サクラ)' }),
+      makeFolder('A', [  // cell "4" 持ち
+        makeLayer({ name: '4' }),
+      ]),
+    ])
+
+    const lo = makeFolder('LO', [testBottom, testTop])
+
+    // _TEST (余剰候補となるべき)
+    const underTest = makeFolder('_TEST', [
+      makeFolder('A', [
+        makeLayer({ name: 'レイヤー 1' }),
+      ]),
+    ])
+
+    // ag-psd はボトムファースト: _原図, lo, _TEST が順に積まれる
+    // 画面表示では逆順(_TEST, LO, _原図)
+    return makePsd({ children: [lo, underTest] })
+  }
+
+  function buildYc4Xdts(): XdtsData {
+    return {
+      tracks: [
+        { name: 'A ', trackNo: 0, cellNames: [], frames: [] },  // 末尾空白
+        { name: 'A', trackNo: 1, cellNames: [], frames: [] },
+        { name: 'A', trackNo: 2, cellNames: [], frames: [] },
+      ],
+      version: 5,
+      header: { cut: '1', scene: '1' },
+      timeTableName: 'タイムライン1',
+      duration: 144,
+      fps: 24,
+    }
+  }
+
+  it('全 3 トラックが anim folder に割当され、unmatchedTracks が空', () => {
+    const psd = buildYc4Scenario()
+    const tree = buildLayerTree(psd)
+    const xdts = buildYc4Xdts()
+    const result = detectAnimationFoldersByXdts(tree, xdts)
+
+    expect(result.unmatchedTracks).toHaveLength(0)
+    expect(result.assignment.size).toBe(3)
+  })
+
+  it('_TEST/A は anim folder にならず通常フォルダのまま残る', () => {
+    const psd = buildYc4Scenario()
+    const tree = buildLayerTree(psd)
+    const xdts = buildYc4Xdts()
+    detectAnimationFoldersByXdts(tree, xdts)
+
+    // _TEST は tree のどこかにある。その中の A が anim folder 化されていないことを確認
+    function findUnderTest(layers: typeof tree): typeof tree[number] | null {
+      for (const l of layers) {
+        if (l.originalName === '_TEST') return l
+        const found = findUnderTest(l.children)
+        if (found) return found
+      }
+      return null
+    }
+    const underTestFolder = findUnderTest(tree)
+    expect(underTestFolder).not.toBeNull()
+    const underTestA = underTestFolder!.children.find(c => c.originalName === 'A')
+    expect(underTestA).toBeDefined()
+    expect(underTestA!.isAnimationFolder).toBe(false)
+  })
+
+  it('displayName は A / A(2) / A(3) でボトム優先', () => {
+    const psd = buildYc4Scenario()
+    const tree = buildLayerTree(psd)
+    const xdts = buildYc4Xdts()
+    detectAnimationFoldersByXdts(tree, xdts)
+
+    const result = extractAllEntries(tree, DEFAULT_SETTINGS, 100, 100, 'white', false, xdts)
+
+    // 各 anim folder から 1-2 セルずつ出力される
+    // bottom TEST/A  (末尾空白、cells 1,2) → "A" フォルダ
+    // bottom TEST/A (no space、cells 1,2) → "A(2)" フォルダ
+    // top TEST/A (cell 4) → "A(3)" フォルダ
+    const folderNames = new Set(
+      result
+        .filter(e => e.path.includes('/'))  // 階層出力のみ
+        .map(e => e.path.split('/')[0]),
+    )
+    expect(folderNames.has('A')).toBe(true)
+    expect(folderNames.has('A(2)')).toBe(true)
+    expect(folderNames.has('A(3)')).toBe(true)
+  })
+
+  it('末尾空白の "A " は trim されて displayName "A" として出力される', () => {
+    const psd = buildYc4Scenario()
+    const tree = buildLayerTree(psd)
+    const xdts = buildYc4Xdts()
+    detectAnimationFoldersByXdts(tree, xdts)
+
+    const result = extractAllEntries(tree, DEFAULT_SETTINGS, 100, 100, 'white', false, xdts)
+
+    // 末尾空白を含む path が出力に無いことを検証(Windows の命名制約回避)
+    for (const entry of result) {
+      expect(entry.path).not.toMatch(/^A \//)  // "A /" で始まらない
+      expect(entry.flatName).not.toMatch(/^A _/) // "A _" で始まらない
+    }
+  })
+
+  it('ボトム最下段 "A " のセル 2 枚は trackNo 0 対応で displayName "A" に紐づく', () => {
+    const psd = buildYc4Scenario()
+    const tree = buildLayerTree(psd)
+    const xdts = buildYc4Xdts()
+    detectAnimationFoldersByXdts(tree, xdts)
+
+    const result = extractAllEntries(tree, DEFAULT_SETTINGS, 100, 100, 'white', false, xdts)
+
+    const aEntries = result.filter(e => e.path.startsWith('A/'))
+    expect(aEntries.length).toBe(2)  // cells 1, 2
+  })
+
+  it('top TEST の "A" (cell 4) は displayName "A(3)" の 1 セル出力', () => {
+    const psd = buildYc4Scenario()
+    const tree = buildLayerTree(psd)
+    const xdts = buildYc4Xdts()
+    detectAnimationFoldersByXdts(tree, xdts)
+
+    const result = extractAllEntries(tree, DEFAULT_SETTINGS, 100, 100, 'white', false, xdts)
+
+    const a3Entries = result.filter(e => e.path.startsWith('A(3)/'))
+    expect(a3Entries.length).toBe(1)
+  })
+})
 
 describe('extractMarkedLayers', () => {
   it('_プレフィックスフォルダをOutputEntryとして返す', () => {
