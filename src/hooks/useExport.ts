@@ -3,7 +3,7 @@ import { useAppStore } from '../store'
 import { selectLayerTreeWithVisibility } from '../store/selectors'
 import { extractAllEntries, extractVirtualSetEntries } from '../engine/cell-extractor'
 import { flattenTree } from '../engine/flatten'
-import { buildZip, downloadBlob, makeZipFileName } from '../utils/zip-builder'
+import { buildZipStream, saveZipStream, makeZipFileName } from '../utils/zip-builder'
 
 export interface UseExportResult {
   isExporting: boolean
@@ -67,14 +67,27 @@ export function useExport(): UseExportResult {
 
       setProgress(0.5)
 
-      // ZIP生成
-      const zipBlob = await buildZip(entries, outputConfig, psdFileName, docDpiX, docDpiY)
-      setProgress(0.95)
+      // ZIP 生成: canvas → Blob 変換をエントリ 1 枚ずつ逐次化するストリーム。
+      // buildZipStream 内部で canvas を release するため、ここで entries の canvas
+      // 参照は処理済みになる(呼び出し後に entries を再利用しないこと)。
+      const stream = buildZipStream(
+        entries, outputConfig, docDpiX, docDpiY,
+        (done, total) => {
+          // エントリ処理分 (0.5 → 0.95 の 0.45 幅) を done/total で案分
+          setProgress(0.5 + 0.45 * (done / total))
+        },
+      )
 
-      // ダウンロード
-      downloadBlob(zipBlob, makeZipFileName(psdFileName))
+      // 保存: File System Access API が使えればネイティブ保存ダイアログから直接書き込み、
+      // それ以外は Blob 化してから downloadBlob でフォールバック
+      await saveZipStream(stream, makeZipFileName(psdFileName))
       setProgress(1)
     } catch (e) {
+      // ユーザが保存ダイアログをキャンセルした場合 (AbortError) はエラー表示せず silent 終了
+      if (e instanceof DOMException && e.name === 'AbortError') {
+        // 何も表示しない
+        return
+      }
       setError(e instanceof Error ? e.message : '出力に失敗しました')
     } finally {
       setIsExporting(false)

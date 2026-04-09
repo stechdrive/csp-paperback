@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { makeZipFileName } from '../../utils/zip-builder'
+import { makeZipFileName, buildZipStream } from '../../utils/zip-builder'
 import { resolveEntryNames } from '../../utils/naming'
 import { replaceExtension } from '../../utils/image-export'
+import type { OutputEntry, OutputConfig } from '../../types'
 
 describe('makeZipFileName', () => {
   it('PSDファイル名から.zipファイル名を生成する', () => {
@@ -46,5 +47,74 @@ describe('ZIP出力パス生成（ロジック単体テスト）', () => {
     const resolved = resolveEntryNames(normalized)
     expect(resolved[0].flatName).toBe('cell.png')
     expect(resolved[1].flatName).toBe('cell_2.png')
+  })
+})
+
+/**
+ * buildZipStream のストリーミングパイプラインとしての最低限の契約を検証する。
+ *
+ * ここでは「ストリームが生成できる」「onProgress が N/total で呼ばれる」「canvas が
+ * 処理後 release される」という振る舞いだけを確認する。ZIP のバイナリ構造の検証は
+ * client-zip 側のテストに任せる(jsdom 下で canvas 実画像を含む ZIP を parse するには
+ * 別の依存が必要で、本リポのスコープ外)。
+ */
+describe('buildZipStream', () => {
+  function makeTestCanvas(): HTMLCanvasElement {
+    const c = document.createElement('canvas')
+    c.width = 8
+    c.height = 8
+    return c
+  }
+
+  function makeEntry(path: string, flatName: string): OutputEntry {
+    return {
+      path,
+      flatName,
+      canvas: makeTestCanvas(),
+      sourceLayerId: 'test-layer',
+    }
+  }
+
+  const BASE_CONFIG: OutputConfig = {
+    format: 'jpg',
+    jpgQuality: 0.9,
+    background: 'white',
+    structure: 'hierarchy',
+    excludeAutoMarked: false,
+    excludedProcessSuffixes: [],
+  }
+
+  it('ReadableStream を返す', () => {
+    const entries = [makeEntry('A/A_0001.jpg', 'A_0001.jpg')]
+    const stream = buildZipStream(entries, BASE_CONFIG, 0, 0)
+    expect(stream).toBeInstanceOf(ReadableStream)
+  })
+
+  it('ストリーム消費時に onProgress が done/total で呼ばれる', async () => {
+    const entries = [
+      makeEntry('A/A_0001.jpg', 'A_0001.jpg'),
+      makeEntry('A/A_0002.jpg', 'A_0002.jpg'),
+      makeEntry('B/B_0001.jpg', 'B_0001.jpg'),
+    ]
+    const calls: Array<[number, number]> = []
+    const stream = buildZipStream(entries, BASE_CONFIG, 0, 0, (done, total) => {
+      calls.push([done, total])
+    })
+    // ストリームを最後まで消費して generator を駆動する
+    await new Response(stream).arrayBuffer()
+    // 各エントリ 1 回ずつ進捗コールバック、total は全部 3
+    expect(calls).toEqual([[1, 3], [2, 3], [3, 3]])
+  })
+
+  it('ストリーム消費後に各 OutputEntry の canvas 参照が release される', async () => {
+    const entries = [
+      makeEntry('A/A_0001.jpg', 'A_0001.jpg'),
+      makeEntry('B/B_0001.jpg', 'B_0001.jpg'),
+    ]
+    const stream = buildZipStream(entries, BASE_CONFIG, 0, 0)
+    await new Response(stream).arrayBuffer()
+    // canvas が null に置き換わって元の大きい参照が解放されている
+    expect(entries[0].canvas).toBeNull()
+    expect(entries[1].canvas).toBeNull()
   })
 })
