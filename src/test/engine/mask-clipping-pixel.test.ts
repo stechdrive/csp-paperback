@@ -2,7 +2,10 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { LayerMaskData } from 'ag-psd'
 import { createCanvas as createNapiCanvas } from '@napi-rs/canvas'
 import { applyLayerMask, compositeStack } from '../../engine/compositor'
+import { extractCells } from '../../engine/cell-extractor'
+import { buildLayerTree, detectAnimationFoldersByXdts } from '../../engine/tree-builder'
 import type { FlatLayer } from '../../types'
+import { makeAnimationFolder, makeFolder, makePsd } from '../helpers/psd-factory'
 
 let createElementSpy: ReturnType<typeof vi.spyOn>
 
@@ -130,5 +133,65 @@ describe('compositeStack clipping pixel behavior', () => {
 
     expect(rgbaAt(result, 0, 0)).toEqual([0, 255, 0, 255])
     expect(alphaAt(result, 1, 0)).toBe(0)
+  })
+})
+
+describe('extractCells empty output background behavior', () => {
+  it('中身が空のセルフォルダでも white 背景指定なら白で返す', () => {
+    const emptyCell = makeFolder('1', [])
+    const animFolder = makeAnimationFolder('A', [emptyCell])
+    const tree = buildLayerTree(makePsd({ width: 2, height: 1, children: [animFolder] }))
+    detectAnimationFoldersByXdts(tree, {
+      tracks: [{ name: 'A', trackNo: 0, cellNames: ['1'], frames: [] }],
+      version: 5,
+      header: { cut: '1', scene: '1' },
+      timeTableName: 'タイムライン1',
+      duration: 1,
+      fps: 24,
+    })
+
+    const entries = extractCells(
+      tree[0],
+      { processTable: [], cellNamingMode: 'sequence', archivePatterns: [] },
+      2,
+      1,
+      [],
+      '',
+      undefined,
+      'white',
+    )
+
+    expect(entries).toHaveLength(1)
+    expect(rgbaAt(entries[0].canvas, 0, 0)).toEqual([255, 255, 255, 255])
+    expect(rgbaAt(entries[0].canvas, 1, 0)).toEqual([255, 255, 255, 255])
+  })
+
+  it('中身が空のセルフォルダで transparent 背景指定なら透明のまま返す', () => {
+    const emptyCell = makeFolder('1', [])
+    const animFolder = makeAnimationFolder('A', [emptyCell])
+    const tree = buildLayerTree(makePsd({ width: 2, height: 1, children: [animFolder] }))
+    detectAnimationFoldersByXdts(tree, {
+      tracks: [{ name: 'A', trackNo: 0, cellNames: ['1'], frames: [] }],
+      version: 5,
+      header: { cut: '1', scene: '1' },
+      timeTableName: 'タイムライン1',
+      duration: 1,
+      fps: 24,
+    })
+
+    const entries = extractCells(
+      tree[0],
+      { processTable: [], cellNamingMode: 'sequence', archivePatterns: [] },
+      2,
+      1,
+      [],
+      '',
+      undefined,
+      'transparent',
+    )
+
+    expect(entries).toHaveLength(1)
+    expect(alphaAt(entries[0].canvas, 0, 0)).toBe(0)
+    expect(alphaAt(entries[0].canvas, 1, 0)).toBe(0)
   })
 })

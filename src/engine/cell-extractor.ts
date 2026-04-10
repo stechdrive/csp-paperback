@@ -472,7 +472,15 @@ function compositeWithContext(
   background: 'white' | 'transparent' = 'white',
 ): HTMLCanvasElement {
   if (cellFlats.length === 0 && lowerContext.length === 0 && upperContext.length === 0) {
-    return createCanvas(docWidth, docHeight)
+    const empty = createCanvas(docWidth, docHeight)
+    if (background === 'white') {
+      const ctx = empty.getContext('2d')
+      if (ctx) {
+        ctx.fillStyle = '#ffffff'
+        ctx.fillRect(0, 0, docWidth, docHeight)
+      }
+    }
+    return empty
   }
   const allFlats = [...lowerContext, ...cellFlats, ...upperContext]
   return compositeStack(allFlats, docWidth, docHeight, background)
