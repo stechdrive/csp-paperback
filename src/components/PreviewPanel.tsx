@@ -1,8 +1,9 @@
-import React, { useRef, useState, useCallback, useEffect } from 'react'
+import React, { useRef, useState, useCallback } from 'react'
 import { useAppStore } from '../store'
 import { usePreview } from '../hooks/usePreview'
 import { useOutputPreview } from '../hooks/useOutputPreview'
 import { useZoomPan } from '../hooks/useZoomPan'
+import { useIsMobile } from '../hooks/useIsMobile'
 import { OutputPreview } from './OutputPreview'
 import { ExportSettings } from './ExportSettings'
 import { TimelineSeekBar } from './TimelineSeekBar'
@@ -47,18 +48,6 @@ function SampleLoadButton() {
       </button>
     </div>
   )
-}
-
-function useIsMobile() {
-  const [mobile, setMobile] = useState(false)
-  useEffect(() => {
-    const mq = window.matchMedia('(pointer: coarse) and (max-width: 1024px)')
-    setMobile(mq.matches)
-    const handler = (e: MediaQueryListEvent) => setMobile(e.matches)
-    mq.addEventListener('change', handler)
-    return () => mq.removeEventListener('change', handler)
-  }, [])
-  return mobile
 }
 
 function ExportSettingsDrawer() {

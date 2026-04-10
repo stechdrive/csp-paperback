@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import { useAppStore } from '../store'
-import { useLocale } from '../i18n'
+import { useLocale } from '../i18n/locale'
 import { selectLayerById } from '../store/selectors'
 import { useDragSource, useDropZone, type DragPayload } from '../hooks/useDragDrop'
 import { Tooltip } from './Tooltip'
@@ -242,7 +242,7 @@ export function VirtualSetItem({ virtualSet }: VirtualSetItemProps) {
     e.dataTransfer.setData('application/x-member-drag', virtualSet.id)
   }, [virtualSet.id, selectedIds])
 
-  const handleMemberDragEnd = useCallback((_e: React.DragEvent) => {
+  const handleMemberDragEnd = useCallback(() => {
     _draggingMemberInfo = null
     setInsertLineIndex(null)
   }, [])

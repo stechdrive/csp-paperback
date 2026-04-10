@@ -15,8 +15,6 @@ export function Tooltip({ content, children, delay = 300, placement = 'top' }: T
   const [visible, setVisible] = useState(false)
   const [rect, setRect] = useState<DOMRect | null>(null)
   const [resolvedPlacement, setResolvedPlacement] = useState<'top' | 'bottom'>(placement)
-  // null = まだ測定前（visibility:hidden で描画）、number = 確定済み
-  const [left, setLeft] = useState<number | null>(null)
   const timer = useRef<number>(0)
   const wrapRef = useRef<HTMLSpanElement>(null)
   const tooltipRef = useRef<HTMLDivElement>(null)
@@ -27,7 +25,6 @@ export function Tooltip({ content, children, delay = 300, placement = 'top' }: T
     const r = child?.getBoundingClientRect()
     if (r) {
       setRect(r)
-      setLeft(null) // 測定リセット
       const TOOLTIP_HEIGHT = 80
       const fitsTop = r.top > TOOLTIP_HEIGHT
       setResolvedPlacement(placement === 'bottom' || !fitsTop ? 'bottom' : 'top')
@@ -38,7 +35,6 @@ export function Tooltip({ content, children, delay = 300, placement = 'top' }: T
   const handleLeave = useCallback(() => {
     clearTimeout(timer.current)
     setVisible(false)
-    setLeft(null)
   }, [])
 
   // ツールチップ描画後に実際の幅を測ってX位置を確定する
@@ -54,15 +50,16 @@ export function Tooltip({ content, children, delay = 300, placement = 'top' }: T
     let adjusted = centerX
     if (tipRight > vw - MARGIN) adjusted = vw - MARGIN - tip.width / 2
     if (tipLeft < MARGIN) adjusted = MARGIN + tip.width / 2
-    setLeft(adjusted)
+    tooltipRef.current.style.left = `${adjusted}px`
+    tooltipRef.current.style.visibility = 'visible'
   }, [visible, rect])
 
   const baseLeft = rect ? rect.left + rect.width / 2 : 0
   const tooltipStyle = rect ? {
-    left: left ?? baseLeft,
+    left: baseLeft,
     top: resolvedPlacement === 'top' ? rect.top : rect.bottom,
     // 測定前は非表示（位置ズレしてちらつかないように）
-    visibility: left === null ? ('hidden' as const) : ('visible' as const),
+    visibility: 'hidden' as const,
   } : {}
 
   return (

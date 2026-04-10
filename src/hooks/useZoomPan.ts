@@ -22,7 +22,10 @@ export function useZoomPan() {
   const [view, setView] = useState<ViewState>({ zoom: 1, panX: 0, panY: 0 })
   const [dragging, setDragging] = useState(false)
   const viewRef = useRef(view)
-  viewRef.current = view
+
+  useEffect(() => {
+    viewRef.current = view
+  }, [view])
 
   /** コンテンツがちょうどビューポートに収まるズーム率（動的下限） */
   const getFitZoom = (container: HTMLElement): number => {

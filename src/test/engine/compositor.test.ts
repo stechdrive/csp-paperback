@@ -66,13 +66,13 @@ describe('drawLayer', () => {
 
   it('描画後にグローバルアルファを復元する', () => {
     const layer = makeFlatLayer({ blendMode: 'normal' })
-    drawLayer(ctx, layer, 100, 100)
+    drawLayer(ctx, layer)
     expect(ctx.globalAlpha).toBe(1.0)
   })
 
   it('ブレンドモードをセットして描画する', () => {
     const layer = makeFlatLayer({ blendMode: 'multiply' })
-    drawLayer(ctx, layer, 100, 100)
+    drawLayer(ctx, layer)
     // jest-canvas-mockでdrawImageが呼ばれたか確認
     const calls = (ctx as unknown as { __getDrawCalls: () => unknown[] }).__getDrawCalls()
     expect(calls.length).toBeGreaterThan(0)

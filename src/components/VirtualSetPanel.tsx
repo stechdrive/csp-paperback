@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import { useAppStore } from '../store'
-import { useLocale } from '../i18n'
+import { useLocale } from '../i18n/locale'
 import { VirtualSetItem } from './VirtualSetItem'
 import { BlendOpacityBar } from './BlendOpacityBar'
 import { Tooltip } from './Tooltip'

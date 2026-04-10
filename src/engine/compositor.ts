@@ -80,7 +80,7 @@ export function compositeStack(
 
     if (!layer.clipping) {
       // 通常レイヤー: そのまま合成してベースとして記録
-      drawLayer(ctx, layer, width, height)
+      drawLayer(ctx, layer)
       baseLayer = layer
     } else {
       // クリッピングレイヤー: ベースのアルファで切り抜いてから合成
@@ -90,7 +90,7 @@ export function compositeStack(
       }
       const clipped = applyClippingMask(layer, baseLayer, width, height)
       const clippedFlat: FlatLayer = { ...layer, canvas: clipped, clipping: false, top: 0, left: 0 }
-      drawLayer(ctx, clippedFlat, width, height)
+      drawLayer(ctx, clippedFlat)
     }
   }
 
@@ -102,9 +102,7 @@ export function compositeStack(
  */
 export function drawLayer(
   ctx: CanvasRenderingContext2D,
-  layer: FlatLayer,
-  _width: number,
-  _height: number
+  layer: FlatLayer
 ): void {
   const compositeOp = blendModeToCompositeOp(layer.blendMode)
 

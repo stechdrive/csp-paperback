@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useAppStore } from '../store'
-import { useLocale } from '../i18n'
+import { useLocale } from '../i18n/locale'
 import { selectProcessTableErrors } from '../store/selectors'
 import type { ProcessFolderEntry } from '../types'
 import styles from './SettingsDialog.module.css'

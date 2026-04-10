@@ -38,7 +38,7 @@ export function useDragSource(payload: DragPayload): DragHandlers & { isDragging
     setIsDragging(true)
   }, [payload])
 
-  const onDragEnd = useCallback((_e: React.DragEvent) => {
+  const onDragEnd = useCallback(() => {
     _activeDragPayload = null
     setIsDragging(false)
   }, [])
@@ -66,7 +66,7 @@ export function useDropZone(onDrop: (payload: DragPayload) => void): DropZoneRes
     }
   }, [])
 
-  const handleDragLeave = useCallback((_e: React.DragEvent) => {
+  const handleDragLeave = useCallback(() => {
     setIsOver(false)
   }, [])
 

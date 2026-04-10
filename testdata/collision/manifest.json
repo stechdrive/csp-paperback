@@ -1,0 +1,245 @@
+{
+  "name": "collision",
+  "width": 1180,
+  "height": 520,
+  "labels": {
+    "bg": {
+      "text": "./[BG]/paper",
+      "top": 16,
+      "inputOpacity": 1
+    },
+    "fg": {
+      "text": "./[FG]/overlay",
+      "top": 44,
+      "inputOpacity": 1
+    },
+    "candidateA": {
+      "text": "./[_候補]/[A]/unused",
+      "top": 72,
+      "inputOpacity": 1
+    },
+    "candidateBg1": {
+      "text": "./[_候補]/[BG1]/unused",
+      "top": 100,
+      "inputOpacity": 1
+    },
+    "genzuNote": {
+      "text": "./[_原図]/note",
+      "top": 128,
+      "inputOpacity": 1
+    },
+    "book2": {
+      "text": "./[_原図]/[_BOOK1]/2",
+      "top": 156,
+      "inputOpacity": 1
+    },
+    "book1": {
+      "text": "./[_原図]/[_BOOK1]/1",
+      "top": 184,
+      "inputOpacity": 1
+    },
+    "bg1_2": {
+      "text": "./[_原図]/[_BG]/[BG1]/2",
+      "top": 212,
+      "inputOpacity": 1
+    },
+    "bg1_1": {
+      "text": "./[_原図]/[_BG]/[BG1]/1",
+      "top": 240,
+      "inputOpacity": 1
+    },
+    "aSpace2": {
+      "text": "./[LO]/[TEST]/[A ]/2",
+      "top": 268,
+      "inputOpacity": 0.35
+    },
+    "aSpace1": {
+      "text": "./[LO]/[TEST]/[A ]/1",
+      "top": 296,
+      "inputOpacity": 0.35
+    },
+    "aDup1": {
+      "text": "./[LO]/[TEST]/[A]/1",
+      "top": 324,
+      "inputOpacity": 1
+    },
+    "aEns1": {
+      "text": "./[LO]/[演出]/[A]/1",
+      "top": 352,
+      "inputOpacity": 1
+    },
+    "bBody": {
+      "text": "./[LO]/[作画]/[B]/[1]/body",
+      "top": 380,
+      "inputOpacity": 1
+    },
+    "bTone50": {
+      "text": "./[LO]/[作画]/[B]/[1]/tone50",
+      "top": 408,
+      "inputOpacity": 0.5
+    },
+    "bSakuga": {
+      "text": "./[LO]/[作画]/[B]/[1]/[_s]/作監修正",
+      "top": 436,
+      "inputOpacity": 1
+    }
+  },
+  "tracks": [
+    "A ",
+    "A",
+    "A",
+    "BG1",
+    "B"
+  ],
+  "cases": {
+    "xdts-only": {
+      "manualAnimFolderPaths": [],
+      "entries": {
+        "A_0002.jpg": [
+          "bg",
+          "aSpace2",
+          "fg"
+        ],
+        "A_0001.jpg": [
+          "bg",
+          "aSpace1",
+          "fg"
+        ],
+        "A(2)_0001.jpg": [
+          "bg",
+          "aDup1",
+          "fg"
+        ],
+        "A_0001_e.jpg": [
+          "bg",
+          "aEns1",
+          "fg"
+        ],
+        "B_0001.jpg": [
+          "bg",
+          {
+            "key": "bTone50",
+            "opacity": 0.5
+          },
+          "bBody",
+          "fg"
+        ],
+        "B_0001_s.jpg": [
+          "bg",
+          "bSakuga",
+          "fg"
+        ],
+        "BG1_0002.jpg": [
+          "bg1_2"
+        ],
+        "BG1_0001.jpg": [
+          "bg1_1"
+        ],
+        "_候補.jpg": [
+          "bg",
+          "candidateA",
+          "candidateBg1",
+          "fg"
+        ],
+        "_BG.jpg": [
+          "bg",
+          "bg1_2",
+          "genzuNote",
+          "fg"
+        ],
+        "_原図.jpg": [
+          "bg",
+          "genzuNote",
+          "book2",
+          "book1",
+          "bg1_2",
+          "fg"
+        ],
+        "_BOOK1.jpg": [
+          "bg",
+          "book2",
+          "book1",
+          "genzuNote",
+          "fg"
+        ]
+      }
+    },
+    "manual-book": {
+      "manualAnimFolderPaths": [
+        [
+          "_原図",
+          "_BOOK1"
+        ]
+      ],
+      "entries": {
+        "A_0002.jpg": [
+          "bg",
+          "aSpace2",
+          "fg"
+        ],
+        "A_0001.jpg": [
+          "bg",
+          "aSpace1",
+          "fg"
+        ],
+        "A(2)_0001.jpg": [
+          "bg",
+          "aDup1",
+          "fg"
+        ],
+        "A_0001_e.jpg": [
+          "bg",
+          "aEns1",
+          "fg"
+        ],
+        "B_0001.jpg": [
+          "bg",
+          {
+            "key": "bTone50",
+            "opacity": 0.5
+          },
+          "bBody",
+          "fg"
+        ],
+        "B_0001_s.jpg": [
+          "bg",
+          "bSakuga",
+          "fg"
+        ],
+        "BG1_0002.jpg": [
+          "bg1_2"
+        ],
+        "BG1_0001.jpg": [
+          "bg1_1"
+        ],
+        "_候補.jpg": [
+          "bg",
+          "candidateA",
+          "candidateBg1",
+          "fg"
+        ],
+        "_BG.jpg": [
+          "bg",
+          "bg1_2",
+          "genzuNote",
+          "fg"
+        ],
+        "_原図.jpg": [
+          "bg",
+          "genzuNote",
+          "book2",
+          "bg1_2",
+          "fg"
+        ],
+        "_BOOK1_0002.jpg": [
+          "book2",
+          "genzuNote"
+        ],
+        "_BOOK1_0001.jpg": [
+          "book1",
+          "genzuNote"
+        ]
+      }
+    }
+  }
+}

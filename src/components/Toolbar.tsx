@@ -1,23 +1,12 @@
 import { useRef, useState, useEffect } from 'react'
 import { useAppStore } from '../store'
-import { useLocale } from '../i18n'
+import { useLocale } from '../i18n/locale'
 import { useExport } from '../hooks/useExport'
+import { useIsMobile } from '../hooks/useIsMobile'
 import { SettingsDialog } from './SettingsDialog'
 import { HelpDialog } from './HelpDialog'
 import { Tooltip } from './Tooltip'
 import styles from './Toolbar.module.css'
-
-function useIsMobile() {
-  const [mobile, setMobile] = useState(false)
-  useEffect(() => {
-    const mq = window.matchMedia('(pointer: coarse) and (max-width: 1024px)')
-    setMobile(mq.matches)
-    const handler = (e: MediaQueryListEvent) => setMobile(e.matches)
-    mq.addEventListener('change', handler)
-    return () => mq.removeEventListener('change', handler)
-  }, [])
-  return mobile
-}
 
 function OverflowMenu({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false)
@@ -139,7 +128,7 @@ export function Toolbar({ onFiles, isLoading, error, notification, canUndo, canR
       className={isMobile ? styles.menuItem : styles.btn}
       onClick={() => setShowHelp(true)}
     >
-      ?　ヘルプ
+      ? ヘルプ
     </button>
   )
   const settingsBtn = (
@@ -147,7 +136,7 @@ export function Toolbar({ onFiles, isLoading, error, notification, canUndo, canR
       className={isMobile ? styles.menuItem : styles.btn}
       onClick={() => setShowSettings(true)}
     >
-      {isMobile ? '⚙　' : ''}{t.toolbar.settings}
+      {isMobile ? '⚙ ' : ''}{t.toolbar.settings}
     </button>
   )
   const exportBtn = (
@@ -193,8 +182,8 @@ export function Toolbar({ onFiles, isLoading, error, notification, canUndo, canR
 
         {isMobile && (
           <OverflowMenu>
-            <button className={styles.menuItem} onClick={onUndo} disabled={!canUndo}>↩　元に戻す</button>
-            <button className={styles.menuItem} onClick={onRedo} disabled={!canRedo}>↪　やり直し</button>
+            <button className={styles.menuItem} onClick={onUndo} disabled={!canUndo}>↩ 元に戻す</button>
+            <button className={styles.menuItem} onClick={onRedo} disabled={!canRedo}>↪ やり直し</button>
             {settingsBtn}
             {helpBtn}
           </OverflowMenu>

@@ -16,7 +16,6 @@ export function usePreview(canvasRef: React.RefObject<HTMLCanvasElement | null>)
   const docWidth = useAppStore(s => s.docWidth)
   const docHeight = useAppStore(s => s.docHeight)
   const selectedCells = useAppStore(s => s.selectedCells)
-  const manualAnimFolderIds = useAppStore(s => s.manualAnimFolderIds)
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lastRenderTimeRef = useRef(0)
@@ -40,7 +39,7 @@ export function usePreview(canvasRef: React.RefObject<HTMLCanvasElement | null>)
     } finally {
       isRenderingRef.current = false
     }
-  }, [canvasRef, layerTree, docWidth, docHeight, selectedCells, manualAnimFolderIds])
+  }, [canvasRef, layerTree, docWidth, docHeight, selectedCells])
 
   useEffect(() => {
     if (timerRef.current) clearTimeout(timerRef.current)

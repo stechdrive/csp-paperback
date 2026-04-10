@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { BlendMode } from '../types'
 import styles from './BlendOpacityBar.module.css'
 
-export const BLEND_MODES: { value: BlendMode; label: string }[] = [
+const BLEND_MODES: { value: BlendMode; label: string }[] = [
   { value: 'normal', label: '通常' },
   { value: 'pass through', label: '通過' },
   { value: 'multiply', label: '乗算' },

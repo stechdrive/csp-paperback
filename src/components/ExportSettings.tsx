@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useAppStore } from '../store'
-import { useLocale } from '../i18n'
+import { useLocale } from '../i18n/locale'
 import { Tooltip } from './Tooltip'
 import { UnmatchedTracksWarning } from './UnmatchedTracksWarning'
 import type { CspLayer } from '../types'

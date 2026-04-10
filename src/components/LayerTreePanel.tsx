@@ -1,6 +1,6 @@
 import { useCallback, useRef } from 'react'
 import { useAppStore } from '../store'
-import { useLocale } from '../i18n'
+import { useLocale } from '../i18n/locale'
 import { selectLayerTreeWithVisibility, selectLayerById } from '../store/selectors'
 import { LayerTreeNode } from './LayerTreeNode'
 import { BlendOpacityBar } from './BlendOpacityBar'

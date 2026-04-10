@@ -1,5 +1,5 @@
 import { useState, useCallback, type ReactNode, type DragEvent } from 'react'
-import { useLocale } from '../i18n'
+import { useLocale } from '../i18n/locale'
 import styles from './FileDropZone.module.css'
 
 interface FileDropZoneProps {
