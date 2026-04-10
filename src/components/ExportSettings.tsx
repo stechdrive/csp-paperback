@@ -90,19 +90,23 @@ export function ExportSettings() {
           >{t.settings.cellNamingCellname}</button>
         </div>
 
-        <label className={styles.switchLabel}>
-          <span className={styles.label}>{t.export.structure}</span>
-          <span
-            className={`${styles.switch} ${outputConfig.structure === 'hierarchy' ? styles.switchOn : ''}`}
-            onClick={() => setStructure(outputConfig.structure === 'hierarchy' ? 'flat' : 'hierarchy')}
-            role="switch"
-            aria-checked={outputConfig.structure === 'hierarchy'}
-          />
-        </label>
+        <Tooltip content={t.export.structureHint} placement="bottom">
+          <label className={styles.switchLabel}>
+            <span className={styles.label}>{t.export.structure}</span>
+            <span
+              className={`${styles.switch} ${outputConfig.structure === 'hierarchy' ? styles.switchOn : ''}`}
+              onClick={() => setStructure(outputConfig.structure === 'hierarchy' ? 'flat' : 'hierarchy')}
+              role="switch"
+              aria-checked={outputConfig.structure === 'hierarchy'}
+            />
+          </label>
+        </Tooltip>
       </div>
 
       <div className={styles.row}>
-        <span className={styles.label}>{t.export.outputTarget}</span>
+        <Tooltip content={t.export.outputTargetHint} placement="bottom">
+          <span className={styles.label}>{t.export.outputTarget}</span>
+        </Tooltip>
         <div className={styles.chipGroup}>
           {projectSettings.processTable.map(entry => {
             const tip = entry.folderNames.join(', ')
