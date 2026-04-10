@@ -7,7 +7,7 @@ import { applyLayerMask, compositeGroup, compositeStack, createCanvas } from './
  *
  * ルール:
  * - 非表示レイヤー/uiHidden → 合成不参加（空配列）
- * - 通常レイヤー → そのまま（不透明度100%）
+ * - 通常レイヤー → ポリシー適用後の不透明度でFlatLayer化
  * - フォルダ(pass through) + アニメ子孫なし → 子をそのまま親に展開（通過）
  * - フォルダ(非pass through) + アニメ子孫なし → 子を合成して1枚に
  * - アニメーションフォルダ → プレビュー時は最初のセルを合成（実export時はcell-extractorが担当）

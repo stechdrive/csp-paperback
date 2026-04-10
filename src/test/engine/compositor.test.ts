@@ -64,7 +64,7 @@ describe('drawLayer', () => {
     ctx = canvas.getContext('2d')!
   })
 
-  it('グローバルアルファを1.0に設定する（不透明度無視）', () => {
+  it('描画後にグローバルアルファを復元する', () => {
     const layer = makeFlatLayer({ blendMode: 'normal' })
     drawLayer(ctx, layer, 100, 100)
     expect(ctx.globalAlpha).toBe(1.0)
