@@ -1,8 +1,10 @@
-import type { CspLayer } from '../types'
+import type { CspLayer, VirtualSet } from '../types'
 
 export interface FlatEntry {
   id: string
   layer: CspLayer
+  kind: 'layer' | 'virtualSet'
+  virtualSet?: VirtualSet
   isCell: boolean
   animParentId: string | undefined
 }
@@ -12,22 +14,47 @@ export function flattenVisible(
   layers: CspLayer[],
   expandedFolders: Set<string>,
   manualAnimFolderIds: Set<string>,
+  virtualSets: VirtualSet[] = [],
   parentAnimId?: string,
 ): FlatEntry[] {
   const result: FlatEntry[] = []
   for (const layer of layers) {
     const isAnimFolder = layer.isAnimationFolder || (layer.isFolder && manualAnimFolderIds.has(layer.id))
+    for (const vs of virtualSets) {
+      if (vs.insertionLayerId !== layer.id || vs.insertionPosition !== 'above') continue
+      result.push({
+        id: vs.id,
+        layer,
+        kind: 'virtualSet',
+        virtualSet: vs,
+        isCell: false,
+        animParentId: undefined,
+      })
+    }
     result.push({
       id: layer.id,
       layer,
+      kind: 'layer',
       isCell: !!parentAnimId,
       animParentId: parentAnimId,
     })
+    for (const vs of virtualSets) {
+      if (vs.insertionLayerId !== layer.id || vs.insertionPosition !== 'below') continue
+      result.push({
+        id: vs.id,
+        layer,
+        kind: 'virtualSet',
+        virtualSet: vs,
+        isCell: false,
+        animParentId: undefined,
+      })
+    }
     if (layer.isFolder && expandedFolders.has(layer.id) && layer.children.length > 0) {
       result.push(...flattenVisible(
         layer.children,
         expandedFolders,
         manualAnimFolderIds,
+        virtualSets,
         isAnimFolder ? layer.id : parentAnimId,
       ))
     }
@@ -47,11 +74,21 @@ function isEffectiveAnimationFolder(layer: CspLayer, manualAnimFolderIds: Set<st
 export function collectShiftNavigationExpandableFolders(
   layers: CspLayer[],
   manualAnimFolderIds: Set<string>,
+  virtualSets: VirtualSet[] = [],
 ): Set<string> {
   const result = new Set<string>()
+  const virtualSetInsertionIds = new Set(
+    virtualSets
+      .map(vs => vs.insertionLayerId)
+      .filter((id): id is string => id !== null),
+  )
 
   function walk(layer: CspLayer): boolean {
-    let subtreeHasTarget = isEffectiveAnimationFolder(layer, manualAnimFolderIds) || layer.autoMarked || layer.singleMark
+    let subtreeHasTarget =
+      isEffectiveAnimationFolder(layer, manualAnimFolderIds) ||
+      layer.autoMarked ||
+      layer.singleMark ||
+      virtualSetInsertionIds.has(layer.id)
     for (const child of layer.children) {
       if (walk(child)) {
         subtreeHasTarget = true

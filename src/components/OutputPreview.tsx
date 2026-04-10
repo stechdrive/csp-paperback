@@ -36,24 +36,27 @@ function Thumbnail({ entry, transparent }: { entry: OutputPreviewEntry; transpar
 function LayerSeekBar() {
   const tree = useAppStore(selectLayerTreeWithVisibility)
   const selectedLayerId = useAppStore(s => s.selectedLayerId)
+  const selectedVirtualSetId = useAppStore(s => s.selectedVirtualSetId)
   const expandedFolders = useAppStore(s => s.expandedFolders)
   const manualAnimFolderIds = useAppStore(s => s.manualAnimFolderIds)
+  const virtualSets = useAppStore(s => s.virtualSets)
   const singleMarks = useAppStore(s => s.singleMarks)
   const selectLayer = useAppStore(s => s.selectLayer)
   const selectAnimCell = useAppStore(s => s.selectAnimCell)
   const setFocusedAnimFolder = useAppStore(s => s.setFocusedAnimFolder)
+  const setSelectedVirtualSet = useAppStore(s => s.setSelectedVirtualSet)
 
   const shiftExpandableFolders = useMemo(
-    () => collectShiftNavigationExpandableFolders(tree, manualAnimFolderIds),
-    [tree, manualAnimFolderIds],
+    () => collectShiftNavigationExpandableFolders(tree, manualAnimFolderIds, virtualSets),
+    [tree, manualAnimFolderIds, virtualSets],
   )
   const navigationExpandedFolders = useMemo(
     () => mergeExpandedFolders(expandedFolders, shiftExpandableFolders),
     [expandedFolders, shiftExpandableFolders],
   )
   const entries = useMemo(() =>
-    flattenVisible(tree, navigationExpandedFolders, manualAnimFolderIds),
-    [tree, navigationExpandedFolders, manualAnimFolderIds],
+    flattenVisible(tree, navigationExpandedFolders, manualAnimFolderIds, virtualSets),
+    [tree, navigationExpandedFolders, manualAnimFolderIds, virtualSets],
   )
 
   const [active, setActive] = useState(false)
@@ -62,16 +65,24 @@ function LayerSeekBar() {
   const fadeTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   const currentIdx = useMemo(() => {
+    if (selectedVirtualSetId) {
+      return entries.findIndex(e => e.kind === 'virtualSet' && e.id === selectedVirtualSetId)
+    }
     if (!selectedLayerId) return -1
-    return entries.findIndex(e => e.id === selectedLayerId)
-  }, [entries, selectedLayerId])
+    return entries.findIndex(e => e.kind === 'layer' && e.id === selectedLayerId)
+  }, [entries, selectedLayerId, selectedVirtualSetId])
 
   const navigateTo = useCallback((idx: number) => {
     if (idx < 0 || idx >= entries.length) return
     const entry = entries[idx]
-    if (entry.id === selectedLayerId) return
+    const alreadySelected = entry.kind === 'virtualSet'
+      ? entry.id === selectedVirtualSetId
+      : entry.id === selectedLayerId && selectedVirtualSetId === null
+    if (alreadySelected) return
 
-    if (entry.isCell && entry.animParentId) {
+    if (entry.kind === 'virtualSet' && entry.virtualSet) {
+      setSelectedVirtualSet(entry.virtualSet.id)
+    } else if (entry.isCell && entry.animParentId) {
       const { layerTree } = useAppStore.getState()
       const animFolder = findLayerById(layerTree, entry.animParentId)
       if (animFolder) {
@@ -89,9 +100,19 @@ function LayerSeekBar() {
       selectLayer(entry.id)
       setFocusedAnimFolder(null)
     } else {
+      setSelectedVirtualSet(null)
       selectLayer(entry.id)
     }
-  }, [entries, selectedLayerId, singleMarks, selectLayer, selectAnimCell, setFocusedAnimFolder])
+  }, [
+    entries,
+    selectedLayerId,
+    selectedVirtualSetId,
+    singleMarks,
+    selectLayer,
+    selectAnimCell,
+    setFocusedAnimFolder,
+    setSelectedVirtualSet,
+  ])
 
   const idxFromY = useCallback((clientY: number) => {
     const track = trackRef.current
@@ -170,7 +191,9 @@ function LayerSeekBar() {
       </div>
       {showLabel && currentEntry && (
         <div className={styles.seekLabelVertical}>
-          {currentEntry.layer.name}
+          {currentEntry.kind === 'virtualSet' && currentEntry.virtualSet
+            ? currentEntry.virtualSet.name
+            : currentEntry.layer.name}
         </div>
       )}
     </div>

@@ -15,11 +15,6 @@
  * - ファイル名集合・ファイル数は完全一致を要求する。
  * - 画素は最大 1 階調 (alpha/RGB) の差まで許容する。CSP 手動書き出しと合成エンジンの
  *   アンチエイリアス端丸め誤差を吸収するため。1 階調を超える差はゴールデン退行として fail。
- * - 仮想セル (仮想セルテスト.png) は既知の不整合のため画素比較から除外する。
- *   commit 09258a6 で 3-track XDTS に更新した際、旧仮想セル golden は同名バグ修正前の
- *   挙動で作られた状態のまま。現行コードの名前解決 (ツリー DFS 先頭優先) では
- *   fixture のメンバー "A" が 演出/A を拾うため 作画/A の goldenとずれる。
- *   既存の c001-golden.test.ts も同じ理由で flatName セットから除外している。
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import fs from 'node:fs'
@@ -30,90 +25,15 @@ import { parseXdts } from '../../utils/xdts-parser'
 import { buildLayerTree, detectAnimationFoldersByXdts } from '../../engine/tree-builder'
 import { extractAllEntries, extractVirtualSetEntries } from '../../engine/cell-extractor'
 import { selectLayerTreeWithVisibility } from '../../store/selectors'
-import { DEFAULT_PROJECT_SETTINGS, type CspLayer } from '../../types'
-import type { VirtualSet, SingleMark } from '../../types/marks'
+import { DEFAULT_PROJECT_SETTINGS } from '../../types'
+import { buildC001VirtualSets } from '../../sample/c001-virtual-set'
 
 const REPO_ROOT = path.resolve(__dirname, '../../..')
 const TESTDATA = path.join(REPO_ROOT, 'testdata')
 const GOLDEN_DIR = path.join(TESTDATA, 'golden')
 
-/** 既知の不整合により画素比較から除外する golden ファイル名 (PNG 名) */
-const PIXEL_COMPARE_SKIP = new Set<string>(['仮想セルテスト.png'])
-
 /** 許容する最大チャンネル差分 (0〜255)。CSP 書き出しと合成エンジンの丸め誤差吸収用 */
 const MAX_CHANNEL_TOLERANCE = 1
-
-interface NamedVirtualSet {
-  id: string
-  name: string
-  insertionLayerName: string | null
-  insertionPosition: 'above' | 'below'
-  members: Array<{
-    layerName: string
-    blendMode: string | null
-    opacity: number | null
-  }>
-  expandToAnimationCells: boolean
-  visibilityOverrides: Record<string, boolean>
-}
-
-const C001_VIRTUAL_SETS: NamedVirtualSet[] = [
-  {
-    id: '0b40dcc7-2922-4bef-8282-8ab894e3f66c',
-    name: '仮想セルテスト',
-    insertionLayerName: '_撮影指示',
-    insertionPosition: 'above',
-    members: [
-      { layerName: 'B', blendMode: null, opacity: null },
-      { layerName: 'A', blendMode: null, opacity: null },
-      { layerName: '_原図', blendMode: null, opacity: null },
-    ],
-    expandToAnimationCells: false,
-    visibilityOverrides: {
-      '1': true,
-      '_原図': true,
-      '_BOOK1': true,
-      './[_原図]/[_BOOK1]/BOOK1': true,
-      '_BG': true,
-      './[_原図]/[_BG]/BG1': true,
-      'A': true,
-      './[LO]/[作画]/[A]/[1]/線画': true,
-      'B': true,
-      '_s': false,
-      './[LO]/[作画]/[B]/[1]/[_s]/作監修正': true,
-      '作監修正用紙': true,
-      './[LO]/[作画]/[B]/[1]/線画1': true,
-      '影': true,
-      './[LO]/[作画]/[B]/[1]/[影]/影2': true,
-      './[LO]/[作画]/[B]/[1]/[影]/影1': true,
-    },
-  },
-]
-
-function namedVirtualSetToVirtualSet(
-  vs: NamedVirtualSet,
-  nameToId: Map<string, string>,
-): VirtualSet {
-  return {
-    id: vs.id,
-    name: vs.name,
-    insertionLayerId: vs.insertionLayerName ? (nameToId.get(vs.insertionLayerName) ?? null) : null,
-    insertionPosition: vs.insertionPosition,
-    members: vs.members
-      .map(m => ({
-        layerId: nameToId.get(m.layerName) ?? '',
-        blendMode: m.blendMode,
-        opacity: m.opacity,
-      }))
-      .filter(m => m.layerId !== ''),
-    expandToAnimationCells: vs.expandToAnimationCells,
-    visibilityOverrides: Object.fromEntries(
-      Object.entries(vs.visibilityOverrides)
-        .map(([name, v]) => [nameToId.get(name) ?? '', v])
-        .filter(([id]) => id !== ''),
-    ),
-  }
-}
 
 // ── document.createElement('canvas') を @napi-rs/canvas にすり替え ──
 // ag-psd はレイヤー画像を document.createElement('canvas') で作る前提なので、
@@ -140,13 +60,6 @@ function restoreDocumentCreateElement(): void {
   origCreateElement = null
 }
 
-function flatLayers(layers: CspLayer[]): CspLayer[] {
-  const result: CspLayer[] = []
-  const walk = (ls: CspLayer[]) => { for (const l of ls) { result.push(l); walk(l.children) } }
-  walk(layers)
-  return result
-}
-
 describe('c001 golden (image pixel match)', () => {
   beforeAll(() => { patchDocumentCreateElement() })
   afterAll(() => { restoreDocumentCreateElement() })
@@ -165,24 +78,14 @@ describe('c001 golden (image pixel match)', () => {
     const baseTree = buildLayerTree(psd, xdts, DEFAULT_PROJECT_SETTINGS.archivePatterns)
     detectAnimationFoldersByXdts(baseTree, xdts)
 
-    // 名前ベースの fixture を現在の layer id に解決
-    const flat = flatLayers(baseTree)
-    const nameToId = new Map<string, string>()
-    for (const l of flat) {
-      if (!nameToId.has(l.originalName)) nameToId.set(l.originalName, l.id)
-    }
-    const singleMarks = new Map<string, SingleMark>()
-    const virtualSets: VirtualSet[] = C001_VIRTUAL_SETS.map(vs =>
-      namedVirtualSetToVirtualSet(vs, nameToId),
-    )
-    const manualAnimFolderIds = new Set<string>()
+    const virtualSets = buildC001VirtualSets(baseTree)
 
     // store の selector と同じ変換で singleMark/manualAnim を tree に反映
     const resolvedTree = selectLayerTreeWithVisibility({
       layerTree: baseTree,
       visibilityOverrides: new Map(),
-      manualAnimFolderIds,
-      singleMarks,
+      manualAnimFolderIds: new Set(),
+      singleMarks: new Map(),
     } as never)
 
     // 出力エントリ生成 (golden は透過背景で作られているため background='transparent')
@@ -202,7 +105,6 @@ describe('c001 golden (image pixel match)', () => {
       'transparent',
     )
     const all = [...entries, ...vsEntries]
-
     // 各 entry の canvas を PNG バッファへ
     const rendered = new Map<string, Buffer>()
     for (const e of all) {
@@ -233,8 +135,6 @@ describe('c001 golden (image pixel match)', () => {
     const DUMP_DIR = path.join(REPO_ROOT, '.tmp', 'c001-golden-image-diff')
     const mismatches: string[] = []
     for (const [name, gBuf] of golden) {
-      if (PIXEL_COMPARE_SKIP.has(name)) continue
-
       const rBuf = rendered.get(name)!
       if (Buffer.compare(gBuf, rBuf) === 0) continue  // binary identical → trivially pass
 

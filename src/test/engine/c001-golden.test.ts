@@ -19,6 +19,7 @@ import { parseXdts } from '../../utils/xdts-parser'
 import { buildLayerTree, detectAnimationFoldersByXdts } from '../../engine/tree-builder'
 import { extractAllEntries } from '../../engine/cell-extractor'
 import { DEFAULT_PROJECT_SETTINGS } from '../../types'
+import { C001_VIRTUAL_SET_JPG } from '../../sample/c001-virtual-set'
 
 const REPO_ROOT = path.resolve(__dirname, '../../..')
 const TESTDATA = path.join(REPO_ROOT, 'testdata')
@@ -50,12 +51,13 @@ describe('c001 golden (path identity)', () => {
 
     const flatNames = new Set(entries.map(e => e.flatName))
 
-    // golden ファイル名 (.png → .jpg に変換、仮想セットは別パスなので除外)
+    // golden ファイル名 (.png → .jpg に変換)
     const goldenFiles = fs.readdirSync(GOLDEN_DIR).filter(f => f.endsWith('.png'))
     const expectedFlatNames = new Set(
       goldenFiles
         .map(f => f.replace(/\.png$/, '.jpg'))
-        .filter(n => n !== '仮想セルテスト.jpg'),  // 仮想セットは extractVirtualSetEntries 側
+        // 仮想セットは c001-golden-image.test.ts でピクセル比較する。
+        .filter(name => name !== C001_VIRTUAL_SET_JPG),
     )
 
     // debug 出力: 両セットの内容

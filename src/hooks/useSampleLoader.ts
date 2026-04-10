@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
 import { useAppStore } from '../store'
+import { buildC001VirtualSets } from '../sample/c001-virtual-set'
 
 const BASE = import.meta.env.BASE_URL
 
@@ -25,6 +26,13 @@ export function useSampleLoader() {
       resetProject()
       loadXdts(xdtsText, 'c001.xdts')
       loadPsd(psdBuf, 'c001.psd')
+      const virtualSets = buildC001VirtualSets(useAppStore.getState().layerTree)
+      useAppStore.setState({
+        virtualSets,
+        selectedVirtualSetId: virtualSets[0]?.id ?? null,
+        focusedAnimFolderId: null,
+        selectedLayerId: null,
+      })
     } finally {
       setLoading(false)
     }

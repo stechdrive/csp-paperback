@@ -7,6 +7,7 @@ import {
 } from '../../utils/layerNavigation'
 import { buildLayerTree } from '../../engine/tree-builder'
 import { makeAnimationFolder, makeFolder, makeLayer, makePsd } from '../helpers/psd-factory'
+import type { VirtualSet } from '../../types'
 
 function idsByName(layers: ReturnType<typeof buildLayerTree>): Record<string, string> {
   const result: Record<string, string> = {}
@@ -18,6 +19,18 @@ function idsByName(layers: ReturnType<typeof buildLayerTree>): Record<string, st
   }
   walk(layers)
   return result
+}
+
+function makeVirtualSet(id: string, insertionLayerId: string, insertionPosition: 'above' | 'below'): VirtualSet {
+  return {
+    id,
+    name: `vs-${id}`,
+    insertionLayerId,
+    insertionPosition,
+    members: [],
+    expandToAnimationCells: false,
+    visibilityOverrides: {},
+  }
 }
 
 describe('Shift navigation expansion helpers', () => {
@@ -136,5 +149,54 @@ describe('Shift navigation expansion helpers', () => {
     )
 
     expect(entries.map(entry => entry.layer.originalName)).toEqual(['root', 'A', '1'])
+  })
+
+  it('仮想セットの差し込み位置と祖先をShiftナビ用に展開対象にする', () => {
+    const psd = makePsd({
+      children: [
+        makeFolder('root', [
+          makeFolder('notes', [
+            makeLayer({ name: 'target' }),
+          ]),
+        ]),
+      ],
+    })
+    const tree = buildLayerTree(psd)
+    const root = tree[0]
+    const notes = root.children[0]
+    const target = notes.children[0]
+    const virtualSets = [makeVirtualSet('vs-1', target.id, 'above')]
+
+    const expandable = collectShiftNavigationExpandableFolders(tree, new Set(), virtualSets)
+
+    expect(expandable.has(root.id)).toBe(true)
+    expect(expandable.has(notes.id)).toBe(true)
+  })
+
+  it('Shiftナビ候補に仮想セットをレイヤーの上下一致で含める', () => {
+    const psd = makePsd({
+      children: [
+        makeFolder('root', [
+          makeLayer({ name: 'target' }),
+        ]),
+      ],
+    })
+    const tree = buildLayerTree(psd)
+    const root = tree[0]
+    const target = root.children[0]
+    const virtualSets = [
+      makeVirtualSet('vs-above', target.id, 'above'),
+      makeVirtualSet('vs-below', target.id, 'below'),
+    ]
+    const entries = flattenVisible(
+      tree,
+      new Set([root.id]),
+      new Set(),
+      virtualSets,
+    )
+
+    expect(entries.map(entry =>
+      entry.kind === 'virtualSet' ? entry.virtualSet?.name : entry.layer.originalName,
+    )).toEqual(['root', 'vs-vs-above', 'target', 'vs-vs-below'])
   })
 })

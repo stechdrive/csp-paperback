@@ -45,6 +45,7 @@ function VirtualSetBadge({ vs, indentWidth, onClear }: {
   return (
     <div
       className={styles.vsBadge}
+      data-virtual-set-id={vs.id}
       onClick={e => { e.stopPropagation(); setSelectedVirtualSet(vs.id) }}
       title={vs.name}
     >

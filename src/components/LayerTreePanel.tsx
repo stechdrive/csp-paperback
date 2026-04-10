@@ -20,6 +20,8 @@ export function LayerTreePanel() {
   const selectedLayerId = useAppStore(s => s.selectedLayerId)
   const expandedFolders = useAppStore(s => s.expandedFolders)
   const visibilityOverrides = useAppStore(s => s.visibilityOverrides)
+  const virtualSets = useAppStore(s => s.virtualSets)
+  const selectedVirtualSetId = useAppStore(s => s.selectedVirtualSetId)
   const { t } = useLocale()
 
   const manualAnimFolderIds = useAppStore(s => s.manualAnimFolderIds)
@@ -35,21 +37,29 @@ export function LayerTreePanel() {
   const resetVisibility = useAppStore(s => s.resetVisibility)
   const setLayerBlendMode = useAppStore(s => s.setLayerBlendMode)
   const setLayerOpacity = useAppStore(s => s.setLayerOpacity)
+  const setSelectedVirtualSet = useAppStore(s => s.setSelectedVirtualSet)
 
   const selectedLayer = useAppStore(s => selectedLayerId ? selectLayerById(s, selectedLayerId) : null)
 
   const treeRef = useRef<HTMLDivElement>(null)
 
   const shiftExpandableFolders = useMemo(
-    () => collectShiftNavigationExpandableFolders(tree, manualAnimFolderIds),
-    [tree, manualAnimFolderIds],
+    () => collectShiftNavigationExpandableFolders(tree, manualAnimFolderIds, virtualSets),
+    [tree, manualAnimFolderIds, virtualSets],
   )
   const navigationExpandedFolders = useMemo(
     () => mergeExpandedFolders(expandedFolders, shiftExpandableFolders),
     [expandedFolders, shiftExpandableFolders],
   )
   const selectedShiftExpandedFolders = useMemo(
-    () => selectedLayerId
+    () => selectedVirtualSetId
+      ? collectShiftNavigationExpandedPath(
+        tree,
+        virtualSets.find(vs => vs.id === selectedVirtualSetId)?.insertionLayerId ?? '',
+        expandedFolders,
+        shiftExpandableFolders,
+      )
+      : selectedLayerId
       ? collectShiftNavigationExpandedPath(
         tree,
         selectedLayerId,
@@ -57,7 +67,7 @@ export function LayerTreePanel() {
         shiftExpandableFolders,
       )
       : new Set<string>(),
-    [tree, selectedLayerId, expandedFolders, shiftExpandableFolders],
+    [tree, selectedLayerId, selectedVirtualSetId, virtualSets, expandedFolders, shiftExpandableFolders],
   )
   const visibleExpandedFolders = useMemo(
     () => mergeExpandedFolders(expandedFolders, selectedShiftExpandedFolders),
@@ -71,15 +81,26 @@ export function LayerTreePanel() {
     })
   }, [])
 
+  const scrollVirtualSetIntoView = useCallback((virtualSetId: string) => {
+    requestAnimationFrame(() => {
+      const el = treeRef.current?.querySelector(`[data-virtual-set-id="${virtualSetId}"]`)
+      el?.scrollIntoView({ block: 'nearest' })
+    })
+  }, [])
+
   /** Shift+スクロールでレイヤーを上下切り替え（プレビュー連動） */
   const handleWheel = useCallback((e: React.WheelEvent) => {
     if (!e.shiftKey || tree.length === 0) return
     e.preventDefault()
 
-    const entries = flattenVisible(tree, navigationExpandedFolders, manualAnimFolderIds)
+    const entries = flattenVisible(tree, navigationExpandedFolders, manualAnimFolderIds, virtualSets)
     if (entries.length === 0) return
 
-    const currentIdx = selectedLayerId ? entries.findIndex(e => e.id === selectedLayerId) : -1
+    const currentIdx = selectedVirtualSetId
+      ? entries.findIndex(e => e.kind === 'virtualSet' && e.id === selectedVirtualSetId)
+      : selectedLayerId
+        ? entries.findIndex(e => e.kind === 'layer' && e.id === selectedLayerId)
+        : -1
     const direction = e.deltaY > 0 ? 1 : -1
     let nextIdx: number
     if (currentIdx < 0) {
@@ -89,9 +110,16 @@ export function LayerTreePanel() {
     }
 
     const entry = entries[nextIdx]
-    if (entry.id !== selectedLayerId) {
+    const alreadySelected = entry.kind === 'virtualSet'
+      ? entry.id === selectedVirtualSetId
+      : entry.id === selectedLayerId && selectedVirtualSetId === null
+
+    if (!alreadySelected) {
       // handleRowClick と同じ選択ロジックでプレビューを連動
-      if (entry.isCell && entry.animParentId) {
+      if (entry.kind === 'virtualSet' && entry.virtualSet) {
+        setSelectedVirtualSet(entry.virtualSet.id)
+        scrollVirtualSetIntoView(entry.virtualSet.id)
+      } else if (entry.isCell && entry.animParentId) {
         const { layerTree } = useAppStore.getState()
         const animFolder = findLayerById(layerTree, entry.animParentId)
         if (animFolder) {
@@ -109,21 +137,28 @@ export function LayerTreePanel() {
         selectLayer(entry.id)
         setFocusedAnimFolder(null)
       } else {
+        setSelectedVirtualSet(null)
         selectLayer(entry.id)
       }
       // 選択先が見えるようにスクロール
-      scrollLayerIntoView(entry.id)
+      if (entry.kind === 'layer') {
+        scrollLayerIntoView(entry.id)
+      }
     }
   }, [
     tree,
     navigationExpandedFolders,
     manualAnimFolderIds,
+    virtualSets,
     singleMarks,
     selectedLayerId,
+    selectedVirtualSetId,
     selectLayer,
     selectAnimCell,
     setFocusedAnimFolder,
+    setSelectedVirtualSet,
     scrollLayerIntoView,
+    scrollVirtualSetIntoView,
   ])
 
   const handleBlendModeChange = useCallback((value: string) => {
