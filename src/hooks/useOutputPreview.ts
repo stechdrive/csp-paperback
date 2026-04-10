@@ -10,7 +10,7 @@ import {
   collectMarkedLayerContext,
   buildParentSuffixMap,
 } from '../engine/cell-extractor'
-import { assignTracksToFolders } from '../engine/anim-folder-assignment'
+import { buildAssignmentFromDetectedFolders } from '../engine/anim-folder-assignment'
 import { computeDisplayNames } from '../engine/anim-folder-display-name'
 import { flattenTree, compositeRoot } from '../engine/flatten'
 import { collectMembersInTreeOrder, buildMemberFlatsWithOverride } from '../utils/virtual-set-utils'
@@ -109,7 +109,7 @@ export function useOutputPreview(): OutputPreviewEntry[] {
     // ── 3b. autoMarked/singleMark（アニメセル外） ──────────────────────────
     // extractAllEntries と同じ collectMarkedLayerContext を使用
     const markedLayer = findLayerById(layerTree, selectedLayerId)
-    if (markedLayer && (markedLayer.autoMarked || markedLayer.singleMark)) {
+    if (markedLayer && !markedLayer.isAnimationFolder && (markedLayer.autoMarked || markedLayer.singleMark)) {
       const { lower, upper } = collectMarkedLayerContext(selectedLayerId, layerTree, docWidth, docHeight)
       const layerFlats = flattenTree([markedLayer], docWidth, docHeight)
       const canvas = compositeRoot(
@@ -169,7 +169,7 @@ function previewAnimFolder(
   // これによりプレビューと実出力のファイル名が構造的に一致する。
   const parentSuffixMap = buildParentSuffixMap(layerTree, projectSettings.processTable)
   const assignment = xdtsData
-    ? assignTracksToFolders(layerTree, xdtsData.tracks).assignment
+    ? buildAssignmentFromDetectedFolders(layerTree)
     : new Map<string, number>()  // XDTS 無し: 手動マークのみを想定
   const displayNames = computeDisplayNames(layerTree, assignment, parentSuffixMap)
   const displayName = displayNames.get(animFolderId) ?? animFolder.originalName.trim()

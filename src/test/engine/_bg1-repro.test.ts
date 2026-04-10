@@ -1,15 +1,10 @@
 /**
- * 調査用 repro: _[フォルダ名] 配下のアニメフォルダ認識バグ
+ * regression: _[フォルダ名] 配下のアニメフォルダ認識
  *
- * 現行 anim-folder-assignment.ts の prio1/prio2 ロジックが
- * autoMarked (_ プレフィックス) を「アーカイブ fallback」と扱っているため、
- * clean 枝と _[フォルダ名] 配下に同名フォルダが並ぶとき、
- * _[フォルダ名] 配下のフォルダは prio2 に落ちて割当を奪われる。
- *
- * これは一時ファイルで、修正実装後に適切な regression test へ昇格するか削除する。
+ * `_` プレフィックスは単体出力マークであり、XDTS アニメフォルダ候補を
+ * fallback 扱いする条件ではない。
  */
 import { describe, it, expect } from 'vitest'
-import { assignTracksToFolders } from '../../engine/anim-folder-assignment'
 import { buildLayerTree, detectAnimationFoldersByXdts } from '../../engine/tree-builder'
 import { extractAllEntries } from '../../engine/cell-extractor'
 import { makeLayer, makeFolder, makePsd } from '../helpers/psd-factory'
@@ -29,7 +24,7 @@ function findAll(tree: CspLayer[], name: string): CspLayer[] {
 }
 
 describe('_[フォルダ名] 配下アニメフォルダ認識 repro', () => {
-  it('単体ケース: _原図/_BG/BG1 のみ → 現行でも認識される (prio2 が fallback で取得)', () => {
+  it('単体ケース: _原図/_BG/BG1 のみ → 認識される', () => {
     const bg1 = makeFolder('BG1', [makeFolder('1', [makeLayer({ name: '線画' })])])
     const _BG = makeFolder('_BG', [bg1])
     const _genzu = makeFolder('_原図', [_BG])
@@ -48,8 +43,8 @@ describe('_[フォルダ名] 配下アニメフォルダ認識 repro', () => {
     expect(bg1s[0].isAnimationFolder).toBe(true)  // 単体なら認識される
   })
 
-  it('競合ケース: 別枝に同名 BG1 があると _原図/_BG/BG1 は prio2 で負けて認識されない', () => {
-    // 通常枝の BG1 (prio1) と _原図/_BG/BG1 (prio2) の競合
+  it('競合ケース: 別枝に同名 BG1 があってもボトム順で _原図/_BG/BG1 が認識される', () => {
+    // 通常枝の BG1 と _原図/_BG/BG1 の競合
     const cleanBg1 = makeFolder('BG1', [makeFolder('1', [makeLayer({ name: '線画' })])])
     const markedBg1 = makeFolder('BG1', [makeFolder('1', [makeLayer({ name: '線画' })])])
     const _BG = makeFolder('_BG', [markedBg1])
@@ -73,13 +68,11 @@ describe('_[フォルダ名] 配下アニメフォルダ認識 repro', () => {
     const markedBranchBg1 = tree[1].children[0].children[0]
     expect(topLevelCleanBg1.originalName).toBe('BG1')
     expect(markedBranchBg1.originalName).toBe('BG1')
-    // ── 現行の (バグった) 挙動 ──
-    // clean 枝の BG1 (prio1) がトラック 0 を取る
-    // _原図/_BG/BG1 (prio2) は割当されず通常フォルダのまま
-    expect(topLevelCleanBg1.isAnimationFolder).toBe(true)
-    expect(markedBranchBg1.isAnimationFolder).toBe(false)  // ← ユーザーはここを true にしたい
+    // XDTS trackNo 0 はボトムレイヤーなので、ボトム側の _原図/_BG/BG1 が割当される
+    expect(topLevelCleanBg1.isAnimationFolder).toBe(false)
+    expect(markedBranchBg1.isAnimationFolder).toBe(true)
 
-    // 抽出結果: BG1 セルは clean 枝からしか出ない
+    // 抽出結果: BG1 セルは _原図/_BG/BG1 から出る
     const entries = extractAllEntries(
       tree, DEFAULT_PROJECT_SETTINGS, 100, 100, 'transparent', false, xdts,
     )

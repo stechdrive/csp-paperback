@@ -1,5 +1,10 @@
 import { describe, it, expect, vi } from 'vitest'
-import { parseXdts, resolveCellsAtFrame, findFirstFrameOfCell } from '../../utils/xdts-parser'
+import {
+  parseXdts,
+  resolveCellsAtFrame,
+  resolveCellsAtFrameByTrackNo,
+  findFirstFrameOfCell,
+} from '../../utils/xdts-parser'
 
 /**
  * 実際のxdts形式（ヘッダー行+JSON）のテスト用ヘルパー
@@ -345,6 +350,27 @@ describe('resolveCellsAtFrame', () => {
     ]
     const result = resolveCellsAtFrame(tracks, 8)
     expect(result.get('A')).toBe('A0002')
+  })
+})
+
+describe('resolveCellsAtFrameByTrackNo', () => {
+  function makeTrack(name: string, trackNo: number, entries: [number, string | null][]) {
+    return {
+      name,
+      trackNo,
+      cellNames: entries.flatMap(([, c]) => c ? [c] : []),
+      frames: entries.map(([frameIndex, cellName]) => ({ frameIndex, cellName })),
+    }
+  }
+
+  it('同名トラックを trackNo キーで保持する', () => {
+    const tracks = [
+      makeTrack('A', 0, [[0, '1']]),
+      makeTrack('A', 1, [[0, '2']]),
+    ]
+    const result = resolveCellsAtFrameByTrackNo(tracks, 0)
+    expect(result.get(0)).toBe('1')
+    expect(result.get(1)).toBe('2')
   })
 })
 

@@ -3,7 +3,7 @@ import type { VirtualSet } from '../types/marks'
 import { flattenTree } from './flatten'
 import { applyLayerMask, compositeGroup, compositeStack, createCanvas } from './compositor'
 import { collectMembersInTreeOrder, buildMemberFlatsWithOverride } from '../utils/virtual-set-utils'
-import { assignTracksToFolders } from './anim-folder-assignment'
+import { buildAssignmentFromDetectedFolders } from './anim-folder-assignment'
 import { computeDisplayNames } from './anim-folder-display-name'
 
 /**
@@ -558,9 +558,9 @@ export function extractAllEntries(
   // 同名でも parentSuffix が異なれば別 identity(process variants)として扱い、
   // 同一 identity に複数候補がある場合のみ (n) 連番で disambiguate する。
   //
-  // XDTS がある場合: trackNo 順(ボトム優先)の割当。XDTS が無ければ疑似 trackNo。
+  // XDTS がある場合: 読み込み時に確定した trackNo 割当。XDTS が無ければ疑似 trackNo。
   const assignmentMap = xdts
-    ? assignTracksToFolders(tree, xdts.tracks).assignment
+    ? buildAssignmentFromDetectedFolders(tree)
     : buildPseudoAssignmentFromTree(tree)
   const displayNameMap = computeDisplayNames(tree, assignmentMap, animParentSuffixMap)
 
@@ -576,10 +576,10 @@ export function extractAllEntries(
       const layer = layers[i]
       if (layer.hidden || layer.uiHidden) continue
 
-      if (layer.isAnimationFolder && !layer.autoMarked && !layer.singleMark) {
-        // マーク済みでないアニメフォルダ: セルを抽出して出力
-        // autoMarked/singleMark が同時に設定されている場合（_プレフィックス + XDTSトラック一致）は
-        // 単体マーク出力として扱うため、このブランチをスキップする
+      if (layer.isAnimationFolder) {
+        // XDTS/手動指定済みのアニメフォルダ: セルを抽出して出力。
+        // `_` プレフィックスは単体出力マークだが、XDTS 検出済みの同一フォルダでは
+        // タイムシート側の構造を優先する。
         const [localLower, localUpper] = splitSiblingsByPosition(layers, i, docWidth, docHeight)
         const thisLower = [...inheritedLower, ...localLower]
         const thisUpper = [...localUpper, ...inheritedUpper]

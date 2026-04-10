@@ -147,8 +147,8 @@ export function parseXdts(text: string): XdtsData {
  * - 一度も割り当てがない場合も何も表示しない
  * - 負のフレーム番号が含まれていても動作する（initial value として機能する）
  *
- * 同名トラックが複数ある場合、Map のキーが上書きされるため、**呼び出し側は
- * 同名問題を考慮して assignTracksToFolders 等の対応層を使うこと**。
+ * 同名トラックが複数ある場合、Map のキーが上書きされるため、アニメフォルダ対応や
+ * タイムライン同期の内部処理では resolveCellsAtFrameByTrackNo を使うこと。
  *
  * @returns Map<trackName, cellName | null>  null = 表示なし
  */
@@ -170,6 +170,33 @@ export function resolveCellsAtFrame(
     }
     // 割り当てなし → null（表示しない）
     result.set(track.name, resolved ?? null)
+  }
+
+  return result
+}
+
+/**
+ * 指定フレームにおける各トラックのセル名を trackNo キーで解決する。
+ *
+ * 同名トラックでは trackName キーの Map が上書きされるため、アニメフォルダ対応や
+ * タイムライン同期の内部処理ではこちらを使う。
+ */
+export function resolveCellsAtFrameByTrackNo(
+  tracks: XdtsTrack[],
+  frameIndex: number,
+): Map<number, string | null> {
+  const result = new Map<number, string | null>()
+
+  for (const track of tracks) {
+    let resolved: string | null | undefined = undefined
+    for (let i = track.frames.length - 1; i >= 0; i--) {
+      const f = track.frames[i]
+      if (f.frameIndex <= frameIndex) {
+        resolved = f.cellName
+        break
+      }
+    }
+    result.set(track.trackNo, resolved ?? null)
   }
 
   return result

@@ -1,7 +1,7 @@
 import type { StateCreator } from 'zustand'
 import type { CspLayer } from '../types'
 import type { XdtsTrack } from '../types/xdts'
-import { findFirstFrameOfCell, resolveCellsAtFrame } from '../utils/xdts-parser'
+import { findFirstFrameOfCell, resolveCellsAtFrameByTrackNo } from '../utils/xdts-parser'
 import type { AppStore } from './index'
 
 export interface UiSlice {
@@ -48,14 +48,19 @@ function findLayerById(layers: CspLayer[], id: string): CspLayer | null {
   return null
 }
 
-function findAnimFolderByTrackName(
+function findAnimFolderByTrackNo(
   layers: CspLayer[],
-  trackName: string,
-  manualIds: Set<string>,
+  trackNo: number,
 ): CspLayer | null {
   for (const l of layers) {
-    if ((l.isAnimationFolder || manualIds.has(l.id)) && l.originalName === trackName) return l
-    const found = findAnimFolderByTrackName(l.children, trackName, manualIds)
+    if (
+      l.isAnimationFolder &&
+      l.animationFolder?.detectedBy === 'xdts' &&
+      l.animationFolder.trackNo === trackNo
+    ) {
+      return l
+    }
+    const found = findAnimFolderByTrackNo(l.children, trackNo)
     if (found) return found
   }
   return null
@@ -83,7 +88,7 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
   },
 
   selectAnimCell: (animFolderId, cellIndex) => {
-    const { xdtsData, layerTree, manualAnimFolderIds, selectedCells } = get()
+    const { xdtsData, layerTree, selectedCells } = get()
     const newSelectedCells = new Map(selectedCells)
     newSelectedCells.set(animFolderId, cellIndex)
     let resolvedFrame = -1
@@ -95,18 +100,18 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
 
       if (animFolder && selectedCell) {
         const cellName = selectedCell.originalName
-        // このフォルダに対応するXDTSトラックを探す（トラック名 = フォルダ名）
-        const track: XdtsTrack | undefined = xdtsData.tracks.find(
-          t => t.name === animFolder.originalName
-        )
+        // このフォルダに対応するXDTSトラックを trackNo で探す（同名トラック対応）
+        const track: XdtsTrack | undefined = typeof animFolder.animationFolder?.trackNo === 'number'
+          ? xdtsData.tracks.find(t => t.trackNo === animFolder.animationFolder!.trackNo)
+          : xdtsData.tracks.find(t => t.name === animFolder.originalName)
         if (track) {
           const frameIndex = findFirstFrameOfCell(track, cellName)
           if (frameIndex >= 0) {
             resolvedFrame = frameIndex
             // そのフレームでの全トラックのセルをホールドルールで解決
-            const resolved = resolveCellsAtFrame(xdtsData.tracks, frameIndex)
-            for (const [trackName, resolvedCellName] of resolved) {
-              const otherFolder = findAnimFolderByTrackName(layerTree, trackName, manualAnimFolderIds)
+            const resolved = resolveCellsAtFrameByTrackNo(xdtsData.tracks, frameIndex)
+            for (const [trackNo, resolvedCellName] of resolved) {
+              const otherFolder = findAnimFolderByTrackNo(layerTree, trackNo)
               if (!otherFolder) continue
               if (resolvedCellName === null) {
                 // SYMBOL_NULL_CELL: カラ（何も表示しない）
@@ -129,13 +134,13 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
   },
 
   seekToFrame: (frameIndex) => {
-    const { xdtsData, layerTree, manualAnimFolderIds } = get()
+    const { xdtsData, layerTree } = get()
     if (!xdtsData || xdtsData.duration <= 0) return
     const clamped = Math.max(0, Math.min(xdtsData.duration - 1, frameIndex))
-    const resolved = resolveCellsAtFrame(xdtsData.tracks, clamped)
+    const resolved = resolveCellsAtFrameByTrackNo(xdtsData.tracks, clamped)
     const newSelectedCells = new Map<string, number>()
-    for (const [trackName, cellName] of resolved) {
-      const folder = findAnimFolderByTrackName(layerTree, trackName, manualAnimFolderIds)
+    for (const [trackNo, cellName] of resolved) {
+      const folder = findAnimFolderByTrackNo(layerTree, trackNo)
       if (!folder) continue
       if (cellName === null) {
         // カラ（何も表示しない）

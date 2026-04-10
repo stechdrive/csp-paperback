@@ -226,9 +226,9 @@ for each visibleCell in animFolder.children:
 
 ```
 走査ルール:
-  - isAnimationFolder && !autoMarked && !singleMark → extractCells で処理
+  - isAnimationFolder → extractCells で処理
   - autoMarked || singleMark → collectMarkedLayerContext で合成コンテキストを取得し出力
-    （autoMarked + isAnimationFolder が同時の場合は autoMarked 優先 → 単独マーク出力）
+    （XDTS 検出済みアニメフォルダは `_` プレフィックスより優先してセル出力）
   - isFolder && hasAnimFolderDescendant → 子を再帰走査（兄弟コンテキストを継承）
   - isFolder（アニメ子孫なし） → 子を再帰走査
 ```

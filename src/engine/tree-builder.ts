@@ -18,7 +18,7 @@ function isFolder(layer: Layer): boolean {
  * ag-psdのレイヤーがアニメーションフォルダかどうかの初期判定
  * ツリー構築時点ではfalse（xdts照合か手動指定でdetectAnimationFoldersByXdtsが設定する）
  */
-function isAnimationFolder(_layer: Layer): boolean {
+function isAnimationFolder(): boolean {
   return false
 }
 
@@ -49,7 +49,7 @@ function convertLayer(
   const hidden = layer.hidden ?? false
   const clipping = layer.clipping ?? false
   const folder = isFolder(layer)
-  const animFolder = isAnimationFolder(layer)
+  const animFolder = isAnimationFolder()
 
   // _プレフィックス自動マーク（アニメーションフォルダ内・アーカイブパターン一致は除外）
   const isArchive = archivePatterns.some(p => originalName.startsWith(p))
@@ -128,6 +128,7 @@ export function detectAnimationFoldersByXdts(
         layer.animationFolder = {
           detectedBy: 'xdts',
           trackName: track?.name ?? layer.originalName,
+          trackNo,
         }
       }
       if (layer.children.length > 0) {

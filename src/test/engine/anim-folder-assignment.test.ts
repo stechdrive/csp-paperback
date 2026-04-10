@@ -93,9 +93,9 @@ describe('assignTracksToFolders', () => {
     expect(result.unmatchedTracks[0].trackNo).toBe(1)
   })
 
-  it('autoMarked 祖先配下の候補は優先度 2 として fallback 用に回される', () => {
+  it('autoMarked 祖先配下の候補も通常候補として扱い、ボトム順で割当する', () => {
     // _TEST/A (祖先 mark あり) と LO/A (祖先 mark なし) がある
-    // XDTS "A" 1 トラック → LO/A が選ばれる
+    // XDTS "A" 1 トラック → ボトム側の LO/A が選ばれる
     const aInTest = makeFolder('A', [makeLayer({ name: '1' })])
     const test = makeFolder('_TEST', [aInTest])
     const aInLo = makeFolder('A', [makeLayer({ name: '2' })])
@@ -111,9 +111,9 @@ describe('assignTracksToFolders', () => {
     expect(result.assignment.get(testA.id)).toBeUndefined()
   })
 
-  it('優先 1 が足りなければ優先 2(mark 祖先配下)から fallback で埋める', () => {
+  it('autoMarked 祖先配下だけに候補がある場合も割当する', () => {
     // _TEST/A が 1 つだけ、LO 側にはなし
-    // XDTS "A" 1 トラック → _TEST/A が fallback で選ばれる
+    // XDTS "A" 1 トラック → _TEST/A が選ばれる
     const aInTest = makeFolder('A', [makeLayer({ name: '1' })])
     const test = makeFolder('_TEST', [aInTest])
     const psd = makePsd({ children: [test] })
@@ -148,9 +148,8 @@ describe('assignTracksToFolders', () => {
     expect(result.assignment.get(layerA.id)).toBe(0)
   })
 
-  it('自身が autoMarked のフォルダは候補にならない(単体マーク優先)', () => {
-    // _A というフォルダは XDTS "A" と trim マッチするが、
-    // _A 自身が autoMarked なので候補から除外される
+  it('自身が autoMarked のフォルダでも XDTS track 名に一致すれば候補になる', () => {
+    // _A というフォルダは XDTS "_A" と trim マッチし、XDTS 検出を優先する
     const underA = makeFolder('_A', [makeLayer({ name: '1' })])
     const psd = makePsd({ children: [underA] })
     const tree = buildLayerTree(psd)
@@ -158,23 +157,29 @@ describe('assignTracksToFolders', () => {
     // _A は autoMarked のはず
     expect(tree[0].autoMarked).toBe(true)
 
-    // XDTS トラック名は trim + lowercase で "_a"。"_A" の trim も "_a"。マッチするはずだが
-    // 候補にならないので unmatched になる
     const result = assignTracksToFolders(tree, [makeTrack('_A', 0)])
-    expect(result.assignment.size).toBe(0)
-    expect(result.unmatchedTracks).toHaveLength(1)
+    expect(result.assignment.size).toBe(1)
+    expect(result.assignment.get(tree[0].id)).toBe(0)
+    expect(result.unmatchedTracks).toHaveLength(0)
   })
 
-  it('hidden/uiHidden なフォルダは候補にならない', () => {
+  it('hidden/uiHidden なフォルダも XDTS 検出フェーズでは候補になる', () => {
     const hiddenA = makeLayer({ name: 'A', isFolder: true, children: [makeLayer({ name: '1' })], hidden: true })
     const psd = makePsd({ children: [hiddenA] })
     const tree = buildLayerTree(psd)
     const result = assignTracksToFolders(tree, [makeTrack('A', 0)])
-    expect(result.assignment.size).toBe(0)
-    expect(result.unmatchedTracks).toHaveLength(1)
+    expect(result.assignment.size).toBe(1)
+    expect(result.assignment.get(tree[0].id)).toBe(0)
+    expect(result.unmatchedTracks).toHaveLength(0)
+
+    tree[0].uiHidden = true
+    const resultWithUiHidden = assignTracksToFolders(tree, [makeTrack('A', 0)])
+    expect(resultWithUiHidden.assignment.size).toBe(1)
+    expect(resultWithUiHidden.assignment.get(tree[0].id)).toBe(0)
+    expect(resultWithUiHidden.unmatchedTracks).toHaveLength(0)
   })
 
-  it('yc4_00_000_lo 相当のシナリオ: 同名 3 候補 + _TEST/A fallback 余剰', () => {
+  it('yc4_00_000_lo 相当のシナリオ: 同名 3 候補 + _TEST/A 余剰', () => {
     // ツリー:
     //   _TEST/A (祖先 mark あり、余剰候補)
     //   LO/TEST(top)/A (cell "4" 持ち、優先 1)
