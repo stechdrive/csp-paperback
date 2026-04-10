@@ -3,6 +3,7 @@ import type { Psd } from 'ag-psd'
 import type { BlendMode, CspLayer } from '../types'
 import { readPsdFile } from '../utils/psd-io'
 import { buildLayerTree, detectAnimationFoldersByXdts } from '../engine/tree-builder'
+import { sanitizeManualAnimFolderIds } from '../utils/manual-animation-folder'
 import type { AppStore } from './index'
 
 export interface PsdSlice {
@@ -79,6 +80,8 @@ export const createPsdSlice: StateCreator<AppStore, [], [], PsdSlice> = (set, ge
     }
     collectAutoShow(tree)
 
+    const manualAnimFolderIds = sanitizeManualAnimFolderIds(tree, get().manualAnimFolderIds)
+
     set({
       rawPsd: psd,
       psdFileName: fileName,
@@ -93,6 +96,7 @@ export const createPsdSlice: StateCreator<AppStore, [], [], PsdSlice> = (set, ge
       focusedAnimFolderId: null,
       visibilityOverrides: initialVisibility,
       expandedFolders: initialExpanded,
+      manualAnimFolderIds,
       _past: [],
       _future: [],
       canUndo: false,

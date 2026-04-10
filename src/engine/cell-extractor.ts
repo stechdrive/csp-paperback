@@ -1,4 +1,4 @@
-import type { CspLayer, FlatLayer, OutputEntry, ProjectSettings, XdtsData } from '../types'
+import type { CspLayer, FlatLayer, OutputEntry, ProjectSettings } from '../types'
 import type { VirtualSet } from '../types/marks'
 import { flattenTree } from './flatten'
 import { applyLayerMask, compositeGroup, compositeStack, createCanvas } from './compositor'
@@ -170,27 +170,30 @@ function buildAnimParentSuffixMap(
 }
 
 /**
- * XDTS が無い(手動マークのみ)場合の anim folder 対応を、
- * ツリーのボトム優先順に疑似 trackNo (0, 1, 2, ...) を振る形で構築する。
+ * displayName 計算用の anim folder 対応を構築する。
  *
- * 結果として computeDisplayNames に渡せる形になる。
- * 優先度の区別(autoMarked 祖先)は無視し、単純なボトム優先だけで並べる。
+ * XDTS 検出済みフォルダは読み込み時に確定した trackNo をそのまま使う。
+ * 手動指定など trackNo を持たない anim folder は、XDTS の最大 trackNo の後ろに
+ * ボトム優先の疑似 trackNo を振る。
+ *
+ * これにより、手動指定のオン/オフで XDTS 側の同名解決順は変わらない。
  */
-function buildPseudoAssignmentFromTree(tree: CspLayer[]): Map<string, number> {
-  const result = new Map<string, number>()
-  let counter = 0
+export function buildEffectiveAnimationAssignment(tree: CspLayer[]): Map<string, number> {
+  const result = buildAssignmentFromDetectedFolders(tree)
+  let counter = result.size > 0
+    ? Math.max(...result.values()) + 1
+    : 0
 
   function walk(layers: CspLayer[]): void {
     // 兄弟はボトム優先(CspLayer の children はトップファーストなので逆順に)
     for (let i = layers.length - 1; i >= 0; i--) {
       const layer = layers[i]
-      if (layer.hidden || layer.uiHidden) continue
 
       if (layer.isFolder) {
         // post-order: 子を先に訪問
         walk(layer.children)
-        // 自身が anim folder なら疑似 trackNo を割当
-        if (layer.isAnimationFolder) {
+        // 自身が trackNo 未割当の anim folder なら疑似 trackNo を割当
+        if (layer.isAnimationFolder && !result.has(layer.id)) {
           result.set(layer.id, counter++)
         }
       }
@@ -503,7 +506,7 @@ export function extractMarkedLayers(
     for (const layer of layers) {
       if (layer.hidden || layer.uiHidden) continue
 
-      if (layer.autoMarked || layer.singleMark) {
+      if (!layer.isAnimationFolder && (layer.autoMarked || layer.singleMark)) {
         const layerFlats = flattenTree([layer], docWidth, docHeight)
         const canvas = compositeWithContext(layerFlats, contextFlats, [], docWidth, docHeight)
         const fileName = `${layer.originalName}.jpg`
@@ -544,7 +547,6 @@ export function extractAllEntries(
   docHeight: number,
   background: 'white' | 'transparent' = 'white',
   excludeAutoMarked = false,
-  xdts?: XdtsData,
 ): OutputEntry[] {
   const entries: OutputEntry[] = []
 
@@ -558,10 +560,9 @@ export function extractAllEntries(
   // 同名でも parentSuffix が異なれば別 identity(process variants)として扱い、
   // 同一 identity に複数候補がある場合のみ (n) 連番で disambiguate する。
   //
-  // XDTS がある場合: 読み込み時に確定した trackNo 割当。XDTS が無ければ疑似 trackNo。
-  const assignmentMap = xdts
-    ? buildAssignmentFromDetectedFolders(tree)
-    : buildPseudoAssignmentFromTree(tree)
+  // XDTS がある場合も読み込み時に確定した trackNo 割当を使い、
+  // 手動指定分だけその後ろに疑似 trackNo を追加する。
+  const assignmentMap = buildEffectiveAnimationAssignment(tree)
   const displayNameMap = computeDisplayNames(tree, assignmentMap, animParentSuffixMap)
 
   /**

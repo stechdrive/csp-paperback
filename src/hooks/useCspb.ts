@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useAppStore } from '../store'
 import { virtualSetToXmp, xmpToVirtualSet, type XmpVirtualSet } from '../utils/xmp'
 import { serializeXdts } from '../utils/xdts-parser'
+import { sanitizeManualAnimFolderIds } from '../utils/manual-animation-folder'
 import type { CspLayer, ProjectSettings } from '../types'
 
 interface CspbData {
@@ -85,10 +86,14 @@ export function useCspb() {
         .map(id => [id, { layerId: id, origin: 'manual' as const }]),
     )
     const virtualSets = data.virtualSets.map(xvs => xmpToVirtualSet(xvs, nameToId))
-    const manualAnimFolderIds = new Set(
+    const loadedManualAnimFolderIds = new Set(
       data.manualAnimFolderNames
         .map(name => nameToId.get(name))
         .filter((id): id is string => Boolean(id)),
+    )
+    const manualAnimFolderIds = sanitizeManualAnimFolderIds(
+      useAppStore.getState().layerTree,
+      loadedManualAnimFolderIds,
     )
 
     useAppStore.setState({ singleMarks, virtualSets, manualAnimFolderIds, projectSettings: data.projectSettings })

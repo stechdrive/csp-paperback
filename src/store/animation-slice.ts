@@ -1,4 +1,5 @@
 import type { StateCreator } from 'zustand'
+import { canEnableManualAnimFolder } from '../utils/manual-animation-folder'
 import type { AppStore } from './index'
 
 export interface AnimationSlice {
@@ -12,13 +13,18 @@ export const createAnimationSlice: StateCreator<AppStore, [], [], AnimationSlice
   manualAnimFolderIds: new Set(),
 
   toggleManualAnimFolder: (layerId) => {
-    get().pushHistory()
     const current = new Set(get().manualAnimFolderIds)
     if (current.has(layerId)) {
+      get().pushHistory()
       current.delete(layerId)
-    } else {
-      current.add(layerId)
+      set({ manualAnimFolderIds: current })
+      return
     }
+
+    if (!canEnableManualAnimFolder(get().layerTree, layerId, current)) return
+
+    get().pushHistory()
+    current.add(layerId)
     set({ manualAnimFolderIds: current })
   },
 })

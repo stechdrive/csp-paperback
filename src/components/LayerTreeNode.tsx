@@ -21,6 +21,7 @@ interface LayerTreeNodeProps {
   onToggleExpanded: (id: string) => void
   onToggleExpandedRecursive: (id: string) => void
   onToggleMark: (id: string) => void
+  onToggleAnimFolder: (id: string) => void
   expandedFolders: Set<string>
   visibilityOverrides: Map<string, boolean>
   isCell?: boolean
@@ -79,6 +80,7 @@ export function LayerTreeNode({
   onToggleExpanded,
   onToggleExpandedRecursive,
   onToggleMark,
+  onToggleAnimFolder,
   expandedFolders,
   visibilityOverrides,
   isCell = false,
@@ -105,7 +107,13 @@ export function LayerTreeNode({
   const isHidden = isUiHidden
   const isExpanded = expandedFolders.has(layer.id)
   const isMarked = layer.autoMarked || singleMarks.has(layer.id)
-  const isAnimFolder = layer.isAnimationFolder || manualAnimFolderIds.has(layer.id)
+  const isManualAnimFolder = manualAnimFolderIds.has(layer.id)
+  const isXdtsAnimFolder = layer.animationFolder?.detectedBy === 'xdts'
+  const isAnimFolder = layer.isAnimationFolder || (layer.isFolder && isManualAnimFolder)
+  const canToggleManualAnimFolder = layer.isFolder &&
+    !isCell &&
+    !isXdtsAnimFolder &&
+    (isManualAnimFolder || !hasEffectiveAnimDescendant(layer, manualAnimFolderIds))
 
   // このレイヤーに挿入位置が設定されている仮想セットを取得
   const vsAbove = virtualSets.filter(vs => vs.insertionLayerId === layer.id && vs.insertionPosition === 'above')
@@ -124,6 +132,9 @@ export function LayerTreeNode({
         }
       }
       onSelect(layer.id)
+    } else if (isAnimFolder) {
+      onSelect(layer.id)
+      setFocusedAnimFolder(layer.id)
     } else if (layer.autoMarked || layer.singleMark) {
       // autoMarked/singleMark クリック時: アニメフォーカス・仮想セット選択をクリアして出力プレビューを表示
       onSelect(layer.id)
@@ -131,7 +142,7 @@ export function LayerTreeNode({
     } else {
       onSelect(layer.id)
     }
-  }, [layer, isCell, animParentId, onSelect, selectAnimCell, setFocusedAnimFolder])
+  }, [layer, isCell, animParentId, isAnimFolder, onSelect, selectAnimCell, setFocusedAnimFolder])
 
   const handleVisibilityMouseDown = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
@@ -164,6 +175,10 @@ export function LayerTreeNode({
     onToggleMark(layer.id)
   }, [layer.id, onToggleMark])
 
+  const handleAnimClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+    onToggleAnimFolder(layer.id)
+  }, [layer.id, onToggleAnimFolder])
 
   // 仮想セットのドラッグオーバー：上半分 → 'above'、下半分 → 'below'
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -291,6 +306,20 @@ export function LayerTreeNode({
           </Tooltip>
         )}
 
+        {canToggleManualAnimFolder && (
+          <Tooltip content={isManualAnimFolder
+            ? '手動アニメーションフォルダ指定を解除する'
+            : 'このフォルダを手動でアニメーションフォルダとして扱う'
+          }>
+            <button
+              className={`${styles.animBtn} ${isManualAnimFolder ? styles.animBtnActive : ''}`}
+              onClick={handleAnimClick}
+            >
+              🎬
+            </button>
+          </Tooltip>
+        )}
+
         {!layer.autoMarked && !layer.isAnimationFolder && (
           <Tooltip content={isMarked
             ? '単体書き出しのマークを解除する'
@@ -333,6 +362,7 @@ export function LayerTreeNode({
               onToggleExpanded={onToggleExpanded}
               onToggleExpandedRecursive={onToggleExpandedRecursive}
               onToggleMark={onToggleMark}
+              onToggleAnimFolder={onToggleAnimFolder}
               expandedFolders={expandedFolders}
               visibilityOverrides={visibilityOverrides}
               isCell={isAnimFolder}
@@ -352,4 +382,12 @@ function findLayerById(layers: CspLayer[], id: string): CspLayer | null {
     if (found) return found
   }
   return null
+}
+
+function hasEffectiveAnimDescendant(layer: CspLayer, manualAnimFolderIds: Set<string>): boolean {
+  for (const child of layer.children) {
+    if (child.isAnimationFolder || manualAnimFolderIds.has(child.id)) return true
+    if (hasEffectiveAnimDescendant(child, manualAnimFolderIds)) return true
+  }
+  return false
 }

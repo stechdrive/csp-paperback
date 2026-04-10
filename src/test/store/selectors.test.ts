@@ -92,6 +92,17 @@ describe('selectMarkedLayerIds', () => {
     const ids = selectMarkedLayerIds(useAppStore.getState())
     expect(ids.has(tree[0].id)).toBe(true)
   })
+
+  it('手動アニメーションフォルダは_プレフィックスでもマーク済み扱いしない', () => {
+    const psd = makePsd({ children: [makeFolder('_BOOK1', [])] })
+    const tree = buildLayerTree(psd)
+    useAppStore.setState({
+      layerTree: tree,
+      manualAnimFolderIds: new Set([tree[0].id]),
+    })
+    const ids = selectMarkedLayerIds(useAppStore.getState())
+    expect(ids.has(tree[0].id)).toBe(false)
+  })
 })
 
 describe('selectAnimationFolders', () => {
@@ -111,6 +122,8 @@ describe('selectAnimationFolders', () => {
     useAppStore.setState({ layerTree: tree, manualAnimFolderIds: new Set([tree[0].id]) })
     const animFolders = selectAnimationFolders(useAppStore.getState())
     expect(animFolders).toHaveLength(1)
+    expect(animFolders[0].isAnimationFolder).toBe(true)
+    expect(animFolders[0].animationFolder?.detectedBy).toBe('manual')
   })
 })
 

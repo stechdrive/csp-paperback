@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { extractCells, extractMarkedLayers, extractAllEntries } from '../../engine/cell-extractor'
 import { buildLayerTree, detectAnimationFoldersByXdts } from '../../engine/tree-builder'
 import { makeLayer, makePsd, makeFolder, makeAnimationFolder } from '../helpers/psd-factory'
-import type { ProjectSettings, XdtsData, FlatLayer } from '../../types'
+import type { CspLayer, ProjectSettings, XdtsData, FlatLayer } from '../../types'
 
 const DEFAULT_SETTINGS: ProjectSettings = {
   processTable: [],
@@ -19,6 +19,11 @@ function makeSettingsWithTable(entries: { suffix: string; folderNames: string[] 
 function detectAnim(tree: ReturnType<typeof buildLayerTree>, trackName: string) {
   const xdts: XdtsData = { tracks: [{ name: trackName, trackNo: 0, cellNames: [], frames: [] }], version: 5, header: { cut: '1', scene: '1' }, timeTableName: 'タイムライン1', duration: 72, fps: 24 }
   detectAnimationFoldersByXdts(tree, xdts)
+}
+
+function markManualAnimFolder(layer: CspLayer): void {
+  layer.isAnimationFolder = true
+  layer.animationFolder = { detectedBy: 'manual', trackName: layer.originalName }
 }
 
 describe('extractCells', () => {
@@ -196,7 +201,7 @@ describe('extractAllEntries', () => {
     }
     detectAnimationFoldersByXdts(tree, xdts)
 
-    const result = extractAllEntries(tree, DEFAULT_SETTINGS, 100, 100, 'white', false, xdts)
+    const result = extractAllEntries(tree, DEFAULT_SETTINGS, 100, 100, 'white', false)
     const flatNames = result.map(e => e.flatName).sort()
     expect(flatNames).toContain('A_0001.jpg')
     expect(flatNames).toContain('A(2)_0001.jpg')
@@ -228,7 +233,7 @@ describe('extractAllEntries', () => {
       { suffix: '_en', folderNames: ['EN'] },
       { suffix: '_bg', folderNames: ['BG'] },
     ])
-    const result = extractAllEntries(tree, settings, 100, 100, 'white', false, xdts)
+    const result = extractAllEntries(tree, settings, 100, 100, 'white', false)
     const flatNames = result.map(e => e.flatName).sort()
     // Identity (a, "_bg") と (a, "_en") は別なので両方 "A"、parentSuffix で分岐
     expect(flatNames).toContain('A_0001_bg.jpg')
@@ -255,24 +260,51 @@ describe('extractAllEntries', () => {
     }
     detectAnimationFoldersByXdts(tree, xdts)
 
-    const result = extractAllEntries(tree, DEFAULT_SETTINGS, 100, 100, 'white', false, xdts)
+    const result = extractAllEntries(tree, DEFAULT_SETTINGS, 100, 100, 'white', false)
     const paths = result.map(e => e.path)
     const folderNames = paths.map(p => p.split('/')[0]).sort()
     expect(folderNames).toContain('A')
     expect(folderNames).toContain('A(2)')
   })
-})
 
-// @ts-ignore TS6133
-function detectAnimInTree(layers: ReturnType<typeof buildLayerTree>, trackName: string) {
-  const xdts: XdtsData = { tracks: [{ name: trackName, trackNo: 0, cellNames: [], frames: [] }], version: 5, header: { cut: '1', scene: '1' }, timeTableName: 'タイムライン1', duration: 72, fps: 24 }
-  detectAnimationFoldersByXdts(layers, xdts)
-  for (const layer of layers) {
-    if (layer.isFolder && !layer.isAnimationFolder) {
-      detectAnimInTree(layer.children, trackName)
+  it('XDTS割当済みの同名解決を固定したまま手動アニメフォルダを後段に追加する', () => {
+    const bottomA = makeFolder('A', [makeLayer({ name: '1' })])
+    const topA = makeFolder('A', [makeLayer({ name: '1' })])
+    const tree = buildLayerTree(makePsd({ children: [bottomA, topA] }))
+    const xdts: XdtsData = {
+      tracks: [{ name: 'A', trackNo: 0, cellNames: [], frames: [] }],
+      version: 5, header: { cut: '1', scene: '1' }, timeTableName: 'タイムライン1', duration: 72, fps: 24,
     }
-  }
-}
+    detectAnimationFoldersByXdts(tree, xdts)
+
+    const manualA = tree.find(layer => layer.originalName === 'A' && !layer.isAnimationFolder)
+    expect(manualA).toBeDefined()
+    markManualAnimFolder(manualA!)
+
+    const result = extractAllEntries(tree, DEFAULT_SETTINGS, 100, 100, 'white', false)
+    const flatNames = result.map(e => e.flatName).sort()
+    expect(flatNames).toContain('A_0001.jpg')
+    expect(flatNames).toContain('A(2)_0001.jpg')
+  })
+
+  it('_付き手動アニメフォルダは単体マークではなくセルとして出力する', () => {
+    const book = makeFolder('_BOOK1', [
+      makeLayer({ name: '1' }),
+      makeLayer({ name: '2' }),
+    ])
+    const root = makeFolder('_原図', [book])
+    const tree = buildLayerTree(makePsd({ children: [root] }))
+    const manualBook = tree[0].children.find(layer => layer.originalName === '_BOOK1')
+    expect(manualBook).toBeDefined()
+    markManualAnimFolder(manualBook!)
+
+    const result = extractAllEntries(tree, DEFAULT_SETTINGS, 100, 100)
+    const flatNames = result.map(e => e.flatName).sort()
+    expect(flatNames).toContain('_BOOK1_0001.jpg')
+    expect(flatNames).toContain('_BOOK1_0002.jpg')
+    expect(flatNames).not.toContain('_BOOK1.jpg')
+  })
+})
 
 /**
  * yc4_00_000_lo.psd + yc4_00_000_lo.xdts 相当のシナリオを合成して
@@ -392,7 +424,7 @@ describe('#1 対応: yc4_00_000_lo シナリオの end-to-end', () => {
     const xdts = buildYc4Xdts()
     detectAnimationFoldersByXdts(tree, xdts)
 
-    const result = extractAllEntries(tree, DEFAULT_SETTINGS, 100, 100, 'white', false, xdts)
+    const result = extractAllEntries(tree, DEFAULT_SETTINGS, 100, 100, 'white', false)
 
     // 各 anim folder から 1-2 セルずつ出力される
     // bottom TEST/A  (末尾空白、cells 1,2) → "A" フォルダ
@@ -414,7 +446,7 @@ describe('#1 対応: yc4_00_000_lo シナリオの end-to-end', () => {
     const xdts = buildYc4Xdts()
     detectAnimationFoldersByXdts(tree, xdts)
 
-    const result = extractAllEntries(tree, DEFAULT_SETTINGS, 100, 100, 'white', false, xdts)
+    const result = extractAllEntries(tree, DEFAULT_SETTINGS, 100, 100, 'white', false)
 
     // 末尾空白を含む path が出力に無いことを検証(Windows の命名制約回避)
     for (const entry of result) {
@@ -429,7 +461,7 @@ describe('#1 対応: yc4_00_000_lo シナリオの end-to-end', () => {
     const xdts = buildYc4Xdts()
     detectAnimationFoldersByXdts(tree, xdts)
 
-    const result = extractAllEntries(tree, DEFAULT_SETTINGS, 100, 100, 'white', false, xdts)
+    const result = extractAllEntries(tree, DEFAULT_SETTINGS, 100, 100, 'white', false)
 
     const aEntries = result.filter(e => e.path.startsWith('A/'))
     expect(aEntries.length).toBe(2)  // cells 1, 2
@@ -441,7 +473,7 @@ describe('#1 対応: yc4_00_000_lo シナリオの end-to-end', () => {
     const xdts = buildYc4Xdts()
     detectAnimationFoldersByXdts(tree, xdts)
 
-    const result = extractAllEntries(tree, DEFAULT_SETTINGS, 100, 100, 'white', false, xdts)
+    const result = extractAllEntries(tree, DEFAULT_SETTINGS, 100, 100, 'white', false)
 
     const a3Entries = result.filter(e => e.path.startsWith('A(3)/'))
     expect(a3Entries.length).toBe(1)

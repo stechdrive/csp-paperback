@@ -142,7 +142,6 @@ describe('c001 golden (image pixel match)', () => {
       psd.height,
       'transparent',
       false,
-      xdts,
     )
     const vsEntries = extractVirtualSetEntries(
       resolvedTree,

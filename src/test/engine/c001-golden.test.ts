@@ -53,7 +53,7 @@ describe('c001 golden (path identity)', () => {
 
     // 出力エントリ生成
     const entries = extractAllEntries(
-      tree, cspb.projectSettings, psd.width, psd.height, 'white', false, xdts,
+      tree, cspb.projectSettings, psd.width, psd.height, 'white', false,
     )
 
     const flatNames = new Set(entries.map(e => e.flatName))
@@ -99,7 +99,7 @@ describe('c001 golden (path identity)', () => {
     const tree = buildLayerTree(psd, xdts, cspb.projectSettings.archivePatterns)
     detectAnimationFoldersByXdts(tree, xdts)
     const entries = extractAllEntries(
-      tree, cspb.projectSettings, psd.width, psd.height, 'white', false, xdts,
+      tree, cspb.projectSettings, psd.width, psd.height, 'white', false,
     )
     const dump = entries.map(e => ({ path: e.path, flatName: e.flatName }))
     console.log('c001 entries count:', dump.length)

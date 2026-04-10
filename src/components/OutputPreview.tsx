@@ -69,6 +69,9 @@ function LayerSeekBar() {
         }
       }
       selectLayer(entry.id)
+    } else if (entry.layer.isAnimationFolder) {
+      selectLayer(entry.id)
+      setFocusedAnimFolder(entry.id)
     } else if (entry.layer.autoMarked || singleMarks.has(entry.id)) {
       selectLayer(entry.id)
       setFocusedAnimFolder(null)

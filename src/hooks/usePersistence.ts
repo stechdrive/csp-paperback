@@ -13,6 +13,7 @@ import {
   extractMarkerLayerState,
   resolveMarkerState,
 } from '../utils/marker-layers'
+import { sanitizeManualAnimFolderIds } from '../utils/manual-animation-folder'
 import type { CspLayer } from '../types'
 
 /** レイヤーツリーをフラット化して id↔originalName のマップを作る */
@@ -57,11 +58,12 @@ export function usePersistence() {
             .map(id => [id, { layerId: id, origin: 'manual' as const }]),
         )
         const virtualSets = persisted.virtualSets.map(xvs => xmpToVirtualSet(xvs, nameToId))
-        const manualAnimFolderIds = new Set(
+        const loadedManualAnimFolderIds = new Set(
           persisted.manualAnimFolderNames
             .map(name => nameToId.get(name))
             .filter((id): id is string => Boolean(id)),
         )
+        const manualAnimFolderIds = sanitizeManualAnimFolderIds(layerTree, loadedManualAnimFolderIds)
 
         useAppStore.setState({
           singleMarks,

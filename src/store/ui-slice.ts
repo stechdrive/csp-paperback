@@ -100,10 +100,11 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
 
       if (animFolder && selectedCell) {
         const cellName = selectedCell.originalName
-        // このフォルダに対応するXDTSトラックを trackNo で探す（同名トラック対応）
+        // XDTS同期は読み込み時に trackNo が確定したフォルダだけが対象。
+        // 手動指定フォルダは XDTS トラックと対応しないため、名前フォールバックはしない。
         const track: XdtsTrack | undefined = typeof animFolder.animationFolder?.trackNo === 'number'
           ? xdtsData.tracks.find(t => t.trackNo === animFolder.animationFolder!.trackNo)
-          : xdtsData.tracks.find(t => t.name === animFolder.originalName)
+          : undefined
         if (track) {
           const frameIndex = findFirstFrameOfCell(track, cellName)
           if (frameIndex >= 0) {

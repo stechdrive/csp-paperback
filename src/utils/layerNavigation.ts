@@ -16,7 +16,7 @@ export function flattenVisible(
 ): FlatEntry[] {
   const result: FlatEntry[] = []
   for (const layer of layers) {
-    const isAnimFolder = layer.isAnimationFolder || manualAnimFolderIds.has(layer.id)
+    const isAnimFolder = layer.isAnimationFolder || (layer.isFolder && manualAnimFolderIds.has(layer.id))
     result.push({
       id: layer.id,
       layer,

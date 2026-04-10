@@ -58,7 +58,7 @@ function applyOverrides(
     // これにより PSD 上で非表示だったレイヤーを UI 上で表示可能にする。
     const uiHidden = hasOverride ? visOverrides.get(layer.id)! : layer.uiHidden
     const hidden = hasOverride ? false : layer.hidden
-    const isAnimationFolder = layer.isAnimationFolder || manualAnimIds.has(layer.id)
+    const isAnimationFolder = layer.isAnimationFolder || (layer.isFolder && manualAnimIds.has(layer.id))
     const singleMark = singleMarks.has(layer.id)
 
     // 手動指定フォルダ（animationFolder=null）→ animationFolder オブジェクトを生成
@@ -91,12 +91,12 @@ function applyOverrides(
  * アニメーションフォルダ（xdts検出 + 手動指定）の一覧を返す
  */
 export function selectAnimationFolders(state: AppStore): CspLayer[] {
-  const { layerTree, manualAnimFolderIds } = state
+  const layerTree = selectLayerTreeWithVisibility(state)
   const result: CspLayer[] = []
 
   function walk(layers: CspLayer[]): void {
     for (const layer of layers) {
-      if (layer.isAnimationFolder || manualAnimFolderIds.has(layer.id)) {
+      if (layer.isAnimationFolder) {
         result.push(layer)
       }
       walk(layer.children)
@@ -136,18 +136,21 @@ export function selectSelectedLayer(state: AppStore): CspLayer | null {
  */
 export function selectMarkedLayerIds(state: AppStore): Set<string> {
   const ids = new Set<string>()
+  const { manualAnimFolderIds } = state
 
   // _プレフィックス自動マーク
   function walkAutoMarked(layers: CspLayer[]): void {
     for (const layer of layers) {
-      if (layer.autoMarked) ids.add(layer.id)
-      walkAutoMarked(layer.children)
+      const isAnimFolder = layer.isAnimationFolder || (layer.isFolder && manualAnimFolderIds.has(layer.id))
+      if (layer.autoMarked && !isAnimFolder) ids.add(layer.id)
+      if (!isAnimFolder) walkAutoMarked(layer.children)
     }
   }
   walkAutoMarked(state.layerTree)
 
   // シングルマーク（手動）
   for (const [id] of state.singleMarks) {
+    if (manualAnimFolderIds.has(id)) continue
     ids.add(id)
   }
 
@@ -176,4 +179,3 @@ export function selectProcessTableErrors(state: AppStore): Set<string> {
 
   return duplicates
 }
-

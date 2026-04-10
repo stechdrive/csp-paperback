@@ -19,7 +19,7 @@ export function useExport(): UseExportResult {
 
   const startExport = useCallback(async () => {
     const state = useAppStore.getState()
-    const { docWidth, docHeight, docDpiX, docDpiY, psdFileName, outputConfig, projectSettings, xdtsData } = state
+    const { docWidth, docHeight, docDpiX, docDpiY, psdFileName, outputConfig, projectSettings } = state
 
     if (!psdFileName || docWidth === 0) {
       setError('PSD ファイルが読み込まれていません')
@@ -37,11 +37,10 @@ export function useExport(): UseExportResult {
       setProgress(0.1)
 
       // 全出力エントリを生成（scope=allの場合）
-      // xdtsData を渡すことで displayName が同名 anim folder に対して (n) ナンバリングされる
+      // displayName はツリー上に固定済みの XDTS trackNo と手動指定分から計算される
       let entries = extractAllEntries(
         tree, projectSettings, docWidth, docHeight,
         outputConfig.background, outputConfig.excludeAutoMarked,
-        xdtsData ?? undefined,
       )
 
       // 除外された工程サフィックスをポストフィルタ

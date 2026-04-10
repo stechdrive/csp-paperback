@@ -25,6 +25,7 @@ export function LayerTreePanel() {
   const toggleFolderExpanded = useAppStore(s => s.toggleFolderExpanded)
   const toggleFolderExpandedRecursive = useAppStore(s => s.toggleFolderExpandedRecursive)
   const toggleSingleMark = useAppStore(s => s.toggleSingleMark)
+  const toggleManualAnimFolder = useAppStore(s => s.toggleManualAnimFolder)
   const resetVisibility = useAppStore(s => s.resetVisibility)
   const setLayerBlendMode = useAppStore(s => s.setLayerBlendMode)
   const setLayerOpacity = useAppStore(s => s.setLayerOpacity)
@@ -64,6 +65,9 @@ export function LayerTreePanel() {
           }
         }
         selectLayer(entry.id)
+      } else if (entry.layer.isAnimationFolder) {
+        selectLayer(entry.id)
+        setFocusedAnimFolder(entry.id)
       } else if (entry.layer.autoMarked || singleMarks.has(entry.id)) {
         selectLayer(entry.id)
         setFocusedAnimFolder(null)
@@ -125,6 +129,7 @@ export function LayerTreePanel() {
               onToggleExpanded={toggleFolderExpanded}
               onToggleExpandedRecursive={toggleFolderExpandedRecursive}
               onToggleMark={toggleSingleMark}
+              onToggleAnimFolder={toggleManualAnimFolder}
               expandedFolders={expandedFolders}
               visibilityOverrides={visibilityOverrides}
             />

@@ -28,7 +28,7 @@ export function useLayerTree(): UseLayerTreeResult {
 
   const isAnimationFolder = useCallback((id: string) => {
     const layer = selectLayerById(useAppStore.getState(), id)
-    return (layer?.isAnimationFolder ?? false) || manualAnimFolderIds.has(id)
+    return (layer?.isAnimationFolder ?? false) || !!(layer?.isFolder && manualAnimFolderIds.has(id))
   }, [manualAnimFolderIds])
 
   const getLayer = useCallback((id: string) => {

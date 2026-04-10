@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useAppStore } from '../store'
+import { selectLayerTreeWithVisibility } from '../store/selectors'
 import { useExport } from '../hooks/useExport'
 import { useLocale } from '../i18n'
 import { Tooltip } from './Tooltip'
@@ -9,7 +10,7 @@ import styles from './ExportDialog.module.css'
 function collectAutoMarkedNames(layers: CspLayer[]): string[] {
   const names: string[] = []
   for (const l of layers) {
-    if (l.autoMarked && !l.singleMark) names.push(l.originalName)
+    if (l.autoMarked && !l.singleMark && !l.isAnimationFolder) names.push(l.originalName)
     if (l.isFolder && !l.isAnimationFolder) names.push(...collectAutoMarkedNames(l.children))
   }
   return names
@@ -22,7 +23,7 @@ interface ExportDialogProps {
 export function ExportDialog({ onClose }: ExportDialogProps) {
   const outputConfig = useAppStore(s => s.outputConfig)
   const projectSettings = useAppStore(s => s.projectSettings)
-  const layerTree = useAppStore(s => s.layerTree)
+  const layerTree = useAppStore(selectLayerTreeWithVisibility)
   const setFormat = useAppStore(s => s.setFormat)
   const setBackground = useAppStore(s => s.setBackground)
   const setStructure = useAppStore(s => s.setStructure)
