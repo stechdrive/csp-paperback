@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <clipPath id="outer-clip">
+      <rect width="512" height="512" rx="78" ry="78"/>
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#outer-clip)">
+    <!-- Dark navy background -->
+    <rect width="512" height="512" fill="#1a3a6b"/>
+
+    <!-- White film strip frame -->
+    <rect x="20" y="20" width="472" height="472" rx="58" ry="58" fill="white"/>
+
+    <!-- Inner dark navy area -->
+    <rect x="82" y="82" width="348" height="348" rx="38" ry="38" fill="#1a3a6b"/>
+
+    <!-- Film holes - top row (6 holes) -->
+    <rect x="82"  y="33" width="36" height="36" rx="5" fill="#1a3a6b"/>
+    <rect x="144" y="33" width="36" height="36" rx="5" fill="#1a3a6b"/>
+    <rect x="207" y="33" width="36" height="36" rx="5" fill="#1a3a6b"/>
+    <rect x="269" y="33" width="36" height="36" rx="5" fill="#1a3a6b"/>
+    <rect x="332" y="33" width="36" height="36" rx="5" fill="#1a3a6b"/>
+    <rect x="394" y="33" width="36" height="36" rx="5" fill="#1a3a6b"/>
+
+    <!-- Film holes - bottom row (6 holes) -->
+    <rect x="82"  y="443" width="36" height="36" rx="5" fill="#1a3a6b"/>
+    <rect x="144" y="443" width="36" height="36" rx="5" fill="#1a3a6b"/>
+    <rect x="207" y="443" width="36" height="36" rx="5" fill="#1a3a6b"/>
+    <rect x="269" y="443" width="36" height="36" rx="5" fill="#1a3a6b"/>
+    <rect x="332" y="443" width="36" height="36" rx="5" fill="#1a3a6b"/>
+    <rect x="394" y="443" width="36" height="36" rx="5" fill="#1a3a6b"/>
+
+    <!-- Film holes - left column (5 holes) -->
+    <rect x="33" y="82"  width="36" height="36" rx="5" fill="#1a3a6b"/>
+    <rect x="33" y="160" width="36" height="36" rx="5" fill="#1a3a6b"/>
+    <rect x="33" y="238" width="36" height="36" rx="5" fill="#1a3a6b"/>
+    <rect x="33" y="316" width="36" height="36" rx="5" fill="#1a3a6b"/>
+    <rect x="33" y="394" width="36" height="36" rx="5" fill="#1a3a6b"/>
+
+    <!-- Film holes - right column (5 holes) -->
+    <rect x="443" y="82"  width="36" height="36" rx="5" fill="#1a3a6b"/>
+    <rect x="443" y="160" width="36" height="36" rx="5" fill="#1a3a6b"/>
+    <rect x="443" y="238" width="36" height="36" rx="5" fill="#1a3a6b"/>
+    <rect x="443" y="316" width="36" height="36" rx="5" fill="#1a3a6b"/>
+    <rect x="443" y="394" width="36" height="36" rx="5" fill="#1a3a6b"/>
+
+    <!-- Pb text -->
+    <text
+      x="256" y="256"
+      font-family="'Arial Black', 'Arial Bold', Arial, Helvetica, sans-serif"
+      font-weight="900"
+      font-size="245"
+      fill="white"
+      text-anchor="middle"
+      dominant-baseline="central">Pb</text>
+  </g>
+</svg>
