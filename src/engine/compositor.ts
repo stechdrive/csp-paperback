@@ -194,7 +194,7 @@ export function applyLayerMask(
   const rd = resultData.data
   const md = maskData.data
   for (let i = 0; i < rd.length; i += 4) {
-    rd[i + 3] = (rd[i + 3] * md[i]) >> 8
+    rd[i + 3] = Math.round((rd[i + 3] * md[i]) / 255)
   }
   ctx.putImageData(resultData, 0, 0)
 
