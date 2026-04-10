@@ -45,7 +45,10 @@ export function flattenTree(
       if (cellIndex < 0) return []
       const visibleChildren = layer.children.filter(c => !c.hidden && !c.uiHidden)
       if (visibleChildren.length === 0) return []
-      const selectedCell = visibleChildren[Math.min(cellIndex, visibleChildren.length - 1)]
+      const targetCell = layer.children[cellIndex]
+      const selectedCell = targetCell && !targetCell.hidden && !targetCell.uiHidden
+        ? targetCell
+        : visibleChildren[0]
       const cellFlats = flattenLayer(selectedCell)
       if (cellFlats.length === 0) return []
       const rawCanvas = compositeGroup(cellFlats, docWidth, docHeight)

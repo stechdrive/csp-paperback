@@ -65,6 +65,36 @@ describe('ui-slice XDTS timeline sync', () => {
     expect(selected.get(treeTopA.id)).toBe(0) // top A の "2" は children 上 index 0
   })
 
+  it('XDTSセル名が同一フォルダ内で重複する場合はボトム側のセルを選ぶ', () => {
+    const bottomDuplicate = makeLayer({ name: '1' })
+    const topDuplicate = makeLayer({ name: '1' })
+    const animA = makeFolder('A', [bottomDuplicate, topDuplicate])
+    const psd = makePsd({ children: [animA] })
+    const tree = buildLayerTree(psd)
+    const xdts: XdtsData = {
+      tracks: [
+        { name: 'A', trackNo: 0, cellNames: ['1'], frames: [{ frameIndex: 0, cellName: '1' }] },
+      ],
+      version: 5,
+      header: { cut: '1', scene: '1' },
+      timeTableName: 'タイムライン1',
+      duration: 24,
+      fps: 24,
+    }
+    detectAnimationFoldersByXdts(tree, xdts)
+
+    const treeAnimA = tree[0]
+    expect(treeAnimA.children).toHaveLength(2)
+    expect(treeAnimA.children[0].originalName).toBe('1')
+    expect(treeAnimA.children[1].originalName).toBe('1')
+
+    useAppStore.setState({ layerTree: tree, xdtsData: xdts })
+    useAppStore.getState().seekToFrame(0)
+
+    const selected = useAppStore.getState().selectedCells
+    expect(selected.get(treeAnimA.id)).toBe(1)
+  })
+
   it('手動アニメフォルダのセル選択は同名XDTSトラックへ同期しない', () => {
     const bottomA = makeFolder('A', [makeLayer({ name: '1' }), makeLayer({ name: '2' })])
     const topA = makeFolder('A', [makeLayer({ name: '1' }), makeLayer({ name: '2' })])

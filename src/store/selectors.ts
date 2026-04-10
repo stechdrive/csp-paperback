@@ -16,6 +16,16 @@ let _cache: {
   result: CspLayer[]
 } | null = null
 
+let _navigatorCache: {
+  layerTree: CspLayer[]
+  visibilityOverrides: Map<string, boolean>
+  xdtsData: AppStore['xdtsData']
+  result: CspLayer[]
+} | null = null
+
+const emptyManualAnimFolderIds = new Set<string>()
+const emptySingleMarks = new Map<string, SingleMark>()
+
 /**
  * visibilityOverrides と manualAnimFolderIds を反映したツリーを返す。
  * 元のツリーは変更せず新しいオブジェクトを返す。
@@ -42,6 +52,35 @@ export function selectLayerTreeWithVisibility(state: AppStore): CspLayer[] {
     : layerTree
 
   _cache = { layerTree, visibilityOverrides, manualAnimFolderIds, singleMarks, result }
+  return result
+}
+
+/**
+ * 全体ナビゲーター用のツリー。
+ * XDTS 読み込み中は「CSP のタイムライン表示」を再現するため、
+ * アプリ独自の手動アニメーションフォルダ指定は反映しない。
+ * XDTS がない場合は従来どおり手動指定も含めたツリーを返す。
+ */
+export function selectLayerTreeForNavigator(state: AppStore): CspLayer[] {
+  if (!state.xdtsData) {
+    return selectLayerTreeWithVisibility(state)
+  }
+
+  const { layerTree, visibilityOverrides, xdtsData } = state
+  if (
+    _navigatorCache !== null &&
+    _navigatorCache.layerTree === layerTree &&
+    _navigatorCache.visibilityOverrides === visibilityOverrides &&
+    _navigatorCache.xdtsData === xdtsData
+  ) {
+    return _navigatorCache.result
+  }
+
+  const result = visibilityOverrides.size > 0
+    ? applyOverrides(layerTree, visibilityOverrides, emptyManualAnimFolderIds, emptySingleMarks)
+    : layerTree
+
+  _navigatorCache = { layerTree, visibilityOverrides, xdtsData, result }
   return result
 }
 

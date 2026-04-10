@@ -28,6 +28,16 @@ describe('resolveNameCollisions', () => {
     expect(resolveNameCollisions(names)).toEqual(['A.jpg', 'B.jpg', 'A_2.jpg', 'C.jpg', 'B_2.jpg'])
   })
 
+  it('大文字小文字違いも衝突として扱う', () => {
+    const names = ['A.jpg', 'a.jpg']
+    expect(resolveNameCollisions(names)).toEqual(['A.jpg', 'a_2.jpg'])
+  })
+
+  it('自動付与した _2 が既存名と衝突する場合は次の番号へ進める', () => {
+    const names = ['A.jpg', 'A_2.jpg', 'A.jpg']
+    expect(resolveNameCollisions(names)).toEqual(['A.jpg', 'A_2.jpg', 'A_3.jpg'])
+  })
+
   it('拡張子なしでも動作する', () => {
     const names = ['file', 'file']
     expect(resolveNameCollisions(names)).toEqual(['file', 'file_2'])

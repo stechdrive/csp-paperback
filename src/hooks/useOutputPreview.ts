@@ -180,7 +180,8 @@ function previewAnimFolder(
     : selectedCell.originalName
   const prefix = `${displayName}_${cellLabel}${parentSuffix}`
 
-  let entries = allEntries.filter(e =>
+  let entries = allEntries.filter(e => e.sourceCellId === selectedCell.id)
+  if (entries.length === 0) entries = allEntries.filter(e =>
     e.flatName === `${prefix}.jpg` || e.flatName.startsWith(`${prefix}_`),
   )
 

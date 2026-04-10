@@ -46,6 +46,18 @@
   padding: 0.25rem 0;
 }
 
+.footerHint {
+  flex-shrink: 0;
+  padding: 0.35rem 0.75rem;
+  border-top: 1px solid #313244;
+  color: #7f849c;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  letter-spacing: 0;
+  white-space: nowrap;
+  cursor: default;
+}
+
 .empty {
   padding: 2rem 1rem;
   color: #a6adc8;
@@ -71,5 +83,8 @@
   .panel {
     border-left: none;
   }
-}
 
+  .footerHint {
+    display: none;
+  }
+}

@@ -4,6 +4,7 @@ import { DEFAULT_OUTPUT_CONFIG, type BlendMode, type CspLayer } from '../types'
 import { readPsdFile } from '../utils/psd-io'
 import { buildLayerTree, detectAnimationFoldersByXdts } from '../engine/tree-builder'
 import { sanitizeManualAnimFolderIds } from '../utils/manual-animation-folder'
+import { buildDefaultVisibilityOverrides } from '../utils/default-visibility'
 import type { AppStore } from './index'
 
 export interface PsdSlice {
@@ -70,16 +71,7 @@ export const createPsdSlice: StateCreator<AppStore, [], [], PsdSlice> = (set, ge
     }
     collectExpanded(tree)
 
-    // autoMarked かつ PSD上で非表示の _フォルダを自動表示（visibilityOverrides に登録）
-    // archivePatterns 一致フォルダは autoMarked=false なので自動的に除外される
-    const initialVisibility = new Map<string, boolean>()
-    function collectAutoShow(layers: CspLayer[]): void {
-      for (const l of layers) {
-        if (l.autoMarked && l.hidden) initialVisibility.set(l.id, false)
-        collectAutoShow(l.children)
-      }
-    }
-    collectAutoShow(tree)
+    const initialVisibility = buildDefaultVisibilityOverrides(tree, xdts)
 
     const manualAnimFolderIds = sanitizeManualAnimFolderIds(tree, get().manualAnimFolderIds)
 

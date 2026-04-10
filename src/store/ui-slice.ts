@@ -2,6 +2,7 @@ import type { StateCreator } from 'zustand'
 import type { CspLayer } from '../types'
 import type { XdtsTrack } from '../types/xdts'
 import { findFirstFrameOfCell, resolveCellsAtFrameByTrackNo } from '../utils/xdts-parser'
+import { buildDefaultVisibilityOverrides } from '../utils/default-visibility'
 import type { AppStore } from './index'
 
 export interface UiSlice {
@@ -66,6 +67,13 @@ function findAnimFolderByTrackNo(
   return null
 }
 
+function findTimelineCellIndex(folder: CspLayer, cellName: string): number {
+  for (let i = folder.children.length - 1; i >= 0; i--) {
+    if (folder.children[i].originalName === cellName) return i
+  }
+  return -1
+}
+
 // -------------------------------------------------------
 
 export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get) => ({
@@ -118,9 +126,7 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
                 // SYMBOL_NULL_CELL: カラ（何も表示しない）
                 newSelectedCells.set(otherFolder.id, -1)
               } else {
-                const idx = otherFolder.children.findIndex(
-                  c => c.originalName === resolvedCellName
-                )
+                const idx = findTimelineCellIndex(otherFolder, resolvedCellName)
                 if (idx >= 0) newSelectedCells.set(otherFolder.id, idx)
               }
             }
@@ -147,7 +153,7 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
         // カラ（何も表示しない）
         newSelectedCells.set(folder.id, -1)
       } else {
-        const idx = folder.children.findIndex(c => c.originalName === cellName)
+        const idx = findTimelineCellIndex(folder, cellName)
         if (idx >= 0) newSelectedCells.set(folder.id, idx)
       }
     }
@@ -212,6 +218,7 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
 
   resetVisibility: () => {
     get().pushHistory()
-    set({ visibilityOverrides: new Map() })
+    const { layerTree, xdtsData } = get()
+    set({ visibilityOverrides: buildDefaultVisibilityOverrides(layerTree, xdtsData) })
   },
 })

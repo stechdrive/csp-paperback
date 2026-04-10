@@ -125,6 +125,25 @@ describe('flattenTree', () => {
     expect(flat).toHaveLength(1)
   })
 
+  it('アニメーションフォルダのセル選択インデックスは全children基準で扱う', () => {
+    const hiddenBefore = makeLayer({ name: 'hidden-before', hidden: true })
+    const target = makeLayer({ name: 'target' })
+    const wrong = makeLayer({ name: 'wrong' })
+    const animFolder = makeAnimationFolder('A', [wrong, target, hiddenBefore])
+    const tree = buildLayerTree(makePsd({ children: [animFolder] }))
+    tree[0].isAnimationFolder = true
+    tree[0].animationFolder = { detectedBy: 'manual', trackName: 'A' }
+
+    const targetLayer = tree[0].children.find(c => c.originalName === 'target')!
+    targetLayer.agPsdRef.canvas = undefined
+
+    const targetIndex = tree[0].children.findIndex(c => c.originalName === 'target')
+    const selectedCells = new Map([[tree[0].id, targetIndex]])
+    const flat = flattenTree(tree, 100, 100, selectedCells)
+
+    expect(flat).toHaveLength(0)
+  })
+
   it('非表示の子を持つPass Throughフォルダは空配列を返す', () => {
     const child = makeLayer({ name: 'hidden', hidden: true })
     const folder = makePassThroughFolder('group', [child])

@@ -4,23 +4,29 @@
 
 /**
  * ファイル名衝突時に _2, _3 サフィックスを付与して一意にする
+ * Windows/macOS の一般的なファイルシステムでの展開を考慮し、大文字小文字は区別しない
  * 入力配列の順序を保持する
  */
 export function resolveNameCollisions(names: string[]): string[] {
-  const counts = new Map<string, number>()
+  const nextIndexes = new Map<string, number>()
+  const used = new Set<string>()
   const result: string[] = []
 
   for (const name of names) {
+    const key = name.toLowerCase()
     const ext = getExtension(name)
     const base = name.slice(0, name.length - ext.length)
-    const count = counts.get(name) ?? 0
-    counts.set(name, count + 1)
+    let candidate = name
+    let nextIndex = nextIndexes.get(key) ?? 1
 
-    if (count === 0) {
-      result.push(name)
-    } else {
-      result.push(`${base}_${count + 1}${ext}`)
+    while (used.has(candidate.toLowerCase())) {
+      nextIndex += 1
+      candidate = `${base}_${nextIndex}${ext}`
     }
+
+    nextIndexes.set(key, nextIndex)
+    used.add(candidate.toLowerCase())
+    result.push(candidate)
   }
 
   return result

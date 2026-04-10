@@ -25,4 +25,5 @@ export interface OutputEntry {
   flatName: string          // フラット展開モード用のファイル名
   canvas: HTMLCanvasElement
   sourceLayerId: string
+  sourceCellId?: string     // アニメセル由来のエントリの場合、その直接セルレイヤー/フォルダID
 }

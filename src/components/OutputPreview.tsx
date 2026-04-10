@@ -2,7 +2,12 @@ import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react'
 import { useAppStore } from '../store'
 import { useZoomPan } from '../hooks/useZoomPan'
 import { selectLayerTreeWithVisibility } from '../store/selectors'
-import { flattenVisible, findLayerById } from '../utils/layerNavigation'
+import {
+  collectShiftNavigationExpandableFolders,
+  flattenVisible,
+  findLayerById,
+  mergeExpandedFolders,
+} from '../utils/layerNavigation'
 import type { OutputPreviewEntry } from '../hooks/useOutputPreview'
 import styles from './OutputPreview.module.css'
 
@@ -38,9 +43,17 @@ function LayerSeekBar() {
   const selectAnimCell = useAppStore(s => s.selectAnimCell)
   const setFocusedAnimFolder = useAppStore(s => s.setFocusedAnimFolder)
 
+  const shiftExpandableFolders = useMemo(
+    () => collectShiftNavigationExpandableFolders(tree, manualAnimFolderIds),
+    [tree, manualAnimFolderIds],
+  )
+  const navigationExpandedFolders = useMemo(
+    () => mergeExpandedFolders(expandedFolders, shiftExpandableFolders),
+    [expandedFolders, shiftExpandableFolders],
+  )
   const entries = useMemo(() =>
-    flattenVisible(tree, expandedFolders, manualAnimFolderIds),
-    [tree, expandedFolders, manualAnimFolderIds],
+    flattenVisible(tree, navigationExpandedFolders, manualAnimFolderIds),
+    [tree, navigationExpandedFolders, manualAnimFolderIds],
   )
 
   const [active, setActive] = useState(false)

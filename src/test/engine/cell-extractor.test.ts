@@ -10,6 +10,12 @@ const DEFAULT_SETTINGS: ProjectSettings = {
   archivePatterns: [],
 }
 
+const CELL_NAME_SETTINGS: ProjectSettings = {
+  processTable: [],
+  cellNamingMode: 'cellname',
+  archivePatterns: [],
+}
+
 const EMPTY_CONTEXT: FlatLayer[] = []
 
 function makeSettingsWithTable(entries: { suffix: string; folderNames: string[] }[]): ProjectSettings {
@@ -50,6 +56,21 @@ describe('extractCells', () => {
     expect(result[0].flatName).toBe('A_0002.jpg')
     expect(result[0].path).toBe('A/A_0002.jpg')
     expect(result[1].flatName).toBe('A_0001.jpg')
+  })
+
+  it('セル名出力では同一アニメフォルダ内の同名セルを _2 で回避する', () => {
+    const bottomCell = makeLayer({ name: 'あ' })
+    const topCell = makeLayer({ name: 'あ' })
+    const animFolder = makeAnimationFolder('A', [bottomCell, topCell])
+    const tree = buildLayerTree(makePsd({ children: [animFolder] }))
+    detectAnim(tree, 'A')
+
+    const result = extractCells(tree[0], CELL_NAME_SETTINGS, 100, 100, EMPTY_CONTEXT)
+    expect(result).toHaveLength(2)
+    expect(result[0].flatName).toBe('A_あ.jpg')
+    expect(result[1].flatName).toBe('A_あ_2.jpg')
+    expect(result[0].sourceCellId).toBe(tree[0].children[0].id)
+    expect(result[1].sourceCellId).toBe(tree[0].children[1].id)
   })
 
   it('非表示セルを除外する', () => {
@@ -207,6 +228,29 @@ describe('extractAllEntries', () => {
     expect(flatNames).toContain('A(2)_0001.jpg')
   })
 
+  it('セル名出力でも同名アニメフォルダは displayName の (n) で区別される', () => {
+    const cellA1 = makeLayer({ name: 'あ' })
+    const animA1 = makeAnimationFolder('A', [cellA1])
+    const cellA2 = makeLayer({ name: 'あ' })
+    const animA2 = makeAnimationFolder('A', [cellA2])
+    const tree = buildLayerTree(makePsd({ children: [animA1, animA2] }))
+
+    const xdts: XdtsData = {
+      tracks: [
+        { name: 'A', trackNo: 0, cellNames: ['あ'], frames: [] },
+        { name: 'A', trackNo: 1, cellNames: ['あ'], frames: [] },
+      ],
+      version: 5, header: { cut: '1', scene: '1' }, timeTableName: 'タイムライン1', duration: 72, fps: 24,
+    }
+    detectAnimationFoldersByXdts(tree, xdts)
+
+    const result = extractAllEntries(tree, CELL_NAME_SETTINGS, 100, 100, 'white', false)
+    const flatNames = result.map(e => e.flatName).sort()
+    expect(flatNames).toContain('A_あ.jpg')
+    expect(flatNames).toContain('A(2)_あ.jpg')
+    expect(flatNames).not.toContain('A_あ_2.jpg')
+  })
+
   it('同名アニメフォルダは parentSuffix が異なれば別 identity で両方 "A" (process variants)', () => {
     // #1 対応(修正後): identity = (name, parentSuffix)。
     // 同名でも parentSuffix が違えば process variants として別 identity とみなし、
@@ -285,6 +329,27 @@ describe('extractAllEntries', () => {
     const flatNames = result.map(e => e.flatName).sort()
     expect(flatNames).toContain('A_0001.jpg')
     expect(flatNames).toContain('A(2)_0001.jpg')
+  })
+
+  it('セル名出力でもXDTS割当済みの同名解決を固定したまま手動アニメフォルダを後段に追加する', () => {
+    const xdtsA = makeFolder('A', [makeLayer({ name: 'あ' })])
+    const manualA = makeFolder('A', [makeLayer({ name: 'あ' })])
+    const tree = buildLayerTree(makePsd({ children: [xdtsA, manualA] }))
+    const xdts: XdtsData = {
+      tracks: [{ name: 'A', trackNo: 0, cellNames: ['あ'], frames: [] }],
+      version: 5, header: { cut: '1', scene: '1' }, timeTableName: 'タイムライン1', duration: 72, fps: 24,
+    }
+    detectAnimationFoldersByXdts(tree, xdts)
+
+    const manualCandidate = tree.find(layer => layer.originalName === 'A' && !layer.isAnimationFolder)
+    expect(manualCandidate).toBeDefined()
+    markManualAnimFolder(manualCandidate!)
+
+    const result = extractAllEntries(tree, CELL_NAME_SETTINGS, 100, 100, 'white', false)
+    const flatNames = result.map(e => e.flatName).sort()
+    expect(flatNames).toContain('A_あ.jpg')
+    expect(flatNames).toContain('A(2)_あ.jpg')
+    expect(flatNames).not.toContain('A_あ_2.jpg')
   })
 
   it('_付き手動アニメフォルダは単体マークではなくセルとして出力する', () => {

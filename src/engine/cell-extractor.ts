@@ -5,6 +5,7 @@ import { applyLayerMask, compositeGroup, compositeStack, createCanvas } from './
 import { collectMembersInTreeOrder, buildMemberFlatsWithOverride } from '../utils/virtual-set-utils'
 import { buildAssignmentFromDetectedFolders } from './anim-folder-assignment'
 import { computeDisplayNames } from './anim-folder-display-name'
+import { resolveNameCollisions } from '../utils/naming'
 
 /**
  * アニメーションフォルダからセルを抽出してOutputEntry[]を返す
@@ -62,6 +63,7 @@ export function extractCells(
         flatName: fileName,
         canvas,
         sourceLayerId: cell.id,
+        sourceCellId: cell.id,
       })
     } else {
       // フォルダ: processTableと照合して工程別 or 本体合成
@@ -95,6 +97,7 @@ export function extractCells(
           flatName: fileName,
           canvas,
           sourceLayerId: cell.id,
+          sourceCellId: cell.id,
         })
       }
 
@@ -111,11 +114,13 @@ export function extractCells(
           flatName: fileName,
           canvas,
           sourceLayerId: processLayers[0].id,
+          sourceCellId: cell.id,
         })
       }
     }
   }
 
+  resolveFlatNameCollisions(entries)
   return entries
 }
 
@@ -205,27 +210,16 @@ export function buildEffectiveAnimationAssignment(tree: CspLayer[]): Map<string,
 }
 
 /**
- * フラットファイル名の衝突を解決する（-2, -3 を拡張子前に挿入）
+ * フラットファイル名の衝突を解決する（_2, _3 を拡張子前に挿入）
+ * ZIP 展開時の衝突回避のため、大文字小文字は区別しない
  */
 function resolveFlatNameCollisions(entries: OutputEntry[]): void {
-  const countMap = new Map<string, number>()
-  for (const e of entries) {
-    countMap.set(e.flatName, (countMap.get(e.flatName) ?? 0) + 1)
-  }
+  const resolvedFlatNames = resolveNameCollisions(entries.map(e => e.flatName))
+  for (let i = 0; i < entries.length; i++) {
+    const e = entries[i]
+    const newFlatName = resolvedFlatNames[i]
+    if (newFlatName === e.flatName) continue
 
-  const seenMap = new Map<string, number>()
-  for (const e of entries) {
-    const total = countMap.get(e.flatName) ?? 1
-    if (total <= 1) continue
-
-    const seen = seenMap.get(e.flatName) ?? 0
-    seenMap.set(e.flatName, seen + 1)
-    if (seen === 0) continue  // 最初の出現はそのまま
-
-    const dotIdx = e.flatName.lastIndexOf('.')
-    const base = e.flatName.slice(0, dotIdx)
-    const ext = e.flatName.slice(dotIdx)
-    const newFlatName = `${base}-${seen + 1}${ext}`
     // pathのファイル名部分も更新
     const slashIdx = e.path.lastIndexOf('/')
     e.flatName = newFlatName
@@ -532,8 +526,8 @@ export function extractMarkedLayers(
  * 全出力エントリを生成（全出力モード）
  *
  * - ルート直下フォルダのprocessTable逆引きでparentSuffixを決定
- * - 階層フォルダ名の衝突は -2, -3 で解決
- * - フラットファイル名の衝突も -2, -3 で解決
+ * - 階層フォルダ名の衝突は displayName の (n) で解決
+ * - フラットファイル名の衝突は _2, _3 で解決
  *
  * アニメフォルダの兄弟レイヤーは位置に応じて lower/upper コンテキストに分類する:
  * - アニメフォルダより下（インデックス大）にある兄弟 → セルの下に合成

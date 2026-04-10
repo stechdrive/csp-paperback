@@ -3,6 +3,7 @@ import type { CspLayer, XdtsData, XdtsTrack } from '../types'
 import { parseXdts } from '../utils/xdts-parser'
 import { detectAnimationFoldersByXdts, clearXdtsAnimFolders } from '../engine/tree-builder'
 import { sanitizeManualAnimFolderIds } from '../utils/manual-animation-folder'
+import { addXdtsUnusedCellHiddenOverrides } from '../utils/default-visibility'
 import type { AppStore } from './index'
 
 export interface XdtsSlice {
@@ -39,8 +40,14 @@ export const createXdtsSlice: StateCreator<AppStore, [], [], XdtsSlice> = (set, 
     clearXdtsAnimFolders(layerTree)
     const assignResult = detectAnimationFoldersByXdts(layerTree, xdts)
     const manualAnimFolderIds = sanitizeManualAnimFolderIds(layerTree, get().manualAnimFolderIds)
+    const visibilityOverrides = addXdtsUnusedCellHiddenOverrides(
+      layerTree,
+      xdts,
+      new Map(get().visibilityOverrides),
+      false,
+    )
     // シャローコピーで再レンダリングをトリガー
-    set({ layerTree: [...layerTree], manualAnimFolderIds })
+    set({ layerTree: [...layerTree], manualAnimFolderIds, visibilityOverrides })
     get().setUnmatchedTracks(assignResult.unmatchedTracks)
 
     // フレーム0のセルを自動選択して初期プレビューを表示

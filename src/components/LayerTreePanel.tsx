@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react'
+import { useCallback, useMemo, useRef } from 'react'
 import { useAppStore } from '../store'
 import { useLocale } from '../i18n/locale'
 import { selectLayerTreeWithVisibility, selectLayerById } from '../store/selectors'
@@ -6,7 +6,13 @@ import { LayerTreeNode } from './LayerTreeNode'
 import { BlendOpacityBar } from './BlendOpacityBar'
 import { Tooltip } from './Tooltip'
 import type { BlendMode } from '../types'
-import { flattenVisible, findLayerById } from '../utils/layerNavigation'
+import {
+  collectShiftNavigationExpandableFolders,
+  collectShiftNavigationExpandedPath,
+  flattenVisible,
+  findLayerById,
+  mergeExpandedFolders,
+} from '../utils/layerNavigation'
 import styles from './LayerTreePanel.module.css'
 
 export function LayerTreePanel() {
@@ -34,12 +40,43 @@ export function LayerTreePanel() {
 
   const treeRef = useRef<HTMLDivElement>(null)
 
+  const shiftExpandableFolders = useMemo(
+    () => collectShiftNavigationExpandableFolders(tree, manualAnimFolderIds),
+    [tree, manualAnimFolderIds],
+  )
+  const navigationExpandedFolders = useMemo(
+    () => mergeExpandedFolders(expandedFolders, shiftExpandableFolders),
+    [expandedFolders, shiftExpandableFolders],
+  )
+  const selectedShiftExpandedFolders = useMemo(
+    () => selectedLayerId
+      ? collectShiftNavigationExpandedPath(
+        tree,
+        selectedLayerId,
+        expandedFolders,
+        shiftExpandableFolders,
+      )
+      : new Set<string>(),
+    [tree, selectedLayerId, expandedFolders, shiftExpandableFolders],
+  )
+  const visibleExpandedFolders = useMemo(
+    () => mergeExpandedFolders(expandedFolders, selectedShiftExpandedFolders),
+    [expandedFolders, selectedShiftExpandedFolders],
+  )
+
+  const scrollLayerIntoView = useCallback((layerId: string) => {
+    requestAnimationFrame(() => {
+      const el = treeRef.current?.querySelector(`[data-layer-id="${layerId}"]`)
+      el?.scrollIntoView({ block: 'nearest' })
+    })
+  }, [])
+
   /** Shift+スクロールでレイヤーを上下切り替え（プレビュー連動） */
   const handleWheel = useCallback((e: React.WheelEvent) => {
     if (!e.shiftKey || tree.length === 0) return
     e.preventDefault()
 
-    const entries = flattenVisible(tree, expandedFolders, manualAnimFolderIds)
+    const entries = flattenVisible(tree, navigationExpandedFolders, manualAnimFolderIds)
     if (entries.length === 0) return
 
     const currentIdx = selectedLayerId ? entries.findIndex(e => e.id === selectedLayerId) : -1
@@ -75,10 +112,19 @@ export function LayerTreePanel() {
         selectLayer(entry.id)
       }
       // 選択先が見えるようにスクロール
-      const el = treeRef.current?.querySelector(`[data-layer-id="${entry.id}"]`)
-      el?.scrollIntoView({ block: 'nearest' })
+      scrollLayerIntoView(entry.id)
     }
-  }, [tree, expandedFolders, manualAnimFolderIds, singleMarks, selectedLayerId, selectLayer, selectAnimCell, setFocusedAnimFolder])
+  }, [
+    tree,
+    navigationExpandedFolders,
+    manualAnimFolderIds,
+    singleMarks,
+    selectedLayerId,
+    selectLayer,
+    selectAnimCell,
+    setFocusedAnimFolder,
+    scrollLayerIntoView,
+  ])
 
   const handleBlendModeChange = useCallback((value: string) => {
     if (!selectedLayerId) return
@@ -130,12 +176,18 @@ export function LayerTreePanel() {
               onToggleExpandedRecursive={toggleFolderExpandedRecursive}
               onToggleMark={toggleSingleMark}
               onToggleAnimFolder={toggleManualAnimFolder}
-              expandedFolders={expandedFolders}
+              expandedFolders={visibleExpandedFolders}
               visibilityOverrides={visibilityOverrides}
             />
           ))
         )}
       </div>
+
+      <Tooltip content="閉じたアニメフォルダや _ フォルダも一時的に開いて移動します">
+        <div className={styles.footerHint}>
+          Shift+スクロールでレイヤー移動
+        </div>
+      </Tooltip>
     </div>
   )
 }

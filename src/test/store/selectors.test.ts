@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { useAppStore } from '../../store'
 import {
   selectLayerTreeWithVisibility,
+  selectLayerTreeForNavigator,
   selectAnimationFolders,
   selectLayerById,
   selectMarkedLayerIds,
@@ -44,6 +45,45 @@ describe('selectLayerTreeWithVisibility', () => {
     const result = selectLayerTreeWithVisibility(useAppStore.getState())
     expect(result[0].uiHidden).toBe(true)
     expect(tree[0].uiHidden).toBe(false) // 元のツリーは変更されない
+  })
+})
+
+describe('selectLayerTreeForNavigator', () => {
+  it('XDTS未読込時は手動アニメーションフォルダ指定を反映する', () => {
+    const psd = makePsd({ children: [makeFolder('BOOK', [])] })
+    const tree = buildLayerTree(psd)
+    useAppStore.setState({
+      layerTree: tree,
+      xdtsData: null,
+      manualAnimFolderIds: new Set([tree[0].id]),
+    })
+
+    const result = selectLayerTreeForNavigator(useAppStore.getState())
+
+    expect(result[0].isAnimationFolder).toBe(true)
+    expect(result[0].animationFolder?.detectedBy).toBe('manual')
+  })
+
+  it('XDTS読込中は手動アニメーションフォルダ指定を全体ナビゲーターに反映しない', () => {
+    const psd = makePsd({ children: [makeFolder('BOOK', [])] })
+    const tree = buildLayerTree(psd)
+    useAppStore.setState({
+      layerTree: tree,
+      xdtsData: {
+        tracks: [],
+        version: 5,
+        header: { cut: '1', scene: '1' },
+        timeTableName: 'timeline',
+        duration: 24,
+        fps: 24,
+      },
+      manualAnimFolderIds: new Set([tree[0].id]),
+    })
+
+    const result = selectLayerTreeForNavigator(useAppStore.getState())
+
+    expect(result[0].isAnimationFolder).toBe(false)
+    expect(result[0].animationFolder).toBeNull()
   })
 })
 

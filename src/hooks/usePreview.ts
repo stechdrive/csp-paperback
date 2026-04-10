@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react'
 import { useAppStore } from '../store'
-import { selectLayerTreeWithVisibility } from '../store/selectors'
+import { selectLayerTreeForNavigator } from '../store/selectors'
 import { flattenToCanvas } from '../engine/flatten'
 
 const THROTTLE_MS = 150
@@ -12,7 +12,7 @@ const THROTTLE_MS = 150
  * シークバードラッグ中も一定間隔でプレビューが更新される。
  */
 export function usePreview(canvasRef: React.RefObject<HTMLCanvasElement | null>) {
-  const layerTree = useAppStore(selectLayerTreeWithVisibility)
+  const layerTree = useAppStore(selectLayerTreeForNavigator)
   const docWidth = useAppStore(s => s.docWidth)
   const docHeight = useAppStore(s => s.docHeight)
   const selectedCells = useAppStore(s => s.selectedCells)
