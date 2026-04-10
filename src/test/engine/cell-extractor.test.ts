@@ -104,6 +104,25 @@ describe('extractCells', () => {
     expect(names).toContain('A_0001_en.jpg')
   })
 
+  it('工程名をセル番号の前に挿入して出力できる', () => {
+    const enFolder = makeFolder('EN', [makeLayer({ name: 'line' })])
+    const cellFolder = makeFolder('A0001', [enFolder])
+    const animFolder = makeAnimationFolder('A', [cellFolder])
+    const tree = buildLayerTree(makePsd({ children: [animFolder] }))
+    detectAnim(tree, 'A')
+
+    const settings = makeSettingsWithTable([{ suffix: '_en', folderNames: ['EN'] }])
+    const result = extractCells(
+      tree[0], settings, 100, 100, EMPTY_CONTEXT,
+      '', undefined, 'white', [], 'before-cell',
+    )
+
+    expect(result).toHaveLength(1)
+    expect(result[0].flatName).toBe('A_en_0001.jpg')
+    expect(result[0].path).toBe('A/A_en_0001.jpg')
+    expect(result[0].processSuffixes).toEqual(['_en'])
+  })
+
   it('フォルダセル: processTableに未登録のサブフォルダは本体として合成する', () => {
     const unknownFolder = makeFolder('UNKNOWN', [makeLayer()])
     const cellFolder = makeFolder('A0001', [unknownFolder])
@@ -156,6 +175,22 @@ describe('extractCells with parentSuffix', () => {
     expect(result[0].path).toBe('A/A_0001_en.jpg')
   })
 
+  it('parentSuffixをセル番号の前に挿入して出力できる', () => {
+    const cell1 = makeLayer({ name: '1' })
+    const animFolder = makeAnimationFolder('A', [cell1])
+    const tree = buildLayerTree(makePsd({ children: [animFolder] }))
+    detectAnim(tree, 'A')
+
+    const result = extractCells(
+      tree[0], DEFAULT_SETTINGS, 100, 100, EMPTY_CONTEXT,
+      '_en', undefined, 'white', [], 'before-cell',
+    )
+    expect(result).toHaveLength(1)
+    expect(result[0].flatName).toBe('A_en_0001.jpg')
+    expect(result[0].path).toBe('A/A_en_0001.jpg')
+    expect(result[0].processSuffixes).toEqual(['_en'])
+  })
+
   it('hierarchyFolder がフォルダ名とファイル名プレフィックスの両方に使われる (Q3 統一)', () => {
     // #1 対応: hierarchyFolder = displayName という設計。
     // ファイル名プレフィックスも同じ値になるため、"A_en" を渡すと
@@ -198,6 +233,21 @@ describe('extractAllEntries', () => {
     const result = extractAllEntries(tree, settings, 100, 100)
     expect(result).toHaveLength(1)
     expect(result[0].flatName).toBe('A_0001_en.jpg')
+  })
+
+  it('extractAllEntriesでも工程名をセル番号の前に挿入できる', () => {
+    const cell1 = makeLayer({ name: '1' })
+    const animFolder = makeAnimationFolder('A', [cell1])
+    const rootFolder = makeFolder('EN', [animFolder])
+    const tree = buildLayerTree(makePsd({ children: [rootFolder] }))
+    detectAnim(tree[0].children, 'A')
+
+    const settings = makeSettingsWithTable([{ suffix: '_en', folderNames: ['EN'] }])
+    const result = extractAllEntries(tree, settings, 100, 100, 'white', false, 'before-cell')
+    expect(result).toHaveLength(1)
+    expect(result[0].flatName).toBe('A_en_0001.jpg')
+    expect(result[0].path).toBe('A/A_en_0001.jpg')
+    expect(result[0].processSuffixes).toEqual(['_en'])
   })
 
   it('同名アニメフォルダは displayName の (n) で区別される', () => {

@@ -12,7 +12,7 @@ import type { CspLayer } from '../types'
  *
  *   - **同じ name でも parentSuffix が異なれば別 identity** (process variants)
  *     例: c001 の `作画/A`(suffix="") と `演出/A`(suffix="_e") は別 identity、
- *         両方とも displayName "A" で、fileName で `A_0001.jpg` / `A_0001_e.jpg` と分岐する
+ *         両方とも displayName "A" で、fileName 側の工程名位置設定で分岐する
  *
  *   - **同じ identity に複数候補が居る場合のみ (n) 連番でユニーク化** (true duplicates)
  *     例: yc4 の 3 つの LO/TEST/A (全部 parentSuffix="") は同一 identity → "A", "A(2)", "A(3)"

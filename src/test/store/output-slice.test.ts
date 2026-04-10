@@ -12,6 +12,7 @@ describe('output-slice', () => {
     expect(outputConfig.format).toBe('jpg')
     expect(outputConfig.background).toBe('white')
     expect(outputConfig.structure).toBe('flat')
+    expect(outputConfig.processSuffixPosition).toBe('after-cell')
   })
 
   it('setFormatでjpgに変更すると背景が強制的にwhiteになる', () => {
@@ -46,6 +47,11 @@ describe('output-slice', () => {
   it('setStructureで構造モードを変更する', () => {
     useAppStore.getState().setStructure('flat')
     expect(useAppStore.getState().outputConfig.structure).toBe('flat')
+  })
+
+  it('setProcessSuffixPositionで工程名の位置を変更する', () => {
+    useAppStore.getState().setProcessSuffixPosition('before-cell')
+    expect(useAppStore.getState().outputConfig.processSuffixPosition).toBe('before-cell')
   })
 
 })

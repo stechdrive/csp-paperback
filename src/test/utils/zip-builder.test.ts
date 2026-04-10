@@ -80,6 +80,7 @@ describe('buildZipStream', () => {
     jpgQuality: 0.9,
     background: 'white',
     structure: 'hierarchy',
+    processSuffixPosition: 'after-cell',
     excludeAutoMarked: false,
     excludedProcessSuffixes: [],
   }

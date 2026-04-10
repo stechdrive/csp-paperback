@@ -160,7 +160,23 @@ export function PreviewPanel() {
               <div className={styles.emptyStepBody}>
                 <div className={styles.emptyStepTitle}>タイムシート情報（XDTS）を書き出す</div>
                 <span className={styles.emptyMenuPath}>ファイル &gt; アニメーション書き出し &gt; タイムシート情報</span>
-                <div className={styles.emptyNote}>※ タイムライン未登録でも出力したい素材は、フォルダ名の頭に _ をつけるか（例：_BG / _BOOK / _原図 など）右ペインの ★ ボタンで単体書き出しにマークしてください</div>
+                <div className={styles.emptyNote}>形式選択では CSV ではなく XDTS を選んでください。</div>
+              </div>
+            </div>
+
+            <div className={styles.emptyTips}>
+              <div className={styles.emptyTipsTitle}>PSDとXDTSを読み込むと、タイムライン上のアニメーションフォルダは自動検出されます。</div>
+              <div className={styles.emptyTip}>
+                <span className={styles.emptyTipMark}>★</span>
+                <span>背景原図・撮影指示・BOOKなどを、CSPのアニメーションセル出力で自動出力させるためだけにアニメーションフォルダ化せず、別ファイルで出力。</span>
+              </div>
+              <div className={styles.emptyTip}>
+                <span className={styles.emptyTipMark}>指定方法</span>
+                <span>便利に使うならCSP側でレイヤーフォルダ名の先頭に _（アンダースコア）を付けておく。名前を変えたくない時は右ペインの★で後から指定。</span>
+              </div>
+              <div className={styles.emptyTip}>
+                <span className={styles.emptyTipMark}>🎬</span>
+                <span>XDTSにないフォルダを手動でアニメーションフォルダとして扱い、直下の子をセルとして1枚ずつ出力。</span>
               </div>
             </div>
 

@@ -101,6 +101,24 @@
   left: 14px;
 }
 
+.switchValue {
+  font-size: 0.7rem;
+  color: #cdd6f4;
+  min-width: 1.75rem;
+}
+
+.nameSample {
+  font-family: monospace;
+  font-size: 0.72rem;
+  color: #89b4fa;
+  background: rgba(137, 180, 250, 0.08);
+  border: 1px solid rgba(137, 180, 250, 0.18);
+  border-radius: 4px;
+  padding: 0.1rem 0.35rem;
+  white-space: nowrap;
+  margin-right: 0.5rem;
+}
+
 .chipGroup {
   display: flex;
   border: 1px solid #45475a;
@@ -209,6 +227,15 @@
 
   .label {
     font-size: 0.75rem;
+  }
+
+  .switchValue {
+    font-size: 0.75rem;
+  }
+
+  .nameSample {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.45rem;
   }
 
   .qualitySlider {

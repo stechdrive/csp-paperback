@@ -105,6 +105,11 @@
   left: 16px;
 }
 
+.switchValue {
+  font-size: 0.8rem;
+  color: #cdd6f4;
+}
+
 .qualityRow {
   display: flex;
   align-items: center;

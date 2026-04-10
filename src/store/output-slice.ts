@@ -1,5 +1,5 @@
 import type { StateCreator } from 'zustand'
-import type { OutputConfig, OutputFormat, BackgroundMode, StructureMode } from '../types'
+import type { OutputConfig, OutputFormat, BackgroundMode, StructureMode, ProcessSuffixPosition } from '../types'
 import { DEFAULT_OUTPUT_CONFIG } from '../types'
 import type { AppStore } from './index'
 
@@ -8,6 +8,7 @@ export interface OutputSlice {
   setFormat: (format: OutputFormat) => void
   setBackground: (bg: BackgroundMode) => void
   setStructure: (mode: StructureMode) => void
+  setProcessSuffixPosition: (position: ProcessSuffixPosition) => void
   setJpgQuality: (quality: number) => void
   toggleProcessSuffixExclusion: (suffix: string) => void
   setAllProcessSuffixExclusions: (suffixes: string[]) => void
@@ -41,6 +42,11 @@ export const createOutputSlice: StateCreator<AppStore, [], [], OutputSlice> = (s
   setStructure: (structure) => {
     get().pushHistory()
     set({ outputConfig: { ...get().outputConfig, structure } })
+  },
+
+  setProcessSuffixPosition: (processSuffixPosition) => {
+    get().pushHistory()
+    set({ outputConfig: { ...get().outputConfig, processSuffixPosition } })
   },
 
   setJpgQuality: (jpgQuality) => {

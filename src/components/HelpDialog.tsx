@@ -10,8 +10,8 @@ const TOC = [
   { id: 'overview', label: 'CSP Paperbackとは' },
   { id: 'workflow', label: '基本ワークフロー' },
   { id: 'example', label: 'サンプルで理解する' },
-  { id: 'auto-mark', label: '_フォルダ自動マーク' },
-  { id: 'single-mark', label: '単体出力マーク ★' },
+  { id: 'auto-mark', label: '単体出力の指定方法' },
+  { id: 'single-mark', label: '★で後から指定' },
   { id: 'manual-anim-folder', label: '手動アニメフォルダ 🎬' },
   { id: 'virtual-set', label: '仮想セル' },
   { id: 'process-table', label: '工程フォルダテーブル' },
@@ -114,7 +114,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   <tr>
                     <td>特定レイヤーだけ別出力</td>
                     <td><span className={styles.crossMark}>✗</span> 不可</td>
-                    <td><span className={styles.checkMark}>✓</span> ★マーク / _フォルダ</td>
+                    <td><span className={styles.checkMark}>✓</span> ★マーク / 先頭に _ を付けたレイヤーフォルダ</td>
                   </tr>
                   <tr>
                     <td>レイヤーの任意組み合わせ</td>
@@ -148,14 +148,12 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               <h3 className={styles.h2}>主な機能</h3>
               <ul className={styles.ul}>
                 <li>
-                  <span className={styles.strong}>_フォルダ自動マーク</span> — フォルダ名の先頭に
-                  <code className={styles.code}>_</code> をつけるだけで、アニメーションフォルダにしなくても、セルとは別に単体出力
+                  <span className={styles.strong}>単体出力</span> — 背景原図・撮影指示・BOOKなど、セル合成には混ぜずに別ファイルで出したい素材を出力。
+                  アニメーションしない素材を、CSPのアニメーションセル出力で自動出力させるためだけにアニメーションフォルダへ入れる必要がなくなります。
+                  便利に使うなら、CSP側でレイヤーフォルダ名の先頭に _（アンダースコア）をつけておく運用がおすすめです。名前を変えたくない場合は、読み込み後に右ペインの★でその場指定できます。
                 </li>
                 <li>
-                  <span className={styles.strong}>★ 単体出力マーク</span> — 任意のレイヤーまたはレイヤーフォルダを手動マークして個別出力
-                </li>
-                <li>
-                  <span className={styles.strong}>🎬 手動アニメーションフォルダ指定</span> — XDTSに出てこないフォルダを補助的にセル列として扱って出力
+                  <span className={styles.strong}>🎬 手動アニメーションフォルダ指定</span> — XDTSに出てこないフォルダを補助的にアニメーションフォルダとして扱い、直下の子をセルごとに出力
                 </li>
                 <li>
                   <span className={styles.strong}>仮想セル</span> — 任意のセルとBGなどのレイヤーを自由に組み合わせて合成画像を出力
@@ -226,7 +224,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   <div className={styles.stepBody}>
                     <div className={styles.stepTitle}>必要に応じてマーク設定 → ZIP出力</div>
                     <div className={styles.stepDesc}>
-                      _フォルダ、★マーク、🎬 手動アニメーションフォルダ指定を確認し、「出力」ボタンで ZIP をダウンロード。
+                      単体出力と 🎬 手動アニメーションフォルダ指定を確認し、「出力」ボタンで ZIP をダウンロード。
                       出力形式（JPG/PNG）、背景透過、出力時にセル名でフォルダを作るかをカスタマイズできます。
                     </div>
                   </div>
@@ -398,7 +396,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
 
               <div className={styles.calloutInfo}>
                 このサンプルには CSP Paperback の主要機能がすべて詰まっています：
-                <span className={styles.strong}>_フォルダ自動マーク</span>（_撮影指示、_原図、_BOOK1、_BG）、
+                <span className={styles.strong}>単体出力</span>（_撮影指示、_原図、_BOOK1、_BG はレイヤーフォルダ名の先頭に _ を付けて自動指定）、
                 <span className={styles.strong}>工程フォルダ</span>のトラック分離型（演出）とセル内蔵型（_s）、
                 <span className={styles.strong}>アーカイブ除外</span>（_pool）。
                 各機能の詳細は以降のセクションで解説します。
@@ -456,9 +454,9 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               </p>
 
               <div className={styles.calloutInfo}>
-                <span className={styles.strong}>入れ子の _フォルダは親から抜かれません。</span>
+                <span className={styles.strong}>入れ子になった、先頭に _ を付けたレイヤーフォルダは親から抜かれません。</span>
                 親フォルダ自体が自動マークされている場合、その出力は配下の表示内容をまとめて合成します。
-                配下にある別の _フォルダは、親の画像に含まれたまま、追加で個別ファイルとしても出力されます。
+                配下にある別の「先頭に _ を付けたレイヤーフォルダ」は、親の画像に含まれたまま、追加で個別ファイルとしても出力されます。
                 たとえば <code className={styles.code}>_原図.jpg</code> は <code className={styles.code}>_BOOK1</code> と
                 <code className={styles.code}>_BG</code> を含む原図全体で、
                 <code className={styles.code}>_BOOK1.jpg</code> と <code className={styles.code}>_BG.jpg</code> は
@@ -607,17 +605,30 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               </div>
             </section>
 
-            {/* ===== 5. _フォルダ自動マーク ===== */}
+            {/* ===== 5. 単体出力の指定方法 ===== */}
             <section className={styles.section} data-section="auto-mark">
-              <h2 className={styles.h1}>📁 _フォルダ自動マーク</h2>
+              <h2 className={styles.h1}>📁 単体出力の指定方法</h2>
 
               <p className={styles.p}>
-                フォルダ名の先頭に <code className={styles.code}>_</code>（アンダースコア）をつけると、
-                そのフォルダは<span className={styles.em}>自動的に単体出力マーク</span>されます。
-                CSP側でフォルダ名を変えるだけなので、追加の操作は不要です。
+                単体出力は、セルの合成には混ぜたくないけれど ZIP には出したい素材を、
+                セルとは別ファイルにする機能です。背景原図、BOOK、撮影指示、PAN/SL 指示などに使います。
+                アニメーションしない素材を、CSPのアニメーションセル出力で自動出力させるためだけにアニメーションフォルダへ入れたり、
+                タイムシート上のトラックとして管理したりする必要はありません。
+                便利に使うなら、CSP側で作業している時点でレイヤーフォルダ名の先頭へ
+                <code className={styles.code}>_</code>（アンダースコア）を付けておく運用がおすすめです。
+                名前を変えたくない素材や、読み込み後に追加で別出力したい素材は右ペインの
+                <span className={styles.em}> ★ </span>で指定します。どちらも出力上は同じ「単体出力」です。
               </p>
 
               <div className={styles.layerDiagram}>
+                <div className={styles.layerRow}>
+                  <span className={styles.iconMark}>★</span>
+                  <span className={styles.layerNameMark}>撮影指示</span>
+                  <span className={styles.labelMark}>手動</span>
+                  <span style={{ color: '#6c7086', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
+                    → CSP側の名前を変えずに「撮影指示.jpg」として出力
+                  </span>
+                </div>
                 <div className={styles.layerRow}>
                   <span className={styles.iconFolder}>📁</span>
                   <span className={styles.layerNameMark}>_撮影指示</span>
@@ -631,7 +642,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   <span className={styles.layerNameMark}>_PAN</span>
                   <span className={styles.labelMark}>★ 自動</span>
                   <span style={{ color: '#6c7086', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
-                    → ネストした _フォルダも個別に出力
+                    → 入れ子の、先頭に _ を付けたレイヤーフォルダも個別に出力
                   </span>
                 </div>
                 <div className={`${styles.layerRow} ${styles.indent1}`}>
@@ -678,14 +689,22 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               <h3 className={styles.h2}>ルール</h3>
               <ul className={styles.ul}>
                 <li>
-                  対象は<span className={styles.strong}>フォルダ</span>のみ（通常レイヤーは対象外）
+                  レイヤーフォルダ名の先頭に <code className={styles.code}>_</code> を付ける方法は
+                  <span className={styles.strong}>フォルダ限定</span>の事前指定です。
+                  <span className={styles.em}>★</span> は読み込み後にレイヤー・フォルダのどちらにも付けられます
                 </li>
                 <li>
-                  <span className={styles.strong}>アニメーションフォルダの中</span>にある _フォルダは自動マークされません
+                  単体出力にした素材は、アニメーションセルの合成対象から外れ、別ファイルとして出力されます
+                </li>
+                <li>
+                  親子で単体出力にした場合、親の出力には子の表示内容も含まれ、子は追加で個別にも出力されます
+                </li>
+                <li>
+                  <span className={styles.strong}>アニメーションフォルダの中</span>にある、先頭に _ を付けたレイヤーフォルダは自動マークされません
                   （アニメーションセルとして扱われます）
                 </li>
                 <li>
-                  _フォルダがXDTSで検出された場合、または 🎬 で手動指定された場合は、
+                  先頭に _ を付けたレイヤーフォルダがXDTSで検出された場合、または 🎬 で手動指定された場合は、
                   単体出力ではなく<span className={styles.strong}>アニメーションフォルダとしてのセル出力</span>を優先します
                 </li>
                 <li>
@@ -696,17 +715,23 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               </ul>
 
               <div className={styles.calloutTip}>
-                <span className={styles.strong}>💡 アーカイブ除外パターンのカスタマイズ：</span>
-                「設定」ダイアログの「アーカイブ除外パターン」で、自動マークから除外するフォルダ名のプレフィックスを
-                自由に追加・編集できます。ボツ案や素材プールなどの作業用フォルダを誤って出力しないようにできます。
+                <span className={styles.strong}>💡 使い分け：</span>
+                CSPで作業している時点から「セル合成には混ぜず、別素材として出す」と決めている背景原図や撮影指示は、
+                レイヤーフォルダ名の先頭に <code className={styles.code}>_</code> を付けておくのが推奨です。
+                CSP Paperbackで読み込んだ時点で単体出力として扱われるため、カットごとに ★ を押し直す必要がありません。
+                読み込み後に追加で別出力したい素材や、CSP側の名前を変えたくない素材は ★ で後から指定します。
+                「設定」ダイアログの「アーカイブ除外パターン」で、<code className={styles.code}>_old</code> や
+                <code className={styles.code}>_pool</code> のような作業用フォルダを自動マークから除外できます。
               </div>
             </section>
 
-            {/* ===== 6. 単体出力マーク ===== */}
+            {/* ===== 6. ★で後から単体出力 ===== */}
             <section className={styles.section} data-section="single-mark">
-              <h2 className={styles.h1}>⭐ 単体出力マーク</h2>
+              <h2 className={styles.h1}>⭐ ★で後から単体出力</h2>
 
               <p className={styles.p}>
+                ★ は「レイヤーフォルダ名の先頭に <code className={styles.code}>_</code> を付ける」方法と同じ単体出力を、CSP側の名前を変えずに
+                読み込み後のレイヤーツリーで指定するためのボタンです。
                 レイヤーツリーの各レイヤー/フォルダの横にある
                 <span className={styles.em}> ★ ボタン</span>をクリックすると、
                 そのレイヤーを<span className={styles.strong}>個別画像として出力</span>するマークがつきます。
@@ -726,7 +751,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   <span className={styles.layerNameMark}>_BG</span>
                   <span className={styles.labelMark}>自動マーク</span>
                   <span style={{ color: '#6c7086', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
-                    → _フォルダにより自動
+                    → 先頭に _ を付けたレイヤーフォルダにより自動
                   </span>
                 </div>
                 <div className={styles.layerRow}>
@@ -750,8 +775,8 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 <tbody>
                   <tr>
                     <td>マーク方法</td>
-                    <td>フォルダ名 <code className={styles.code}>_</code> プレフィックス</td>
-                    <td>★ボタンクリック</td>
+                    <td>CSP側でレイヤーフォルダ名の先頭に <code className={styles.code}>_</code> を付ける</td>
+                    <td>CSP Paperback 読み込み後に ★ ボタンクリック</td>
                   </tr>
                   <tr>
                     <td>対象</td>
@@ -768,7 +793,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
 
               <div className={styles.calloutInfo}>
                 マークされたレイヤーは、上下のコンテキストレイヤー（アニメーションフォルダ外の通常レイヤー）
-                と合成された状態で出力されます。合成モード（乗算、スクリーン等）もそのまま反映されます。
+                と合成された状態で出力されます。アニメーションセルの素材には混ぜ込まず、合成モード（乗算、スクリーン等）もそのまま反映されます。
               </div>
             </section>
 
@@ -780,6 +805,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 <span className={styles.strong}>手動アニメーションフォルダ指定</span>は、
                 XDTSで検出されなかったPSD内のフォルダを
                 <span className={styles.em}>アニメーションフォルダとして扱う</span>ための機能です。
+                これは単体出力ではなく、フォルダ直下の子をセルとして1枚ずつ出すための補助機能です。
                 通常はPSDとXDTSをセットで読み込み、XDTSで検出できなかったフォルダだけを補います。
                 右ペインのレイヤーツリーで対象フォルダの横にある 🎬 ボタンをクリックすると、
                 そのフォルダ直下の子レイヤー/子フォルダがセルとして出力されます。
@@ -815,13 +841,13 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   CSP側でアニメーションフォルダが非表示だったため、XDTSにそのトラックが書き出されなかった場合
                 </li>
                 <li>
-                  どうしてもXDTSを用意できない状態で、PSD上のフォルダ構造からセル列として出力したい場合
+                  どうしてもXDTSを用意できない状態で、PSD上のフォルダ構造からセルごとに出力したい場合
                 </li>
                 <li>
                   背景・BOOK・参考素材などを、単体画像ではなくフォルダ直下のセル1枚ずつに分けて出力したい場合
                 </li>
                 <li>
-                  紙スキャン素材をPSDに並べただけでタイムシートがないカットを、CSPでタイムシートを作り直さずにフォルダ単位でセル列として扱いたい場合
+                  紙スキャン素材をPSDに並べただけでタイムシートがないカットを、CSPでタイムシートを作り直さずにフォルダ直下の素材をセルとして扱いたい場合
                 </li>
                 <li>
                   PSDだけで受け取った素材が独自ルールのフォルダに入っていて、そのフォルダ直下のレイヤー/フォルダを1枚ずつ出力したい場合
@@ -860,12 +886,12 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               <div className={styles.calloutInfo}>
                 <span className={styles.strong}>指定できない場合：</span>
                 すでにアニメーションフォルダを含む親フォルダや、アニメーションフォルダ配下の子フォルダには 🎬 ボタンが出ません。
-                親と子を同時にセル列として扱うと「どこからどこまでを1セルにするか」が曖昧になるためです。
-                その場合は、セル列として出したい一番内側のフォルダだけを指定します。
+                親と子を同時にアニメーションフォルダとして扱うと「どこからどこまでを1セルにするか」が曖昧になるためです。
+                その場合は、セルとして出したい一番内側のフォルダだけを指定します。
               </div>
 
               <div className={styles.calloutTip}>
-                <span className={styles.strong}>💡 _フォルダとの違い：</span>
+                <span className={styles.strong}>💡 単体出力との違い：</span>
                 <code className={styles.code}>_BOOK1</code> をそのままにすると1枚の単体画像として出力されます。
                 🎬 で手動アニメーションフォルダにすると、直下の子をセルとして
                 <code className={styles.code}>_BOOK1_0001.jpg</code> のように1枚ずつ出力します。
@@ -1158,6 +1184,14 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                     <td>
                       連番: <code className={styles.code}>A_0001.jpg</code>{'\n'}
                       セル名: <code className={styles.code}>A_ア.jpg</code>（セル名をそのまま使用）
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><span className={styles.strong}>工程名の位置</span></td>
+                    <td>後ろ / 前</td>
+                    <td>
+                      後ろ: <code className={styles.code}>A_0001_e.jpg</code>（セルごとに本体と修正を並べて確認しやすい）{'\n'}
+                      前: <code className={styles.code}>A_e_0001.jpg</code>（工程ごとにシーケンス読み込みしやすい）
                     </td>
                   </tr>
                 </tbody>

@@ -224,6 +224,46 @@
   margin-top: 0.2rem;
 }
 
+.emptyTips {
+  margin-top: 1rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #313244;
+  border-radius: 6px;
+  background: rgba(30, 30, 46, 0.55);
+}
+
+.emptyTipsTitle {
+  font-size: 0.74rem;
+  line-height: 1.65;
+  color: #cdd6f4;
+  margin-bottom: 0.45rem;
+}
+
+.emptyTip {
+  display: grid;
+  grid-template-columns: 4.8rem 1fr;
+  gap: 0.5rem;
+  align-items: start;
+  font-size: 0.72rem;
+  line-height: 1.55;
+  color: #a6adc8;
+}
+
+.emptyTip + .emptyTip {
+  margin-top: 0.35rem;
+}
+
+.emptyTipMark {
+  font-family: monospace;
+  color: #cdd6f4;
+  background: rgba(137, 180, 250, 0.1);
+  border: 1px solid rgba(137, 180, 250, 0.22);
+  border-radius: 4px;
+  padding: 0 0.25rem;
+  text-align: center;
+  white-space: nowrap;
+}
+
 .emptyDivider {
   border: none;
   border-top: 1px solid #313244;

@@ -15,6 +15,20 @@ function collectAutoMarkedNames(layers: CspLayer[]): string[] {
   return names
 }
 
+function buildNameSample(
+  mode: 'sequence' | 'cellname',
+  structure: 'hierarchy' | 'flat',
+  processSuffixPosition: 'after-cell' | 'before-cell',
+): string {
+  const trackName = 'A'
+  const cellLabel = mode === 'sequence' ? '0001' : 'ア'
+  const processSuffix = '_e'
+  const fileName = processSuffixPosition === 'before-cell'
+    ? `${trackName}${processSuffix}_${cellLabel}.jpg`
+    : `${trackName}_${cellLabel}${processSuffix}.jpg`
+  return structure === 'hierarchy' ? `${trackName}/${fileName}` : fileName
+}
+
 export function ExportSettings() {
   const outputConfig = useAppStore(s => s.outputConfig)
   const projectSettings = useAppStore(s => s.projectSettings)
@@ -23,6 +37,7 @@ export function ExportSettings() {
   const setFormat = useAppStore(s => s.setFormat)
   const setBackground = useAppStore(s => s.setBackground)
   const setStructure = useAppStore(s => s.setStructure)
+  const setProcessSuffixPosition = useAppStore(s => s.setProcessSuffixPosition)
   const setCellNamingMode = useAppStore(s => s.setCellNamingMode)
   const toggleProcessSuffixExclusion = useAppStore(s => s.toggleProcessSuffixExclusion)
   const setAllProcessSuffixExclusions = useAppStore(s => s.setAllProcessSuffixExclusions)
@@ -35,6 +50,11 @@ export function ExportSettings() {
   const excludedSet = new Set(outputConfig.excludedProcessSuffixes)
   const allIncluded = processSuffixes.every(s => !excludedSet.has(s)) && !outputConfig.excludeAutoMarked
   const allExcluded = processSuffixes.every(s => excludedSet.has(s)) && outputConfig.excludeAutoMarked
+  const nameSample = buildNameSample(
+    projectSettings.cellNamingMode,
+    outputConfig.structure,
+    outputConfig.processSuffixPosition,
+  )
 
   const handleAllOn = () => {
     setAllProcessSuffixExclusions([])
@@ -89,6 +109,7 @@ export function ExportSettings() {
             onClick={() => setCellNamingMode('cellname')}
           >{t.settings.cellNamingCellname}</button>
         </div>
+        <span className={styles.nameSample}>{nameSample}</span>
 
         <Tooltip content={t.export.structureHint} placement="bottom">
           <label className={styles.switchLabel}>
@@ -99,6 +120,23 @@ export function ExportSettings() {
               role="switch"
               aria-checked={outputConfig.structure === 'hierarchy'}
             />
+          </label>
+        </Tooltip>
+
+        <Tooltip content={t.export.processSuffixPositionHint} placement="bottom">
+          <label className={styles.switchLabel}>
+            <span className={styles.label}>{t.export.processSuffixPosition}</span>
+            <span
+              className={`${styles.switch} ${outputConfig.processSuffixPosition === 'before-cell' ? styles.switchOn : ''}`}
+              onClick={() => setProcessSuffixPosition(outputConfig.processSuffixPosition === 'before-cell' ? 'after-cell' : 'before-cell')}
+              role="switch"
+              aria-checked={outputConfig.processSuffixPosition === 'before-cell'}
+            />
+            <span className={styles.switchValue}>
+              {outputConfig.processSuffixPosition === 'before-cell'
+                ? t.export.processSuffixBeforeCell
+                : t.export.processSuffixAfterCell}
+            </span>
           </label>
         </Tooltip>
       </div>

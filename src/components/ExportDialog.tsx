@@ -27,6 +27,7 @@ export function ExportDialog({ onClose }: ExportDialogProps) {
   const setFormat = useAppStore(s => s.setFormat)
   const setBackground = useAppStore(s => s.setBackground)
   const setStructure = useAppStore(s => s.setStructure)
+  const setProcessSuffixPosition = useAppStore(s => s.setProcessSuffixPosition)
   const toggleProcessSuffixExclusion = useAppStore(s => s.toggleProcessSuffixExclusion)
   const setAllProcessSuffixExclusions = useAppStore(s => s.setAllProcessSuffixExclusions)
   const setExcludeAutoMarked = useAppStore(s => s.setExcludeAutoMarked)
@@ -100,6 +101,26 @@ export function ExportDialog({ onClose }: ExportDialogProps) {
           </label>
         </div>
 
+
+        {/* 工程名の位置 */}
+        <div className={styles.section}>
+          <Tooltip content={t.export.processSuffixPositionHint} placement="bottom">
+            <label className={styles.switchRow}>
+              <span className={styles.label}>{t.export.processSuffixPosition}</span>
+              <span
+                className={`${styles.switch} ${outputConfig.processSuffixPosition === 'before-cell' ? styles.switchOn : ''}`}
+                onClick={() => setProcessSuffixPosition(outputConfig.processSuffixPosition === 'before-cell' ? 'after-cell' : 'before-cell')}
+                role="switch"
+                aria-checked={outputConfig.processSuffixPosition === 'before-cell'}
+              />
+              <span className={styles.switchValue}>
+                {outputConfig.processSuffixPosition === 'before-cell'
+                  ? t.export.processSuffixBeforeCell
+                  : t.export.processSuffixAfterCell}
+              </span>
+            </label>
+          </Tooltip>
+        </div>
 
         {/* 出力対象 */}
         <div className={styles.section}>

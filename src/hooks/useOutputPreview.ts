@@ -3,6 +3,7 @@ import { useAppStore } from '../store'
 import { selectLayerTreeWithVisibility } from '../store/selectors'
 import {
   extractCells,
+  buildCellFileName,
   extractVirtualSetEntries,
   resolveParentSuffix,
   collectContextSourceLayers,
@@ -171,6 +172,7 @@ function previewAnimFolder(
   const allEntries: OutputEntry[] = extractCells(
     animFolder, projectSettings, docWidth, docHeight, lowerContextFlats,
     parentSuffix, displayName, outputConfig.background, localUpperFlats,
+    outputConfig.processSuffixPosition,
   )
 
   // 選択セルのエントリに絞り込む
@@ -178,7 +180,9 @@ function previewAnimFolder(
   const cellLabel = namingMode === 'sequence'
     ? String(visibleChildren.length - clampedIndex).padStart(4, '0')
     : selectedCell.originalName
-  const prefix = `${displayName}_${cellLabel}${parentSuffix}`
+  const prefix = buildCellFileName(
+    displayName, cellLabel, parentSuffix, '', outputConfig.processSuffixPosition,
+  ).replace(/\.jpg$/i, '')
 
   let entries = allEntries.filter(e => e.sourceCellId === selectedCell.id)
   if (entries.length === 0) entries = allEntries.filter(e =>

@@ -1,4 +1,4 @@
-import type { CspLayer, FlatLayer, OutputEntry, ProjectSettings } from '../types'
+import type { CspLayer, FlatLayer, OutputEntry, ProjectSettings, ProcessSuffixPosition } from '../types'
 import type { VirtualSet } from '../types/marks'
 import { flattenTree } from './flatten'
 import { applyLayerMask, compositeGroup, compositeStack, createCanvas } from './compositor'
@@ -31,6 +31,7 @@ export function extractCells(
   hierarchyFolder?: string,
   background: 'white' | 'transparent' = 'white',
   upperContextLayers: FlatLayer[] = [],
+  processSuffixPosition: ProcessSuffixPosition = 'after-cell',
 ): OutputEntry[] {
   if (!animFolder.isAnimationFolder) return []
 
@@ -57,13 +58,14 @@ export function extractCells(
       const rawFlats = flattenCellContent([cell], docWidth, docHeight, new Set([cell.id]))
       const cellFlats = applyContainerMasks(rawFlats, cell, animFolder, docWidth, docHeight)
       const canvas = compositeWithContext(cellFlats, lowerContextLayers, upperContextLayers, docWidth, docHeight, background)
-      const fileName = `${trackName}_${cellLabel}${parentSuffix}.jpg`
+      const fileName = buildCellFileName(trackName, cellLabel, parentSuffix, '', processSuffixPosition)
       entries.push({
         path: `${folderName}/${fileName}`,
         flatName: fileName,
         canvas,
         sourceLayerId: cell.id,
         sourceCellId: cell.id,
+        processSuffixes: collectProcessSuffixes(parentSuffix),
       })
     } else {
       // フォルダ: processTableと照合して工程別 or 本体合成
@@ -91,13 +93,14 @@ export function extractCells(
         const rawBodyFlats = flattenCellContent(bodyLayers, docWidth, docHeight)
         const bodyFlats = applyContainerMasks(rawBodyFlats, cell, animFolder, docWidth, docHeight)
         const canvas = compositeWithContext(bodyFlats, lowerContextLayers, upperContextLayers, docWidth, docHeight, background)
-        const fileName = `${trackName}_${cellLabel}${parentSuffix}.jpg`
+        const fileName = buildCellFileName(trackName, cellLabel, parentSuffix, '', processSuffixPosition)
         entries.push({
           path: `${folderName}/${fileName}`,
           flatName: fileName,
           canvas,
           sourceLayerId: cell.id,
           sourceCellId: cell.id,
+          processSuffixes: collectProcessSuffixes(parentSuffix),
         })
       }
 
@@ -108,13 +111,14 @@ export function extractCells(
         const rawProcessFlats = flattenCellContent(processLayers, docWidth, docHeight, processIgnoreIds)
         const processFlats = applyContainerMasks(rawProcessFlats, cell, animFolder, docWidth, docHeight)
         const canvas = compositeWithContext(processFlats, lowerContextLayers, upperContextLayers, docWidth, docHeight, background)
-        const fileName = `${trackName}_${cellLabel}${parentSuffix}${suffix}.jpg`
+        const fileName = buildCellFileName(trackName, cellLabel, parentSuffix, suffix, processSuffixPosition)
         entries.push({
           path: `${folderName}/${fileName}`,
           flatName: fileName,
           canvas,
           sourceLayerId: processLayers[0].id,
           sourceCellId: cell.id,
+          processSuffixes: collectProcessSuffixes(parentSuffix, suffix),
         })
       }
     }
@@ -122,6 +126,25 @@ export function extractCells(
 
   resolveFlatNameCollisions(entries)
   return entries
+}
+
+export function buildCellFileName(
+  trackName: string,
+  cellLabel: string,
+  parentSuffix = '',
+  processSuffix = '',
+  processSuffixPosition: ProcessSuffixPosition = 'after-cell',
+): string {
+  const processPart = `${parentSuffix}${processSuffix}`
+  if (processSuffixPosition === 'before-cell' && processPart) {
+    return `${trackName}${processPart}_${cellLabel}.jpg`
+  }
+  return `${trackName}_${cellLabel}${processPart}.jpg`
+}
+
+function collectProcessSuffixes(...suffixes: string[]): string[] | undefined {
+  const processSuffixes = suffixes.filter(Boolean)
+  return processSuffixes.length > 0 ? processSuffixes : undefined
 }
 
 /**
@@ -541,6 +564,7 @@ export function extractAllEntries(
   docHeight: number,
   background: 'white' | 'transparent' = 'white',
   excludeAutoMarked = false,
+  processSuffixPosition: ProcessSuffixPosition = 'after-cell',
 ): OutputEntry[] {
   const entries: OutputEntry[] = []
 
@@ -586,7 +610,7 @@ export function extractAllEntries(
         const cellEntries = extractCells(
           layer, projectSettings, docWidth, docHeight, thisLower,
           parentSuffix, displayName, background,
-          thisUpper,
+          thisUpper, processSuffixPosition,
         )
         entries.push(...cellEntries)
         continue

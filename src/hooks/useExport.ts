@@ -41,19 +41,15 @@ export function useExport(): UseExportResult {
       let entries = extractAllEntries(
         tree, projectSettings, docWidth, docHeight,
         outputConfig.background, outputConfig.excludeAutoMarked,
+        outputConfig.processSuffixPosition,
       )
 
       // 除外された工程サフィックスをポストフィルタ
       if (outputConfig.excludedProcessSuffixes.length > 0) {
         const excluded = new Set(outputConfig.excludedProcessSuffixes)
-        entries = entries.filter(entry => {
-          const dotIdx = entry.flatName.lastIndexOf('.')
-          const base = dotIdx >= 0 ? entry.flatName.slice(0, dotIdx) : entry.flatName
-          for (const suffix of excluded) {
-            if (base.endsWith(suffix)) return false
-          }
-          return true
-        })
+        entries = entries.filter(entry =>
+          !entry.processSuffixes?.some(suffix => excluded.has(suffix))
+        )
       }
 
       setProgress(0.4)
