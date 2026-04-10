@@ -20,7 +20,7 @@ CSP Paperback solves this outside the workflow: load your PSD and XDTS, and expo
 
 **Load your project**
 - Export your CLIP file as PSD from CSP
-- Optionally export the `.xdts` timeline file via *File > Export Animation > Export Timeline Information*, or drop a `.cspb` file alongside the PSD — no separate XDTS export needed
+- Optionally export the `.xdts` timeline file via *File > Export Animation > Export Timeline Information*
 - Open the app and drop the files to load them
 
 **Composite correctly**
@@ -35,7 +35,7 @@ CSP Paperback solves this outside the workflow: load your PSD and XDTS, and expo
 
 **Export as Single**
 - Toggle any layer to include it as a standalone export outside of animation cells
-- Supports automatic marking via `SMARK_` / `VSET_` marker layers embedded in the PSD
+- Folders whose names start with `_` are detected automatically, and individual layers can be marked from the layer panel
 
 **Export**
 - Preview each cell's composited output before exporting
@@ -47,7 +47,8 @@ CSP Paperback solves this outside the workflow: load your PSD and XDTS, and expo
 - Ctrl+Z / Ctrl+Shift+Z to undo or redo any editing operation (marks, virtual sets, visibility, settings)
 
 **Persistence**
-- All settings (marks, virtual sets, process table) are saved inside the PSD file as XMP metadata
+- Process table and archive exclusion settings are saved in local storage
+- Export and import those shared settings as JSON from the settings dialog
 - No account, no server — everything runs in the browser and nothing leaves your machine
 
 ### Supported Files
@@ -56,7 +57,7 @@ CSP Paperback solves this outside the workflow: load your PSD and XDTS, and expo
 |------|---------|
 | `.psd` | Required. Your CLIP file exported as PSD from Clip Studio Paint. |
 | `.xdts` | Optional. Timeline data exported via *File > Export Animation > Export Timeline Information*. Used for multi-track cell synchronisation. |
-| `.cspb` | Optional. Drop alongside the PSD to load timeline data directly — no separate XDTS export needed. |
+| `.json` | Optional. Shared process table and archive exclusion settings exported from the settings dialog. |
 
 ---
 
@@ -76,7 +77,7 @@ CSP Paperbackはその制約をPSDとXDTSを読み込むことでワークフロ
 
 **プロジェクトの読み込み**
 - CSPでCLIPファイルをPSD形式で書き出しておく
-- タイムラインデータは *ファイル＞アニメーション書き出し＞タイムシート情報から出力* でXDTSを書き出すか、CSPBファイルをPSDと一緒にドロップすれば別途書き出し不要
+- 必要に応じて *ファイル＞アニメーション書き出し＞タイムシート情報から出力* でXDTSを書き出す
 - アプリを開き、ファイルをドロップして読み込む
 
 **正しい合成順序**
@@ -91,7 +92,7 @@ CSP Paperbackはその制約をPSDとXDTSを読み込むことでワークフロ
 
 **単体書き出し**
 - 任意のレイヤーを単体書き出し対象として指定し、アニメーションセルとは独立して書き出せる
-- PSD内に埋め込んだ `SMARK_` / `VSET_` マーカーレイヤーによる自動指定にも対応
+- `_` で始まるフォルダは自動検出され、任意のレイヤーは右パネルから個別にマークできる
 
 **書き出し**
 - 各セルの合成結果を書き出し前にプレビューで確認できる
@@ -103,7 +104,8 @@ CSP Paperbackはその制約をPSDとXDTSを読み込むことでワークフロ
 - Ctrl+Z / Ctrl+Shift+Z で操作を取り消し・やり直せる（マーク・仮想セット・表示切替・設定など全操作対応）
 
 **設定の永続化**
-- マーク・仮想セット・プロセステーブルなど、すべての設定をPSDファイルのXMPメタデータとして保存
+- 工程テーブルとアーカイブ除外設定はローカルストレージに保存
+- スタジオ内で共有したい設定は設定ダイアログからJSONで書き出し・読み込み可能
 - アカウント不要・サーバー不要。すべてブラウザ内で完結し、データは外部に送信されない
 
 ### 対応ファイル
@@ -112,7 +114,7 @@ CSP Paperbackはその制約をPSDとXDTSを読み込むことでワークフロ
 |---------|------|
 | `.psd` | 必須。CLIPファイルをPSD形式で書き出したもの。 |
 | `.xdts` | 任意。*ファイル＞アニメーション書き出し＞タイムシート情報から出力*で書き出すタイムラインデータ。複数トラックのセル同期に使用。 |
-| `.cspb` | 任意。PSDと一緒にドロップするとタイムラインデータを直接読み込める。XDTSの別途書き出し不要。 |
+| `.json` | 任意。設定ダイアログから書き出した工程テーブルとアーカイブ除外設定。 |
 
 ---
 

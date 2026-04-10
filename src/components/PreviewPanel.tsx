@@ -172,7 +172,6 @@ export function PreviewPanel() {
                 <div className={styles.emptyStepTitle}>タイムシート情報（XDTS）を書き出す</div>
                 <span className={styles.emptyMenuPath}>ファイル &gt; アニメーション書き出し &gt; タイムシート情報</span>
                 <div className={styles.emptyNote}>※ タイムライン未登録でも出力したい素材は、フォルダ名の頭に _ をつけるか（例：_BG / _BOOK / _原図 など）右ペインの ★ ボタンで単体書き出しにマークしてください</div>
-                <div className={styles.emptyNote}>※ 以前に保存した <strong>.cspb</strong> ファイルがあれば、XDTSの代わりに使えます（XDTS・マーク・仮想セット設定を一括復元）</div>
               </div>
             </div>
 
@@ -180,7 +179,7 @@ export function PreviewPanel() {
             <div className={styles.emptyLoad}>
               {xdtsFileName
                 ? <>PSD をドロップすると自動でアニメーションセルを検出します</>
-                : <><div>PSD をドロップ、またはツールバーの「ファイルを開く」</div><div>XDTS / CSPB を一緒にドロップするとセルを自動検出</div></>
+                : <><div>PSD をドロップ、またはツールバーの「ファイルを開く」</div><div>XDTS を一緒にドロップするとセルを自動検出</div></>
               }
             </div>
             <SampleLoadButton />
@@ -198,7 +197,7 @@ export function PreviewPanel() {
       {/* PSD のみ読み込み済み（XDTS なし）バナー */}
       {!xdtsData && (
         <div className={styles.noXdtsBanner}>
-          XDTS / CSPB 未読込 — ドロップするとアニメーションセルを自動検出
+          XDTS 未読込 — ドロップするとアニメーションセルを自動検出
         </div>
       )}
       <NavigatorCanvas height={navHeight} />

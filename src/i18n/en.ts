@@ -4,7 +4,6 @@ export const en: Translations = {
   toolbar: {
     openPsd: 'Open PSD',
     openXdts: 'Open XDTS',
-    savePsd: 'Save PSD',
     settings: 'Settings',
     export: 'Export',
     loading: 'Loading…',
@@ -72,6 +71,6 @@ export const en: Translations = {
   },
   dropZone: {
     message: 'Drop PSD here',
-    subMessage: 'Optionally add XDTS or CSPB together',
+    subMessage: 'Optionally add XDTS together',
   },
 }

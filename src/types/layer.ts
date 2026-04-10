@@ -25,7 +25,7 @@ export interface CspLayer {
   singleMark: boolean
   autoMarked: boolean      // _プレフィックスによる自動マーク
   virtualSetMembership: string[]
-  uiHidden: boolean        // UI上の表示切替（一時的、XMPに非永続）
+  uiHidden: boolean        // UI上の表示切替（一時的、プロジェクト非永続）
   expanded: boolean        // レイヤーツリーUI展開状態
   hasAdjustmentLayer: boolean // 調整レイヤーを含む（v1では警告表示用）
 }

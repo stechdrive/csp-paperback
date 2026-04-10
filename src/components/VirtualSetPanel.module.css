@@ -76,6 +76,19 @@
   background: #313244;
 }
 
+.expandChevron {
+  display: block;
+  width: 10px;
+  height: 10px;
+  transition: transform 0.15s ease;
+  transform: rotate(0deg);
+  flex-shrink: 0;
+}
+
+.expandChevronOpen {
+  transform: rotate(90deg);
+}
+
 /* 折りたたみ時はリストを非表示 */
 .listCollapsed {
   display: none;

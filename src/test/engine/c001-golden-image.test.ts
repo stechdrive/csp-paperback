@@ -1,7 +1,7 @@
 /**
  * c001 ゴールデンテスト (画像ピクセル比較)
  *
- * testdata/c001.psd + testdata/c001.xdts + testdata/c001.cspb を実データとして読み込み、
+ * testdata/c001.psd + testdata/c001.xdts を実データとして読み込み、
  * extractAllEntries + extractVirtualSetEntries で生成された全 OutputEntry を PNG として
  * レンダリングし、testdata/golden/*.png と RGBA ピクセルで突き合わせる。
  *
@@ -18,7 +18,7 @@
  * - 仮想セル (仮想セルテスト.png) は既知の不整合のため画素比較から除外する。
  *   commit 09258a6 で 3-track XDTS に更新した際、旧仮想セル golden は同名バグ修正前の
  *   挙動で作られた状態のまま。現行コードの名前解決 (ツリー DFS 先頭優先) では
- *   cspb のメンバー "A" が 演出/A を拾うため 作画/A の goldenとずれる。
+ *   fixture のメンバー "A" が 演出/A を拾うため 作画/A の goldenとずれる。
  *   既存の c001-golden.test.ts も同じ理由で flatName セットから除外している。
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
@@ -30,8 +30,7 @@ import { parseXdts } from '../../utils/xdts-parser'
 import { buildLayerTree, detectAnimationFoldersByXdts } from '../../engine/tree-builder'
 import { extractAllEntries, extractVirtualSetEntries } from '../../engine/cell-extractor'
 import { selectLayerTreeWithVisibility } from '../../store/selectors'
-import { xmpToVirtualSet, type XmpVirtualSet } from '../../utils/xmp'
-import type { CspLayer, ProjectSettings } from '../../types'
+import { DEFAULT_PROJECT_SETTINGS, type CspLayer } from '../../types'
 import type { VirtualSet, SingleMark } from '../../types/marks'
 
 const REPO_ROOT = path.resolve(__dirname, '../../..')
@@ -44,13 +43,76 @@ const PIXEL_COMPARE_SKIP = new Set<string>(['仮想セルテスト.png'])
 /** 許容する最大チャンネル差分 (0〜255)。CSP 書き出しと合成エンジンの丸め誤差吸収用 */
 const MAX_CHANNEL_TOLERANCE = 1
 
-interface Cspb {
-  version: number
-  xdtsXml: string | null
-  singleMarkNames: string[]
-  virtualSets: XmpVirtualSet[]
-  manualAnimFolderNames: string[]
-  projectSettings: ProjectSettings
+interface NamedVirtualSet {
+  id: string
+  name: string
+  insertionLayerName: string | null
+  insertionPosition: 'above' | 'below'
+  members: Array<{
+    layerName: string
+    blendMode: string | null
+    opacity: number | null
+  }>
+  expandToAnimationCells: boolean
+  visibilityOverrides: Record<string, boolean>
+}
+
+const C001_VIRTUAL_SETS: NamedVirtualSet[] = [
+  {
+    id: '0b40dcc7-2922-4bef-8282-8ab894e3f66c',
+    name: '仮想セルテスト',
+    insertionLayerName: '_撮影指示',
+    insertionPosition: 'above',
+    members: [
+      { layerName: 'B', blendMode: null, opacity: null },
+      { layerName: 'A', blendMode: null, opacity: null },
+      { layerName: '_原図', blendMode: null, opacity: null },
+    ],
+    expandToAnimationCells: false,
+    visibilityOverrides: {
+      '1': true,
+      '_原図': true,
+      '_BOOK1': true,
+      './[_原図]/[_BOOK1]/BOOK1': true,
+      '_BG': true,
+      './[_原図]/[_BG]/BG1': true,
+      'A': true,
+      './[LO]/[作画]/[A]/[1]/線画': true,
+      'B': true,
+      '_s': false,
+      './[LO]/[作画]/[B]/[1]/[_s]/作監修正': true,
+      '作監修正用紙': true,
+      './[LO]/[作画]/[B]/[1]/線画1': true,
+      '影': true,
+      './[LO]/[作画]/[B]/[1]/[影]/影2': true,
+      './[LO]/[作画]/[B]/[1]/[影]/影1': true,
+    },
+  },
+]
+
+function namedVirtualSetToVirtualSet(
+  vs: NamedVirtualSet,
+  nameToId: Map<string, string>,
+): VirtualSet {
+  return {
+    id: vs.id,
+    name: vs.name,
+    insertionLayerId: vs.insertionLayerName ? (nameToId.get(vs.insertionLayerName) ?? null) : null,
+    insertionPosition: vs.insertionPosition,
+    members: vs.members
+      .map(m => ({
+        layerId: nameToId.get(m.layerName) ?? '',
+        blendMode: m.blendMode,
+        opacity: m.opacity,
+      }))
+      .filter(m => m.layerId !== ''),
+    expandToAnimationCells: vs.expandToAnimationCells,
+    visibilityOverrides: Object.fromEntries(
+      Object.entries(vs.visibilityOverrides)
+        .map(([name, v]) => [nameToId.get(name) ?? '', v])
+        .filter(([id]) => id !== ''),
+    ),
+  }
 }
 
 // ── document.createElement('canvas') を @napi-rs/canvas にすり替え ──
@@ -93,38 +155,27 @@ describe('c001 golden (image pixel match)', () => {
     // 実データ読み込み
     const psdBuf = fs.readFileSync(path.join(TESTDATA, 'c001.psd'))
     const xdtsText = fs.readFileSync(path.join(TESTDATA, 'c001.xdts'), 'utf-8')
-    const cspbText = fs.readFileSync(path.join(TESTDATA, 'c001.cspb'), 'utf-8')
 
     const psd = readPsdFile(
       psdBuf.buffer.slice(psdBuf.byteOffset, psdBuf.byteOffset + psdBuf.byteLength),
     )
     const xdts = parseXdts(xdtsText)
-    const cspb: Cspb = JSON.parse(cspbText)
 
     // ツリー構築 + XDTS 検出
-    const baseTree = buildLayerTree(psd, xdts, cspb.projectSettings.archivePatterns)
+    const baseTree = buildLayerTree(psd, xdts, DEFAULT_PROJECT_SETTINGS.archivePatterns)
     detectAnimationFoldersByXdts(baseTree, xdts)
 
-    // cspb のマーク・仮想セット定義を現在の layer id に解決
+    // 名前ベースの fixture を現在の layer id に解決
     const flat = flatLayers(baseTree)
     const nameToId = new Map<string, string>()
     for (const l of flat) {
       if (!nameToId.has(l.originalName)) nameToId.set(l.originalName, l.id)
     }
-    const singleMarks = new Map<string, SingleMark>(
-      cspb.singleMarkNames
-        .map(name => nameToId.get(name))
-        .filter((id): id is string => Boolean(id))
-        .map(id => [id, { layerId: id, origin: 'manual' as const }]),
+    const singleMarks = new Map<string, SingleMark>()
+    const virtualSets: VirtualSet[] = C001_VIRTUAL_SETS.map(vs =>
+      namedVirtualSetToVirtualSet(vs, nameToId),
     )
-    const virtualSets: VirtualSet[] = cspb.virtualSets.map(xvs =>
-      xmpToVirtualSet(xvs, nameToId),
-    )
-    const manualAnimFolderIds = new Set(
-      cspb.manualAnimFolderNames
-        .map(name => nameToId.get(name))
-        .filter((id): id is string => Boolean(id)),
-    )
+    const manualAnimFolderIds = new Set<string>()
 
     // store の selector と同じ変換で singleMark/manualAnim を tree に反映
     const resolvedTree = selectLayerTreeWithVisibility({
@@ -137,7 +188,7 @@ describe('c001 golden (image pixel match)', () => {
     // 出力エントリ生成 (golden は透過背景で作られているため background='transparent')
     const entries = extractAllEntries(
       resolvedTree,
-      cspb.projectSettings,
+      DEFAULT_PROJECT_SETTINGS,
       psd.width,
       psd.height,
       'transparent',

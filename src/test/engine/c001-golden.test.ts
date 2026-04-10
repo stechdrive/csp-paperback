@@ -1,7 +1,7 @@
 /**
  * c001 ゴールデンテスト
  *
- * testdata/c001.psd + testdata/c001.xdts + testdata/c001.cspb を実データとして読み込み、
+ * testdata/c001.psd + testdata/c001.xdts を実データとして読み込み、
  * 出力エントリの flatName が testdata/golden/*.png のファイル名セットと一致することを検証する。
  *
  * 画像比較はしない(canvas 合成の実行結果までは jsdom で再現困難)。
@@ -18,32 +18,24 @@ import { readPsdFile } from '../../utils/psd-io'
 import { parseXdts } from '../../utils/xdts-parser'
 import { buildLayerTree, detectAnimationFoldersByXdts } from '../../engine/tree-builder'
 import { extractAllEntries } from '../../engine/cell-extractor'
-import type { ProjectSettings } from '../../types'
+import { DEFAULT_PROJECT_SETTINGS } from '../../types'
 
 const REPO_ROOT = path.resolve(__dirname, '../../..')
 const TESTDATA = path.join(REPO_ROOT, 'testdata')
 const GOLDEN_DIR = path.join(TESTDATA, 'golden')
-
-/** cspb から projectSettings を取り出すミニマル型 */
-interface Cspb {
-  projectSettings: ProjectSettings
-  // 他のフィールドは今回のテストでは無視
-}
 
 describe('c001 golden (path identity)', () => {
   it('extractAllEntries の flatName が golden PNG ファイル名セットと一致する', () => {
     // 実データを fs で読み込む(Node 環境でのみ動く)
     const psdBuf = fs.readFileSync(path.join(TESTDATA, 'c001.psd'))
     const xdtsText = fs.readFileSync(path.join(TESTDATA, 'c001.xdts'), 'utf-8')
-    const cspbText = fs.readFileSync(path.join(TESTDATA, 'c001.cspb'), 'utf-8')
 
     // parse
     const psd = readPsdFile(psdBuf.buffer.slice(psdBuf.byteOffset, psdBuf.byteOffset + psdBuf.byteLength))
     const xdts = parseXdts(xdtsText)
-    const cspb: Cspb = JSON.parse(cspbText)
 
-    // ツリー構築 (archivePatterns は cspb の projectSettings から)
-    const tree = buildLayerTree(psd, xdts, cspb.projectSettings.archivePatterns)
+    // ツリー構築
+    const tree = buildLayerTree(psd, xdts, DEFAULT_PROJECT_SETTINGS.archivePatterns)
 
     // XDTS 検出(新ロジックで assignTracksToFolders + 割当された layer のみ anim folder 化)
     const assignResult = detectAnimationFoldersByXdts(tree, xdts)
@@ -53,7 +45,7 @@ describe('c001 golden (path identity)', () => {
 
     // 出力エントリ生成
     const entries = extractAllEntries(
-      tree, cspb.projectSettings, psd.width, psd.height, 'white', false,
+      tree, DEFAULT_PROJECT_SETTINGS, psd.width, psd.height, 'white', false,
     )
 
     const flatNames = new Set(entries.map(e => e.flatName))
@@ -92,14 +84,12 @@ describe('c001 golden (path identity)', () => {
   it('c001 の extract 結果を全列挙(デバッグ参考用)', () => {
     const psdBuf = fs.readFileSync(path.join(TESTDATA, 'c001.psd'))
     const xdtsText = fs.readFileSync(path.join(TESTDATA, 'c001.xdts'), 'utf-8')
-    const cspbText = fs.readFileSync(path.join(TESTDATA, 'c001.cspb'), 'utf-8')
     const psd = readPsdFile(psdBuf.buffer.slice(psdBuf.byteOffset, psdBuf.byteOffset + psdBuf.byteLength))
     const xdts = parseXdts(xdtsText)
-    const cspb: Cspb = JSON.parse(cspbText)
-    const tree = buildLayerTree(psd, xdts, cspb.projectSettings.archivePatterns)
+    const tree = buildLayerTree(psd, xdts, DEFAULT_PROJECT_SETTINGS.archivePatterns)
     detectAnimationFoldersByXdts(tree, xdts)
     const entries = extractAllEntries(
-      tree, cspb.projectSettings, psd.width, psd.height, 'white', false,
+      tree, DEFAULT_PROJECT_SETTINGS, psd.width, psd.height, 'white', false,
     )
     const dump = entries.map(e => ({ path: e.path, flatName: e.flatName }))
     console.log('c001 entries count:', dump.length)

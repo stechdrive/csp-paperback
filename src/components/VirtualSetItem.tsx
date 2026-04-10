@@ -21,6 +21,19 @@ if (typeof window !== 'undefined') {
   window.addEventListener('mouseup', () => { vsVisibilityDrag.active = false })
 }
 
+function Chevron({ open }: { open: boolean }) {
+  return (
+    <svg
+      className={`${styles.expandChevron} ${open ? styles.expandChevronOpen : ''}`}
+      viewBox="0 0 10 10"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path d="M3 2 L7 5 L3 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
 // =========================================================
 // ミニツリー：フォルダ展開時の子ノード表示
 // =========================================================
@@ -58,7 +71,7 @@ function VsMemberNode({
             className={styles.vsExpandBtn}
             onClick={e => { e.stopPropagation(); onToggleExpand(layer.id) }}
           >
-            {isExpanded ? '▼' : '▶'}
+            <Chevron open={isExpanded} />
           </button>
         ) : (
           <div className={styles.vsExpandPlaceholder} />
@@ -300,7 +313,7 @@ export function VirtualSetItem({ virtualSet }: VirtualSetItemProps) {
           onClick={e => { e.stopPropagation(); setCollapsed(c => !c) }}
           title={collapsed ? '展開' : '折りたたむ'}
         >
-          {collapsed ? '▶' : '▼'}
+          <Chevron open={!collapsed} />
         </button>
         {/* ドラッグハンドル */}
         <Tooltip content={"右ペインのレイヤーにドラッグして挿入位置を設定\n※ タッチ操作の場合：レイヤータブでレイヤーを選択後、↑上 / ↓下 ボタンで設定"}>
@@ -394,7 +407,7 @@ export function VirtualSetItem({ virtualSet }: VirtualSetItemProps) {
                             onClick={e => { e.stopPropagation(); toggleVsExpanded(member.layerId) }}
                             title={isExpanded ? '折りたたむ' : '展開'}
                           >
-                            {isExpanded ? '▼' : '▶'}
+                            <Chevron open={isExpanded} />
                           </button>
                         ) : (
                           <div className={styles.memberExpandPlaceholder} />

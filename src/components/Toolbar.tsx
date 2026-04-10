@@ -50,49 +50,20 @@ function OverflowMenu({ children }: { children: React.ReactNode }) {
   )
 }
 
-// 現状 UI 非表示（#1 対応）。将来の再露出のため定義は残している。
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-// @ts-ignore TS6133
-function XdtsDownloadButton({ hasPsd }: { hasPsd: boolean }) {
-  const downloadXdts = useAppStore(s => s.downloadXdts)
-  const singleMarks = useAppStore(s => s.singleMarks)
-  const virtualSets = useAppStore(s => s.virtualSets)
-  const manualAnimFolderIds = useAppStore(s => s.manualAnimFolderIds)
-
-  const hasExtras =
-    [...singleMarks.values()].some(m => m.origin === 'manual') ||
-    virtualSets.length > 0 ||
-    manualAnimFolderIds.size > 0
-
-  if (!hasPsd || !hasExtras) return null
-
-  return (
-    <button className={styles.btn} onClick={downloadXdts}>
-      XDTS保存
-    </button>
-  )
-}
-
 interface ToolbarProps {
-  onPsdFile: (file: File) => Promise<void>
-  onXdtsFile: (file: File) => Promise<void>
-  onCspbFile: (file: File) => Promise<void>
-  onSaveCspb: () => void
+  onFiles: (files: File[]) => Promise<void>
   isLoading: boolean
   error: string | null
   notification: string | null
-  onSavePsd: () => void
-  hasPsd: boolean
   canUndo: boolean
   canRedo: boolean
   onUndo: () => void
   onRedo: () => void
 }
 
-export function Toolbar({ onPsdFile, onXdtsFile, onCspbFile, onSaveCspb, isLoading, error, notification, hasPsd, canUndo, canRedo, onUndo, onRedo }: ToolbarProps) {
+export function Toolbar({ onFiles, isLoading, error, notification, canUndo, canRedo, onUndo, onRedo }: ToolbarProps) {
   const psdFileName = useAppStore(s => s.psdFileName)
   const xdtsFileName = useAppStore(s => s.xdtsFileName)
-  const importSettings = useAppStore(s => s.importSettings)
   const openInputRef = useRef<HTMLInputElement>(null)
   const [showSettings, setShowSettings] = useState(false)
   const [showHelp, setShowHelp] = useState(false)
@@ -103,17 +74,12 @@ export function Toolbar({ onPsdFile, onXdtsFile, onCspbFile, onSaveCspb, isLoadi
   const handleOpenFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? [])
     e.target.value = ''
-    const ext = (f: File) => f.name.toLowerCase().split('.').pop() ?? ''
-    // xdts → psd → cspb → json の順に処理
-    for (const f of files.filter(f => ext(f) === 'xdts')) await onXdtsFile(f)
-    for (const f of files.filter(f => ext(f) === 'psd')) await onPsdFile(f)
-    for (const f of files.filter(f => ext(f) === 'cspb')) await onCspbFile(f)
-    for (const f of files.filter(f => ext(f) === 'json')) importSettings(await f.text())
+    await onFiles(files)
   }
 
   const openFileBtn = (
     <Tooltip
-      content={"PSD / XDTS / .cspb / 工程設定JSON を開く\n複数ファイルを同時に選択できます"}
+      content={"PSD / XDTS / 工程設定JSON を開く\n複数ファイルを同時に選択できます"}
       placement="bottom"
     >
       <button
@@ -130,7 +96,7 @@ export function Toolbar({ onPsdFile, onXdtsFile, onCspbFile, onSaveCspb, isLoadi
     <input
       ref={openInputRef}
       type="file"
-      accept=".psd,.xdts,.cspb,.json,*/*"
+      accept=".psd,.xdts,.json,*/*"
       multiple
       style={{ display: 'none' }}
       onChange={handleOpenFiles}
@@ -168,15 +134,6 @@ export function Toolbar({ onPsdFile, onXdtsFile, onCspbFile, onSaveCspb, isLoadi
     </>
   )
 
-  const saveCspbBtn = (
-    <button
-      className={isMobile ? styles.menuItem : styles.btn}
-      onClick={onSaveCspb}
-      disabled={!hasPsd}
-    >
-      設定保存
-    </button>
-  )
   const helpBtn = (
     <button
       className={isMobile ? styles.menuItem : styles.btn}
@@ -221,13 +178,6 @@ export function Toolbar({ onPsdFile, onXdtsFile, onCspbFile, onSaveCspb, isLoadi
 
         {statusArea}
 
-        {/* XDTS 書き出しボタンは現状ユーザが使う機会がないため UI 非表示化（#1 対応）。
-            downloadXdts() 関数本体と XdtsDownloadButton コンポーネントは将来の再露出のため残している。 */}
-        {!isMobile && (
-          <Tooltip content="マーク・仮想セット・工程設定・XDTSを .cspb ファイルに保存" placement="bottom">
-            {saveCspbBtn}
-          </Tooltip>
-        )}
         {!isMobile && (
           <Tooltip content="使い方ヘルプを表示" placement="bottom">
             <button className={styles.btn} onClick={() => setShowHelp(true)}>?</button>
@@ -245,7 +195,6 @@ export function Toolbar({ onPsdFile, onXdtsFile, onCspbFile, onSaveCspb, isLoadi
           <OverflowMenu>
             <button className={styles.menuItem} onClick={onUndo} disabled={!canUndo}>↩　元に戻す</button>
             <button className={styles.menuItem} onClick={onRedo} disabled={!canRedo}>↪　やり直し</button>
-            {saveCspbBtn}
             {settingsBtn}
             {helpBtn}
           </OverflowMenu>

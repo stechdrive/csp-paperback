@@ -1,6 +1,6 @@
 import type { StateCreator } from 'zustand'
 import type { CspLayer, XdtsData, XdtsTrack } from '../types'
-import { parseXdts, serializeXdts } from '../utils/xdts-parser'
+import { parseXdts } from '../utils/xdts-parser'
 import { detectAnimationFoldersByXdts, clearXdtsAnimFolders } from '../engine/tree-builder'
 import { sanitizeManualAnimFolderIds } from '../utils/manual-animation-folder'
 import type { AppStore } from './index'
@@ -15,7 +15,6 @@ export interface XdtsSlice {
   unmatchedTracks: XdtsTrack[]
   loadXdts: (text: string, fileName: string) => void
   clearXdts: () => void
-  downloadXdts: () => void
   setUnmatchedTracks: (tracks: XdtsTrack[]) => void
 }
 
@@ -61,59 +60,12 @@ export const createXdtsSlice: StateCreator<AppStore, [], [], XdtsSlice> = (set, 
     }
     get().setUnmatchedTracks([])
   },
-
-  downloadXdts: () => {
-    const { xdtsData, xdtsFileName, layerTree, manualAnimFolderIds, singleMarks, virtualSets } = get()
-
-    // シングルマーク・仮想セットの追加トラック名を収集
-    const extraNames: string[] = []
-
-    // 手動指定アニメフォルダ（xdts未検出のもの）
-    for (const id of manualAnimFolderIds) {
-      const layer = findLayerById(layerTree, id)
-      if (layer) extraNames.push(layer.originalName)
-    }
-
-    // シングルマーク（auto = _プレフィックス自動検出は除く）
-    for (const [layerId, mark] of singleMarks) {
-      if (mark.origin !== 'manual') continue
-      const layer = findLayerById(layerTree, layerId)
-      if (layer) extraNames.push(layer.originalName)
-    }
-
-    // 仮想セット
-    for (const vs of virtualSets) {
-      extraNames.push(vs.name)
-    }
-
-    const text = serializeXdts(xdtsData, extraNames)
-    const blob = new Blob([text], { type: 'text/plain' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    // 元のxdtsファイル名があればそれを使う（なければPSDファイル名ベース）
-    const baseName = xdtsFileName
-      ? xdtsFileName.replace(/\.xdts$/i, '')
-      : (get().psdFileName ?? 'output').replace(/\.psd$/i, '')
-    a.download = `${baseName}.xdts`
-    a.click()
-    URL.revokeObjectURL(url)
-  },
 })
 
 function findFirstAnimFolder(layers: CspLayer[]): CspLayer | null {
   for (const l of layers) {
     if (l.isAnimationFolder) return l
     const found = findFirstAnimFolder(l.children)
-    if (found) return found
-  }
-  return null
-}
-
-function findLayerById(layers: CspLayer[], id: string): CspLayer | null {
-  for (const l of layers) {
-    if (l.id === id) return l
-    const found = findLayerById(l.children, id)
     if (found) return found
   }
   return null

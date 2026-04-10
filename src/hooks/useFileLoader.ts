@@ -1,62 +1,74 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useAppStore } from '../store'
-import { useCspb } from './useCspb'
 
 export interface UseFileLoaderResult {
   isLoading: boolean
   error: string | null
   notification: string | null
+  loadFiles: (files: File[]) => Promise<void>
   loadPsdFile: (file: File) => Promise<void>
   loadXdtsFile: (file: File) => Promise<void>
-  loadCspbFile: (file: File) => Promise<void>
-  saveCspb: () => void
   clearError: () => void
+}
+
+function ext(file: File): string {
+  return file.name.toLowerCase().split('.').pop() ?? ''
 }
 
 export function useFileLoader(): UseFileLoaderResult {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [notification, setNotification] = useState<string | null>(null)
   const loadPsd = useAppStore(s => s.loadPsd)
   const loadXdts = useAppStore(s => s.loadXdts)
-  const cspb = useCspb()
-  const { loadCspbFile: loadCspb, notification } = cspb
+  const resetProject = useAppStore(s => s.resetProject)
+  const importSettings = useAppStore(s => s.importSettings)
 
-  const loadPsdFile = useCallback(async (file: File) => {
+  useEffect(() => {
+    if (!notification) return
+    const timer = setTimeout(() => setNotification(null), 5000)
+    return () => clearTimeout(timer)
+  }, [notification])
+
+  const loadFiles = useCallback(async (files: File[]) => {
+    if (files.length === 0) return
+
     setIsLoading(true)
     setError(null)
+    setNotification(null)
     try {
-      const buffer = await file.arrayBuffer()
-      loadPsd(buffer, file.name)
+      const jsonFiles = files.filter(f => ext(f) === 'json')
+      const psdFile = files.filter(f => ext(f) === 'psd').at(-1)
+      const xdtsFile = files.filter(f => ext(f) === 'xdts').at(-1)
+      const hasProjectFile = Boolean(psdFile || xdtsFile)
+      const state = useAppStore.getState()
+      const shouldResetProject = hasProjectFile && (
+        Boolean(psdFile && xdtsFile) ||
+        Boolean(psdFile && state.rawPsd) ||
+        Boolean(xdtsFile && state.xdtsData) ||
+        Boolean((psdFile || xdtsFile) && state.rawPsd && state.xdtsData)
+      )
+
+      if (shouldResetProject) resetProject()
+
+      for (const file of jsonFiles) {
+        importSettings(await file.text())
+        setNotification('工程設定を読み込みました')
+      }
+
+      // XDTS を先に保持してから PSD を解析する。PSD 側の XDTS 検出を一度で確定させるため。
+      if (xdtsFile) loadXdts(await xdtsFile.text(), xdtsFile.name)
+      if (psdFile) loadPsd(await psdFile.arrayBuffer(), psdFile.name)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'PSDの読み込みに失敗しました')
+      setError(e instanceof Error ? e.message : 'ファイルの読み込みに失敗しました')
     } finally {
       setIsLoading(false)
     }
-  }, [loadPsd])
+  }, [importSettings, loadPsd, loadXdts, resetProject])
 
-  const loadXdtsFile = useCallback(async (file: File) => {
-    setIsLoading(true)
-    setError(null)
-    try {
-      const text = await file.text()
-      loadXdts(text, file.name)
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'xdtsの読み込みに失敗しました')
-    } finally {
-      setIsLoading(false)
-    }
-  }, [loadXdts])
-
-  const loadCspbFile = useCallback(async (file: File) => {
-    setError(null)
-    try {
-      await loadCspb(file)
-    } catch (e) {
-      setError(e instanceof Error ? e.message : '設定ファイルの読み込みに失敗しました')
-    }
-  }, [loadCspb])
-
+  const loadPsdFile = useCallback((file: File) => loadFiles([file]), [loadFiles])
+  const loadXdtsFile = useCallback((file: File) => loadFiles([file]), [loadFiles])
   const clearError = useCallback(() => setError(null), [])
 
-  return { isLoading, error, notification, loadPsdFile, loadXdtsFile, loadCspbFile, saveCspb: cspb.saveCspb, clearError }
+  return { isLoading, error, notification, loadFiles, loadPsdFile, loadXdtsFile, clearError }
 }

@@ -1,4 +1,4 @@
-import { readPsd, writePsd } from 'ag-psd'
+import { readPsd } from 'ag-psd'
 import type { Psd } from 'ag-psd'
 
 /**
@@ -11,11 +11,4 @@ export function readPsdFile(buffer: ArrayBuffer): Psd {
     skipCompositeImageData: true,
     skipThumbnail: true,
   })
-}
-
-/**
- * PSDをArrayBufferとして書き出す（XMPメタデータ埋め込み後の保存用）
- */
-export function writePsdFile(psd: Psd): ArrayBuffer {
-  return writePsd(psd)
 }

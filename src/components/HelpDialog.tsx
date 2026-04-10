@@ -238,7 +238,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               <div className={styles.calloutTip}>
                 <span className={styles.strong}>💡 Tips：</span>
                 PSD と XDTS を同時に選択して「ファイルを開く」で読み込めます。
-                また .cspb ファイルとして出力設定のマーク・仮想セル・工程設定を保存できます。
+                工程テーブルとアーカイブ除外パターンは設定ダイアログから JSON で共有できます。
               </div>
             </section>
 
@@ -247,7 +247,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               <h2 className={styles.h1}>📋 サンプルで理解する</h2>
 
               <p className={styles.p}>
-                プレビューパネルの「サンプルデータで試す」ボタンで読み込めるサンプル（c001.psd + c001.xdts + c001.cspb）を使って、
+                プレビューパネルの「サンプルデータで試す」ボタンで読み込めるサンプル（c001.psd + c001.xdts）を使って、
                 各機能がどう動くかを見てみましょう。
               </p>
 
@@ -964,7 +964,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               <p className={styles.p}>
                 設定ダイアログで以下のようにフォルダ名とサフィックスの対応を登録します。
                 フォルダ名はカンマ区切りで複数指定でき、大文字・小文字を区別しません。
-                サンプルの c001.cspb には以下のテーブルが設定されています。
+                初期設定では以下のテーブルが登録されています。
               </p>
 
               <table className={styles.comparisonTable}>
@@ -1142,7 +1142,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               <ul className={styles.ul}>
                 <li>
                   <span className={styles.strong}>ドラッグ＆ドロップ</span> —
-                  PSD、XDTS、.cspb、JSON ファイルをウィンドウにドロップで読み込み
+                  PSD、XDTS、JSON ファイルをウィンドウにドロップで読み込み
                 </li>
                 <li>
                   <span className={styles.strong}>複数ファイル同時選択</span> —
@@ -1153,12 +1153,8 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               <h3 className={styles.h2}>設定の保存と復元</h3>
               <ul className={styles.ul}>
                 <li>
-                  <span className={styles.strong}>.cspb ファイル</span> —
-                  「設定保存」ボタンで、マーク・仮想セル・工程設定・XDTS を1ファイルにまとめて保存。
-                </li>
-                <li>
                   <span className={styles.strong}>JSON エクスポート/インポート</span> —
-                  設定ダイアログから工程テーブルなどの設定を JSON で共有できます
+                  設定ダイアログから工程テーブルとアーカイブ除外パターンを JSON で共有できます
                 </li>
               </ul>
 

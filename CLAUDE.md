@@ -7,7 +7,7 @@ gh-pagesで静的ホスティング。ブラウザ完結、サーバー不要。
 ## 技術スタック
 - **React 19 + Vite + TypeScript**
 - **Zustand** — グローバル状態管理（レイヤーツリー、マーク、仮想セット、プロジェクト設定）
-- **ag-psd** — PSD読み込み・書き出し・XMPメタデータ読み書き
+- **ag-psd** — PSD読み込み
 - **JSZip** — ZIP出力
 - **Canvas API** — 合成・ラスタライズ
 - **Vitest** — テスト（合成エンジンのゴールデンデータ比較）
@@ -20,7 +20,7 @@ src/
   store/        Zustandストア
   components/   Reactコンポーネント（3ペインUI）
   hooks/        カスタムフック
-  utils/        ユーティリティ（xdts解析、XMP読み書き等）
+  utils/        ユーティリティ（XDTS解析、画像・パス処理等）
   types/        型定義
   test/         テスト用セットアップ・ゴールデンデータ
 ```
@@ -52,4 +52,4 @@ npm run deploy     # gh-pagesへデプロイ（要リモートリポ設定）
 - Phase2: マーク機能
 - Phase3: UI・出力
 - Phase4: セル内包型モード・プロジェクト設定テーブル
-- Phase5: CLIPファイル解析・XMP埋め込み
+- Phase5: 未定

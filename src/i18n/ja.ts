@@ -2,7 +2,6 @@ export const ja = {
   toolbar: {
     openPsd: 'PSD を開く',
     openXdts: 'XDTS を開く',
-    savePsd: 'PSD 保存',
     settings: '設定',
     export: '出力',
     loading: '読み込み中…',
@@ -70,7 +69,7 @@ export const ja = {
   },
   dropZone: {
     message: 'PSD をドロップ',
-    subMessage: '＋XDTS または CSPB を一緒にドロップ可',
+    subMessage: '＋XDTS を一緒にドロップ可',
   },
 }
 

@@ -8,6 +8,19 @@ import { selectLayerById } from '../store/selectors'
 import type { BlendMode } from '../types'
 import styles from './VirtualSetPanel.module.css'
 
+function Chevron({ open }: { open: boolean }) {
+  return (
+    <svg
+      className={`${styles.expandChevron} ${open ? styles.expandChevronOpen : ''}`}
+      viewBox="0 0 10 10"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path d="M3 2 L7 5 L3 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
 export function VirtualSetPanel() {
   const virtualSets = useAppStore(s => s.virtualSets)
   const addVirtualSet = useAppStore(s => s.addVirtualSet)
@@ -60,7 +73,7 @@ export function VirtualSetPanel() {
           onClick={() => setCollapsed(c => !c)}
           title={collapsed ? '展開' : '折りたたむ'}
         >
-          {collapsed ? '▶' : '▼'}
+          <Chevron open={!collapsed} />
         </button>
         <Tooltip
           content={'PSD のレイヤーを自由に組み合わせ、1枚のセルとして出力する仮想グループ。\n挿入位置はレイヤーツリーへのドラッグで指定できます。'}

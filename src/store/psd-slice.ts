@@ -1,6 +1,6 @@
 import type { StateCreator } from 'zustand'
 import type { Psd } from 'ag-psd'
-import type { BlendMode, CspLayer } from '../types'
+import { DEFAULT_OUTPUT_CONFIG, type BlendMode, type CspLayer } from '../types'
 import { readPsdFile } from '../utils/psd-io'
 import { buildLayerTree, detectAnimationFoldersByXdts } from '../engine/tree-builder'
 import { sanitizeManualAnimFolderIds } from '../utils/manual-animation-folder'
@@ -15,6 +15,7 @@ export interface PsdSlice {
   docDpiX: number  // pixels per inch (0 = 不明)
   docDpiY: number  // pixels per inch (0 = 不明)
   loadPsd: (buffer: ArrayBuffer, fileName: string) => void
+  resetProject: () => void
   resetPsd: () => void
   setLayerBlendMode: (layerId: string, blendMode: BlendMode) => void
   setLayerOpacity: (layerId: string, opacity: number) => void
@@ -114,6 +115,10 @@ export const createPsdSlice: StateCreator<AppStore, [], [], PsdSlice> = (set, ge
   },
 
   resetPsd: () => {
+    get().resetProject()
+  },
+
+  resetProject: () => {
     set({
       rawPsd: null,
       psdFileName: null,
@@ -122,6 +127,26 @@ export const createPsdSlice: StateCreator<AppStore, [], [], PsdSlice> = (set, ge
       docHeight: 0,
       docDpiX: 0,
       docDpiY: 0,
+      xdtsData: null,
+      xdtsFileName: null,
+      unmatchedTracks: [],
+      singleMarks: new Map(),
+      virtualSets: [],
+      manualAnimFolderIds: new Set(),
+      selectedLayerId: null,
+      selectedCells: new Map(),
+      focusedAnimFolderId: null,
+      selectedVirtualSetId: null,
+      selectedVsMemberSetId: null,
+      selectedVsMemberId: null,
+      visibilityOverrides: new Map(),
+      expandedFolders: new Set(),
+      currentFrame: 0,
+      outputConfig: DEFAULT_OUTPUT_CONFIG,
+      _past: [],
+      _future: [],
+      canUndo: false,
+      canRedo: false,
     })
   },
 

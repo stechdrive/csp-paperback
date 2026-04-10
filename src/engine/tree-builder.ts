@@ -117,7 +117,7 @@ export function detectAnimationFoldersByXdts(
   const result = assignTracksToFolders(tree, xdts.tracks)
 
   // 割当された layer にだけ anim folder フラグを立てる
-  // trackName は元の XDTS トラック名(raw、trim 前)を保持(UI 表示や XDTS 書き出し整合性のため)
+  // trackName は元の XDTS トラック名(raw、trim 前)を保持(UI 表示のため)
   const tracksByNo = new Map(xdts.tracks.map(t => [t.trackNo, t]))
   function walk(layers: CspLayer[]): void {
     for (const layer of layers) {

@@ -1,5 +1,4 @@
 import { useFileLoader } from './hooks/useFileLoader'
-import { usePersistence } from './hooks/usePersistence'
 import { useUndoRedo } from './hooks/useUndoRedo'
 import { LocaleProvider } from './i18n'
 import { FileDropZone } from './components/FileDropZone'
@@ -8,23 +7,17 @@ import { MainLayout } from './components/MainLayout'
 import './App.css'
 
 function AppInner() {
-  const { isLoading, error, notification, loadPsdFile, loadXdtsFile, loadCspbFile, saveCspb } = useFileLoader()
-  const { savePsd, hasPsd } = usePersistence()
+  const { isLoading, error, notification, loadFiles } = useFileLoader()
   const { canUndo, canRedo, undo, redo } = useUndoRedo()
 
   return (
-    <FileDropZone onPsdFile={loadPsdFile} onXdtsFile={loadXdtsFile} onCspbFile={loadCspbFile}>
+    <FileDropZone onFiles={loadFiles}>
       <div className="app-shell">
         <Toolbar
-          onPsdFile={loadPsdFile}
-          onXdtsFile={loadXdtsFile}
-          onCspbFile={loadCspbFile}
-          onSaveCspb={saveCspb}
+          onFiles={loadFiles}
           isLoading={isLoading}
           error={error}
           notification={notification}
-          onSavePsd={savePsd}
-          hasPsd={hasPsd}
           canUndo={canUndo}
           canRedo={canRedo}
           onUndo={undo}
