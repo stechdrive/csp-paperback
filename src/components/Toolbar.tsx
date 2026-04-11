@@ -69,6 +69,9 @@ function MobileUiScaleControl() {
   }, [open])
 
   const value = scaleToPercent(mobileUiScale)
+  const adjustPercent = (delta: number) => {
+    setMobileUiScale(percentToScale(value + delta))
+  }
 
   return (
     <div className={styles.scaleWrap} ref={popoverRef}>
@@ -86,15 +89,36 @@ function MobileUiScaleControl() {
             <span>{t.toolbar.uiScale}</span>
             <span className={styles.scaleValue}>{value}%</span>
           </div>
-          <input
-            className={styles.scaleSlider}
-            type="range"
-            min={Math.round(MIN_MOBILE_UI_SCALE * 100)}
-            max={Math.round(MAX_MOBILE_UI_SCALE * 100)}
-            step={5}
-            value={value}
-            onChange={(e) => setMobileUiScale(percentToScale(Number(e.target.value)))}
-          />
+          <div className={styles.scaleControls}>
+            <button
+              className={styles.scaleAdjustBtn}
+              type="button"
+              onClick={() => adjustPercent(-1)}
+              disabled={value <= Math.round(MIN_MOBILE_UI_SCALE * 100)}
+              aria-label={`${t.toolbar.uiScale} を 1% 小さく`}
+            >
+              -
+            </button>
+            <input
+              className={styles.scaleSlider}
+              type="range"
+              min={Math.round(MIN_MOBILE_UI_SCALE * 100)}
+              max={Math.round(MAX_MOBILE_UI_SCALE * 100)}
+              step={1}
+              value={value}
+              onInput={(e) => setMobileUiScale(percentToScale(Number((e.target as HTMLInputElement).value)))}
+              onChange={(e) => setMobileUiScale(percentToScale(Number(e.target.value)))}
+            />
+            <button
+              className={styles.scaleAdjustBtn}
+              type="button"
+              onClick={() => adjustPercent(1)}
+              disabled={value >= Math.round(MAX_MOBILE_UI_SCALE * 100)}
+              aria-label={`${t.toolbar.uiScale} を 1% 大きく`}
+            >
+              +
+            </button>
+          </div>
           <div className={styles.scaleFooter}>
             <span className={styles.scaleRange}>{Math.round(MIN_MOBILE_UI_SCALE * 100)}%</span>
             <button className={styles.scaleReset} onClick={resetMobileUiScale}>100%</button>

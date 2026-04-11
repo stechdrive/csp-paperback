@@ -139,9 +139,39 @@
   color: #89b4fa;
 }
 
+.scaleControls {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
 .scaleSlider {
   width: 100%;
+  flex: 1;
   accent-color: #6366f1;
+  touch-action: pan-y;
+}
+
+.scaleAdjustBtn {
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  border: 1px solid #45475a;
+  border-radius: 4px;
+  background: #313244;
+  color: #cdd6f4;
+  cursor: pointer;
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+.scaleAdjustBtn:hover {
+  background: #45475a;
+}
+
+.scaleAdjustBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .scaleFooter {
@@ -239,12 +269,18 @@
   }
 
   .scalePopover {
-    width: 14rem;
+    width: 16rem;
     padding: 0.8rem;
   }
 
   .scaleHeader {
     font-size: 0.8rem;
+  }
+
+  .scaleAdjustBtn {
+    width: 2.25rem;
+    height: 2.25rem;
+    font-size: 1rem;
   }
 
   .scaleReset {
