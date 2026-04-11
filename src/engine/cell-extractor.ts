@@ -628,7 +628,7 @@ export function extractAllEntries(
         // 自動マークのみ（手動★なし）で除外設定の場合はスキップ
         if (layer.autoMarked && !layer.singleMark && excludeAutoMarked) {
           if (layer.isFolder) {
-            walk(layer.children, [], [])
+            walkMarkedOrRegularFolderChildren(layers, i, layer, inheritedLower, inheritedUpper)
           }
           continue
         }
@@ -642,28 +642,42 @@ export function extractAllEntries(
         entries.push({ path: fileName, flatName: fileName, canvas, sourceLayerId: layer.id })
 
         // フォルダなら子も走査して内包マーク済みレイヤーを出力する。
-        // 各子マーク済みレイヤーは独立して collectMarkedLayerContext を呼ぶので
-        // 継承コンテキストを渡す必要はない。
+        // 各子マーク済みレイヤーは独立して collectMarkedLayerContext を呼ぶが、
+        // 配下のアニメフォルダには祖先コンテキストを継承させる必要がある。
         if (layer.isFolder) {
-          walk(layer.children, [], [])
+          walkMarkedOrRegularFolderChildren(layers, i, layer, inheritedLower, inheritedUpper)
         }
         continue
       }
 
       if (layer.isFolder) {
-        if (hasAnimFolderDescendant(layer)) {
-          // アニメ包含フォルダ: 兄弟を分類して継承コンテキストとして子に渡す
-          const [localLower, localUpper] = splitSiblingsByPosition(layers, i, docWidth, docHeight)
-          walk(
-            layer.children,
-            [...inheritedLower, ...localLower],
-            [...localUpper, ...inheritedUpper],
-          )
-        } else {
-          walk(layer.children, inheritedLower, inheritedUpper)
-        }
+        walkMarkedOrRegularFolderChildren(layers, i, layer, inheritedLower, inheritedUpper)
       }
     }
+  }
+
+  function walkMarkedOrRegularFolderChildren(
+    siblings: CspLayer[],
+    folderIndex: number,
+    folder: CspLayer,
+    inheritedLower: FlatLayer[],
+    inheritedUpper: FlatLayer[],
+  ): void {
+    if (!folder.isFolder) return
+
+    if (hasAnimFolderDescendant(folder)) {
+      // フォルダ自身が path 要素になる場合は、_ マーク有無に関係なく
+      // その階層の兄弟コンテキストを配下へ継承する。
+      const [localLower, localUpper] = splitSiblingsByPosition(siblings, folderIndex, docWidth, docHeight)
+      walk(
+        folder.children,
+        [...inheritedLower, ...localLower],
+        [...localUpper, ...inheritedUpper],
+      )
+      return
+    }
+
+    walk(folder.children, inheritedLower, inheritedUpper)
   }
 
   walk(tree, [], [])
