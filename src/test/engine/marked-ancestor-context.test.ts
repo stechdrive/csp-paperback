@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createCanvas as createNapiCanvas } from '@napi-rs/canvas'
 import { buildLayerTree, detectAnimationFoldersByXdts } from '../../engine/tree-builder'
 import { extractAllEntries } from '../../engine/cell-extractor'
+import { selectLayerTreeWithVisibility } from '../../store/selectors'
 import { makeLayer, makeFolder, makePassThroughFolder, makePsd } from '../helpers/psd-factory'
 import type { ProjectSettings, XdtsData } from '../../types'
 
@@ -44,6 +45,19 @@ function makeSolidCanvas(width: number, height: number, fillStyle: string): HTML
 function rgbaAt(canvas: HTMLCanvasElement, x: number, y: number): [number, number, number, number] {
   const data = canvas.getContext('2d')!.getImageData(x, y, 1, 1).data
   return [data[0], data[1], data[2], data[3]]
+}
+
+function findLayerByPath(layers: ReturnType<typeof buildLayerTree>, segments: string[]) {
+  let currentLayers = layers
+  let current = null
+
+  for (const segment of segments) {
+    current = currentLayers.find(layer => layer.originalName === segment) ?? null
+    if (!current) return null
+    currentLayers = current.children
+  }
+
+  return current
 }
 
 function buildMarkedAncestorTree(children: Parameters<typeof makePassThroughFolder>[1]) {
@@ -119,5 +133,118 @@ describe('extractAllEntries marked ancestor context regression', () => {
     const enEntry = result.find(entry => entry.flatName === '_BG1_0001_en.jpg')
     expect(enEntry).toBeDefined()
     expect(rgbaAt(enEntry!.canvas, 0, 0)).toEqual([255, 0, 0, 255])
+  })
+
+  it('手動アニメフォルダ指定でも autoMarked 親配下の祖先コンテキストを継承する', () => {
+    const baseTree = buildLayerTree(makePsd({
+      width: 4,
+      height: 4,
+      children: [
+        makePassThroughFolder('_原図', [
+          makePassThroughFolder('BOOK1', [
+            makeFolder('1', []),
+          ]),
+        ]),
+        makeLayer({
+          name: 'Frame',
+          canvas: makeSolidCanvas(4, 4, 'rgba(255, 0, 0, 1)'),
+          width: 4,
+          height: 4,
+        }),
+      ],
+    }))
+
+    const manualBook = findLayerByPath(baseTree, ['_原図', 'BOOK1'])
+    expect(manualBook).not.toBeNull()
+
+    const tree = selectLayerTreeWithVisibility({
+      layerTree: baseTree,
+      visibilityOverrides: new Map(),
+      manualAnimFolderIds: new Set([manualBook!.id]),
+      singleMarks: new Map(),
+    } as never)
+
+    const result = extractAllEntries(tree, DEFAULT_SETTINGS, 4, 4, 'white', false)
+    expect(result.map(entry => entry.flatName).sort()).toEqual(['BOOK1_0001.jpg', '_原図.jpg'])
+
+    const bookEntry = result.find(entry => entry.flatName === 'BOOK1_0001.jpg')
+    expect(bookEntry).toBeDefined()
+    expect(rgbaAt(bookEntry!.canvas, 0, 0)).toEqual([255, 0, 0, 255])
+  })
+
+  it('シングルマーク親配下の手動アニメフォルダでも祖先コンテキストを継承する', () => {
+    const baseTree = buildLayerTree(makePsd({
+      width: 4,
+      height: 4,
+      children: [
+        makePassThroughFolder('SHOT', [
+          makePassThroughFolder('BOOK1', [
+            makeFolder('1', []),
+          ]),
+        ]),
+        makeLayer({
+          name: 'Frame',
+          canvas: makeSolidCanvas(4, 4, 'rgba(255, 0, 0, 1)'),
+          width: 4,
+          height: 4,
+        }),
+      ],
+    }))
+
+    const markedParent = findLayerByPath(baseTree, ['SHOT'])
+    const manualBook = findLayerByPath(baseTree, ['SHOT', 'BOOK1'])
+    expect(markedParent).not.toBeNull()
+    expect(manualBook).not.toBeNull()
+
+    const tree = selectLayerTreeWithVisibility({
+      layerTree: baseTree,
+      visibilityOverrides: new Map(),
+      manualAnimFolderIds: new Set([manualBook!.id]),
+      singleMarks: new Map([[markedParent!.id, { layerId: markedParent!.id, origin: 'manual' }]]),
+    } as never)
+
+    const result = extractAllEntries(tree, DEFAULT_SETTINGS, 4, 4, 'white', false)
+    expect(result.map(entry => entry.flatName).sort()).toEqual(['BOOK1_0001.jpg', 'SHOT.jpg'])
+
+    const bookEntry = result.find(entry => entry.flatName === 'BOOK1_0001.jpg')
+    expect(bookEntry).toBeDefined()
+    expect(rgbaAt(bookEntry!.canvas, 0, 0)).toEqual([255, 0, 0, 255])
+  })
+
+  it('手動アニメフォルダにシングルマークが付いていてもセル出力を優先する', () => {
+    const baseTree = buildLayerTree(makePsd({
+      width: 4,
+      height: 4,
+      children: [
+        makePassThroughFolder('_原図', [
+          makePassThroughFolder('BOOK1', [
+            makeFolder('1', []),
+          ]),
+        ]),
+        makeLayer({
+          name: 'Frame',
+          canvas: makeSolidCanvas(4, 4, 'rgba(255, 0, 0, 1)'),
+          width: 4,
+          height: 4,
+        }),
+      ],
+    }))
+
+    const manualBook = findLayerByPath(baseTree, ['_原図', 'BOOK1'])
+    expect(manualBook).not.toBeNull()
+
+    const tree = selectLayerTreeWithVisibility({
+      layerTree: baseTree,
+      visibilityOverrides: new Map(),
+      manualAnimFolderIds: new Set([manualBook!.id]),
+      singleMarks: new Map([[manualBook!.id, { layerId: manualBook!.id, origin: 'manual' }]]),
+    } as never)
+
+    const result = extractAllEntries(tree, DEFAULT_SETTINGS, 4, 4, 'white', false)
+    expect(result.map(entry => entry.flatName).sort()).toEqual(['BOOK1_0001.jpg', '_原図.jpg'])
+
+    const bookEntry = result.find(entry => entry.flatName === 'BOOK1_0001.jpg')
+    expect(bookEntry).toBeDefined()
+    expect(rgbaAt(bookEntry!.canvas, 0, 0)).toEqual([255, 0, 0, 255])
   })
 })

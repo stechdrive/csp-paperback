@@ -14,7 +14,7 @@ const TOC = [
   { id: 'single-mark', label: '★で後から指定' },
   { id: 'manual-anim-folder', label: '手動アニメフォルダ 🎬' },
   { id: 'virtual-set', label: '仮想セル' },
-  { id: 'process-table', label: '工程フォルダテーブル' },
+  { id: 'process-table', label: '工程フォルダリスト' },
   { id: 'export-settings', label: '出力設定' },
   { id: 'shortcuts', label: '操作Tips' },
 ] as const
@@ -62,9 +62,13 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
 
               <p className={styles.p}>
                 CLIP STUDIO PAINT の<span className={styles.strong}>「アニメーションセル出力」</span>は、
-                アニメーションフォルダ内のセルを個別に書き出す機能です。
-                しかし、<span className={styles.em}>アニメーションフォルダの「外」にあるレイヤー</span>の扱いに
-                大きな制約があります。
+                編集中のアニメーションを、アニメーションフォルダー内のセルごとに画像として書き出す機能です。
+                タイムラインで管理しているセルを、そのまま書き出しにつなげられるのが大きな利点です。
+              </p>
+
+              <p className={styles.p}>
+                一方で、<span className={styles.em}>アニメーションフォルダーの外にある素材</span>や、
+                セル内で管理している修正工程まで含めて柔軟に出し分けたい場面では、標準機能だけでは足りません。
               </p>
 
               <div className={styles.calloutProblem}>
@@ -124,7 +128,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   <tr>
                     <td>修正工程ごとの分離出力</td>
                     <td><span className={styles.crossMark}>✗</span> 不可</td>
-                    <td><span className={styles.checkMark}>✓</span> 工程テーブルにフォルダ名を登録することで対応</td>
+                    <td><span className={styles.checkMark}>✓</span> 工程フォルダリストにフォルダ名を登録することで対応</td>
                   </tr>
                 </tbody>
               </table>
@@ -159,7 +163,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   <span className={styles.strong}>仮想セル</span> — 任意のセルとBGなどのレイヤーを自由に組み合わせて合成画像を出力
                 </li>
                 <li>
-                  <span className={styles.strong}>修正工程テーブル</span> — セル内のフォルダ名に応じて、演出、作監など
+                  <span className={styles.strong}>工程フォルダリスト</span> — セル内のフォルダ名に応じて、演出、作監など
                   自動でサフィックス付き分離出力
                 </li>
                 <li>
@@ -235,7 +239,8 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 <span className={styles.strong}>💡 Tips：</span>
                 PSD と XDTS は同時に選択して「ファイルを開く」で読み込めます。
                 PSDとXDTSを読み込み済みの状態で新しいPSDまたはXDTSを開くと、新規プロジェクトとして読み直します。
-                工程テーブルとアーカイブ除外パターンは設定ダイアログから JSON で共有できます。
+                工程フォルダリストと _付きフォルダの除外リストは設定ダイアログから保存・読み込みして共有できます。
+                各スタジオで使っているテンプレートや命名ルールに合わせて調整してください。
               </div>
             </section>
 
@@ -397,8 +402,8 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               <div className={styles.calloutInfo}>
                 このサンプルには CSP Paperback の主要機能がすべて詰まっています：
                 <span className={styles.strong}>単体出力</span>（_撮影指示、_原図、_BOOK1、_BG はレイヤーフォルダ名の先頭に _ を付けて自動指定）、
-                <span className={styles.strong}>工程フォルダ</span>のトラック分離型（演出）とセル内蔵型（_s）、
-                <span className={styles.strong}>アーカイブ除外</span>（_pool）。
+                <span className={styles.strong}>工程フォルダリスト</span>によるトラック分離型（演出）とセル内蔵型（_s）、
+                <span className={styles.strong}>_付きフォルダの除外リスト</span>（_pool）。
                 各機能の詳細は以降のセクションで解説します。
               </div>
 
@@ -474,7 +479,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                     <span className={styles.compositeTarget}>演出/A/1</span>
                   </div>
                   <div className={styles.compositeNote}>
-                    親フォルダ「演出」が工程テーブルの <code className={styles.code}>_e</code> に一致 → サフィックス付き
+                    親フォルダ「演出」が工程フォルダリストの <code className={styles.code}>_e</code> に一致 → サフィックス付き
                   </div>
                 </div>
                 <div className={styles.compositeItem}>
@@ -500,7 +505,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                     <span className={styles.compositeTarget}>作画/B/1/_s</span>
                   </div>
                   <div className={styles.compositeNote}>
-                    セル内のフォルダ「_s」が工程テーブルに一致 → サフィックス付きで分離出力
+                    セル内のフォルダ「_s」が工程フォルダリストに一致 → サフィックス付きで分離出力
                   </div>
                 </div>
                 <div className={styles.compositeItem}>
@@ -513,7 +518,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                     <span className={styles.compositeTarget}>作画/A/1</span>
                   </div>
                   <div className={styles.compositeNote}>
-                    親フォルダ「作画」は工程テーブル未登録 → サフィックスなし（本体）
+                    親フォルダ「作画」は工程フォルダリスト未登録 → サフィックスなし（本体）
                   </div>
                 </div>
                 <div className={styles.compositeItem}>
@@ -601,7 +606,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 ルート直下でアニメーションフォルダでも★マークでもない通常レイヤーは
                 <span className={styles.em}>コンテキストレイヤー</span>として、すべての出力画像に合成されます。
                 フレーム枠線やメモなど、全セルに共通して含めたいレイヤーをルート直下に置くだけで自動的に反映されます。
-                一方 <code className={styles.code}>_pool</code> はアーカイブ除外パターンに一致するため出力されません。
+                一方 <code className={styles.code}>_pool</code> は <span className={styles.strong}>_付きフォルダの除外リスト</span> に一致するため、先頭が _ でも単体出力されません。
               </div>
             </section>
 
@@ -673,7 +678,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   <span className={styles.layerName}>_pool</span>
                   <span className={styles.labelArchive}>除外</span>
                   <span style={{ color: '#6c7086', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
-                    → 出力されない（アーカイブ除外）
+                    → 単体出力しない（除外リスト）
                   </span>
                 </div>
                 <div className={styles.layerRow}>
@@ -681,7 +686,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   <span className={styles.layerName}>_old</span>
                   <span className={styles.labelArchive}>除外</span>
                   <span style={{ color: '#6c7086', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
-                    → 出力されない（アーカイブ除外）
+                    → 単体出力しない（除外リスト）
                   </span>
                 </div>
               </div>
@@ -708,9 +713,9 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   単体出力ではなく<span className={styles.strong}>アニメーションフォルダとしてのセル出力</span>を優先します
                 </li>
                 <li>
-                  <span className={styles.strong}>アーカイブ除外パターン</span>
-                  （デフォルト: <code className={styles.code}>_old</code>、<code className={styles.code}>_pool</code>）
-                  に一致するフォルダは自動マークされません
+                    <span className={styles.strong}>_付きフォルダの除外リスト</span>
+                    （デフォルト: <code className={styles.code}>_old</code>、<code className={styles.code}>_pool</code>）
+                    に一致するフォルダは、先頭が _ でも単体出力の対象になりません
                 </li>
               </ul>
 
@@ -720,8 +725,8 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 レイヤーフォルダ名の先頭に <code className={styles.code}>_</code> を付けておくのが推奨です。
                 CSP Paperbackで読み込んだ時点で単体出力として扱われるため、カットごとに ★ を押し直す必要がありません。
                 読み込み後に追加で別出力したい素材や、CSP側の名前を変えたくない素材は ★ で後から指定します。
-                「設定」ダイアログの「アーカイブ除外パターン」で、<code className={styles.code}>_old</code> や
-                <code className={styles.code}>_pool</code> のような作業用フォルダを自動マークから除外できます。
+                「設定」ダイアログの「_付きフォルダの除外リスト」で、<code className={styles.code}>_old</code> や
+                <code className={styles.code}>_pool</code> のような作業用フォルダを単体出力の対象から外せます。
               </div>
             </section>
 
@@ -969,21 +974,22 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               </div>
             </section>
 
-            {/* ===== 9. 工程フォルダテーブル ===== */}
+            {/* ===== 9. 工程フォルダリスト ===== */}
             <section className={styles.section} data-section="process-table">
-              <h2 className={styles.h1}>🏭 工程フォルダテーブル</h2>
+              <h2 className={styles.h1}>🏭 工程フォルダリスト</h2>
 
               <p className={styles.p}>
                 修正工程（演出、作監修正など）をセル出力時に自動でサフィックス付きの別ファイルとして分離出力できます。
-                <span className={styles.strong}>工程テーブル</span>にフォルダ名とサフィックスの対応を登録するだけで、
+                <span className={styles.strong}>工程フォルダリスト</span>にフォルダ名とサフィックスの対応を登録するだけで、
                 テンプレートの構造に関係なく同じ設定で使えます。
+                フォルダ名やサフィックスは固定ではなく、各スタジオのテンプレートや命名ルールに合わせて調整してください。
               </p>
 
               <div className={styles.calloutInfo}>
-                工程テーブルは<span className={styles.strong}>2つのテンプレート形式</span>に対応しています。
+                工程フォルダリストは<span className={styles.strong}>2つのテンプレート形式</span>に対応しています。
                 カット担当と修正担当が別フォルダで作業する「トラック分離型」でも、
                 1つのセルフォルダ内に工程サブフォルダを置く「セル内蔵型」でも、
-                同じ工程テーブル設定で自動分離出力できます。
+                同じ工程フォルダリスト設定で自動分離出力できます。
               </div>
 
               {/* --- パターン1: トラック分離型 --- */}
@@ -991,7 +997,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               <p className={styles.p}>
                 カット担当者と修正担当者がそれぞれ<span className={styles.strong}>別のフォルダ</span>に
                 同じセル名の構造をコピーして作業するテンプレートです。
-                工程テーブルに登録したフォルダ名が
+                工程フォルダリストに登録したフォルダ名が
                 <span className={styles.em}>アニメーションフォルダの直接の親フォルダ名</span>に一致すると、
                 そのトラック全体のセルにサフィックスが付きます。
               </p>
@@ -1037,7 +1043,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               </div>
 
               <p className={styles.p}>
-                親フォルダ名「演出」が工程テーブルの <code className={styles.code}>_e</code> に一致するため、
+                親フォルダ名「演出」が工程フォルダリストの <code className={styles.code}>_e</code> に一致するため、
                 その中のアニメーションフォルダ A のセルは <code className={styles.code}>A_0001_e.jpg</code> のように出力されます。
                 一方、親フォルダ名「作画」はテーブル未登録なので本体（サフィックスなし）として出力されます。
                 セル名が同じ「1」でも、フォルダ構造から自動で区別されます。
@@ -1048,7 +1054,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               <p className={styles.p}>
                 1つのアニメーションフォルダ内で、各セルフォルダの中に
                 <span className={styles.strong}>工程サブフォルダ</span>を置くテンプレートです。
-                セル内のフォルダ名が工程テーブルに一致すると、その内容だけがサフィックス付きで分離出力されます。
+                セル内のフォルダ名が工程フォルダリストに一致すると、その内容だけがサフィックス付きで分離出力されます。
               </p>
 
               <div className={styles.layerDiagram}>
@@ -1102,11 +1108,12 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               </p>
 
               {/* --- 共通設定 --- */}
-              <h3 className={styles.h2}>工程テーブルの設定</h3>
+              <h3 className={styles.h2}>工程フォルダリストの設定</h3>
               <p className={styles.p}>
                 設定ダイアログで以下のようにフォルダ名とサフィックスの対応を登録します。
                 フォルダ名はカンマ区切りで複数指定でき、大文字・小文字を区別しません。
                 初期設定では以下のテーブルが登録されています。
+                必要に応じて、各スタジオで使っているテンプレートや命名ルールに合わせて変更してください。
               </p>
 
               <table className={styles.comparisonTable}>
@@ -1137,7 +1144,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               </table>
 
               <div className={styles.calloutTip}>
-                <span className={styles.strong}>💡 どちらの形式でも同じ工程テーブル設定が使えます。</span>
+                <span className={styles.strong}>💡 どちらの形式でも同じ工程フォルダリスト設定が使えます。</span>
                 サンプルでは「演出」がトラック分離型（アニメーションフォルダの親フォルダ名）として、
                 「_s」がセル内蔵型（セル内のサブフォルダ名）として、それぞれ自動的にマッチして分離出力されます。
               </div>
@@ -1300,11 +1307,11 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 </li>
               </ul>
 
-              <h3 className={styles.h2}>設定の保存と復元</h3>
+              <h3 className={styles.h2}>設定の保存・共有</h3>
               <ul className={styles.ul}>
                 <li>
-                  <span className={styles.strong}>JSON エクスポート/インポート</span> —
-                  設定ダイアログから工程テーブルとアーカイブ除外パターンを JSON で共有できます
+                  <span className={styles.strong}>設定を書き出す / 読み込む</span> —
+                  工程フォルダリストと _付きフォルダの除外リストを保存・読み込みできます。スタジオ内で同じ設定を共有したり、別端末へ移したりするときに使います
                 </li>
               </ul>
 

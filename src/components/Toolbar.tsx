@@ -240,7 +240,7 @@ export function Toolbar({ onFiles, isLoading, error, notification, canUndo, canR
           </Tooltip>
         )}
         {!isMobile && (
-          <Tooltip content="書き出し詳細設定・工程テーブルの編集" placement="bottom">
+          <Tooltip content={"書き出し詳細設定・工程フォルダリストの編集\n各スタジオのテンプレートや命名ルールに合わせて調整できます"} placement="bottom">
             <button className={styles.btn} onClick={() => setShowSettings(true)}>{t.toolbar.settings}</button>
           </Tooltip>
         )}

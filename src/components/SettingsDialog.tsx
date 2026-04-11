@@ -115,7 +115,7 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
         </div>
 
         <div className={styles.body}>
-          {/* 工程テーブル */}
+          {/* 工程フォルダリスト */}
           <div className={styles.section}>
             <div className={styles.sectionTitle}>{t.settings.processTable}</div>
             <div className={styles.tableHeader}>
@@ -152,7 +152,7 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
             <button className={styles.addRowBtn} onClick={addRow}>{t.settings.addRow}</button>
           </div>
 
-          {/* アーカイブ除外パターン */}
+          {/* _付きフォルダの除外リスト */}
           <div className={styles.section}>
             <div className={styles.sectionTitle}>{t.settings.archivePatterns}</div>
             <div className={styles.hint}>{t.settings.archivePatternHint}</div>
@@ -173,6 +173,7 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
           {/* JSON import/export */}
           <div className={styles.section}>
             <div className={styles.sectionTitle}>{t.settings.shareSettings}</div>
+            <div className={styles.hint}>{t.settings.shareSettingsHint}</div>
             <div className={styles.ioRow}>
               <button className={styles.ioBtn} onClick={handleExport}>{t.settings.exportJson}</button>
               <button className={styles.ioBtn} onClick={handleImport}>{t.settings.importJson}</button>

@@ -172,10 +172,12 @@
 }
 
 .hint {
-  font-size: 0.72rem;
-  color: #6c7086;
+  font-size: 0.76rem;
+  color: #cdd6f4;
   margin-bottom: 0.4rem;
-  line-height: 1.4;
+  line-height: 1.5;
+  padding: 0.1rem 0 0.1rem 0.65rem;
+  border-left: 2px solid rgba(137, 180, 250, 0.35);
 }
 
 .radioGroup {
