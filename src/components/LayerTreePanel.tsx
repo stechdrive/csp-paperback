@@ -218,9 +218,9 @@ export function LayerTreePanel() {
         )}
       </div>
 
-      <Tooltip content="閉じたアニメフォルダや _ フォルダも一時的に開いて移動します">
+      <Tooltip content={"レイヤー一覧を上下にたどって、プレビュー対象をすばやく切り替えます\n閉じたアニメフォルダや _ フォルダも一時的に開いて移動します"}>
         <div className={styles.footerHint}>
-          Shift+スクロールでレイヤー移動
+          Shift+スクロールでプレビュー切替
         </div>
       </Tooltip>
     </div>
