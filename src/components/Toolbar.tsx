@@ -3,6 +3,12 @@ import { useAppStore } from '../store'
 import { useLocale } from '../i18n/locale'
 import { useExport } from '../hooks/useExport'
 import { useIsMobile } from '../hooks/useIsMobile'
+import {
+  MAX_MOBILE_UI_SCALE,
+  MIN_MOBILE_UI_SCALE,
+  percentToScale,
+  scaleToPercent,
+} from '../utils/mobile-ui-scale'
 import { SettingsDialog } from './SettingsDialog'
 import { HelpDialog } from './HelpDialog'
 import { Tooltip } from './Tooltip'
@@ -33,6 +39,67 @@ function OverflowMenu({ children }: { children: React.ReactNode }) {
       {open && (
         <div className={styles.overflowMenu} onClick={() => setOpen(false)}>
           {children}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function MobileUiScaleControl() {
+  const [open, setOpen] = useState(false)
+  const popoverRef = useRef<HTMLDivElement>(null)
+  const { t } = useLocale()
+  const mobileUiScale = useAppStore(s => s.mobileUiScale)
+  const setMobileUiScale = useAppStore(s => s.setMobileUiScale)
+  const resetMobileUiScale = useAppStore(s => s.resetMobileUiScale)
+
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: MouseEvent | TouchEvent) => {
+      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    document.addEventListener('touchstart', handler)
+    return () => {
+      document.removeEventListener('mousedown', handler)
+      document.removeEventListener('touchstart', handler)
+    }
+  }, [open])
+
+  const value = scaleToPercent(mobileUiScale)
+
+  return (
+    <div className={styles.scaleWrap} ref={popoverRef}>
+      <button
+        className={`${styles.btn} ${open ? styles.scaleBtnActive : ''}`}
+        onClick={() => setOpen(v => !v)}
+        aria-label={t.toolbar.uiScale}
+        aria-expanded={open}
+      >
+        Aa
+      </button>
+      {open && (
+        <div className={styles.scalePopover}>
+          <div className={styles.scaleHeader}>
+            <span>{t.toolbar.uiScale}</span>
+            <span className={styles.scaleValue}>{value}%</span>
+          </div>
+          <input
+            className={styles.scaleSlider}
+            type="range"
+            min={Math.round(MIN_MOBILE_UI_SCALE * 100)}
+            max={Math.round(MAX_MOBILE_UI_SCALE * 100)}
+            step={5}
+            value={value}
+            onChange={(e) => setMobileUiScale(percentToScale(Number(e.target.value)))}
+          />
+          <div className={styles.scaleFooter}>
+            <span className={styles.scaleRange}>{Math.round(MIN_MOBILE_UI_SCALE * 100)}%</span>
+            <button className={styles.scaleReset} onClick={resetMobileUiScale}>100%</button>
+            <span className={styles.scaleRange}>{Math.round(MAX_MOBILE_UI_SCALE * 100)}%</span>
+          </div>
         </div>
       )}
     </div>
@@ -178,6 +245,7 @@ export function Toolbar({ onFiles, isLoading, error, notification, canUndo, canR
           </Tooltip>
         )}
 
+        {isMobile && <MobileUiScaleControl />}
         {exportBtn}
 
         {isMobile && (

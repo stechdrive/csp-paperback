@@ -7,6 +7,7 @@ export const en: Translations = {
     settings: 'Settings',
     export: 'Export',
     loading: 'Loading…',
+    uiScale: 'UI Size',
   },
   export: {
     title: 'Export Settings',

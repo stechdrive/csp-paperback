@@ -8,40 +8,6 @@
   flex-shrink: 0;
 }
 
-@media (pointer: coarse) and (max-width: 1024px) {
-  .toolbar {
-    gap: 0.35rem;
-    padding: 0.4rem 0.5rem;
-  }
-
-  .title {
-    display: none;
-  }
-
-  .version {
-    display: none;
-  }
-
-  .spacer {
-    flex: 1;
-  }
-
-  .fileInfo {
-    display: none;
-  }
-
-  .btn {
-    padding: 0.4rem 0.65rem;
-    font-size: 0.8rem;
-    min-height: 2.25rem;
-  }
-
-  .langBtn {
-    min-height: 2.25rem;
-    padding: 0.35rem 0.6rem;
-  }
-}
-
 .title {
   font-size: 0.875rem;
   font-weight: 700;
@@ -135,6 +101,77 @@
   position: relative;
 }
 
+.scaleWrap {
+  position: relative;
+}
+
+.scaleBtnActive {
+  background: #45475a;
+  border-color: #6c7086;
+}
+
+.scalePopover {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.35rem;
+  width: 13.5rem;
+  background: #1e1e2e;
+  border: 1px solid #45475a;
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  z-index: 220;
+  padding: 0.7rem 0.75rem;
+}
+
+.scaleHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.78rem;
+  color: #cdd6f4;
+  margin-bottom: 0.55rem;
+}
+
+.scaleValue {
+  font-variant-numeric: tabular-nums;
+  color: #89b4fa;
+}
+
+.scaleSlider {
+  width: 100%;
+  accent-color: #6366f1;
+}
+
+.scaleFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.45rem;
+}
+
+.scaleRange {
+  font-size: 0.68rem;
+  color: #7f849c;
+  font-variant-numeric: tabular-nums;
+}
+
+.scaleReset {
+  padding: 0.15rem 0.45rem;
+  font-size: 0.72rem;
+  border: 1px solid #45475a;
+  border-radius: 4px;
+  background: #313244;
+  color: #cdd6f4;
+  cursor: pointer;
+}
+
+.scaleReset:hover {
+  background: #45475a;
+}
+
 .overflowMenu {
   position: absolute;
   top: 100%;
@@ -171,4 +208,52 @@
 .menuItem:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+@media (pointer: coarse) and (max-width: 1024px) {
+  .toolbar {
+    gap: 0.35rem;
+    padding: 0.4rem 0.5rem;
+  }
+
+  .title {
+    display: none;
+  }
+
+  .version {
+    display: none;
+  }
+
+  .spacer {
+    flex: 1;
+  }
+
+  .fileInfo {
+    display: none;
+  }
+
+  .btn {
+    padding: 0.4rem 0.65rem;
+    font-size: 0.8rem;
+    min-height: 2.25rem;
+  }
+
+  .scalePopover {
+    width: 14rem;
+    padding: 0.8rem;
+  }
+
+  .scaleHeader {
+    font-size: 0.8rem;
+  }
+
+  .scaleReset {
+    min-height: 2rem;
+    padding: 0.25rem 0.55rem;
+  }
+
+  .langBtn {
+    min-height: 2.25rem;
+    padding: 0.35rem 0.6rem;
+  }
 }

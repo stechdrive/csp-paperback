@@ -3,9 +3,11 @@ import type { CspLayer } from '../types'
 import type { XdtsTrack } from '../types/xdts'
 import { findFirstFrameOfCell, resolveCellsAtFrameByTrackNo } from '../utils/xdts-parser'
 import { buildDefaultVisibilityOverrides } from '../utils/default-visibility'
+import { DEFAULT_MOBILE_UI_SCALE, clampMobileUiScale } from '../utils/mobile-ui-scale'
 import type { AppStore } from './index'
 
 export interface UiSlice {
+  mobileUiScale: number
   selectedLayerId: string | null
   /** animFolderId → 選択中のセルインデックス。未登録は先頭（0）扱い。-1 はカラ（何も表示しない） */
   selectedCells: Map<string, number>
@@ -20,6 +22,8 @@ export interface UiSlice {
   expandedFolders: Set<string>
   /** タイムラインの現在フレーム（0-based） */
   currentFrame: number
+  setMobileUiScale: (scale: number) => void
+  resetMobileUiScale: () => void
   selectLayer: (layerId: string | null) => void
   setSelectedVsMember: (setId: string | null, memberId: string | null) => void
   /**
@@ -77,6 +81,7 @@ function findTimelineCellIndex(folder: CspLayer, cellName: string): number {
 // -------------------------------------------------------
 
 export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get) => ({
+  mobileUiScale: DEFAULT_MOBILE_UI_SCALE,
   selectedLayerId: null,
   selectedCells: new Map(),
   focusedAnimFolderId: null,
@@ -86,6 +91,14 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
   visibilityOverrides: new Map(),
   expandedFolders: new Set(),
   currentFrame: 0,
+
+  setMobileUiScale: (scale) => {
+    set({ mobileUiScale: clampMobileUiScale(scale) })
+  },
+
+  resetMobileUiScale: () => {
+    set({ mobileUiScale: DEFAULT_MOBILE_UI_SCALE })
+  },
 
   selectLayer: (layerId) => {
     set({ selectedLayerId: layerId })

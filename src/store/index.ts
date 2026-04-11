@@ -9,6 +9,7 @@ import { createProjectSlice, type ProjectSlice } from './project-slice'
 import { createOutputSlice, type OutputSlice } from './output-slice'
 import { createUiSlice, type UiSlice } from './ui-slice'
 import { createHistorySlice, type HistorySlice } from './history-slice'
+import { DEFAULT_MOBILE_UI_SCALE, clampMobileUiScale } from '../utils/mobile-ui-scale'
 
 export type AppStore =
   PsdSlice &
@@ -37,14 +38,17 @@ export const useAppStore = create<AppStore>()(
       version: 1,
       partialize: (state) => ({
         projectSettings: state.projectSettings,
+        mobileUiScale: state.mobileUiScale,
       }),
       merge: (persisted, current) => {
         const p = persisted as {
           projectSettings?: typeof DEFAULT_PROJECT_SETTINGS
+          mobileUiScale?: number
         } | undefined
         return {
           ...current,
           projectSettings: { ...DEFAULT_PROJECT_SETTINGS, ...p?.projectSettings },
+          mobileUiScale: clampMobileUiScale(p?.mobileUiScale ?? DEFAULT_MOBILE_UI_SCALE),
         }
       },
     },

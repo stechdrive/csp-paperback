@@ -5,6 +5,7 @@ export const ja = {
     settings: '設定',
     export: '出力',
     loading: '読み込み中…',
+    uiScale: '表示サイズ',
   },
   export: {
     title: '出力設定',
