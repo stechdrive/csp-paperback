@@ -220,6 +220,113 @@ describe('assignTracksToFolders', () => {
     expect(resultWithUiHidden.unmatchedTracks).toHaveLength(0)
   })
 
+  it('同名候補に実効可視の候補がある場合は hidden な祖先配下より優先する', () => {
+    // hidden branch を PSD ボトム側に置き、従来のボトム優先だけならそちらが選ばれる構図にする。
+    // ただし今回は visible branch を優先したい。
+    const hiddenBranch = makeFolder('LO', [
+      makeFolder('AB', [
+        makeLayer({ name: 'A2' }),
+        makeLayer({ name: 'B3' }),
+        makeLayer({ name: 'A1_B1' }),
+      ]),
+    ])
+    hiddenBranch.hidden = true
+
+    const visibleBranch = makeFolder('演出', [
+      makeFolder('AB', [
+        makeLayer({ name: 'A2' }),
+        makeLayer({ name: 'B3' }),
+        makeLayer({ name: 'A1_B1' }),
+      ]),
+    ])
+
+    const root = makeFolder('ROOT', [hiddenBranch, visibleBranch])
+    const psd = makePsd({ children: [root] })
+    const tree = buildLayerTree(psd)
+
+    const result = assignTracksToFolders(tree, [
+      makeTrack('AB', 0, ['A1_B1', 'B3', 'A2'], ['A1_B1', 'B3', 'A2']),
+    ])
+
+    const hiddenAb = findLayer(tree, ['ROOT', 'LO', 'AB'])!
+    const visibleAb = findLayer(tree, ['ROOT', '演出', 'AB'])!
+
+    expect(result.assignment.size).toBe(1)
+    expect(result.unmatchedTracks).toHaveLength(0)
+    expect(result.assignment.get(visibleAb.id)).toBe(0)
+    expect(result.assignment.get(hiddenAb.id)).toBeUndefined()
+  })
+
+  it('実効可視の候補がある間は、セル一致が少し低くても hidden 候補より先に使う', () => {
+    const hiddenBranch = makeFolder('LO', [
+      makeFolder('AB', [
+        makeLayer({ name: 'A2' }),
+        makeLayer({ name: 'B3' }),
+        makeLayer({ name: 'A1_B1' }),
+      ]),
+    ])
+    hiddenBranch.hidden = true
+
+    const visibleBranch = makeFolder('演出', [
+      makeFolder('AB', [
+        makeLayer({ name: 'B3' }),
+        makeLayer({ name: 'A1_B1' }),
+      ]),
+    ])
+
+    const root = makeFolder('ROOT', [hiddenBranch, visibleBranch])
+    const psd = makePsd({ children: [root] })
+    const tree = buildLayerTree(psd)
+
+    const result = assignTracksToFolders(tree, [
+      makeTrack('AB', 0, ['A1_B1', 'B3', 'A2'], ['A1_B1', 'B3', 'A2']),
+    ])
+
+    const hiddenAb = findLayer(tree, ['ROOT', 'LO', 'AB'])!
+    const visibleAb = findLayer(tree, ['ROOT', '演出', 'AB'])!
+
+    expect(result.assignment.size).toBe(1)
+    expect(result.unmatchedTracks).toHaveLength(0)
+    expect(result.assignment.get(visibleAb.id)).toBe(0)
+    expect(result.assignment.get(hiddenAb.id)).toBeUndefined()
+  })
+
+  it('実効可視の候補を使い切ったら hidden 候補にフォールバックする', () => {
+    const hiddenBranch = makeFolder('LO', [
+      makeFolder('AB', [
+        makeLayer({ name: 'A2' }),
+        makeLayer({ name: 'B3' }),
+        makeLayer({ name: 'A1_B1' }),
+      ]),
+    ])
+    hiddenBranch.hidden = true
+
+    const visibleBranch = makeFolder('演出', [
+      makeFolder('AB', [
+        makeLayer({ name: 'A2' }),
+        makeLayer({ name: 'B3' }),
+        makeLayer({ name: 'A1_B1' }),
+      ]),
+    ])
+
+    const root = makeFolder('ROOT', [hiddenBranch, visibleBranch])
+    const psd = makePsd({ children: [root] })
+    const tree = buildLayerTree(psd)
+
+    const result = assignTracksToFolders(tree, [
+      makeTrack('AB', 0, ['A1_B1', 'B3', 'A2'], ['A1_B1', 'B3', 'A2']),
+      makeTrack('AB', 1, ['A1_B1', 'B3', 'A2'], ['A1_B1', 'B3', 'A2']),
+    ])
+
+    const hiddenAb = findLayer(tree, ['ROOT', 'LO', 'AB'])!
+    const visibleAb = findLayer(tree, ['ROOT', '演出', 'AB'])!
+
+    expect(result.assignment.size).toBe(2)
+    expect(result.unmatchedTracks).toHaveLength(0)
+    expect(result.assignment.get(visibleAb.id)).toBe(0)
+    expect(result.assignment.get(hiddenAb.id)).toBe(1)
+  })
+
   it('yc4_00_000_lo 相当のシナリオ: 同名 3 候補 + _TEST/A 余剰', () => {
     // ツリー:
     //   _TEST/A (祖先 mark あり、余剰候補)

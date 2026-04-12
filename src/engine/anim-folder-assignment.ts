@@ -17,18 +17,28 @@ import type { CspLayer, XdtsTrack } from '../types'
  * 2. 候補: 以下を満たすフォルダ
  *    - isFolder
  *    - 正規化名がいずれかのトラック名(正規化済)と一致する
- *    hidden / uiHidden は「出力参加」の状態なので、XDTS 検出フェーズでは見ない。
+ *    hidden / uiHidden で候補からは除外しない。
+ *    ただし hidden は「CSP 側で XDTS に書き出されるか」の情報として有用なので、
+ *    同名候補プールに祖先込みで実効可視な候補が 1 つでもあれば、
+ *    まずその可視候補だけで割当する。hidden 候補は可視候補が尽きたときの
+ *    フォールバックとして残す。
+ *    uiHidden はアプリ内表示状態なので XDTS 対応付けには使わない。
  *
  * 3. 収集順序: ツリーをボトム優先で post-order (reverse-children) 走査。
  *    結果として候補プール内の先頭が最もボトム、末尾が最もトップになる。
  *
  * 4. 割当: 各トラックを trackNo 昇順(= ボトム優先)に処理し、
- *    同じ正規化名の候補プールから以下の優先順位で 1:1 割当する。
+ *    同じ正規化名の候補プールから以下の順に 1:1 割当する。
+ *    - 祖先込みで hidden ではない実効可視候補が居れば、その可視候補だけを対象にする
+ *    - 可視候補が居なければ hidden 候補を含む残りプール全体を対象にする
+ *    対象になったプール内では以下の優先順位で 1:1 割当する。
  *    - 直下の子名が track.cellNames と何種類一致するか
  *    - track.frames に現れるセル名が直下の子名で何回説明できるか
  *    - 完全同点なら既存どおりボトム優先
  *    これにより、親の anim folder と同名セルフォルダが共存する場合でも、
  *    XDTS のセル集合をよりよく説明できるフォルダを優先できる。
+ *    また、同名候補が「表示中の工程」と「非表示にした元工程」に分かれる現場運用でも、
+ *    XDTS 書き出し状態に近い方を自然に優先できる。
  *    どのプールからも取り出せないトラックは unmatchedTracks に入る。
  *
  * 5. 余剰候補(XDTS にない/XDTS のトラック数に対して余る)は assignment に入らず、
@@ -49,6 +59,8 @@ interface Candidate {
   trimmedName: string
   /** 直下の子名（hidden を含む）を正規化して重複排除した集合 */
   directChildNameSet: Set<string>
+  /** PSD 上で祖先込みに visible かどうか。uiHidden は含めない。 */
+  effectivelyVisible: boolean
 }
 
 /** トラック名とフォルダ名を揃えるための正規化 */
@@ -65,14 +77,15 @@ function collectCandidates(
 ): Candidate[] {
   const candidates: Candidate[] = []
 
-  function walk(layers: CspLayer[]): void {
+  function walk(layers: CspLayer[], ancestorsVisible: boolean): void {
     // 兄弟はボトム優先で走査(CspLayer の children はトップファースト配列なので逆順に)
     for (let i = layers.length - 1; i >= 0; i--) {
       const layer = layers[i]
+      const effectivelyVisible = ancestorsVisible && !layer.hidden
 
       if (layer.isFolder) {
         // post-order: 子を先に訪問
-        walk(layer.children)
+        walk(layer.children, effectivelyVisible)
 
         const trimmed = normalize(layer.originalName)
         if (trackTrimmedNameSet.has(trimmed)) {
@@ -80,13 +93,14 @@ function collectCandidates(
             layer,
             trimmedName: trimmed,
             directChildNameSet: new Set(layer.children.map(child => normalize(child.originalName))),
+            effectivelyVisible,
           })
         }
       }
     }
   }
 
-  walk(tree)
+  walk(tree, true)
   return candidates
 }
 
@@ -133,11 +147,22 @@ function pickBestCandidateIndex(pool: Candidate[], track: XdtsTrack): number {
     if (frameMatches > bestFrameMatches) {
       bestIndex = i
       bestFrameMatches = frameMatches
+      continue
     }
+    if (frameMatches < bestFrameMatches) continue
+
     // 完全同点なら既存どおり pool の先頭側（ボトム優先）を維持する
   }
 
   return bestIndex
+}
+
+function pickCandidate(pool: Candidate[], track: XdtsTrack): Candidate | undefined {
+  if (pool.length === 0) return undefined
+
+  const visiblePool = pool.filter(candidate => candidate.effectivelyVisible)
+  const activePool = visiblePool.length > 0 ? visiblePool : pool
+  return activePool[pickBestCandidateIndex(activePool, track)]
 }
 
 export function assignTracksToFolders(
@@ -171,10 +196,10 @@ export function assignTracksToFolders(
   for (const track of sortedTracks) {
     const trimmed = normalize(track.name)
     const pool = poolsByName.get(trimmed)
-    const picked = pool && pool.length > 0
-      ? pool.splice(pickBestCandidateIndex(pool, track), 1)[0]
-      : undefined
+    const picked = pool ? pickCandidate(pool, track) : undefined
     if (picked) {
+      const pickedIndex = pool!.indexOf(picked)
+      if (pickedIndex >= 0) pool!.splice(pickedIndex, 1)
       assignment.set(picked.layer.id, track.trackNo)
     } else {
       unmatchedTracks.push(track)
