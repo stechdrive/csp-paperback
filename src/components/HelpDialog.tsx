@@ -819,6 +819,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               <div className={styles.calloutTip}>
                 <span className={styles.strong}>⚠ 書き出し前の確認：</span>
                 書き出したい素材が入っているアニメーションフォルダは、親フォルダも含めて表示状態にしてください。
+                非表示のまま書き出してXDTSに出なかったフォルダも、この手動アニメーションフォルダ指定で補えます。
               </div>
 
               <div className={styles.layerDiagram}>
