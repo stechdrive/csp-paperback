@@ -166,31 +166,60 @@ describe('assignTracksToFolders', () => {
     expect(result.assignment.get(testA.id)).toBe(0)
   })
 
-  it('末尾空白 "A " と "A" を同じ名前グループとしてマッチ(trim 正規化)', () => {
-    // ツリーに "A " (末尾空白) と "A" がある
-    // XDTS "A" 1 トラック → どちらにもマッチ候補になるが、ボトム優先で選ばれる
+  it('末尾空白 "A " と "A" は別トラックとして扱い、raw 名が一致する候補だけを使う', () => {
     const spaceA = makeFolder('A ', [makeLayer({ name: '1' })])
     const noSpaceA = makeFolder('A', [makeLayer({ name: '2' })])
-    const psd = makePsd({ children: [spaceA, noSpaceA] })  // spaceA = ボトム
+    const psd = makePsd({ children: [spaceA, noSpaceA] })
     const tree = buildLayerTree(psd)
 
     const result = assignTracksToFolders(tree, [makeTrack('A', 0)])
     expect(result.assignment.size).toBe(1)
     const treeSpaceA = tree.find(l => l.originalName === 'A ')!
-    expect(result.assignment.get(treeSpaceA.id)).toBe(0)
+    const treeNoSpaceA = tree.find(l => l.originalName === 'A')!
+    expect(result.assignment.get(treeNoSpaceA.id)).toBe(0)
+    expect(result.assignment.get(treeSpaceA.id)).toBeUndefined()
   })
 
-  it('XDTS 側の "A " (末尾空白) もツリーの "A" と trim マッチする', () => {
-    const psd = makePsd({ children: [makeFolder('A', [makeLayer({ name: '1' })])] })
+  it('XDTS 側の "A " はツリーの "A " にだけ一致する', () => {
+    const psd = makePsd({
+      children: [
+        makeFolder('A ', [makeLayer({ name: '1' })]),
+        makeFolder('A', [makeLayer({ name: '2' })]),
+      ],
+    })
     const tree = buildLayerTree(psd)
     const result = assignTracksToFolders(tree, [makeTrack('A ', 0)])
     expect(result.assignment.size).toBe(1)
-    const layerA = tree[0]
-    expect(result.assignment.get(layerA.id)).toBe(0)
+    const layerSpaceA = tree.find(layer => layer.originalName === 'A ')!
+    const layerA = tree.find(layer => layer.originalName === 'A')!
+    expect(result.assignment.get(layerSpaceA.id)).toBe(0)
+    expect(result.assignment.get(layerA.id)).toBeUndefined()
+  })
+
+  it('AB / ab / ab  は raw 名ごとに別プールで扱う', () => {
+    const psd = makePsd({
+      children: [
+        makeFolder('AB', [makeLayer({ name: '1' })]),
+        makeFolder('ab', [makeLayer({ name: '2' })]),
+        makeFolder('ab ', [makeLayer({ name: '3' })]),
+      ],
+    })
+    const tree = buildLayerTree(psd)
+    const result = assignTracksToFolders(tree, [
+      makeTrack('AB', 0),
+      makeTrack('ab', 1),
+      makeTrack('ab ', 2),
+    ])
+
+    expect(result.assignment.size).toBe(3)
+    expect(result.unmatchedTracks).toHaveLength(0)
+    expect(result.assignment.get(findLayer(tree, ['AB'])!.id)).toBe(0)
+    expect(result.assignment.get(findLayer(tree, ['ab'])!.id)).toBe(1)
+    expect(result.assignment.get(findLayer(tree, ['ab '])!.id)).toBe(2)
   })
 
   it('自身が autoMarked のフォルダでも XDTS track 名に一致すれば候補になる', () => {
-    // _A というフォルダは XDTS "_A" と trim マッチし、XDTS 検出を優先する
+    // _A というフォルダは XDTS "_A" と raw 一致し、XDTS 検出を優先する
     const underA = makeFolder('_A', [makeLayer({ name: '1' })])
     const psd = makePsd({ children: [underA] })
     const tree = buildLayerTree(psd)

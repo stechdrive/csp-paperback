@@ -4,19 +4,23 @@ import type { CspLayer, XdtsTrack } from '../types'
  * XDTS トラックと PSD ツリー内のアニメフォルダ候補の対応付けを計算する。
  *
  * 背景:
- * - CSP は同名の anim folder をエクスポートすることがある(末尾空白 + 同名等)。
+ * - CSP は track 名を raw のまま XDTS に書き出す（大文字小文字・末尾空白を保持する）
+ *   ケースがある。
+ * - 同名の anim folder をエクスポートすることがある。
  * - 公式仕様(*6)では trackNo 0 = ボトムレイヤーと決まっている。
  * - `_` プレフィックスは本アプリの単体出力マークであり、XDTS の対応候補を
  *   劣後させる条件ではない。アーカイブ除外は archivePatterns 等の明示ルールで扱う。
  *
  * ルール:
  *
- * 1. 名前の正規化: trim + lowercase。CSP が末尾空白を嫌って "A " のような
- *    バリアントを吐くケースを吸収するため。
+ * 1. 名前照合: raw の完全一致。
+ *    - `AB` と `ab` は別トラックとして扱う
+ *    - `ab` と `ab ` も別トラックとして扱う
+ *    - 今のところ trim/case-fold の救済は入れない
  *
  * 2. 候補: 以下を満たすフォルダ
  *    - isFolder
- *    - 正規化名がいずれかのトラック名(正規化済)と一致する
+ *    - raw 名がいずれかのトラック名と一致する
  *    hidden / uiHidden で候補からは除外しない。
  *    ただし hidden は「CSP 側で XDTS に書き出されるか」の情報として有用なので、
  *    同名候補プールに祖先込みで実効可視な候補が 1 つでもあれば、
@@ -28,7 +32,7 @@ import type { CspLayer, XdtsTrack } from '../types'
  *    結果として候補プール内の先頭が最もボトム、末尾が最もトップになる。
  *
  * 4. 割当: 各トラックを trackNo 昇順(= ボトム優先)に処理し、
- *    同じ正規化名の候補プールから以下の順に 1:1 割当する。
+ *    同じ raw 名の候補プールから以下の順に 1:1 割当する。
  *    - 祖先込みで hidden ではない実効可視候補が居れば、その可視候補だけを対象にする
  *    - 可視候補が居なければ hidden 候補を含む残りプール全体を対象にする
  *    対象になったプール内では以下の優先順位で 1:1 割当する。
@@ -55,17 +59,12 @@ export interface AssignResult {
 
 interface Candidate {
   layer: CspLayer
-  /** 正規化済みの名前(trim + lowercase) */
-  trimmedName: string
-  /** 直下の子名（hidden を含む）を正規化して重複排除した集合 */
+  /** raw 名（大文字小文字・末尾空白を保持） */
+  rawName: string
+  /** 直下の子名（hidden を含む）を raw のまま重複排除した集合 */
   directChildNameSet: Set<string>
   /** PSD 上で祖先込みに visible かどうか。uiHidden は含めない。 */
   effectivelyVisible: boolean
-}
-
-/** トラック名とフォルダ名を揃えるための正規化 */
-function normalize(name: string): string {
-  return name.trim().toLowerCase()
 }
 
 /**
@@ -73,7 +72,7 @@ function normalize(name: string): string {
  */
 function collectCandidates(
   tree: CspLayer[],
-  trackTrimmedNameSet: Set<string>,
+  trackNameSet: Set<string>,
 ): Candidate[] {
   const candidates: Candidate[] = []
 
@@ -87,12 +86,12 @@ function collectCandidates(
         // post-order: 子を先に訪問
         walk(layer.children, effectivelyVisible)
 
-        const trimmed = normalize(layer.originalName)
-        if (trackTrimmedNameSet.has(trimmed)) {
+        const rawName = layer.originalName
+        if (trackNameSet.has(rawName)) {
           candidates.push({
             layer,
-            trimmedName: trimmed,
-            directChildNameSet: new Set(layer.children.map(child => normalize(child.originalName))),
+            rawName,
+            directChildNameSet: new Set(layer.children.map(child => child.originalName)),
             effectivelyVisible,
           })
         }
@@ -105,7 +104,7 @@ function collectCandidates(
 }
 
 function countDirectChildCellNameMatches(candidate: Candidate, track: XdtsTrack): number {
-  const trackCellNames = new Set(track.cellNames.map(normalize))
+  const trackCellNames = new Set(track.cellNames)
   if (trackCellNames.size === 0) return 0
 
   let matches = 0
@@ -119,7 +118,7 @@ function countReferencedFrameMatches(candidate: Candidate, track: XdtsTrack): nu
   let matches = 0
   for (const frame of track.frames) {
     if (frame.cellName === null) continue
-    if (candidate.directChildNameSet.has(normalize(frame.cellName))) {
+    if (candidate.directChildNameSet.has(frame.cellName)) {
       matches++
     }
   }
@@ -174,19 +173,19 @@ export function assignTracksToFolders(
 
   if (tracks.length === 0) return { assignment, unmatchedTracks }
 
-  // トラック正規化名のセット(候補収集時のフィルタに使用)
-  const trackTrimmedNameSet = new Set(tracks.map(t => normalize(t.name)))
+  // トラック raw 名のセット(候補収集時のフィルタに使用)
+  const trackNameSet = new Set(tracks.map(t => t.name))
 
   // 候補をボトム優先で収集
-  const allCandidates = collectCandidates(tree, trackTrimmedNameSet)
+  const allCandidates = collectCandidates(tree, trackNameSet)
 
-  // 正規化名 → ボトム優先候補プールを構築
+  // raw 名 → ボトム優先候補プールを構築
   const poolsByName = new Map<string, Candidate[]>()
   for (const c of allCandidates) {
-    let pool = poolsByName.get(c.trimmedName)
+    let pool = poolsByName.get(c.rawName)
     if (!pool) {
       pool = []
-      poolsByName.set(c.trimmedName, pool)
+      poolsByName.set(c.rawName, pool)
     }
     pool.push(c)
   }
@@ -194,8 +193,7 @@ export function assignTracksToFolders(
   // 各トラックを trackNo 昇順に処理して割当
   const sortedTracks = [...tracks].sort((a, b) => a.trackNo - b.trackNo)
   for (const track of sortedTracks) {
-    const trimmed = normalize(track.name)
-    const pool = poolsByName.get(trimmed)
+    const pool = poolsByName.get(track.name)
     const picked = pool ? pickCandidate(pool, track) : undefined
     if (picked) {
       const pickedIndex = pool!.indexOf(picked)

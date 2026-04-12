@@ -166,12 +166,13 @@ describe('detectAnimationFoldersByXdts', () => {
     expect(tree[0].isAnimationFolder).toBe(true)
   })
 
-  it('track名の照合は大文字小文字を区別しない', () => {
+  it('track名の照合は大文字小文字を区別する', () => {
     const psd = makePsd({ children: [makeFolder('a', [])] })
     const tree = buildLayerTree(psd)
     const xdts: XdtsData = { tracks: [{ name: 'A', trackNo: 0, cellNames: [], frames: [] }], version: 5, header: { cut: '1', scene: '1' }, timeTableName: 'タイムライン1', duration: 72, fps: 24 }
-    detectAnimationFoldersByXdts(tree, xdts)
-    expect(tree[0].isAnimationFolder).toBe(true)
+    const result = detectAnimationFoldersByXdts(tree, xdts)
+    expect(tree[0].isAnimationFolder).toBe(false)
+    expect(result.unmatchedTracks).toHaveLength(1)
   })
 })
 

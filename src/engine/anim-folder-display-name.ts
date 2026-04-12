@@ -7,30 +7,36 @@ import type { CspLayer } from '../types'
  * - トラック↔フォルダの対応は assignTracksToFolders で既に決まっている前提
  * - displayName は「CSP 表示上の name から末尾空白等を落とした、出力で使える形」
  *
- * Identity ベースのグルーピング:
- *   anim folder の identity = (trim+lowercase name, parentSuffix)
+ * 出力 namespace / collision family:
+ *   - namespace = parentSuffix
+ *   - family = trim 後の base 名を case-insensitive に見た値
  *
- *   - **同じ name でも parentSuffix が異なれば別 identity** (process variants)
- *     例: c001 の `作画/A`(suffix="") と `演出/A`(suffix="_e") は別 identity、
+ *   - raw 名が違っても、出力に使う base 名が同じ family に落ちる場合は
+ *     同じ collision family として連番で分離する
+ *     例: `A`, `a`, `A ` は同じ family
+ *
+ *   - **同じ raw 名でも parentSuffix が異なれば別 namespace** (process variants)
+ *     例: c001 の `作画/A`(suffix="") と `演出/A`(suffix="_e") は別 namespace、
  *         両方とも displayName "A" で、fileName 側の工程名位置設定で分岐する
  *
- *   - **同じ identity に複数候補が居る場合のみ (n) 連番でユニーク化** (true duplicates)
- *     例: yc4 の 3 つの LO/TEST/A (全部 parentSuffix="") は同一 identity → "A", "A(2)", "A(3)"
+ *   - **同じ family に複数候補が居る場合は (n) 連番でユニーク化**
+ *     例: `A`, `a`, `A ` (全部 suffix="") → "A", "a(2)", "A(3)"
  *
- *   - 連番付けは identity 内で **trackNo 昇順**(= ボトム優先)
+ *   - 連番付けは family 内で **trackNo 昇順**(= ボトム優先)
  *
- * - literal 衝突回避: 生成した `A(2)` 等が他 identity グループの base と衝突する場合、
+ * - literal 衝突回避:
+ *   生成した `A(2)` 等が同じ namespace 内の literal base と衝突する場合、
  *   番号を飛ばす (ユーザが literal で "A(2)" と命名しているケース等)
  *
  * 例:
  * - c001 の 3 つの anim folder
  *   - 作画/A (a, "")   → "A"
  *   - 作画/B (b, "")   → "B"
- *   - 演出/A (a, "_e") → "A"   (parentSuffix が違うので別 identity、連番なし)
+ *   - 演出/A (a, "_e") → "A"   (parentSuffix が違うので別 namespace、連番なし)
  * - yc4 の 3 つの anim folder
  *   - bottom A (a, "") → "A"
  *   - middle A (a, "") → "A(2)"
- *   - top A    (a, "") → "A(3)"  (全部同一 identity → 連番)
+ *   - top A    (a, "") → "A(3)"  (全部同一 family → 連番)
  *
  * 注: リターンは「assignment に含まれる layerId 全員分」の displayName。
  *    assignment に含まれない(= anim folder 化されない)候補は入らない。
@@ -53,66 +59,60 @@ export function computeDisplayNames(
   }
   indexLayers(tree)
 
-  /**
-   * Identity キー: trim+lowercase name と parentSuffix を `\x00` で連結した文字列。
-   * case-preserved の base 名前は別途 baseByIdentity に保存する。
-   */
-  function makeIdentityKey(trimmedLowerName: string, parentSuffix: string): string {
-    return `${trimmedLowerName}\x00${parentSuffix}`
+  interface NamespaceMember {
+    layer: CspLayer
+    trackNo: number
+    baseName: string
+    familyKey: string
   }
 
-  // identity ごとに {layer, trackNo} を集める
-  const groups = new Map<string, { layer: CspLayer; trackNo: number }[]>()
+  // parentSuffix(namespace) ごとにメンバを集める
+  const namespaceGroups = new Map<string, NamespaceMember[]>()
   for (const [layerId, trackNo] of assignment) {
     const layer = layerById.get(layerId)
     if (!layer) continue
-    const trimmedLower = layer.originalName.trim().toLowerCase()
+    const baseName = layer.originalName.trim()
     const parentSuffix = parentSuffixByLayerId.get(layerId) ?? ''
-    const key = makeIdentityKey(trimmedLower, parentSuffix)
-    let group = groups.get(key)
-    if (!group) {
-      group = []
-      groups.set(key, group)
+    const member: NamespaceMember = {
+      layer,
+      trackNo,
+      baseName,
+      familyKey: baseName.toLowerCase(),
     }
-    group.push({ layer, trackNo })
+    let members = namespaceGroups.get(parentSuffix)
+    if (!members) {
+      members = []
+      namespaceGroups.set(parentSuffix, members)
+    }
+    members.push(member)
   }
 
-  // 各グループ内を trackNo 昇順にソート(= ボトム優先)
-  for (const group of groups.values()) {
-    group.sort((a, b) => a.trackNo - b.trackNo)
-  }
+  // namespace ごとに displayName を決定する。
+  // 同じ parentSuffix 空間では literal base と自動生成名の衝突を避ける。
+  for (const members of namespaceGroups.values()) {
+    const literalBaseLowers = new Set(members.map(member => member.baseName.toLowerCase()))
+    const usedNames = new Set<string>()
+    const families = new Map<string, NamespaceMember[]>()
 
-  /**
-   * 各 identity の base 名(case 保持、trim 済み)を計算。
-   * 同一 identity に複数候補がある場合は最初のメンバ(trackNo が一番小さい)の名前を使う。
-   *
-   * 衝突判定(literal 予約)用: identity の base 名を lowercase で集めた Set。
-   * これは「他 identity グループの base と衝突するか」の判定に使う。
-   */
-  const baseByIdentity = new Map<string, string>()
-  const reservedBaseLowers = new Set<string>()
-  for (const [key, group] of groups) {
-    const base = group[0].layer.originalName.trim()
-    baseByIdentity.set(key, base)
-    reservedBaseLowers.add(base.toLowerCase())
-  }
-
-  // 各 identity グループ内で displayName を決定
-  for (const [key, group] of groups) {
-    const base = baseByIdentity.get(key)!
-
-    // 先頭メンバは base そのまま(単独 identity ならこれで確定、衝突もしない)
-    displayNames.set(group[0].layer.id, base)
-
-    // 2 番目以降(= 同一 identity の true duplicate)のみ (n) 連番で disambiguate
-    let n = 2
-    for (let i = 1; i < group.length; i++) {
-      while (isNameTaken(`${base}(${n})`, reservedBaseLowers, displayNames)) {
-        n++
+    for (const member of members) {
+      let family = families.get(member.familyKey)
+      if (!family) {
+        family = []
+        families.set(member.familyKey, family)
       }
-      const candidate = `${base}(${n})`
-      displayNames.set(group[i].layer.id, candidate)
-      n++
+      family.push(member)
+    }
+
+    const orderedFamilies = [...families.values()]
+      .map(family => family.sort((a, b) => a.trackNo - b.trackNo))
+      .sort((a, b) => a[0].trackNo - b[0].trackNo)
+
+    for (const family of orderedFamilies) {
+      for (const member of family) {
+        const candidate = allocateDisplayName(member.baseName, literalBaseLowers, usedNames)
+        usedNames.add(candidate.toLowerCase())
+        displayNames.set(member.layer.id, candidate)
+      }
     }
   }
 
@@ -120,21 +120,27 @@ export function computeDisplayNames(
 }
 
 /**
- * `candidate` という displayName が既に使われているかどうかを判定する。
- * - 他 identity グループの base と case-insensitive に衝突するか
- * - 既に生成された displayName と case-insensitive に衝突するか
+ * 同一 family 内で使う displayName を確保する。
  *
- * Windows 等の case-insensitive FS でパス衝突が起きないよう常に lowercase で比較する。
+ * base 名そのままが未使用ならそのまま採用する。
+ * 使われている場合は `(n)` を付けるが、family 内に literal で `A(2)` のような
+ * base 名が存在する場合はそこを避けて次の番号へ進める。
  */
-function isNameTaken(
-  candidate: string,
-  reservedBaseLowers: Set<string>,
-  displayNames: Map<string, string>,
-): boolean {
-  const lower = candidate.toLowerCase()
-  if (reservedBaseLowers.has(lower)) return true
-  for (const existing of displayNames.values()) {
-    if (existing.toLowerCase() === lower) return true
+function allocateDisplayName(
+  baseName: string,
+  literalBaseLowers: Set<string>,
+  usedNames: Set<string>,
+): string {
+  const baseLower = baseName.toLowerCase()
+  if (!usedNames.has(baseLower)) return baseName
+
+  let n = 2
+  while (true) {
+    const candidate = `${baseName}(${n})`
+    const lower = candidate.toLowerCase()
+    if (!usedNames.has(lower) && !literalBaseLowers.has(lower)) {
+      return candidate
+    }
+    n++
   }
-  return false
 }

@@ -4,16 +4,17 @@ import { buildLayerTree } from '../../engine/tree-builder'
 import { makeLayer, makePsd, makeFolder } from '../helpers/psd-factory'
 
 /**
- * identity ベースの displayName 計算テスト。
+ * namespace / family ベースの displayName 計算テスト。
  *
  * 前提:
  * - assignment は `{layerId → trackNo}` の対応付け(assignTracksToFolders の結果を想定)
  * - parentSuffixByLayerId は `{layerId → parentSuffix}` で、processTable 由来の工程 suffix
  *   (通常 "" で、工程フォルダ配下のみ "_e", "_s" 等が入る)
  *
- * Identity = (trim+lowercase name, parentSuffix)
- * - 同一 identity 内に複数メンバ → (n) 連番
- * - 異なる identity は連番付けしない (例: c001 の 作画/A と 演出/A)
+ * namespace = parentSuffix
+ * family = trim 後の name を case-insensitive に見た値
+ * - 同一 family 内に複数メンバ → (n) 連番
+ * - 異なる namespace は連番付けしない (例: c001 の 作画/A と 演出/A)
  */
 describe('computeDisplayNames', () => {
   const EMPTY_SUFFIX = new Map<string, string>()
@@ -33,7 +34,7 @@ describe('computeDisplayNames', () => {
     expect(result.get(layerA.id)).toBe('A')
   })
 
-  it('同一 identity 2 つ → "A", "A(2)" (ボトム優先 = trackNo 昇順)', () => {
+  it('同一 family 2 つ → "A", "A(2)" (ボトム優先 = trackNo 昇順)', () => {
     const aBottom = makeFolder('A', [makeLayer({ name: '1' })])
     const aTop = makeFolder('A', [makeLayer({ name: '2' })])
     const psd = makePsd({ children: [aBottom, aTop] })  // ag-psd ボトムファースト
@@ -52,7 +53,7 @@ describe('computeDisplayNames', () => {
     expect(result.get(treeTop.id)).toBe('A(2)')
   })
 
-  it('同一 identity 3 つ → "A", "A(2)", "A(3)"', () => {
+  it('同一 family 3 つ → "A", "A(2)", "A(3)"', () => {
     const a1 = makeFolder('A', [makeLayer({ name: '1' })])
     const a2 = makeFolder('A', [makeLayer({ name: '2' })])
     const a3 = makeFolder('A', [makeLayer({ name: '3' })])
@@ -70,7 +71,7 @@ describe('computeDisplayNames', () => {
     expect(result.get(t0.id)).toBe('A(3)')
   })
 
-  it('末尾空白 "A " と "A" は同一 identity (trim 正規化), ボトム優先で連番', () => {
+  it('末尾空白 "A " と "A" は同じ family (trim 後同名), ボトム優先で連番', () => {
     const aSpace = makeFolder('A ', [makeLayer({ name: '1' })])
     const aNormal = makeFolder('A', [makeLayer({ name: '2' })])
     const psd = makePsd({ children: [aSpace, aNormal] })
@@ -84,13 +85,13 @@ describe('computeDisplayNames', () => {
     ])
     const result = computeDisplayNames(tree, assignment, EMPTY_SUFFIX)
 
-    // ボトム("A ")は trim されて base "A"、次の同一 identity メンバは "A(2)"
+    // ボトム("A ")は trim されて base "A"、次の同一 family メンバは "A(2)"
     expect(result.get(treeSpace.id)).toBe('A')
     expect(result.get(treeNormal.id)).toBe('A(2)')
   })
 
-  it('c001 ケース: 同名 A 2 つだが parentSuffix が異なる → 両方 "A" (別 identity)', () => {
-    // 作画/A (suffix="") と 演出/A (suffix="_e") のように identity が分かれる場合、
+  it('c001 ケース: 同名 A 2 つだが parentSuffix が異なる → 両方 "A" (別 namespace)', () => {
+    // 作画/A (suffix="") と 演出/A (suffix="_e") のように namespace が分かれる場合、
     // どちらも displayName "A" で、fileName で parentSuffix による分岐が行われる
     const workA = makeFolder('A', [makeLayer({ name: '1' })])
     const enshutsuA = makeFolder('A', [makeLayer({ name: '2' })])
@@ -110,13 +111,13 @@ describe('computeDisplayNames', () => {
     ])
     const result = computeDisplayNames(tree, assignment, parentSuffixes)
 
-    // 両方とも displayName "A"(別 identity なので連番なし)
+    // 両方とも displayName "A"(別 namespace なので連番なし)
     expect(result.get(treeWork.id)).toBe('A')
     expect(result.get(treeEnshutsu.id)).toBe('A')
   })
 
-  it('同一 identity 3 つ + 別 identity 1 つ: 連番は identity 内だけ', () => {
-    // 3 つの同名 A (全部 parentSuffix="") と 1 つの別 identity A (parentSuffix="_e")
+  it('同一 family 3 つ + 別 namespace 1 つ: 連番は同一 namespace 内だけ', () => {
+    // 3 つの同名 A (全部 parentSuffix="") と 1 つの別 namespace A (parentSuffix="_e")
     const a1 = makeFolder('A', [makeLayer({ name: '1' })])
     const a2 = makeFolder('A', [makeLayer({ name: '2' })])
     const a3 = makeFolder('A', [makeLayer({ name: '3' })])
@@ -132,7 +133,7 @@ describe('computeDisplayNames', () => {
       [t1.id, 2],
       [t0.id, 3],  // top
     ])
-    // t0 だけ別 identity (suffix="_e"), 残り 3 つは suffix=""
+    // t0 だけ別 namespace (suffix="_e"), 残り 3 つは suffix=""
     const parentSuffixes = new Map<string, string>([
       [t3.id, ''],
       [t2.id, ''],
@@ -141,17 +142,17 @@ describe('computeDisplayNames', () => {
     ])
     const result = computeDisplayNames(tree, assignment, parentSuffixes)
 
-    // Identity (a, ""): 3 members → "A", "A(2)", "A(3)"
+    // namespace "" / family "a": 3 members → "A", "A(2)", "A(3)"
     expect(result.get(t3.id)).toBe('A')  // trackNo 0
     expect(result.get(t2.id)).toBe('A(2)')  // trackNo 1
     expect(result.get(t1.id)).toBe('A(3)')  // trackNo 2
-    // Identity (a, "_e"): 1 member → "A"
+    // namespace "_e": 1 member → "A"
     expect(result.get(t0.id)).toBe('A')
   })
 
-  it('literal "A(2)" が別 identity に存在 → 自動番号は (3) にスキップ', () => {
+  it('literal "A(2)" が同じ parentSuffix 空間に存在 → 自動番号は (3) にスキップ', () => {
     // ツリー: A, A, A(2) の 3 フォルダ。XDTS は全部割当
-    // A 2 つは同一 identity (a, ""), literal "A(2)" は別 identity (a(2), "")
+    // A 2 つは同一 family、literal "A(2)" は別 family だが同じ namespace
     // 期待: A → "A", A → "A(2)" だが literal と衝突 → "A(3)"
     const a1 = makeFolder('A', [makeLayer({ name: '1' })])
     const a2 = makeFolder('A', [makeLayer({ name: '2' })])
@@ -169,10 +170,10 @@ describe('computeDisplayNames', () => {
     ])
     const result = computeDisplayNames(tree, assignment, EMPTY_SUFFIX)
 
-    // Identity (a, ""): [treeA1, treeA2] → "A", (2 をスキップして) "A(3)"
+    // family "a": [treeA1, treeA2] → "A", (2 をスキップして) "A(3)"
     expect(result.get(treeA1.id)).toBe('A')
     expect(result.get(treeA2.id)).toBe('A(3)')
-    // Identity (a(2), ""): literal が base "A(2)" そのまま
+    // literal family "a(2)": base "A(2)" をそのまま使う
     expect(result.get(treeLiteral.id)).toBe('A(2)')
   })
 
@@ -198,6 +199,24 @@ describe('computeDisplayNames', () => {
     expect(result.get(treeLiteral.id)).toBe('a(2)')
   })
 
+  it('A と a は別 raw 名を保持しつつ、同じ family 内で連番解決する', () => {
+    const upperA = makeFolder('A', [makeLayer({ name: '1' })])
+    const lowerA = makeFolder('a', [makeLayer({ name: '2' })])
+    const psd = makePsd({ children: [upperA, lowerA] })
+    const tree = buildLayerTree(psd)
+    const treeLower = tree.find(layer => layer.originalName === 'A')!
+    const treeUpper = tree.find(layer => layer.originalName === 'a')!
+
+    const assignment = new Map<string, number>([
+      [treeLower.id, 0],
+      [treeUpper.id, 1],
+    ])
+    const result = computeDisplayNames(tree, assignment, EMPTY_SUFFIX)
+
+    expect(result.get(treeLower.id)).toBe('A')
+    expect(result.get(treeUpper.id)).toBe('a(2)')
+  })
+
   it('異なる名前グループは独立に扱う', () => {
     const a1 = makeFolder('A', [makeLayer({ name: '1' })])
     const a2 = makeFolder('A', [makeLayer({ name: '2' })])
@@ -221,7 +240,7 @@ describe('computeDisplayNames', () => {
     expect(result.get(tB2.id)).toBe('B(2)')
   })
 
-  it('yc4 シナリオ: 同一 identity 3 つ(うち 1 つは末尾空白)→ "A", "A(2)", "A(3)"', () => {
+  it('yc4 シナリオ: 同一 family 3 つ(うち 1 つは末尾空白)→ "A", "A(2)", "A(3)"', () => {
     const aSpace = makeFolder('A ', [makeLayer({ name: '1' })])  // bottom
     const aMiddle = makeFolder('A', [makeLayer({ name: '2' })])
     const aTop = makeFolder('A', [makeLayer({ name: '4' })])  // top

@@ -301,9 +301,9 @@ describe('extractAllEntries', () => {
     expect(flatNames).not.toContain('A_あ_2.jpg')
   })
 
-  it('同名アニメフォルダは parentSuffix が異なれば別 identity で両方 "A" (process variants)', () => {
-    // #1 対応(修正後): identity = (name, parentSuffix)。
-    // 同名でも parentSuffix が違えば process variants として別 identity とみなし、
+  it('同名アニメフォルダは parentSuffix が異なれば別 namespace で両方 "A" (process variants)', () => {
+    // #1 対応(修正後): namespace = parentSuffix。
+    // 同名でも parentSuffix が違えば process variants として別 namespace とみなし、
     // 両方とも base 名 "A" を displayName にして、parentSuffix で最終的に区別する。
     // (c001 の 作画/A と 演出/A のような実パターン)
     const cell1a = makeLayer({ name: '1' })
@@ -329,12 +329,32 @@ describe('extractAllEntries', () => {
     ])
     const result = extractAllEntries(tree, settings, 100, 100, 'white', false)
     const flatNames = result.map(e => e.flatName).sort()
-    // Identity (a, "_bg") と (a, "_en") は別なので両方 "A"、parentSuffix で分岐
+    // namespace "_bg" と "_en" は別なので両方 "A"、parentSuffix で分岐
     expect(flatNames).toContain('A_0001_bg.jpg')
     expect(flatNames).toContain('A_0001_en.jpg')
-    // (n) 連番は付かない(identity が別)
+    // (n) 連番は付かない(namespace が別)
     expect(flatNames).not.toContain('A(2)_0001_en.jpg')
     expect(flatNames).not.toContain('A(2)_0001_bg.jpg')
+  })
+
+  it('A と a は別トラックとして割当し、出力名でも区別する', () => {
+    const animUpper = makeAnimationFolder('A', [makeLayer({ name: '1' })])
+    const animLower = makeAnimationFolder('a', [makeLayer({ name: '1' })])
+    const tree = buildLayerTree(makePsd({ children: [animUpper, animLower] }))
+
+    const xdts: XdtsData = {
+      tracks: [
+        { name: 'A', trackNo: 0, cellNames: [], frames: [] },
+        { name: 'a', trackNo: 1, cellNames: [], frames: [] },
+      ],
+      version: 5, header: { cut: '1', scene: '1' }, timeTableName: 'タイムライン1', duration: 72, fps: 24,
+    }
+    detectAnimationFoldersByXdts(tree, xdts)
+
+    const result = extractAllEntries(tree, DEFAULT_SETTINGS, 100, 100, 'white', false)
+    const flatNames = result.map(e => e.flatName).sort()
+    expect(flatNames).toContain('A_0001.jpg')
+    expect(flatNames).toContain('a(2)_0001.jpg')
   })
 
   it('同名アニメフォルダの階層フォルダ名は (n) で区別される', () => {

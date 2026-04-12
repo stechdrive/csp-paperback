@@ -582,9 +582,9 @@ export function extractAllEntries(
   // displayName マップを構築する。
   // 各 anim folder に対して出力フォルダ名 = ファイル名プレフィックスとなる単一の文字列を返す。
   //
-  // Identity = (trim+lowercase name, parentSuffix)。
-  // 同名でも parentSuffix が異なれば別 identity(process variants)として扱い、
-  // 同一 identity に複数候補がある場合のみ (n) 連番で disambiguate する。
+  // namespace = parentSuffix、family = trim 後 name の case-insensitive 比較。
+  // 同名でも parentSuffix が異なれば別 namespace(process variants)として扱い、
+  // 同一 family に複数候補がある場合のみ (n) 連番で disambiguate する。
   //
   // XDTS がある場合も読み込み時に確定した trackNo 割当を使い、
   // 手動指定分だけその後ろに疑似 trackNo を追加する。
@@ -845,7 +845,7 @@ export function resolveParentSuffix(
 
 /**
  * ツリー全体の「anim folder ID → parentSuffix」Map を構築する(useOutputPreview 等の外部利用向け)。
- * computeDisplayNames に渡すため、anim folder の identity 計算に必要。
+ * computeDisplayNames に渡すため、anim folder の parentSuffix namespace 計算に必要。
  */
 export function buildParentSuffixMap(
   tree: CspLayer[],
