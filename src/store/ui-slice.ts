@@ -4,6 +4,7 @@ import type { XdtsTrack } from '../types/xdts'
 import { findFirstFrameOfCell, resolveCellsAtFrameByTrackNo } from '../utils/xdts-parser'
 import { buildDefaultVisibilityOverrides } from '../utils/default-visibility'
 import { DEFAULT_MOBILE_UI_SCALE, clampMobileUiScale } from '../utils/mobile-ui-scale'
+import { findTimelineCellChildIndex } from '../utils/anim-cell-selection'
 import type { AppStore } from './index'
 
 export interface UiSlice {
@@ -71,13 +72,6 @@ function findAnimFolderByTrackNo(
   return null
 }
 
-function findTimelineCellIndex(folder: CspLayer, cellName: string): number {
-  for (let i = folder.children.length - 1; i >= 0; i--) {
-    if (folder.children[i].originalName === cellName) return i
-  }
-  return -1
-}
-
 // -------------------------------------------------------
 
 export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get) => ({
@@ -139,7 +133,7 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
                 // SYMBOL_NULL_CELL: カラ（何も表示しない）
                 newSelectedCells.set(otherFolder.id, -1)
               } else {
-                const idx = findTimelineCellIndex(otherFolder, resolvedCellName)
+                const idx = findTimelineCellChildIndex(otherFolder, resolvedCellName)
                 if (idx >= 0) newSelectedCells.set(otherFolder.id, idx)
               }
             }
@@ -166,7 +160,7 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
         // カラ（何も表示しない）
         newSelectedCells.set(folder.id, -1)
       } else {
-        const idx = findTimelineCellIndex(folder, cellName)
+        const idx = findTimelineCellChildIndex(folder, cellName)
         if (idx >= 0) newSelectedCells.set(folder.id, idx)
       }
     }

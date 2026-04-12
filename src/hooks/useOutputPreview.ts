@@ -16,6 +16,7 @@ import { computeDisplayNames } from '../engine/anim-folder-display-name'
 import { flattenTree, compositeRoot } from '../engine/flatten'
 import { replaceExtension } from '../utils/image-export'
 import { collectMembersInTreeOrder, buildMemberFlatsWithOverride } from '../utils/virtual-set-utils'
+import { resolveSelectedAnimCell } from '../utils/anim-cell-selection'
 import type { CspLayer, OutputEntry, ProjectSettings, OutputConfig, OutputFormat } from '../types'
 
 export interface OutputPreviewEntry {
@@ -161,15 +162,11 @@ function previewAnimFolder(
   const { lower: lowerContextFlats, upper: localUpperFlats } =
     collectLocalSiblingContext(animFolderId, layerTree, docWidth, docHeight)
 
-  const visibleChildren = animFolder.children.filter(c => !c.hidden && !c.uiHidden)
-  if (visibleChildren.length === 0) return []
-
-  // selectedCells のインデックスは全 children 基準なので visible に変換
-  const cellIndex = rawCellIndex ?? 0
-  const targetCell = animFolder.children[cellIndex]
-  const visibleIdx = targetCell ? visibleChildren.findIndex(c => c.id === targetCell.id) : -1
-  const clampedIndex = visibleIdx >= 0 ? visibleIdx : 0
-  const selectedCell = visibleChildren[clampedIndex]
+  const selection = resolveSelectedAnimCell(animFolder, rawCellIndex)
+  if (!selection) return []
+  const visibleChildren = selection.visibleChildren
+  const clampedIndex = selection.visibleIndex
+  const selectedCell = selection.cell
 
   const parentSuffix = resolveParentSuffix(animFolderId, layerTree, projectSettings.processTable)
 

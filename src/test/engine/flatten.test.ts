@@ -144,6 +144,25 @@ describe('flattenTree', () => {
     expect(flat).toHaveLength(0)
   })
 
+  it('hidden な同名セルを指した場合も unrelated な visible セルには丸めない', () => {
+    const hiddenA = makeLayer({ name: 'A', hidden: true })
+    const visibleA = makeLayer({ name: 'A' })
+    const visibleB = makeLayer({ name: 'B' })
+    const animFolder = makeAnimationFolder('A', [hiddenA, visibleA, visibleB])
+    const tree = buildLayerTree(makePsd({ children: [animFolder] }))
+    tree[0].isAnimationFolder = true
+    tree[0].animationFolder = { detectedBy: 'manual', trackName: 'A' }
+
+    const visibleALayer = tree[0].children.find(c => c.originalName === 'A' && !c.hidden)!
+    visibleALayer.agPsdRef.canvas = undefined
+
+    const hiddenAIndex = tree[0].children.findIndex(c => c.originalName === 'A' && c.hidden)
+    const selectedCells = new Map([[tree[0].id, hiddenAIndex]])
+    const flat = flattenTree(tree, 100, 100, selectedCells)
+
+    expect(flat).toHaveLength(0)
+  })
+
   it('非表示の子を持つPass Throughフォルダは空配列を返す', () => {
     const child = makeLayer({ name: 'hidden', hidden: true })
     const folder = makePassThroughFolder('group', [child])

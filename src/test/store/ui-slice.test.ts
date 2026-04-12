@@ -95,6 +95,36 @@ describe('ui-slice XDTS timeline sync', () => {
     expect(selected.get(treeAnimA.id)).toBe(1)
   })
 
+  it('hidden な同名セルがボトムなら、その children index を保持する', () => {
+    const hiddenA = makeFolder('A', [makeLayer({ name: 'hidden-content' })])
+    hiddenA.hidden = true
+    const visibleA = makeFolder('A', [makeLayer({ name: 'visible-content' })])
+    const visibleB = makeFolder('B', [makeLayer({ name: 'visible-content' })])
+    const animA = makeFolder('A', [hiddenA, visibleA, visibleB])
+    const psd = makePsd({ children: [animA] })
+    const tree = buildLayerTree(psd)
+    const xdts: XdtsData = {
+      tracks: [
+        { name: 'A', trackNo: 0, cellNames: ['A', 'B'], frames: [{ frameIndex: 0, cellName: 'A' }] },
+      ],
+      version: 5,
+      header: { cut: '1', scene: '1' },
+      timeTableName: 'タイムライン1',
+      duration: 24,
+      fps: 24,
+    }
+    detectAnimationFoldersByXdts(tree, xdts)
+
+    useAppStore.setState({ layerTree: tree, xdtsData: xdts })
+    useAppStore.getState().seekToFrame(0)
+
+    const hiddenAIndex = tree[0].children.findIndex(
+      child => child.originalName === 'A' && child.hidden,
+    )
+    const selected = useAppStore.getState().selectedCells
+    expect(selected.get(tree[0].id)).toBe(hiddenAIndex)
+  })
+
   it('手動アニメフォルダのセル選択は同名XDTSトラックへ同期しない', () => {
     const bottomA = makeFolder('A', [makeLayer({ name: '1' }), makeLayer({ name: '2' })])
     const topA = makeFolder('A', [makeLayer({ name: '1' }), makeLayer({ name: '2' })])

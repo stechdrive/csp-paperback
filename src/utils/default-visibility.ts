@@ -3,6 +3,11 @@ import type { CspLayer, XdtsData, XdtsTrack } from '../types'
 /**
  * PSD 読み込み時・表示状態リセット時に使うアプリ側の初期 visibility override。
  *
+ * ここで返す Map の boolean は「visible」ではなく「uiHidden」の意味。
+ * - true  = UI上で非表示
+ * - false = UI上で表示
+ * 仮想セットの visibilityOverrides（visible=true/false）とは意味が逆なので注意。
+ *
  * - PSD 上で非表示の _ 自動マークフォルダは、出力対象として扱うため初期表示ONにする
  * - XDTS で検出したアニメーションフォルダでは、タイムラインから到達できないセルを初期表示OFFにする
  */
@@ -38,6 +43,7 @@ export function addXdtsUnusedCellHiddenOverrides(
           for (const child of layer.children) {
             if (usedCellIds.has(child.id)) continue
             if (overwrite || !overrides.has(child.id)) {
+              // visibilityOverrides は uiHidden の意味なので true = 非表示。
               overrides.set(child.id, true)
             }
           }
@@ -57,6 +63,7 @@ function addAutoMarkedShowOverrides(
   overrides: Map<string, boolean>,
 ): void {
   for (const layer of layers) {
+    // visibilityOverrides は uiHidden の意味なので false = 表示。
     if (layer.autoMarked && layer.hidden) overrides.set(layer.id, false)
     if (layer.children.length > 0) addAutoMarkedShowOverrides(layer.children, overrides)
   }
