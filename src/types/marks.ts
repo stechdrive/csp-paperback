@@ -16,5 +16,6 @@ export interface VirtualSet {
   insertionPosition: 'above' | 'below' // insertionLayerIdの上/下どちらに差し込むか
   members: VirtualSetMember[]    // メンバーレイヤー一覧（フォルダも可）
   expandToAnimationCells: boolean // 差し込み位置がアニメフォルダなら全セルに展開
+  // VirtualSet 側は visible の意味。グローバル store の visibilityOverrides(uiHidden) とは逆。
   visibilityOverrides: Record<string, boolean> // layerId → 表示(true)/非表示(false)
 }
