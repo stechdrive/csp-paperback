@@ -59,6 +59,53 @@ describe('ZIP出力パス生成（ロジック単体テスト）', () => {
  * 別の依存が必要で、本リポのスコープ外)。
  */
 describe('buildZipStream', () => {
+  function readUint16LE(bytes: Uint8Array, offset: number): number {
+    return bytes[offset] | (bytes[offset + 1] << 8)
+  }
+
+  function readUint32LE(bytes: Uint8Array, offset: number): number {
+    return (
+      bytes[offset] |
+      (bytes[offset + 1] << 8) |
+      (bytes[offset + 2] << 16) |
+      (bytes[offset + 3] << 24)
+    ) >>> 0
+  }
+
+  function listZipEntryNames(zipBytes: Uint8Array): string[] {
+    let eocdOffset = -1
+    for (let i = zipBytes.length - 22; i >= 0; i--) {
+      if (readUint32LE(zipBytes, i) === 0x06054b50) {
+        eocdOffset = i
+        break
+      }
+    }
+    if (eocdOffset < 0) throw new Error('End of central directory not found')
+
+    const centralDirectorySize = readUint32LE(zipBytes, eocdOffset + 12)
+    const centralDirectoryOffset = readUint32LE(zipBytes, eocdOffset + 16)
+    const centralDirectoryEnd = centralDirectoryOffset + centralDirectorySize
+
+    const decoder = new TextDecoder()
+    const names: string[] = []
+    let offset = centralDirectoryOffset
+    while (offset < centralDirectoryEnd) {
+      if (readUint32LE(zipBytes, offset) !== 0x02014b50) {
+        throw new Error(`Unexpected central directory signature at ${offset}`)
+      }
+      const fileNameLength = readUint16LE(zipBytes, offset + 28)
+      const extraFieldLength = readUint16LE(zipBytes, offset + 30)
+      const fileCommentLength = readUint16LE(zipBytes, offset + 32)
+
+      const nameStart = offset + 46
+      const nameEnd = nameStart + fileNameLength
+      names.push(decoder.decode(zipBytes.slice(nameStart, nameEnd)))
+
+      offset = nameEnd + extraFieldLength + fileCommentLength
+    }
+    return names
+  }
+
   function makeTestCanvas(): HTMLCanvasElement {
     const c = document.createElement('canvas')
     c.width = 8
@@ -89,6 +136,42 @@ describe('buildZipStream', () => {
     const entries = [makeEntry('A/A_0001.jpg', 'A_0001.jpg')]
     const stream = buildZipStream(entries, BASE_CONFIG, 0, 0)
     expect(stream).toBeInstanceOf(ReadableStream)
+  })
+
+  it('PNG形式ではZIPエントリ名拡張子も.pngになる', async () => {
+    const entries = [
+      makeEntry('A/A_0001.jpg', 'A_0001.jpg'),
+      makeEntry('B/B_0001.jpg', 'B_0001.jpg'),
+    ]
+    const config: OutputConfig = {
+      ...BASE_CONFIG,
+      format: 'png',
+      background: 'transparent',
+      structure: 'hierarchy',
+    }
+
+    const stream = buildZipStream(entries, config, 0, 0)
+    const zipBytes = new Uint8Array(await new Response(stream).arrayBuffer())
+
+    expect(listZipEntryNames(zipBytes)).toEqual(['A/A_0001.png', 'B/B_0001.png'])
+  })
+
+  it('PNG形式のフラット展開でもZIPエントリ名拡張子が.pngになる', async () => {
+    const entries = [
+      makeEntry('A/A_0001.jpg', 'A_0001.jpg'),
+      makeEntry('B/B_0001.jpg', 'B_0001.jpg'),
+    ]
+    const config: OutputConfig = {
+      ...BASE_CONFIG,
+      format: 'png',
+      background: 'transparent',
+      structure: 'flat',
+    }
+
+    const stream = buildZipStream(entries, config, 0, 0)
+    const zipBytes = new Uint8Array(await new Response(stream).arrayBuffer())
+
+    expect(listZipEntryNames(zipBytes)).toEqual(['A_0001.png', 'B_0001.png'])
   })
 
   it('ストリーム消費時に onProgress が done/total で呼ばれる', async () => {

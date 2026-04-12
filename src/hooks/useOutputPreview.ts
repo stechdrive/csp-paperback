@@ -14,13 +14,26 @@ import {
 } from '../engine/cell-extractor'
 import { computeDisplayNames } from '../engine/anim-folder-display-name'
 import { flattenTree, compositeRoot } from '../engine/flatten'
+import { replaceExtension } from '../utils/image-export'
 import { collectMembersInTreeOrder, buildMemberFlatsWithOverride } from '../utils/virtual-set-utils'
-import type { CspLayer, OutputEntry, ProjectSettings, OutputConfig } from '../types'
+import type { CspLayer, OutputEntry, ProjectSettings, OutputConfig, OutputFormat } from '../types'
 
 export interface OutputPreviewEntry {
   canvas: HTMLCanvasElement
   flatName: string
   path: string
+}
+
+function replacePreviewExtension(fileName: string, format: OutputFormat): string {
+  return fileName ? replaceExtension(fileName, format) : fileName
+}
+
+function mapPreviewEntries(entries: OutputEntry[], format: OutputFormat): OutputPreviewEntry[] {
+  return entries.map(e => ({
+    canvas: e.canvas,
+    flatName: replacePreviewExtension(e.flatName, format),
+    path: replacePreviewExtension(e.path, format),
+  }))
 }
 
 /**
@@ -62,7 +75,7 @@ export function useOutputPreview(): OutputPreviewEntry[] {
         const entries = extractVirtualSetEntries(
           layerTree, [vs], docWidth, docHeight, outputConfig.background,
         )
-        return entries.map(e => ({ canvas: e.canvas, flatName: e.flatName, path: e.path }))
+        return mapPreviewEntries(entries, outputConfig.format)
       }
 
       // 未配置: グローバルコンテキストで仮プレビュー（ZIP出力対象外）
@@ -113,7 +126,7 @@ export function useOutputPreview(): OutputPreviewEntry[] {
       const canvas = compositeRoot(
         [...lower, ...layerFlats, ...upper], docWidth, docHeight, outputConfig.background,
       )
-      const fileName = `${markedLayer.originalName}.jpg`
+      const fileName = replacePreviewExtension(`${markedLayer.originalName}.jpg`, outputConfig.format)
       return [{ canvas, flatName: fileName, path: fileName }]
     }
 
@@ -196,7 +209,7 @@ function previewAnimFolder(
     // 一致なし（本体レイヤー等）の場合はセル全エントリをフォールバック表示
   }
 
-  return entries.map(e => ({ canvas: e.canvas, flatName: e.flatName, path: e.path }))
+  return mapPreviewEntries(entries, outputConfig.format)
 }
 
 /**

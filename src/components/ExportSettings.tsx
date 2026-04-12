@@ -19,13 +19,14 @@ function buildNameSample(
   mode: 'sequence' | 'cellname',
   structure: 'hierarchy' | 'flat',
   processSuffixPosition: 'after-cell' | 'before-cell',
+  format: 'jpg' | 'png',
 ): string {
   const trackName = 'A'
   const cellLabel = mode === 'sequence' ? '0001' : 'ア'
   const processSuffix = '_e'
   const fileName = processSuffixPosition === 'before-cell'
-    ? `${trackName}${processSuffix}_${cellLabel}.jpg`
-    : `${trackName}_${cellLabel}${processSuffix}.jpg`
+    ? `${trackName}${processSuffix}_${cellLabel}.${format}`
+    : `${trackName}_${cellLabel}${processSuffix}.${format}`
   return structure === 'hierarchy' ? `${trackName}/${fileName}` : fileName
 }
 
@@ -54,6 +55,7 @@ export function ExportSettings() {
     projectSettings.cellNamingMode,
     outputConfig.structure,
     outputConfig.processSuffixPosition,
+    outputConfig.format,
   )
 
   const handleAllOn = () => {
