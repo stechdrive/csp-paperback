@@ -164,6 +164,11 @@ export function PreviewPanel() {
               </div>
             </div>
 
+            <div className={styles.emptyWarning}>
+              <span className={styles.emptyWarningIcon}>⚠</span>
+              <span>書き出し前の確認：書き出したい素材が入っているアニメーションフォルダは、親フォルダも含めて表示状態にしてください。</span>
+            </div>
+
             <div className={styles.emptyTips}>
               <div className={styles.emptyTipsTitle}>PSDとXDTSを読み込むと、タイムライン上のアニメーションフォルダは自動検出されます。</div>
               <div className={styles.emptyTip}>

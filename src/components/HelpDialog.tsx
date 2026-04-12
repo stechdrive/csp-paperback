@@ -816,6 +816,11 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 そのフォルダ直下の子レイヤー/子フォルダがセルとして出力されます。
               </p>
 
+              <div className={styles.calloutTip}>
+                <span className={styles.strong}>⚠ 書き出し前の確認：</span>
+                書き出したい素材が入っているアニメーションフォルダは、親フォルダも含めて表示状態にしてください。
+              </div>
+
               <div className={styles.layerDiagram}>
                 <div className={styles.layerRow}>
                   <span className={styles.iconFolder}>📁</span>
