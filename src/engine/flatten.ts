@@ -1,6 +1,7 @@
 import type { CspLayer, FlatLayer } from '../types'
 import { collectAnimFolderAncestorIds } from './tree-builder'
 import { applyLayerMask, compositeGroup, compositeStack, createCanvas } from './compositor'
+import { resolveSelectedAnimCell } from '../utils/anim-cell-selection'
 
 /**
  * コアフラット化アルゴリズム
@@ -40,15 +41,9 @@ export function flattenTree(
     // アニメーションフォルダ（例外：アニメフォルダ自身はcell-extractorが担当）
     // プレビュー目的では選択セルを合成して1枚にする
     if (layer.isAnimationFolder) {
-      const cellIndex = selectedCellIndices?.get(layer.id) ?? 0
-      // カラ（-1）: このトラックは何も表示しない
-      if (cellIndex < 0) return []
-      const visibleChildren = layer.children.filter(c => !c.hidden && !c.uiHidden)
-      if (visibleChildren.length === 0) return []
-      const targetCell = layer.children[cellIndex]
-      const selectedCell = targetCell && !targetCell.hidden && !targetCell.uiHidden
-        ? targetCell
-        : visibleChildren[0]
+      const selection = resolveSelectedAnimCell(layer, selectedCellIndices?.get(layer.id))
+      if (!selection) return []
+      const selectedCell = selection.cell
       const cellFlats = flattenLayer(selectedCell)
       if (cellFlats.length === 0) return []
       const rawCanvas = compositeGroup(cellFlats, docWidth, docHeight)

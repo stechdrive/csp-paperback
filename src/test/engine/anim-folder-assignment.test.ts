@@ -6,10 +6,20 @@ import type { CspLayer, XdtsTrack } from '../../types'
 
 /**
  * XdtsTrack の簡易ファクトリ
- * frames/cellNames は空で OK(assignTracksToFolders は名前と trackNo しか見ない)
+ * frames/cellNames は省略可。構造優先の検証では実セル名を入れる。
  */
-function makeTrack(name: string, trackNo: number): XdtsTrack {
-  return { name, trackNo, cellNames: [], frames: [] }
+function makeTrack(
+  name: string,
+  trackNo: number,
+  cellNames: string[] = [],
+  frameCellNames: Array<string | null> = [],
+): XdtsTrack {
+  return {
+    name,
+    trackNo,
+    cellNames,
+    frames: frameCellNames.map((cellName, i) => ({ frameIndex: i, cellName })),
+  }
 }
 
 /** id → CspLayer を再帰的に引くユーティリティ */
@@ -43,6 +53,37 @@ describe('assignTracksToFolders', () => {
     expect(result.unmatchedTracks).toHaveLength(0)
     const layerA = findLayer(tree, ['A'])!
     expect(result.assignment.get(layerA.id)).toBe(0)
+  })
+
+  it('同名の子セルを含む親フォルダを、セル名一致で優先する', () => {
+    // 構造:
+    // A
+    // ├─ A(hidden)  ← 子セル
+    // ├─ A         ← 子セル
+    // └─ B         ← 子セル
+    //
+    // track "A" の実セル名集合は [A, B]。
+    // 現実にアニメーションフォルダとして選ぶべきなのは親の A で、
+    // 子の A はセルフォルダとして扱うべき。
+    const hiddenA = makeFolder('A', [makeLayer({ name: 'hidden-content' })])
+    hiddenA.hidden = true
+    const visibleA = makeFolder('A', [makeLayer({ name: 'visible-content' })])
+    const visibleB = makeFolder('B', [makeLayer({ name: 'visible-content' })])
+    const rootA = makeFolder('A', [hiddenA, visibleA, visibleB])
+    const psd = makePsd({ children: [rootA] })
+    const tree = buildLayerTree(psd)
+
+    const result = assignTracksToFolders(tree, [
+      makeTrack('A', 0, ['A', 'B'], ['A', 'A', 'B']),
+    ])
+
+    const root = findLayer(tree, ['A'])!
+    const childHiddenA = findLayer(tree, ['A', 'A'])!
+
+    expect(result.assignment.size).toBe(1)
+    expect(result.unmatchedTracks).toHaveLength(0)
+    expect(result.assignment.get(root.id)).toBe(0)
+    expect(result.assignment.get(childHiddenA.id)).toBeUndefined()
   })
 
   it('同名 2 候補 × 2 トラック → ボトム優先で trackNo 0/1 に割当', () => {

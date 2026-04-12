@@ -66,4 +66,31 @@ describe('useOutputPreview', () => {
     expect(result.current[0].flatName).toBe('_撮影指示.png')
     expect(result.current[0].path).toBe('_撮影指示.png')
   })
+
+  it('hidden なセルを指したプレビューは別セルへ丸めず空になる', () => {
+    const hiddenA = makeFolder('A', [makeLayer({ name: 'hidden-content' })])
+    hiddenA.hidden = true
+    const visibleA = makeFolder('A', [makeLayer({ name: 'visible-content' })])
+    const visibleB = makeFolder('B', [makeLayer({ name: 'visible-content' })])
+    const animFolder = makeAnimationFolder('A', [hiddenA, visibleA, visibleB])
+    const tree = buildLayerTree(makePsd({ children: [animFolder] }))
+    tree[0].isAnimationFolder = true
+    tree[0].animationFolder = { detectedBy: 'manual', trackName: 'A' }
+
+    const hiddenAIndex = tree[0].children.findIndex(child => child.originalName === 'A' && child.hidden)
+
+    useAppStore.setState({
+      layerTree: tree,
+      docWidth: 100,
+      docHeight: 100,
+      outputConfig: { ...DEFAULT_OUTPUT_CONFIG, format: 'jpg', background: 'white' },
+      projectSettings: { ...useAppStore.getState().projectSettings, cellNamingMode: 'cellname' },
+      focusedAnimFolderId: tree[0].id,
+      selectedCells: new Map([[tree[0].id, hiddenAIndex]]),
+    })
+
+    const { result } = renderHook(() => useOutputPreview())
+
+    expect(result.current).toHaveLength(0)
+  })
 })
