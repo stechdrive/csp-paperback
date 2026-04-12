@@ -3,21 +3,21 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 0.75rem;
-  background: rgba(250, 179, 135, 0.12);
-  border: 1px solid rgba(250, 179, 135, 0.5);
+  background: rgba(var(--color-orange-rgb), 0.12);
+  border: 1px solid rgba(var(--color-orange-rgb), 0.5);
   border-radius: 4px;
-  color: #fab387;
+  color: var(--color-orange);
   font-size: 0.78rem;
   cursor: pointer;
   transition: background 0.15s;
 }
 
 .banner:hover {
-  background: rgba(250, 179, 135, 0.18);
+  background: rgba(var(--color-orange-rgb), 0.18);
 }
 
 .banner:focus-visible {
-  outline: 2px solid #fab387;
+  outline: 2px solid var(--color-orange);
   outline-offset: 1px;
 }
 
@@ -48,8 +48,8 @@
 }
 
 .dialog {
-  background: #1e1e2e;
-  border: 1px solid #fab387;
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-orange);
   border-radius: 8px;
   width: 420px;
   max-width: 90vw;
@@ -62,12 +62,12 @@
 .title {
   font-size: 0.95rem;
   font-weight: 700;
-  color: #fab387;
+  color: var(--color-orange);
 }
 
 .description {
   font-size: 0.78rem;
-  color: #bac2de;
+  color: var(--color-text-secondary);
   line-height: 1.5;
 }
 
@@ -87,21 +87,21 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.4rem 0.6rem;
-  background: #11111b;
-  border: 1px solid #313244;
+  background: var(--color-bg-app);
+  border: 1px solid var(--color-border-subtle);
   border-radius: 3px;
   font-size: 0.8rem;
 }
 
 .trackNo {
-  color: #6c7086;
+  color: var(--color-text-subtle);
   font-family: 'Consolas', 'Monaco', monospace;
   font-size: 0.72rem;
   min-width: 4.5rem;
 }
 
 .trackName {
-  color: #cdd6f4;
+  color: var(--color-text-primary);
   font-family: 'Consolas', 'Monaco', monospace;
   font-size: 0.82rem;
   word-break: break-all;
@@ -115,15 +115,17 @@
 
 .closeBtn {
   padding: 0.4rem 1rem;
-  border: 1px solid #45475a;
+  border: 1px solid var(--color-border-strong);
   border-radius: 4px;
   background: none;
-  color: #bac2de;
+  color: var(--color-text-secondary);
   cursor: pointer;
   font-size: 0.82rem;
 }
 
 .closeBtn:hover {
-  color: #cdd6f4;
-  border-color: #585b70;
+  color: var(--color-text-primary);
+  border-color: var(--color-border-soft);
 }
+
+

@@ -10,6 +10,7 @@ import { createOutputSlice, type OutputSlice } from './output-slice'
 import { createUiSlice, type UiSlice } from './ui-slice'
 import { createHistorySlice, type HistorySlice } from './history-slice'
 import { DEFAULT_MOBILE_UI_SCALE, clampMobileUiScale } from '../utils/mobile-ui-scale'
+import { DEFAULT_APP_THEME, isAppTheme } from '../theme'
 
 export type AppStore =
   PsdSlice &
@@ -39,16 +40,20 @@ export const useAppStore = create<AppStore>()(
       partialize: (state) => ({
         projectSettings: state.projectSettings,
         mobileUiScale: state.mobileUiScale,
+        activeTheme: state.activeTheme,
       }),
       merge: (persisted, current) => {
         const p = persisted as {
           projectSettings?: typeof DEFAULT_PROJECT_SETTINGS
           mobileUiScale?: number
+          activeTheme?: unknown
         } | undefined
+        const persistedTheme = p?.activeTheme
         return {
           ...current,
           projectSettings: { ...DEFAULT_PROJECT_SETTINGS, ...p?.projectSettings },
           mobileUiScale: clampMobileUiScale(p?.mobileUiScale ?? DEFAULT_MOBILE_UI_SCALE),
+          activeTheme: isAppTheme(persistedTheme) ? persistedTheme : DEFAULT_APP_THEME,
         }
       },
     },

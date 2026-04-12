@@ -3,37 +3,37 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 0.75rem;
-  background: #1e1e2e;
-  border-bottom: 1px solid #313244;
+  background: var(--color-surface-1);
+  border-bottom: 1px solid var(--color-border-subtle);
   flex-shrink: 0;
 }
 
 .title {
   font-size: 0.875rem;
   font-weight: 700;
-  color: #cdd6f4;
+  color: var(--color-text-primary);
   letter-spacing: 0.05em;
 }
 
 .version {
   font-size: 0.7rem;
-  color: #9399b2;
+  color: var(--color-text-dim);
   margin-right: 0.25rem;
 }
 
 .btn {
   padding: 0.35rem 0.75rem;
   font-size: 0.875rem;
-  border: 1px solid #45475a;
+  border: 1px solid var(--color-border-strong);
   border-radius: 4px;
-  background: #313244;
-  color: #cdd6f4;
+  background: var(--color-border-subtle);
+  color: var(--color-text-primary);
   cursor: pointer;
   transition: background 0.1s;
 }
 
 .btn:hover {
-  background: #45475a;
+  background: var(--color-border-strong);
 }
 
 .btn:disabled {
@@ -42,13 +42,13 @@
 }
 
 .btnPrimary {
-  background: #6366f1;
-  border-color: #6366f1;
-  color: white;
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-on-accent);
 }
 
 .btnPrimary:hover:not(:disabled) {
-  background: #4f46e5;
+  background: var(--color-accent-strong);
 }
 
 .spacer {
@@ -57,7 +57,7 @@
 
 .fileInfo {
   font-size: 0.8rem;
-  color: #bac2de;
+  color: var(--color-text-secondary);
   max-width: 200px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -66,34 +66,34 @@
 
 .error {
   font-size: 0.8rem;
-  color: #f38ba8;
+  color: var(--color-danger);
 }
 
 .loading {
   font-size: 0.8rem;
-  color: #89b4fa;
+  color: var(--color-info);
 }
 
 .notification {
   font-size: 0.8rem;
-  color: #a6e3a1;
+  color: var(--color-success);
 }
 
 .langBtn {
   padding: 0.2rem 0.5rem;
   font-size: 0.75rem;
   font-weight: 700;
-  border: 1px solid #45475a;
+  border: 1px solid var(--color-border-strong);
   border-radius: 4px;
   background: none;
-  color: #bac2de;
+  color: var(--color-text-secondary);
   cursor: pointer;
   letter-spacing: 0.05em;
 }
 
 .langBtn:hover {
-  color: #cdd6f4;
-  border-color: #6c7086;
+  color: var(--color-text-primary);
+  border-color: var(--color-text-subtle);
 }
 
 /* ─── オーバーフローメニュー ─── */
@@ -106,8 +106,8 @@
 }
 
 .scaleBtnActive {
-  background: #45475a;
-  border-color: #6c7086;
+  background: var(--color-border-strong);
+  border-color: var(--color-text-subtle);
 }
 
 .scalePopover {
@@ -116,8 +116,8 @@
   right: 0;
   margin-top: 0.35rem;
   width: 13.5rem;
-  background: #1e1e2e;
-  border: 1px solid #45475a;
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border-strong);
   border-radius: 6px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
   z-index: 220;
@@ -130,13 +130,13 @@
   justify-content: space-between;
   gap: 0.75rem;
   font-size: 0.78rem;
-  color: #cdd6f4;
+  color: var(--color-text-primary);
   margin-bottom: 0.55rem;
 }
 
 .scaleValue {
   font-variant-numeric: tabular-nums;
-  color: #89b4fa;
+  color: var(--color-info);
 }
 
 .scaleControls {
@@ -148,7 +148,7 @@
 .scaleSlider {
   width: 100%;
   flex: 1;
-  accent-color: #6366f1;
+  accent-color: var(--color-accent);
   touch-action: pan-y;
 }
 
@@ -156,17 +156,17 @@
   width: 2rem;
   height: 2rem;
   flex-shrink: 0;
-  border: 1px solid #45475a;
+  border: 1px solid var(--color-border-strong);
   border-radius: 4px;
-  background: #313244;
-  color: #cdd6f4;
+  background: var(--color-border-subtle);
+  color: var(--color-text-primary);
   cursor: pointer;
   font-size: 0.9rem;
   line-height: 1;
 }
 
 .scaleAdjustBtn:hover {
-  background: #45475a;
+  background: var(--color-border-strong);
 }
 
 .scaleAdjustBtn:disabled {
@@ -184,22 +184,22 @@
 
 .scaleRange {
   font-size: 0.68rem;
-  color: #7f849c;
+  color: var(--color-text-faint);
   font-variant-numeric: tabular-nums;
 }
 
 .scaleReset {
   padding: 0.15rem 0.45rem;
   font-size: 0.72rem;
-  border: 1px solid #45475a;
+  border: 1px solid var(--color-border-strong);
   border-radius: 4px;
-  background: #313244;
-  color: #cdd6f4;
+  background: var(--color-border-subtle);
+  color: var(--color-text-primary);
   cursor: pointer;
 }
 
 .scaleReset:hover {
-  background: #45475a;
+  background: var(--color-border-strong);
 }
 
 .overflowMenu {
@@ -208,8 +208,8 @@
   right: 0;
   margin-top: 0.35rem;
   min-width: 160px;
-  background: #1e1e2e;
-  border: 1px solid #45475a;
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border-strong);
   border-radius: 6px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
   z-index: 200;
@@ -223,7 +223,7 @@
   width: 100%;
   padding: 0.6rem 0.75rem;
   font-size: 0.82rem;
-  color: #cdd6f4;
+  color: var(--color-text-primary);
   background: none;
   border: none;
   text-align: left;
@@ -232,7 +232,7 @@
 }
 
 .menuItem:active {
-  background: #313244;
+  background: var(--color-border-subtle);
 }
 
 .menuItem:disabled {
@@ -293,3 +293,6 @@
     padding: 0.35rem 0.6rem;
   }
 }
+
+
+

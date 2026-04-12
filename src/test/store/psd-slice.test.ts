@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { useAppStore } from '../../store'
 import { DEFAULT_OUTPUT_CONFIG, DEFAULT_PROJECT_SETTINGS } from '../../types'
+import { DEFAULT_APP_THEME } from '../../theme'
 
 // Zustandストアのテスト：各テスト前にストアをリセット
 beforeEach(() => {
@@ -18,6 +19,7 @@ beforeEach(() => {
     selectedLayerId: null,
     outputConfig: DEFAULT_OUTPUT_CONFIG,
     projectSettings: DEFAULT_PROJECT_SETTINGS,
+    activeTheme: DEFAULT_APP_THEME,
   })
 })
 

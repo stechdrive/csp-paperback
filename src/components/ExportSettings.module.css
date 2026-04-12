@@ -3,8 +3,8 @@
   flex-direction: column;
   gap: 0.4rem;
   padding: 0.5rem 0.75rem;
-  background: #1e1e2e;
-  border-bottom: 1px solid #313244;
+  background: var(--color-surface-1);
+  border-bottom: 1px solid var(--color-border-subtle);
   flex-shrink: 0;
 }
 
@@ -17,14 +17,14 @@
 
 .label {
   font-size: 0.7rem;
-  color: #a6adc8;
+  color: var(--color-text-muted);
   white-space: nowrap;
   min-width: 2.5rem;
 }
 
 .toggleGroup {
   display: flex;
-  border: 1px solid #45475a;
+  border: 1px solid var(--color-border-strong);
   border-radius: 4px;
   overflow: hidden;
   margin-right: 0.5rem;
@@ -35,24 +35,24 @@
   font-size: 0.75rem;
   background: none;
   border: none;
-  color: #a6adc8;
+  color: var(--color-text-muted);
   cursor: pointer;
   white-space: nowrap;
   line-height: 1.4;
 }
 
 .toggle + .toggle {
-  border-left: 1px solid #45475a;
+  border-left: 1px solid var(--color-border-strong);
 }
 
 .toggle:hover:not(.disabled):not(.active) {
-  background: #313244;
-  color: #cdd6f4;
+  background: var(--color-border-subtle);
+  color: var(--color-text-primary);
 }
 
 .active {
-  background: #313244;
-  color: #cdd6f4;
+  background: var(--color-border-subtle);
+  color: var(--color-text-primary);
   font-weight: 600;
 }
 
@@ -74,7 +74,7 @@
   width: 28px;
   height: 16px;
   border-radius: 8px;
-  background: #45475a;
+  background: var(--color-border-strong);
   position: relative;
   cursor: pointer;
   flex-shrink: 0;
@@ -87,14 +87,14 @@
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: #cdd6f4;
+  background: var(--color-text-primary);
   top: 2px;
   left: 2px;
   transition: left 0.15s;
 }
 
 .switchOn {
-  background: #6366f1;
+  background: var(--color-accent);
 }
 
 .switchOn::after {
@@ -103,16 +103,16 @@
 
 .switchValue {
   font-size: 0.7rem;
-  color: #cdd6f4;
+  color: var(--color-text-primary);
   min-width: 1.75rem;
 }
 
 .nameSample {
   font-family: monospace;
   font-size: 0.72rem;
-  color: #89b4fa;
-  background: rgba(137, 180, 250, 0.08);
-  border: 1px solid rgba(137, 180, 250, 0.18);
+  color: var(--color-info);
+  background: rgba(var(--color-info-rgb), 0.08);
+  border: 1px solid rgba(var(--color-info-rgb), 0.18);
   border-radius: 4px;
   padding: 0.1rem 0.35rem;
   white-space: nowrap;
@@ -121,7 +121,7 @@
 
 .chipGroup {
   display: flex;
-  border: 1px solid #45475a;
+  border: 1px solid var(--color-border-strong);
   border-radius: 4px;
   overflow: hidden;
   margin-right: 0.25rem;
@@ -132,7 +132,7 @@
   font-size: 0.7rem;
   background: none;
   border: none;
-  color: #a6adc8;
+  color: var(--color-text-muted);
   cursor: pointer;
   white-space: nowrap;
   line-height: 1.4;
@@ -141,17 +141,17 @@
 }
 
 .chip + .chip {
-  border-left: 1px solid #45475a;
+  border-left: 1px solid var(--color-border-strong);
 }
 
 .chip:hover:not(.chipIncluded) {
   opacity: 0.6;
-  background: rgba(49, 50, 68, 0.5);
+  background: rgba(var(--color-border-subtle-rgb), 0.5);
 }
 
 .chipIncluded {
-  background: #313244;
-  color: #cdd6f4;
+  background: var(--color-border-subtle);
+  color: var(--color-text-primary);
   opacity: 1;
   font-weight: 600;
 }
@@ -160,9 +160,9 @@
   padding: 0.15rem 0.35rem;
   font-size: 0.65rem;
   background: none;
-  border: 1px solid #45475a;
+  border: 1px solid var(--color-border-strong);
   border-radius: 3px;
-  color: #6c7086;
+  color: var(--color-text-subtle);
   cursor: pointer;
   white-space: nowrap;
   line-height: 1.4;
@@ -170,25 +170,25 @@
 }
 
 .batchBtn:hover {
-  color: #a6adc8;
-  border-color: #585b70;
+  color: var(--color-text-muted);
+  border-color: var(--color-border-soft);
 }
 
 .batchActive {
-  color: #89b4fa;
-  border-color: #89b4fa;
+  color: var(--color-info);
+  border-color: var(--color-info);
 }
 
 .qualitySlider {
   flex: 1;
-  accent-color: #6366f1;
+  accent-color: var(--color-accent);
   min-width: 60px;
   max-width: 120px;
 }
 
 .qualityValue {
   font-size: 0.75rem;
-  color: #89b4fa;
+  color: var(--color-info);
   width: 2.5rem;
   text-align: right;
 }
@@ -254,3 +254,5 @@
     min-height: 2rem;
   }
 }
+
+

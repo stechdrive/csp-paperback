@@ -11,6 +11,7 @@ import {
 import { buildLayerTree } from '../../engine/tree-builder'
 import { makeLayer, makePsd, makeFolder } from '../helpers/psd-factory'
 import { DEFAULT_PROJECT_SETTINGS } from '../../types'
+import { DEFAULT_APP_THEME } from '../../theme'
 
 beforeEach(() => {
   useAppStore.setState({
@@ -25,6 +26,7 @@ beforeEach(() => {
     expandedFolders: new Set(),
     manualAnimFolderIds: new Set(),
     projectSettings: DEFAULT_PROJECT_SETTINGS,
+    activeTheme: DEFAULT_APP_THEME,
   })
 })
 

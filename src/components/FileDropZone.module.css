@@ -1,8 +1,8 @@
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(99, 102, 241, 0.15);
-  border: 3px dashed #6366f1;
+  background: rgba(var(--color-accent-rgb), 0.15);
+  border: 3px dashed var(--color-accent);
   z-index: 100;
   display: flex;
   align-items: center;
@@ -13,8 +13,8 @@
 .message {
   font-size: 1.5rem;
   font-weight: 600;
-  color: #6366f1;
-  background: white;
+  color: var(--color-accent);
+  background: var(--color-surface-1);
   padding: 1rem 2rem;
   border-radius: 8px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
@@ -24,7 +24,7 @@
 .subMessage {
   font-size: 0.9rem;
   font-weight: 400;
-  color: #888;
+  color: var(--color-text-faint);
   margin-top: 0.4rem;
 }
 
@@ -33,3 +33,5 @@
   inset: 0;
   z-index: 99;
 }
+
+

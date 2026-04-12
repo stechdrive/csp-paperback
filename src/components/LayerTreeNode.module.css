@@ -13,12 +13,12 @@
 }
 
 .row:hover {
-  background: #313244;
+  background: var(--color-border-subtle);
 }
 
 .rowSelected {
-  background: #313244;
-  outline: 1px solid #6366f1;
+  background: var(--color-border-subtle);
+  outline: 1px solid var(--color-accent);
 }
 
 .rowHidden {
@@ -40,7 +40,7 @@
   border: none;
   cursor: pointer;
   padding: 0;
-  color: #bac2de;
+  color: var(--color-text-secondary);
 }
 
 .expandChevron {
@@ -73,11 +73,11 @@
   border: none;
   cursor: pointer;
   padding: 0;
-  color: #89b4fa;
+  color: var(--color-info);
 }
 
 .visibilityBtn:hover {
-  color: #cdd6f4;
+  color: var(--color-text-primary);
 }
 
 .typeIcon {
@@ -89,12 +89,12 @@
 
 .typeIconCell {
   font-size: 0.95rem;
-  filter: drop-shadow(0 0 3px #a6e3a1aa);
+  filter: drop-shadow(0 0 3px var(--color-success)aa);
 }
 
 .name {
   font-size: 0.875rem;
-  color: #cdd6f4;
+  color: var(--color-text-primary);
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -102,23 +102,23 @@
 }
 
 .nameAnim {
-  color: #89dceb;
+  color: var(--color-cyan);
 }
 
 .nameAutoMark {
-  color: #a6e3a1;
+  color: var(--color-success);
 }
 
 .nameCell {
-  color: #a6e3a1;
+  color: var(--color-success);
 }
 
 .blendSelect {
   height: 18px;
   flex-shrink: 0;
   font-size: 0.65rem;
-  background: #181825;
-  color: #bac2de;
+  background: var(--color-surface-2);
+  color: var(--color-text-secondary);
   border: 1px solid transparent;
   border-radius: 3px;
   cursor: pointer;
@@ -131,13 +131,13 @@
 .row:hover .blendSelect,
 .rowSelected .blendSelect {
   opacity: 1;
-  border-color: #45475a;
+  border-color: var(--color-border-strong);
 }
 
 .blendSelect:focus {
   opacity: 1;
-  outline: 1px solid #6366f1;
-  border-color: #6366f1;
+  outline: 1px solid var(--color-accent);
+  border-color: var(--color-accent);
 }
 
 .animBtn {
@@ -153,7 +153,7 @@
   border-radius: 3px;
   cursor: pointer;
   padding: 0;
-  color: #bac2de;
+  color: var(--color-text-secondary);
   opacity: 0;
   transition: opacity 0.1s;
 }
@@ -164,15 +164,15 @@
 }
 
 .animBtnActive {
-  color: #89dceb;
-  border-color: #89dceb;
+  color: var(--color-cyan);
+  border-color: var(--color-cyan);
   opacity: 1 !important;
 }
 
 .blendWarn {
   font-size: 0.7rem;
   flex-shrink: 0;
-  color: #f9e2af;
+  color: var(--color-warning);
   cursor: default;
 }
 
@@ -189,7 +189,7 @@
   border-radius: 3px;
   cursor: pointer;
   padding: 0;
-  color: #bac2de;
+  color: var(--color-text-secondary);
   opacity: 0;
   transition: opacity 0.1s;
 }
@@ -200,8 +200,8 @@
 }
 
 .markBtnActive {
-  color: #f9e2af;
-  border-color: #f9e2af;
+  color: var(--color-warning);
+  border-color: var(--color-warning);
   opacity: 1 !important;
 }
 
@@ -212,19 +212,19 @@
 
 /* 選択中セルのハイライト */
 .rowCellActive {
-  background: rgba(137, 220, 235, 0.12);
-  outline: 1px solid #89dceb;
+  background: rgba(var(--color-cyan-rgb), 0.12);
+  outline: 1px solid var(--color-cyan);
 }
 
 /* 仮想セットドラッグオーバー中のレイヤー行 */
 .rowDropTarget {
-  background: rgba(99, 102, 241, 0.06);
+  background: rgba(var(--color-accent-rgb), 0.06);
 }
 
 /* 仮想セット挿入ライン（ドラッグ中に表示） */
 .insertionLine {
   height: 2px;
-  background: #6366f1;
+  background: var(--color-accent);
   margin: 0 0.4rem;
   border-radius: 1px;
   pointer-events: none;
@@ -239,7 +239,7 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #6366f1;
+  background: var(--color-accent);
 }
 
 /* 仮想セットバッジ（ツリー内の挿入位置表示） */
@@ -248,14 +248,14 @@
   align-items: center;
   gap: 0.3rem;
   padding: 0.15rem 0.4rem;
-  background: rgba(99, 102, 241, 0.1);
-  border-left: 2px solid #6366f1;
+  background: rgba(var(--color-accent-rgb), 0.1);
+  border-left: 2px solid var(--color-accent);
   min-height: 22px;
   cursor: pointer;
 }
 
 .vsBadge:hover {
-  background: rgba(99, 102, 241, 0.18);
+  background: rgba(var(--color-accent-rgb), 0.18);
 }
 
 .vsBadgeIndent {
@@ -264,7 +264,7 @@
 
 .vsBadgeDragHandle {
   cursor: grab;
-  color: #6366f1;
+  color: var(--color-accent);
   font-size: 0.9rem;
   line-height: 1;
   flex-shrink: 0;
@@ -285,14 +285,14 @@
 .vsBadgeIcon {
   flex-shrink: 0;
   font-size: 0.75rem;
-  color: #6366f1;
+  color: var(--color-accent);
   font-style: normal;
 }
 
 .vsBadgeName {
   flex: 1;
   font-size: 0.78rem;
-  color: #89b4fa;
+  color: var(--color-info);
   font-style: italic;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -303,7 +303,7 @@
   font-size: 0.6rem;
   background: none;
   border: none;
-  color: #45475a;
+  color: var(--color-border-strong);
   cursor: pointer;
   padding: 0 2px;
   flex-shrink: 0;
@@ -316,7 +316,7 @@
 }
 
 .vsBadgeClear:hover {
-  color: #f38ba8;
+  color: var(--color-danger);
 }
 
 /* ─── モバイル最適化 ─── */
@@ -360,7 +360,7 @@
     height: 1.5rem;
     font-size: 0.7rem;
     opacity: 1;
-    border-color: #45475a;
+    border-color: var(--color-border-strong);
   }
 
   .name {
@@ -386,3 +386,5 @@
     padding: 0.2rem;
   }
 }
+
+

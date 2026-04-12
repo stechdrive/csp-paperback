@@ -276,14 +276,14 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 <div className={`${styles.layerRow} ${styles.indent1}`}>
                   <span className={styles.iconFolder}>📁</span>
                   <span className={styles.layerNameMark}>_PAN</span>
-                  <span style={{ color: '#6c7086', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
+                  <span style={{ color: 'var(--color-text-subtle)', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
                     PAN指示
                   </span>
                 </div>
                 <div className={`${styles.layerRow} ${styles.indent1}`}>
                   <span className={styles.iconFolder}>📁</span>
                   <span className={styles.layerNameMark}>_SL</span>
-                  <span style={{ color: '#6c7086', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
+                  <span style={{ color: 'var(--color-text-subtle)', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
                     SL指示
                   </span>
                 </div>
@@ -306,7 +306,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 <div className={`${styles.layerRow} ${styles.indent3}`}>
                   <span className={styles.iconLayer}>📁</span>
                   <span className={styles.layerName}>1</span>
-                  <span style={{ color: '#6c7086', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
+                  <span style={{ color: 'var(--color-text-subtle)', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
                     演出修正 / 演出修正用紙
                   </span>
                 </div>
@@ -324,7 +324,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 <div className={`${styles.layerRow} ${styles.indent3}`}>
                   <span className={styles.iconFolder}>📁</span>
                   <span className={styles.layerName}>1</span>
-                  <span style={{ color: '#6c7086', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
+                  <span style={{ color: 'var(--color-text-subtle)', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
                     セルフォルダ
                   </span>
                 </div>
@@ -344,7 +344,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 <div className={styles.layerRow} style={{ paddingLeft: '5rem' }}>
                   <span className={styles.iconFolder}>📁</span>
                   <span className={styles.layerName}>影</span>
-                  <span style={{ color: '#6c7086', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
+                  <span style={{ color: 'var(--color-text-subtle)', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
                     影1 / 影2
                   </span>
                 </div>
@@ -357,7 +357,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 <div className={`${styles.layerRow} ${styles.indent3}`}>
                   <span className={styles.iconFolder}>📁</span>
                   <span className={styles.layerName}>1</span>
-                  <span style={{ color: '#6c7086', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
+                  <span style={{ color: 'var(--color-text-subtle)', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
                     線画
                   </span>
                 </div>
@@ -371,7 +371,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   <span className={styles.iconFolder}>📁</span>
                   <span className={styles.layerNameMark}>_BOOK1</span>
                   <span className={styles.labelMark}>★ 自動マーク</span>
-                  <span style={{ color: '#6c7086', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
+                  <span style={{ color: 'var(--color-text-subtle)', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
                     BOOK1
                   </span>
                 </div>
@@ -379,7 +379,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   <span className={styles.iconFolder}>📁</span>
                   <span className={styles.layerNameMark}>_BG</span>
                   <span className={styles.labelMark}>★ 自動マーク</span>
-                  <span style={{ color: '#6c7086', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
+                  <span style={{ color: 'var(--color-text-subtle)', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
                     BG1
                   </span>
                 </div>
@@ -392,8 +392,8 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 {/* 用紙 */}
                 <div className={styles.layerRow}>
                   <span className={styles.iconLayer}>◆</span>
-                  <span className={styles.layerName} style={{ color: '#6c7086' }}>用紙</span>
-                  <span style={{ color: '#6c7086', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
+                  <span className={styles.layerName} style={{ color: 'var(--color-text-subtle)' }}>用紙</span>
+                  <span style={{ color: 'var(--color-text-subtle)', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
                     （自動非表示）
                   </span>
                 </div>
@@ -630,7 +630,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   <span className={styles.iconMark}>★</span>
                   <span className={styles.layerNameMark}>撮影指示</span>
                   <span className={styles.labelMark}>手動</span>
-                  <span style={{ color: '#6c7086', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
+                  <span style={{ color: 'var(--color-text-subtle)', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
                     → CSP側の名前を変えずに「撮影指示.jpg」として出力
                   </span>
                 </div>
@@ -638,7 +638,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   <span className={styles.iconFolder}>📁</span>
                   <span className={styles.layerNameMark}>_撮影指示</span>
                   <span className={styles.labelMark}>★ 自動</span>
-                  <span style={{ color: '#6c7086', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
+                  <span style={{ color: 'var(--color-text-subtle)', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
                     → 「_撮影指示.jpg」として出力
                   </span>
                 </div>
@@ -646,7 +646,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   <span className={styles.iconFolder}>📁</span>
                   <span className={styles.layerNameMark}>_PAN</span>
                   <span className={styles.labelMark}>★ 自動</span>
-                  <span style={{ color: '#6c7086', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
+                  <span style={{ color: 'var(--color-text-subtle)', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
                     → 入れ子の、先頭に _ を付けたレイヤーフォルダも個別に出力
                   </span>
                 </div>
@@ -659,7 +659,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   <span className={styles.iconFolder}>📁</span>
                   <span className={styles.layerNameMark}>_原図</span>
                   <span className={styles.labelMark}>★ 自動</span>
-                  <span style={{ color: '#6c7086', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
+                  <span style={{ color: 'var(--color-text-subtle)', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
                     → 「_原図.jpg」として出力
                   </span>
                 </div>
@@ -677,7 +677,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   <span className={styles.iconFolder}>📁</span>
                   <span className={styles.layerName}>_pool</span>
                   <span className={styles.labelArchive}>除外</span>
-                  <span style={{ color: '#6c7086', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
+                  <span style={{ color: 'var(--color-text-subtle)', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
                     → 単体出力しない（除外リスト）
                   </span>
                 </div>
@@ -685,7 +685,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   <span className={styles.iconFolder}>📁</span>
                   <span className={styles.layerName}>_old</span>
                   <span className={styles.labelArchive}>除外</span>
-                  <span style={{ color: '#6c7086', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
+                  <span style={{ color: 'var(--color-text-subtle)', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
                     → 単体出力しない（除外リスト）
                   </span>
                 </div>
@@ -747,7 +747,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   <span className={styles.iconMark}>★</span>
                   <span className={styles.layerNameMark}>エフェクトA</span>
                   <span className={styles.labelMark}>手動マーク</span>
-                  <span style={{ color: '#6c7086', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
+                  <span style={{ color: 'var(--color-text-subtle)', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
                     → 「エフェクトA.jpg」として出力
                   </span>
                 </div>
@@ -755,14 +755,14 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   <span className={styles.iconMark}>★</span>
                   <span className={styles.layerNameMark}>_BG</span>
                   <span className={styles.labelMark}>自動マーク</span>
-                  <span style={{ color: '#6c7086', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
+                  <span style={{ color: 'var(--color-text-subtle)', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
                     → 先頭に _ を付けたレイヤーフォルダにより自動
                   </span>
                 </div>
                 <div className={styles.layerRow}>
-                  <span style={{ color: '#45475a', fontSize: '0.85rem' }}>☆</span>
+                  <span style={{ color: 'var(--color-border-strong)', fontSize: '0.85rem' }}>☆</span>
                   <span className={styles.layerName}>レイヤー1</span>
-                  <span style={{ color: '#6c7086', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
+                  <span style={{ color: 'var(--color-text-subtle)', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
                     → マークなし（セル出力に含まれる）
                   </span>
                 </div>
@@ -826,7 +826,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   <span className={styles.iconAnim}>🎬</span>
                   <span className={styles.layerNameAnim}>_BOOK1</span>
                   <span className={styles.labelAnim}>手動アニメーション</span>
-                  <span style={{ color: '#6c7086', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
+                  <span style={{ color: 'var(--color-text-subtle)', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
                     → _BOOK1_0001.jpg などをセルごとに出力
                   </span>
                 </div>
@@ -1020,7 +1020,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 <div className={`${styles.layerRow} ${styles.indent3}`}>
                   <span className={styles.iconFolder}>📁</span>
                   <span className={styles.layerName}>1</span>
-                  <span style={{ color: '#6c7086', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
+                  <span style={{ color: 'var(--color-text-subtle)', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
                     → A_0001_e.jpg
                   </span>
                 </div>
@@ -1036,7 +1036,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 <div className={`${styles.layerRow} ${styles.indent3}`}>
                   <span className={styles.iconFolder}>📁</span>
                   <span className={styles.layerName}>1</span>
-                  <span style={{ color: '#6c7086', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
+                  <span style={{ color: 'var(--color-text-subtle)', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
                     → A_0001.jpg（本体）
                   </span>
                 </div>
@@ -1083,7 +1083,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 <div className={`${styles.layerRow} ${styles.indent2}`}>
                   <span className={styles.iconFolder}>📁</span>
                   <span className={styles.layerName}>影</span>
-                  <span style={{ color: '#6c7086', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
+                  <span style={{ color: 'var(--color-text-subtle)', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
                     影1 / 影2
                   </span>
                 </div>
@@ -1232,7 +1232,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                     <td>
                       <span className={styles.strong}>構造コンテナ</span>
                       <br />
-                      <span style={{ fontSize: '0.75rem', color: '#9399b2' }}>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--color-text-dim)' }}>
                         工程フォルダ本体、アニメーションフォルダ直下の単体セルレイヤー など
                       </span>
                     </td>
@@ -1243,7 +1243,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                     <td>
                       <span className={styles.strong}>アートワーク</span>
                       <br />
-                      <span style={{ fontSize: '0.75rem', color: '#9399b2' }}>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--color-text-dim)' }}>
                         セル内の線画・彩色・影付けなどの実作画レイヤー
                       </span>
                     </td>
@@ -1328,3 +1328,4 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
     </div>
   )
 }
+

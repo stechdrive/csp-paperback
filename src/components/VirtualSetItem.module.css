@@ -1,23 +1,23 @@
 .item {
-  border: 1px solid #313244;
+  border: 1px solid var(--color-border-subtle);
   border-radius: 6px;
   margin: 0.5rem;
   overflow: hidden;
-  background: #181825;
+  background: var(--color-surface-2);
   cursor: pointer;
 }
 
 .itemSelected {
-  border-color: #6366f1;
-  background: rgba(99, 102, 241, 0.04);
+  border-color: var(--color-accent);
+  background: rgba(var(--color-accent-rgb), 0.04);
 }
 
 .header {
   display: flex;
   align-items: center;
   padding: 0.35rem 0.6rem;
-  background: #1e1e2e;
-  border-bottom: 1px solid #313244;
+  background: var(--color-surface-1);
+  border-bottom: 1px solid var(--color-border-subtle);
   gap: 0.4rem;
 }
 
@@ -30,7 +30,7 @@
   font-size: 0.6rem;
   background: none;
   border: none;
-  color: #7f849c;
+  color: var(--color-text-faint);
   cursor: pointer;
   border-radius: 3px;
   flex-shrink: 0;
@@ -38,8 +38,8 @@
 }
 
 .collapseBtn:hover {
-  color: #cdd6f4;
-  background: #313244;
+  color: var(--color-text-primary);
+  background: var(--color-border-subtle);
 }
 
 .expandChevron {
@@ -57,7 +57,7 @@
 
 .dragHandle {
   cursor: grab;
-  color: #7f849c;
+  color: var(--color-text-faint);
   font-size: 1rem;
   line-height: 1;
   flex-shrink: 0;
@@ -67,7 +67,7 @@
 }
 
 .dragHandle:hover {
-  color: #a6adc8;
+  color: var(--color-text-muted);
 }
 
 .dragHandle:active {
@@ -78,7 +78,7 @@
   flex: 1;
   font-size: 0.8rem;
   font-weight: 600;
-  color: #cdd6f4;
+  color: var(--color-text-primary);
   border: none;
   background: none;
   outline: none;
@@ -86,7 +86,7 @@
 }
 
 .name:focus {
-  color: #89b4fa;
+  color: var(--color-info);
 }
 
 .removeBtn {
@@ -98,14 +98,14 @@
   font-size: 0.7rem;
   background: none;
   border: none;
-  color: #bac2de;
+  color: var(--color-text-secondary);
   cursor: pointer;
   border-radius: 3px;
 }
 
 .removeBtn:hover {
-  color: #f38ba8;
-  background: rgba(243, 139, 168, 0.1);
+  color: var(--color-danger);
+  background: rgba(var(--color-danger-rgb), 0.1);
 }
 
 .section {
@@ -116,7 +116,7 @@
   font-size: 0.65rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #bac2de;
+  color: var(--color-text-secondary);
   margin-bottom: 0.25rem;
 }
 
@@ -127,14 +127,14 @@
   gap: 0.3rem;
   padding: 0.2rem 0.4rem;
   border-radius: 4px;
-  background: rgba(99, 102, 241, 0.08);
-  border: 1px solid rgba(99, 102, 241, 0.3);
+  background: rgba(var(--color-accent-rgb), 0.08);
+  border: 1px solid rgba(var(--color-accent-rgb), 0.3);
 }
 
 .insertionText {
   flex: 1;
   font-size: 0.75rem;
-  color: #89b4fa;
+  color: var(--color-info);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -144,20 +144,20 @@
   font-size: 0.6rem;
   background: none;
   border: none;
-  color: #6c7086;
+  color: var(--color-text-subtle);
   cursor: pointer;
   padding: 0 2px;
   flex-shrink: 0;
 }
 
 .clearBtn:hover {
-  color: #f38ba8;
+  color: var(--color-danger);
 }
 
 /* 挿入位置：未設定の場合 */
 .insertionHint {
   font-size: 0.75rem;
-  color: #7f849c;
+  color: var(--color-text-faint);
   font-style: italic;
   padding: 0.2rem 0.4rem;
 }
@@ -174,8 +174,8 @@
     gap: 0.3rem;
     margin-top: 0.3rem;
     padding: 0.2rem 0.4rem;
-    background: rgba(137, 180, 250, 0.06);
-    border: 1px solid rgba(137, 180, 250, 0.15);
+    background: rgba(var(--color-info-rgb), 0.06);
+    border: 1px solid rgba(var(--color-info-rgb), 0.15);
     border-radius: 4px;
   }
 }
@@ -183,7 +183,7 @@
 .insertionBySelectionName {
   flex: 1;
   font-size: 0.72rem;
-  color: #a6adc8;
+  color: var(--color-text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -193,18 +193,18 @@
 .insertionPosBtn {
   font-size: 0.7rem;
   padding: 0.15rem 0.45rem;
-  background: #313244;
-  border: 1px solid #45475a;
+  background: var(--color-border-subtle);
+  border: 1px solid var(--color-border-strong);
   border-radius: 3px;
-  color: #89b4fa;
+  color: var(--color-info);
   cursor: pointer;
   flex-shrink: 0;
   white-space: nowrap;
 }
 
 .insertionPosBtn:hover {
-  background: #45475a;
-  color: #cdd6f4;
+  background: var(--color-border-strong);
+  color: var(--color-text-primary);
 }
 
 /* レイヤーリスト：縦に自由に伸長する */
@@ -217,35 +217,35 @@
 
 /* レイヤー追加用ドロップゾーン（常にリスト下に固定表示） */
 .dropZone {
-  border: 1px dashed #45475a;
+  border: 1px dashed var(--color-border-strong);
   border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 0.7rem;
-  color: #6c7086;
+  color: var(--color-text-subtle);
   transition: border-color 0.1s, background 0.1s;
   padding: 0.3rem 0.5rem;
   min-height: 26px;
 }
 
 .dropZoneOver {
-  border-color: #6366f1;
-  background: rgba(99, 102, 241, 0.08);
-  color: #6366f1;
+  border-color: var(--color-accent);
+  background: rgba(var(--color-accent-rgb), 0.08);
+  color: var(--color-accent);
 }
 
 .memberRemove {
   font-size: 0.65rem;
   background: none;
   border: none;
-  color: #bac2de;
+  color: var(--color-text-secondary);
   cursor: pointer;
   padding: 0 2px;
 }
 
 .memberRemove:hover {
-  color: #f38ba8;
+  color: var(--color-danger);
 }
 
 /* --- 新メンバー行スタイル --- */
@@ -257,20 +257,20 @@
   padding: 0.15rem 0.3rem;
   border-radius: 3px;
   font-size: 0.75rem;
-  color: #cdd6f4;
-  background: #313244;
+  color: var(--color-text-primary);
+  background: var(--color-border-subtle);
   cursor: pointer;
   user-select: none;
   position: relative;
 }
 
 .memberRow:hover {
-  background: #3b3c52;
+  background: var(--color-surface-hover-strong);
 }
 
 .memberRowSelected {
-  background: rgba(99, 102, 241, 0.15);
-  outline: 1px solid rgba(99, 102, 241, 0.4);
+  background: rgba(var(--color-accent-rgb), 0.15);
+  outline: 1px solid rgba(var(--color-accent-rgb), 0.4);
 }
 
 .memberRowHidden {
@@ -287,7 +287,7 @@
   font-size: 0.55rem;
   background: none;
   border: none;
-  color: #7f849c;
+  color: var(--color-text-faint);
   cursor: pointer;
   border-radius: 2px;
   flex-shrink: 0;
@@ -295,8 +295,8 @@
 }
 
 .memberExpandBtn:hover {
-  color: #cdd6f4;
-  background: #45475a;
+  color: var(--color-text-primary);
+  background: var(--color-border-strong);
 }
 
 .memberExpandPlaceholder {
@@ -319,17 +319,17 @@
   flex-shrink: 0;
   padding: 0;
   line-height: 1;
-  color: #89b4fa;
+  color: var(--color-info);
 }
 
 .memberVisibilityBtn:hover {
-  color: #cdd6f4;
-  background: #45475a;
+  color: var(--color-text-primary);
+  background: var(--color-border-strong);
 }
 
 .memberDragHandle {
   cursor: grab;
-  color: #7f849c;
+  color: var(--color-text-faint);
   font-size: 0.9rem;
   line-height: 1;
   flex-shrink: 0;
@@ -339,7 +339,7 @@
 }
 
 .memberDragHandle:hover {
-  color: #a6adc8;
+  color: var(--color-text-muted);
 }
 
 .memberDragHandle:active {
@@ -357,9 +357,9 @@
   height: 18px;
   flex-shrink: 0;
   font-size: 0.65rem;
-  background: #181825;
-  color: #bac2de;
-  border: 1px solid #45475a;
+  background: var(--color-surface-2);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border-strong);
   border-radius: 3px;
   cursor: pointer;
   padding: 0 2px;
@@ -367,8 +367,8 @@
 }
 
 .blendModeSelect:focus {
-  outline: 1px solid #6366f1;
-  border-color: #6366f1;
+  outline: 1px solid var(--color-accent);
+  border-color: var(--color-accent);
 }
 
 .opacityControl {
@@ -382,22 +382,22 @@
   width: 2.6rem;
   height: 18px;
   font-size: 0.65rem;
-  background: #181825;
-  color: #bac2de;
-  border: 1px solid #45475a;
+  background: var(--color-surface-2);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border-strong);
   border-radius: 3px;
   padding: 0 2px;
   text-align: right;
 }
 
 .opacityInput:focus {
-  outline: 1px solid #6366f1;
-  border-color: #6366f1;
+  outline: 1px solid var(--color-accent);
+  border-color: var(--color-accent);
 }
 
 .opacityUnit {
   font-size: 0.65rem;
-  color: #a6adc8;
+  color: var(--color-text-muted);
 }
 
 /* ミニツリーノード（フォルダ展開時の子レイヤー表示） */
@@ -409,9 +409,9 @@
   padding-bottom: 0.1rem;
   padding-right: 0.3rem;
   font-size: 0.72rem;
-  color: #a6adc8;
-  background: #1e1e2e;
-  border-top: 1px solid #252538;
+  color: var(--color-text-muted);
+  background: var(--color-surface-1);
+  border-top: 1px solid var(--color-surface-divider);
 }
 
 .vsTreeNodeHidden {
@@ -427,14 +427,14 @@
   font-size: 0.5rem;
   background: none;
   border: none;
-  color: #6c7086;
+  color: var(--color-text-subtle);
   cursor: pointer;
   flex-shrink: 0;
   padding: 0;
 }
 
 .vsExpandBtn:hover {
-  color: #cdd6f4;
+  color: var(--color-text-primary);
 }
 
 .vsExpandPlaceholder {
@@ -456,12 +456,12 @@
   flex-shrink: 0;
   padding: 0;
   line-height: 1;
-  color: #89b4fa;
+  color: var(--color-info);
 }
 
 .vsVisibilityBtn:hover {
-  color: #cdd6f4;
-  background: #313244;
+  color: var(--color-text-primary);
+  background: var(--color-border-subtle);
 }
 
 .vsLayerName {
@@ -474,7 +474,7 @@
 /* 挿入ライン（DnD中の挿入位置表示） */
 .insertionLine {
   height: 2px;
-  background: #6366f1;
+  background: var(--color-accent);
   margin: 0 0.2rem;
   border-radius: 1px;
   pointer-events: none;
@@ -489,7 +489,7 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #6366f1;
+  background: var(--color-accent);
 }
 
 /* ─── モバイル最適化 ─── */
@@ -609,3 +609,5 @@
     font-size: 0.7rem;
   }
 }
+
+

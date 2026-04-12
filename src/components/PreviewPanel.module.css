@@ -2,7 +2,7 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: #181825;
+  background: var(--color-surface-2);
   overflow: hidden;
 }
 
@@ -13,10 +13,10 @@
   padding: 0.4rem 0.75rem;
   font-size: 0.75rem;
   font-weight: 600;
-  color: #bac2de;
+  color: var(--color-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  border-bottom: 1px solid #313244;
+  border-bottom: 1px solid var(--color-border-subtle);
   flex-shrink: 0;
 }
 
@@ -24,7 +24,7 @@
 .navigatorSection {
   flex-shrink: 0;
   padding: 0.5rem;
-  background: #11111b;
+  background: var(--color-bg-app);
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
@@ -48,20 +48,20 @@
 .resizeHandle {
   flex-shrink: 0;
   height: 4px;
-  background: #313244;
+  background: var(--color-border-subtle);
   cursor: ns-resize;
-  border-top: 1px solid #45475a;
-  border-bottom: 1px solid #45475a;
+  border-top: 1px solid var(--color-border-strong);
+  border-bottom: 1px solid var(--color-border-strong);
   transition: background 0.1s;
 }
 
 .resizeHandle:hover {
-  background: #585b70;
+  background: var(--color-border-soft);
 }
 
 .navigatorLabel {
   font-size: 0.7rem;
-  color: #a6adc8;
+  color: var(--color-text-muted);
   letter-spacing: 0.04em;
   flex-shrink: 0;
   display: flex;
@@ -71,9 +71,9 @@
 
 .zoomBadge {
   font-size: 0.62rem;
-  color: #cdd6f4;
-  background: rgba(30, 30, 46, 0.9);
-  border: 1px solid #45475a;
+  color: var(--color-text-primary);
+  background: rgba(var(--color-surface-1-rgb), 0.9);
+  border: 1px solid var(--color-border-strong);
   border-radius: 3px;
   padding: 0.05rem 0.3rem;
   font-variant-numeric: tabular-nums;
@@ -86,9 +86,9 @@
   width: auto;
   height: auto;
   display: block;
-  border: 1px solid #313244;
+  border: 1px solid var(--color-border-subtle);
   border-radius: 2px;
-  background: #1e1e2e;
+  background: var(--color-surface-1);
 }
 
 /* 出力プレビューセクションのヘッダー */
@@ -98,19 +98,19 @@
   gap: 0.5rem;
   padding: 0.3rem 0.75rem;
   font-size: 0.7rem;
-  color: #a6adc8;
+  color: var(--color-text-muted);
   letter-spacing: 0.04em;
-  border-bottom: 1px solid #313244;
+  border-bottom: 1px solid var(--color-border-subtle);
   flex-shrink: 0;
-  background: #181825;
+  background: var(--color-surface-2);
   overflow: hidden;
 }
 
 .outputZoomBadge {
   font-size: 0.62rem;
-  color: #cdd6f4;
-  background: rgba(30, 30, 46, 0.9);
-  border: 1px solid #45475a;
+  color: var(--color-text-primary);
+  background: rgba(var(--color-surface-1-rgb), 0.9);
+  border: 1px solid var(--color-border-strong);
   border-radius: 3px;
   padding: 0.05rem 0.3rem;
   font-variant-numeric: tabular-nums;
@@ -131,8 +131,8 @@
 .fileName {
   font-family: monospace;
   font-size: 0.68rem;
-  color: #bac2de;
-  background: #313244;
+  color: var(--color-text-secondary);
+  background: var(--color-border-subtle);
   border-radius: 3px;
   padding: 0.05rem 0.3rem;
   white-space: nowrap;
@@ -145,7 +145,7 @@
 .outputSection {
   flex: 1;
   overflow: hidden;
-  background: #11111b;
+  background: var(--color-bg-app);
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -156,13 +156,13 @@
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  background: #11111b;
+  background: var(--color-bg-app);
   overflow-y: auto;
   padding: 1.5rem 1rem;
 }
 
 .empty {
-  color: #a6adc8;
+  color: var(--color-text-muted);
   font-size: 0.8rem;
   line-height: 1.8;
   max-width: 360px;
@@ -172,7 +172,7 @@
 .emptyTitle {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #cdd6f4;
+  color: var(--color-text-primary);
   margin-bottom: 1rem;
 }
 
@@ -185,8 +185,8 @@
 .emptyStepNum {
   font-size: 0.7rem;
   font-weight: 700;
-  color: #6366f1;
-  background: rgba(99, 102, 241, 0.15);
+  color: var(--color-accent);
+  background: rgba(var(--color-accent-rgb), 0.15);
   border-radius: 50%;
   width: 1.4rem;
   height: 1.4rem;
@@ -203,7 +203,7 @@
 
 .emptyStepTitle {
   font-size: 0.78rem;
-  color: #cdd6f4;
+  color: var(--color-text-primary);
   font-weight: 600;
   margin-bottom: 0.15rem;
 }
@@ -211,8 +211,8 @@
 .emptyMenuPath {
   font-family: monospace;
   font-size: 0.72rem;
-  color: #89b4fa;
-  background: rgba(137, 180, 250, 0.08);
+  color: var(--color-info);
+  background: rgba(var(--color-info-rgb), 0.08);
   border-radius: 3px;
   padding: 0.1rem 0.35rem;
   display: inline-block;
@@ -220,22 +220,22 @@
 
 .emptyNote {
   font-size: 0.72rem;
-  color: #a6adc8;
+  color: var(--color-text-muted);
   margin-top: 0.2rem;
 }
 
 .emptyTips {
   margin-top: 1rem;
   padding: 0.65rem 0.75rem;
-  border: 1px solid #313244;
+  border: 1px solid var(--color-border-subtle);
   border-radius: 6px;
-  background: rgba(30, 30, 46, 0.55);
+  background: rgba(var(--color-surface-1-rgb), 0.55);
 }
 
 .emptyTipsTitle {
   font-size: 0.74rem;
   line-height: 1.65;
-  color: #cdd6f4;
+  color: var(--color-text-primary);
   margin-bottom: 0.45rem;
 }
 
@@ -246,7 +246,7 @@
   align-items: start;
   font-size: 0.72rem;
   line-height: 1.55;
-  color: #a6adc8;
+  color: var(--color-text-muted);
 }
 
 .emptyTip + .emptyTip {
@@ -255,9 +255,9 @@
 
 .emptyTipMark {
   font-family: monospace;
-  color: #cdd6f4;
-  background: rgba(137, 180, 250, 0.1);
-  border: 1px solid rgba(137, 180, 250, 0.22);
+  color: var(--color-text-primary);
+  background: rgba(var(--color-info-rgb), 0.1);
+  border: 1px solid rgba(var(--color-info-rgb), 0.22);
   border-radius: 4px;
   padding: 0 0.25rem;
   text-align: center;
@@ -266,13 +266,13 @@
 
 .emptyDivider {
   border: none;
-  border-top: 1px solid #313244;
+  border-top: 1px solid var(--color-border-subtle);
   margin: 0.75rem 0;
 }
 
 .emptyLoad {
   font-size: 0.78rem;
-  color: #a6adc8;
+  color: var(--color-text-muted);
   text-align: center;
 }
 
@@ -283,9 +283,9 @@
 
 .sampleButton {
   font-size: 0.78rem;
-  color: #cdd6f4;
-  background: rgba(137, 180, 250, 0.12);
-  border: 1px solid rgba(137, 180, 250, 0.3);
+  color: var(--color-text-primary);
+  background: rgba(var(--color-info-rgb), 0.12);
+  border: 1px solid rgba(var(--color-info-rgb), 0.3);
   border-radius: 5px;
   padding: 0.45rem 1rem;
   cursor: pointer;
@@ -293,8 +293,8 @@
 }
 
 .sampleButton:hover:not(:disabled) {
-  background: rgba(137, 180, 250, 0.22);
-  border-color: rgba(137, 180, 250, 0.5);
+  background: rgba(var(--color-info-rgb), 0.22);
+  border-color: rgba(var(--color-info-rgb), 0.5);
 }
 
 .sampleButton:disabled {
@@ -308,9 +308,9 @@
   align-items: center;
   gap: 0.4rem;
   font-size: 0.75rem;
-  color: #a6e3a1;
-  background: rgba(166, 227, 161, 0.08);
-  border: 1px solid rgba(166, 227, 161, 0.25);
+  color: var(--color-success);
+  background: rgba(var(--color-success-rgb), 0.08);
+  border: 1px solid rgba(var(--color-success-rgb), 0.25);
   border-radius: 5px;
   padding: 0.35rem 0.6rem;
   margin-bottom: 1rem;
@@ -324,9 +324,9 @@
 /* XDTS 未読込バナー（PSD 読み込み済み状態のヘッダー直下） */
 .noXdtsBanner {
   font-size: 0.7rem;
-  color: #f9e2af;
-  background: rgba(249, 226, 175, 0.07);
-  border-bottom: 1px solid rgba(249, 226, 175, 0.2);
+  color: var(--color-warning);
+  background: rgba(var(--color-warning-rgb), 0.07);
+  border-bottom: 1px solid rgba(var(--color-warning-rgb), 0.2);
   padding: 0.3rem 0.75rem;
   flex-shrink: 0;
 }
@@ -343,7 +343,7 @@
 .seekTrack {
   flex: 1;
   height: 6px;
-  background: #313244;
+  background: var(--color-border-subtle);
   border-radius: 3px;
   position: relative;
   cursor: pointer;
@@ -355,7 +355,7 @@
   top: 0;
   left: 0;
   height: 100%;
-  background: #6366f1;
+  background: var(--color-accent);
   border-radius: 3px;
   pointer-events: none;
 }
@@ -365,8 +365,8 @@
   top: 50%;
   width: 10px;
   height: 10px;
-  background: #cdd6f4;
-  border: 2px solid #6366f1;
+  background: var(--color-text-primary);
+  border: 2px solid var(--color-accent);
   border-radius: 50%;
   transform: translate(-50%, -50%);
   pointer-events: none;
@@ -374,7 +374,7 @@
 
 .seekLabel {
   font-size: 0.68rem;
-  color: #a6adc8;
+  color: var(--color-text-muted);
   font-variant-numeric: tabular-nums;
   flex-shrink: 0;
   min-width: 4.5em;
@@ -486,23 +486,23 @@
     padding: 0.5rem;
     font-size: 0.75rem;
     font-weight: 600;
-    color: #cdd6f4;
-    background: #1e1e2e;
+    color: var(--color-text-primary);
+    background: var(--color-surface-1);
     border: none;
-    border-top: 1px solid #45475a;
+    border-top: 1px solid var(--color-border-strong);
     cursor: pointer;
   }
 
   .drawerToggleIcon {
     font-size: 0.6rem;
-    color: #a6adc8;
+    color: var(--color-text-muted);
   }
 
   .drawerBody {
     max-height: 0;
     overflow: hidden;
     transition: max-height 0.25s ease-out;
-    background: #1e1e2e;
+    background: var(--color-surface-1);
   }
 
   .drawerOpen {
@@ -522,3 +522,5 @@
     padding-bottom: 2.75rem;
   }
 }
+
+

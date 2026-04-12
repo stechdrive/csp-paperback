@@ -9,8 +9,8 @@
 }
 
 .dialog {
-  background: #1e1e2e;
-  border: 1px solid #45475a;
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border-strong);
   border-radius: 8px;
   width: 360px;
   max-width: 90vw;
@@ -23,7 +23,7 @@
 .title {
   font-size: 1rem;
   font-weight: 700;
-  color: #cdd6f4;
+  color: var(--color-text-primary);
   margin-bottom: 0.25rem;
 }
 
@@ -35,7 +35,7 @@
 
 .label {
   font-size: 0.75rem;
-  color: #bac2de;
+  color: var(--color-text-secondary);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -52,13 +52,13 @@
   align-items: center;
   gap: 0.3rem;
   font-size: 0.85rem;
-  color: #cdd6f4;
+  color: var(--color-text-primary);
   cursor: pointer;
 }
 
 .radioLabel input {
   cursor: pointer;
-  accent-color: #6366f1;
+  accent-color: var(--color-accent);
 }
 
 .radioLabel.disabled {
@@ -78,7 +78,7 @@
   width: 32px;
   height: 18px;
   border-radius: 9px;
-  background: #45475a;
+  background: var(--color-border-strong);
   position: relative;
   cursor: pointer;
   flex-shrink: 0;
@@ -91,14 +91,14 @@
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: #cdd6f4;
+  background: var(--color-text-primary);
   top: 2px;
   left: 2px;
   transition: left 0.15s;
 }
 
 .switchOn {
-  background: #6366f1;
+  background: var(--color-accent);
 }
 
 .switchOn::after {
@@ -107,7 +107,7 @@
 
 .switchValue {
   font-size: 0.8rem;
-  color: #cdd6f4;
+  color: var(--color-text-primary);
 }
 
 .qualityRow {
@@ -118,12 +118,12 @@
 
 .qualitySlider {
   flex: 1;
-  accent-color: #6366f1;
+  accent-color: var(--color-accent);
 }
 
 .qualityValue {
   font-size: 0.8rem;
-  color: #89b4fa;
+  color: var(--color-info);
   width: 3rem;
   text-align: right;
 }
@@ -137,7 +137,7 @@
 
 .chipGroup {
   display: flex;
-  border: 1px solid #45475a;
+  border: 1px solid var(--color-border-strong);
   border-radius: 4px;
   overflow: hidden;
 }
@@ -147,7 +147,7 @@
   font-size: 0.8rem;
   background: none;
   border: none;
-  color: #a6adc8;
+  color: var(--color-text-muted);
   cursor: pointer;
   white-space: nowrap;
   line-height: 1.4;
@@ -156,17 +156,17 @@
 }
 
 .chip + .chip {
-  border-left: 1px solid #45475a;
+  border-left: 1px solid var(--color-border-strong);
 }
 
 .chip:hover:not(.chipIncluded) {
   opacity: 0.6;
-  background: rgba(49, 50, 68, 0.5);
+  background: rgba(var(--color-border-subtle-rgb), 0.5);
 }
 
 .chipIncluded {
-  background: #313244;
-  color: #cdd6f4;
+  background: var(--color-border-subtle);
+  color: var(--color-text-primary);
   opacity: 1;
   font-weight: 600;
 }
@@ -175,16 +175,16 @@
   padding: 0.2rem 0.45rem;
   font-size: 0.7rem;
   background: none;
-  border: 1px solid #45475a;
+  border: 1px solid var(--color-border-strong);
   border-radius: 3px;
-  color: #6c7086;
+  color: var(--color-text-subtle);
   cursor: pointer;
   white-space: nowrap;
 }
 
 .batchBtn:hover {
-  color: #a6adc8;
-  border-color: #585b70;
+  color: var(--color-text-muted);
+  border-color: var(--color-border-soft);
 }
 
 .actions {
@@ -196,31 +196,31 @@
 
 .cancelBtn {
   padding: 0.4rem 1rem;
-  border: 1px solid #45475a;
+  border: 1px solid var(--color-border-strong);
   border-radius: 4px;
   background: none;
-  color: #bac2de;
+  color: var(--color-text-secondary);
   cursor: pointer;
   font-size: 0.85rem;
 }
 
 .cancelBtn:hover {
-  color: #cdd6f4;
+  color: var(--color-text-primary);
 }
 
 .exportBtn {
   padding: 0.4rem 1.25rem;
   border: none;
   border-radius: 4px;
-  background: #6366f1;
-  color: white;
+  background: var(--color-accent);
+  color: var(--color-on-accent);
   cursor: pointer;
   font-size: 0.85rem;
   font-weight: 600;
 }
 
 .exportBtn:hover:not(:disabled) {
-  background: #4f46e5;
+  background: var(--color-accent-strong);
 }
 
 .exportBtn:disabled {
@@ -230,20 +230,20 @@
 
 .progress {
   height: 4px;
-  background: #313244;
+  background: var(--color-border-subtle);
   border-radius: 2px;
   overflow: hidden;
 }
 
 .progressBar {
   height: 100%;
-  background: #6366f1;
+  background: var(--color-accent);
   transition: width 0.2s;
 }
 
 .error {
   font-size: 0.8rem;
-  color: #f38ba8;
+  color: var(--color-danger);
 }
 
 /* ─── モバイル最適化 ─── */
@@ -284,3 +284,5 @@
     font-size: 0.9rem;
   }
 }
+
+

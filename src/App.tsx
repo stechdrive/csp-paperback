@@ -12,6 +12,7 @@ function AppInner() {
   const { isLoading, error, notification, loadFiles } = useFileLoader()
   const { canUndo, canRedo, undo, redo } = useUndoRedo()
   const mobileUiScale = useAppStore(s => s.mobileUiScale)
+  const activeTheme = useAppStore(s => s.activeTheme)
 
   useEffect(() => {
     const root = document.documentElement
@@ -20,6 +21,14 @@ function AppInner() {
       root.style.removeProperty('--mobile-ui-scale')
     }
   }, [mobileUiScale])
+
+  useEffect(() => {
+    const root = document.documentElement
+    root.dataset.theme = activeTheme
+    return () => {
+      root.removeAttribute('data-theme')
+    }
+  }, [activeTheme])
 
   return (
     <FileDropZone onFiles={loadFiles}>

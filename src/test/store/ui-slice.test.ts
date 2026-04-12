@@ -3,6 +3,7 @@ import { useAppStore } from '../../store'
 import { buildLayerTree, detectAnimationFoldersByXdts } from '../../engine/tree-builder'
 import { makeFolder, makeLayer, makePsd } from '../helpers/psd-factory'
 import { DEFAULT_OUTPUT_CONFIG, DEFAULT_PROJECT_SETTINGS, type CspLayer, type XdtsData } from '../../types'
+import { DEFAULT_APP_THEME } from '../../theme'
 
 beforeEach(() => {
   useAppStore.setState({
@@ -25,6 +26,7 @@ beforeEach(() => {
     focusedAnimFolderId: null,
     selectedVirtualSetId: null,
     currentFrame: 0,
+    activeTheme: DEFAULT_APP_THEME,
   })
 })
 

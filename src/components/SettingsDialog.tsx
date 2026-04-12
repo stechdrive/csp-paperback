@@ -3,6 +3,7 @@ import { useAppStore } from '../store'
 import { useLocale } from '../i18n/locale'
 import { selectProcessTableErrors } from '../store/selectors'
 import type { ProcessFolderEntry } from '../types'
+import { APP_THEME_SWATCHES, type AppTheme } from '../theme'
 import styles from './SettingsDialog.module.css'
 import { DEFAULT_PROJECT_SETTINGS } from '../types'
 
@@ -12,10 +13,12 @@ interface SettingsDialogProps {
 
 export function SettingsDialog({ onClose }: SettingsDialogProps) {
   const projectSettings = useAppStore(s => s.projectSettings)
+  const activeTheme = useAppStore(s => s.activeTheme)
   const updateProcessTable = useAppStore(s => s.updateProcessTable)
   const updateArchivePatterns = useAppStore(s => s.updateArchivePatterns)
   const importSettings = useAppStore(s => s.importSettings)
   const exportSettings = useAppStore(s => s.exportSettings)
+  const setActiveTheme = useAppStore(s => s.setActiveTheme)
   const { t } = useLocale()
 
   const [tableRows, setTableRows] = useState<ProcessFolderEntry[]>(
@@ -26,6 +29,23 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
   )
 
   const errors = selectProcessTableErrors(useAppStore.getState())
+  const themeOptions: Array<{ value: AppTheme; label: string; description: string }> = [
+    {
+      value: 'midnight',
+      label: t.settings.themeMidnight,
+      description: t.settings.themeMidnightHint,
+    },
+    {
+      value: 'graphite',
+      label: t.settings.themeGraphite,
+      description: t.settings.themeGraphiteHint,
+    },
+    {
+      value: 'paper',
+      label: t.settings.themePaper,
+      description: t.settings.themePaperHint,
+    },
+  ]
 
   const handleSuffixChange = (i: number, value: string) => {
     const next = tableRows.map((r, idx) => idx === i ? { ...r, suffix: value } : r)
@@ -111,10 +131,38 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
       <div className={styles.dialog}>
         <div className={styles.header}>
           <span className={styles.title}>{t.settings.title}</span>
-          <button className={styles.closeBtn} onClick={onClose}>✕</button>
+          <button className={styles.closeBtn} onClick={handleClose}>✕</button>
         </div>
 
         <div className={styles.body}>
+          <div className={styles.section}>
+            <div className={styles.sectionTitle}>{t.settings.theme}</div>
+            <div className={styles.hint}>{t.settings.themeHint}</div>
+            <div className={styles.themeGrid}>
+              {themeOptions.map(option => (
+                <button
+                  key={option.value}
+                  type="button"
+                  className={`${styles.themeCard} ${activeTheme === option.value ? styles.themeCardActive : ''}`}
+                  onClick={() => setActiveTheme(option.value)}
+                  aria-pressed={activeTheme === option.value}
+                >
+                  <span className={styles.themeSwatches} aria-hidden="true">
+                    {APP_THEME_SWATCHES[option.value].map((color, index) => (
+                      <span
+                        key={`${option.value}-${index}`}
+                        className={styles.themeSwatch}
+                        style={{ backgroundColor: color }}
+                      />
+                    ))}
+                  </span>
+                  <span className={styles.themeName}>{option.label}</span>
+                  <span className={styles.themeDescription}>{option.description}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* 工程フォルダリスト */}
           <div className={styles.section}>
             <div className={styles.sectionTitle}>{t.settings.processTable}</div>

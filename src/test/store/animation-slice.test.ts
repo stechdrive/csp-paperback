@@ -5,6 +5,7 @@ import { selectLayerTreeWithVisibility } from '../../store/selectors'
 import { sanitizeManualAnimFolderIds } from '../../utils/manual-animation-folder'
 import { makeFolder, makeLayer, makePsd } from '../helpers/psd-factory'
 import { DEFAULT_OUTPUT_CONFIG, DEFAULT_PROJECT_SETTINGS, type CspLayer, type XdtsData } from '../../types'
+import { DEFAULT_APP_THEME } from '../../theme'
 
 function resetStore() {
   useAppStore.setState({
@@ -27,6 +28,7 @@ function resetStore() {
     focusedAnimFolderId: null,
     selectedVirtualSetId: null,
     currentFrame: 0,
+    activeTheme: DEFAULT_APP_THEME,
     _past: [],
     _future: [],
     canUndo: false,

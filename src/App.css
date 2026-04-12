@@ -10,16 +10,150 @@
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   font-size: 16px;
   line-height: 1.5;
-  color-scheme: dark;
   --mobile-ui-scale: 1;
+  --color-on-accent: #ffffff;
+}
+
+:root,
+:root[data-theme='midnight'] {
+  color-scheme: dark;
+  --color-bg-app: #11111b;
+  --color-surface-1: #1e1e2e;
+  --color-surface-2: #181825;
+  --color-surface-tooltip: #24273a;
+  --color-surface-divider: #252538;
+  --color-surface-hover-strong: #3b3c52;
+  --color-border-subtle: #313244;
+  --color-border-strong: #45475a;
+  --color-border-soft: #585b70;
+  --color-text-subtle: #6c7086;
+  --color-text-faint: #7f849c;
+  --color-text-dim: #9399b2;
+  --color-text-muted: #a6adc8;
+  --color-text-secondary: #bac2de;
+  --color-text-primary: #cdd6f4;
+  --color-accent: #6366f1;
+  --color-accent-strong: #4f46e5;
+  --color-info: #89b4fa;
+  --color-cyan: #89dceb;
+  --color-success: #a6e3a1;
+  --color-warning: #f9e2af;
+  --color-danger: #f38ba8;
+  --color-orange: #fab387;
+  --color-lavender: #cba6f7;
+  --color-danger-soft: #f5c2d0;
+  --color-success-soft: #c3ecc0;
+  --color-info-soft: #b4d0fb;
+  --color-warning-soft: #f5e4c0;
+  --color-surface-1-rgb: 30, 30, 46;
+  --color-border-subtle-rgb: 49, 50, 68;
+  --color-text-subtle-rgb: 108, 112, 134;
+  --color-text-muted-rgb: 166, 173, 200;
+  --color-accent-rgb: 99, 102, 241;
+  --color-info-rgb: 137, 180, 250;
+  --color-cyan-rgb: 137, 220, 235;
+  --color-success-rgb: 166, 227, 161;
+  --color-warning-rgb: 249, 226, 175;
+  --color-danger-rgb: 243, 139, 168;
+  --color-orange-rgb: 250, 179, 135;
+  --color-lavender-rgb: 203, 166, 247;
+}
+
+:root[data-theme='graphite'] {
+  color-scheme: dark;
+  --color-bg-app: #101419;
+  --color-surface-1: #192028;
+  --color-surface-2: #11171e;
+  --color-surface-tooltip: #242c36;
+  --color-surface-divider: #202730;
+  --color-surface-hover-strong: #37414d;
+  --color-border-subtle: #2b3440;
+  --color-border-strong: #45515f;
+  --color-border-soft: #5d6c7e;
+  --color-text-subtle: #6f7d8c;
+  --color-text-faint: #8492a0;
+  --color-text-dim: #9aa7b5;
+  --color-text-muted: #b2bcc8;
+  --color-text-secondary: #cad3dc;
+  --color-text-primary: #e5edf5;
+  --color-accent: #4d8dff;
+  --color-accent-strong: #3b74d9;
+  --color-info: #79c0ff;
+  --color-cyan: #5fd0d6;
+  --color-success: #7bc47f;
+  --color-warning: #e4c06b;
+  --color-danger: #ff8a8a;
+  --color-orange: #ffb067;
+  --color-lavender: #b29dff;
+  --color-danger-soft: #ffc0c0;
+  --color-success-soft: #b9dfbc;
+  --color-info-soft: #b9dcff;
+  --color-warning-soft: #f3ddb0;
+  --color-surface-1-rgb: 25, 32, 40;
+  --color-border-subtle-rgb: 43, 52, 64;
+  --color-text-subtle-rgb: 111, 125, 140;
+  --color-text-muted-rgb: 178, 188, 200;
+  --color-accent-rgb: 77, 141, 255;
+  --color-info-rgb: 121, 192, 255;
+  --color-cyan-rgb: 95, 208, 214;
+  --color-success-rgb: 123, 196, 127;
+  --color-warning-rgb: 228, 192, 107;
+  --color-danger-rgb: 255, 138, 138;
+  --color-orange-rgb: 255, 176, 103;
+  --color-lavender-rgb: 178, 157, 255;
+}
+
+:root[data-theme='paper'] {
+  color-scheme: light;
+  --color-bg-app: #eef3f8;
+  --color-surface-1: #ffffff;
+  --color-surface-2: #f5f7fb;
+  --color-surface-tooltip: #f8fbff;
+  --color-surface-divider: #e3e9f1;
+  --color-surface-hover-strong: #d8e1ec;
+  --color-border-subtle: #d9e1eb;
+  --color-border-strong: #b9c5d3;
+  --color-border-soft: #96a5b7;
+  --color-text-subtle: #7b8ca1;
+  --color-text-faint: #687789;
+  --color-text-dim: #566476;
+  --color-text-muted: #445366;
+  --color-text-secondary: #2f3e52;
+  --color-text-primary: #182536;
+  --color-accent: #2563eb;
+  --color-accent-strong: #1d4ed8;
+  --color-info: #2b75d6;
+  --color-cyan: #0f766e;
+  --color-success: #15803d;
+  --color-warning: #b45309;
+  --color-danger: #dc2626;
+  --color-orange: #ea580c;
+  --color-lavender: #7c3aed;
+  --color-danger-soft: #a61b1b;
+  --color-success-soft: #166534;
+  --color-info-soft: #1d4ed8;
+  --color-warning-soft: #92400e;
+  --color-surface-1-rgb: 255, 255, 255;
+  --color-border-subtle-rgb: 217, 225, 235;
+  --color-text-subtle-rgb: 123, 140, 161;
+  --color-text-muted-rgb: 68, 83, 102;
+  --color-accent-rgb: 37, 99, 235;
+  --color-info-rgb: 43, 117, 214;
+  --color-cyan-rgb: 15, 118, 110;
+  --color-success-rgb: 21, 128, 61;
+  --color-warning-rgb: 180, 83, 9;
+  --color-danger-rgb: 220, 38, 38;
+  --color-orange-rgb: 234, 88, 12;
+  --color-lavender-rgb: 124, 58, 237;
 }
 
 body {
-  background: #11111b;
-  color: #cdd6f4;
+  background-color: var(--color-bg-app);
+  color: var(--color-text-primary);
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 #root {

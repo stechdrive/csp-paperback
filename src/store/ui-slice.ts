@@ -5,10 +5,13 @@ import { findFirstFrameOfCell, resolveCellsAtFrameByTrackNo } from '../utils/xdt
 import { buildDefaultVisibilityOverrides } from '../utils/default-visibility'
 import { DEFAULT_MOBILE_UI_SCALE, clampMobileUiScale } from '../utils/mobile-ui-scale'
 import { findTimelineCellChildIndex } from '../utils/anim-cell-selection'
+import type { AppTheme } from '../theme'
+import { DEFAULT_APP_THEME } from '../theme'
 import type { AppStore } from './index'
 
 export interface UiSlice {
   mobileUiScale: number
+  activeTheme: AppTheme
   selectedLayerId: string | null
   /** animFolderId → 選択中のセルインデックス。未登録は先頭（0）扱い。-1 はカラ（何も表示しない） */
   selectedCells: Map<string, number>
@@ -24,6 +27,7 @@ export interface UiSlice {
   /** タイムラインの現在フレーム（0-based） */
   currentFrame: number
   setMobileUiScale: (scale: number) => void
+  setActiveTheme: (theme: AppTheme) => void
   resetMobileUiScale: () => void
   selectLayer: (layerId: string | null) => void
   setSelectedVsMember: (setId: string | null, memberId: string | null) => void
@@ -76,6 +80,7 @@ function findAnimFolderByTrackNo(
 
 export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get) => ({
   mobileUiScale: DEFAULT_MOBILE_UI_SCALE,
+  activeTheme: DEFAULT_APP_THEME,
   selectedLayerId: null,
   selectedCells: new Map(),
   focusedAnimFolderId: null,
@@ -88,6 +93,10 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
 
   setMobileUiScale: (scale) => {
     set({ mobileUiScale: clampMobileUiScale(scale) })
+  },
+
+  setActiveTheme: (theme) => {
+    set({ activeTheme: theme })
   },
 
   resetMobileUiScale: () => {
