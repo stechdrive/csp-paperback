@@ -2,7 +2,7 @@ export const APP_THEMES = ['midnight', 'graphite', 'paper'] as const
 
 export type AppTheme = (typeof APP_THEMES)[number]
 
-export const DEFAULT_APP_THEME: AppTheme = 'midnight'
+export const DEFAULT_APP_THEME: AppTheme = 'paper'
 
 export const APP_THEME_SWATCHES: Record<AppTheme, readonly [string, string, string, string]> = {
   midnight: ['#11111b', '#1e1e2e', '#6366f1', '#89b4fa'],
