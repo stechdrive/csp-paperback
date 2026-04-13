@@ -28,6 +28,32 @@ interface LayerTreeNodeProps {
   animParentId?: string
 }
 
+function VisibilityIcon() {
+  return (
+    <svg
+      className={styles.visibilityIcon}
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      <path
+        d="M2.75 12C4.8 8.5 8.16 6.5 12 6.5C15.84 6.5 19.2 8.5 21.25 12C19.2 15.5 15.84 17.5 12 17.5C8.16 17.5 4.8 15.5 2.75 12Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle
+        cx="12"
+        cy="12"
+        r="2.75"
+        fill="currentColor"
+      />
+    </svg>
+  )
+}
+
 /** 仮想セットのインライン表示バッジ */
 function VirtualSetBadge({ vs, indentWidth, onClear }: {
   vs: VirtualSet
@@ -287,11 +313,14 @@ export function LayerTreeNode({
 
         <Tooltip content={isUiHidden ? 'プレビューに表示する' : 'プレビューから非表示にする'}>
           <button
-            className={styles.visibilityBtn}
+            type="button"
+            className={`${styles.visibilityBtn} ${isUiHidden ? styles.visibilityBtnHidden : styles.visibilityBtnVisible}`}
             onMouseDown={handleVisibilityMouseDown}
             onMouseEnter={handleVisibilityMouseEnter}
+            aria-label={isUiHidden ? 'プレビューに表示する' : 'プレビューから非表示にする'}
+            aria-pressed={!isUiHidden}
           >
-            {isUiHidden ? '' : '👁'}
+            {!isUiHidden && <VisibilityIcon />}
           </button>
         </Tooltip>
 
