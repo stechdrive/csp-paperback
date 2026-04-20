@@ -1,7 +1,7 @@
 export interface AnimationFolderInfo {
-  detectedBy: 'xdts' | 'manual'
+  detectedBy: 'xdts' | 'manual' | 'autoProcess'
   trackName: string
-  /** XDTS の trackNo。manual 指定では未設定。 */
+  /** XDTS の trackNo。manual / autoProcess 指定では未設定。 */
   trackNo?: number
 }
 

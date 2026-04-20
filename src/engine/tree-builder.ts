@@ -1,5 +1,6 @@
 import type { Psd, Layer } from 'ag-psd'
 import type { CspLayer, BlendMode, XdtsData } from '../types'
+import type { ProcessFolderEntry } from '../types/project'
 import { assignTracksToFolders, type AssignResult } from './anim-folder-assignment'
 
 /**
@@ -184,6 +185,89 @@ export function collectAnimFolderAncestorIds(tree: CspLayer[]): Set<string> {
 
   walk(tree, [])
   return ancestorIds
+}
+
+/**
+ * autoMarked フォルダのうち、直接の子に processTable 登録名のフォルダを
+ * 持つものをアニメーションフォルダに昇格させる。
+ *
+ * ルール:
+ * - 祖先がアニメフォルダ（XDTS/手動/autoProcess いずれでも）なら対象外
+ * - 子孫に既に昇格済みフォルダを含むなら対象外（内側優先）
+ * - 直接の子のみ照合（孫は見ない）
+ * - 既に isAnimationFolder=true なら対象外（XDTS/手動が優先）
+ * - 名前照合は trim + lowercase
+ *
+ * 元のツリーは変更せず、変更のあったレイヤーのみ新オブジェクトを返す。
+ */
+export function promoteAutoMarkedByProcessMatch(
+  tree: CspLayer[],
+  processTable: ProcessFolderEntry[],
+): CspLayer[] {
+  if (processTable.length === 0) return tree
+
+  const processNames = new Set<string>()
+  for (const entry of processTable) {
+    for (const name of entry.folderNames) {
+      const normalized = name.trim().toLowerCase()
+      if (normalized.length > 0) processNames.add(normalized)
+    }
+  }
+  if (processNames.size === 0) return tree
+
+  function hasDirectProcessChild(children: CspLayer[]): boolean {
+    return children.some(c =>
+      c.isFolder && processNames.has(c.originalName.trim().toLowerCase())
+    )
+  }
+
+  // ボトムアップ走査。戻り値は変更後レイヤーと、子孫に昇格を含むかのフラグ。
+  function walk(
+    layer: CspLayer,
+    insideAnimFolder: boolean,
+  ): { next: CspLayer; hasPromotedDescendant: boolean; changed: boolean } {
+    const nextInside = insideAnimFolder || layer.isAnimationFolder
+    const childResults = layer.children.map(c => walk(c, nextInside))
+    const anyChildChanged = childResults.some(r => r.changed)
+    const newChildren = anyChildChanged ? childResults.map(r => r.next) : layer.children
+    const childHasPromoted = childResults.some(r => r.hasPromotedDescendant)
+
+    const shouldPromote =
+      !insideAnimFolder &&
+      !layer.isAnimationFolder &&
+      layer.autoMarked &&
+      layer.isFolder &&
+      !childHasPromoted &&
+      hasDirectProcessChild(newChildren)
+
+    if (shouldPromote) {
+      return {
+        next: {
+          ...layer,
+          children: newChildren,
+          isAnimationFolder: true,
+          autoMarked: false,
+          animationFolder: { detectedBy: 'autoProcess', trackName: layer.originalName },
+        },
+        hasPromotedDescendant: true,
+        changed: true,
+      }
+    }
+
+    if (anyChildChanged) {
+      return {
+        next: { ...layer, children: newChildren },
+        hasPromotedDescendant: childHasPromoted,
+        changed: true,
+      }
+    }
+
+    return { next: layer, hasPromotedDescendant: childHasPromoted, changed: false }
+  }
+
+  const topResults = tree.map(l => walk(l, false))
+  const anyChanged = topResults.some(r => r.changed)
+  return anyChanged ? topResults.map(r => r.next) : tree
 }
 
 /**

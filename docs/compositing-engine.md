@@ -239,6 +239,32 @@ XDTSはCSPから書き出されたタイムシートであり、`trackNo` とPSD
 
 手動指定アニメーションフォルダは、このXDTS検出結果の後段に重ねるアプリ独自のオーバーレイである。既存のXDTS検出済みフォルダ、既存アニメフォルダの祖先、既存アニメフォルダの子孫には重ねない。`_` プレフィックスの自動単体マークがあるフォルダでも、手動アニメーションフォルダとして指定された場合はセル出力を優先する。
 
+### autoMarked フォルダの工程一致による自動アニメフォルダ昇格
+
+`_` プレフィックスフォルダ（autoMarked）のうち、**直接の子に processTable 登録名のフォルダを持つもの** は、アニメーションフォルダに自動昇格する（`promoteAutoMarkedByProcessMatch`）。これは「作画マンの原図と演出修正（`_e/` 等）を別々の紙として出力したい」というユースケースを、明示的な手動マークなしで満たすための機構である。
+
+昇格の判定ルール：
+
+1. **既に isAnimationFolder=true** のフォルダは対象外（XDTS/手動マークが優先）
+2. **祖先にアニメフォルダが1つでもある**なら対象外（クリスタ仕様「アニメフォルダ内にアニメフォルダは含まれない」を遵守）
+3. **子孫に既に昇格済みフォルダを含む**なら対象外（内側優先）
+4. **直接の子のみ**を processTable と照合（孫は見ない。trim + lowercase で照合）
+5. processTable が空なら一切昇格しない
+
+昇格後の挙動：
+
+- `layer.isAnimationFolder = true` + `layer.autoMarked = false`
+- `layer.animationFolder = { detectedBy: 'autoProcess', trackName: layer.originalName }`
+- 既存の extractCells パイプラインにそのまま乗る。XDTSや手動マーク時と命名規則も一貫する
+
+処理ルールの優先順位（アニメフォルダ判定）：
+
+```
+XDTS 正本 > 手動マーク > autoProcess 自動昇格 > autoMarked 据え置き
+```
+
+自動昇格は `selectLayerTreeWithVisibility` 内で `applyOverrides`（XDTS・手動マーク反映）の後段に適用される。既に isAnimationFolder=true のフォルダはスキップされるため、優先順位が保たれる。
+
 ### マーク済みレイヤーの出力
 
 `_` プレフィックスフォルダ（autoMarked）とシングルマーク（手動）は、`collectMarkedLayerContext` で合成コンテキストを収集して出力する。

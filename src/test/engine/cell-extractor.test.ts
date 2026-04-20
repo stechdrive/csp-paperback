@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { extractCells, extractMarkedLayers, extractAllEntries } from '../../engine/cell-extractor'
-import { buildLayerTree, detectAnimationFoldersByXdts } from '../../engine/tree-builder'
+import { buildLayerTree, detectAnimationFoldersByXdts, promoteAutoMarkedByProcessMatch } from '../../engine/tree-builder'
 import { makeLayer, makePsd, makeFolder, makeAnimationFolder } from '../helpers/psd-factory'
 import type { CspLayer, ProjectSettings, XdtsData, FlatLayer } from '../../types'
 
@@ -630,5 +630,100 @@ describe('extractMarkedLayers', () => {
     tree[0].uiHidden = true
     const result = extractMarkedLayers(tree, 100, 100)
     expect(result).toHaveLength(0)
+  })
+})
+
+describe('extractAllEntries with auto-process promotion', () => {
+  const SETTINGS_WITH_E: ProjectSettings = {
+    processTable: [{ suffix: '_e', folderNames: ['_e', '演出'] }],
+    cellNamingMode: 'sequence',
+    archivePatterns: [],
+  }
+
+  it('昇格前: _BG1/{レイヤー, _e/} は autoMarked 単独出力される（本体のみの紙は出ない）', () => {
+    const psd = makePsd({
+      children: [
+        makeFolder('_BG1', [
+          makeLayer({ name: 'レイヤー 1 のコピー' }),
+          makeFolder('_e', [makeLayer({ name: '修正' })]),
+        ]),
+      ],
+    })
+    const tree = buildLayerTree(psd)
+    const entries = extractAllEntries(tree, SETTINGS_WITH_E, 100, 100, 'white', false)
+    const flatNames = entries.map(e => e.flatName).sort()
+    // 昇格なしなので autoMarked 出力のみ。本体だけの紙（セル相当）は出ない。
+    expect(flatNames).toContain('_BG1.jpg')
+    expect(flatNames).toContain('_e.jpg')
+    // アニメフォルダ由来のセル名（連番）は出ない
+    expect(flatNames.some(n => /_BG1_\d{4}/.test(n))).toBe(false)
+  })
+
+  it('昇格後: _BG1 がアニメフォルダ化され、子レイヤー/フォルダが独立したセル紙として出る', () => {
+    // extractCells は各子を独立セルとして扱う仕様。工程フォルダ suffix は
+    // 「セルフォルダの中にある工程フォルダ」にしか発動しない（アニメフォルダ直下の
+    // フォルダはそれ自体がセル）。したがって昇格後の _e/ は「演出差分のセル」、
+    // レイヤーは「本体セル」として独立出力される。
+    const psd = makePsd({
+      children: [
+        makeFolder('_BG1', [
+          makeLayer({ name: 'レイヤー 1 のコピー' }),
+          makeFolder('_e', [makeLayer({ name: '修正' })]),
+        ]),
+      ],
+    })
+    const tree = buildLayerTree(psd)
+    const promoted = promoteAutoMarkedByProcessMatch(tree, SETTINGS_WITH_E.processTable)
+    const entries = extractAllEntries(promoted, SETTINGS_WITH_E, 100, 100, 'white', false)
+    const flatNames = entries.map(e => e.flatName).sort()
+    // 昇格後は _BG1 単独の autoMarked 出力は出ない（アニメフォルダに昇格したので）
+    expect(flatNames).not.toContain('_BG1.jpg')
+    // 配下の _e 単独 autoMarked 出力も出ない（親がアニメフォルダなので context 内セル扱い）
+    expect(flatNames).not.toContain('_e.jpg')
+    // _BG1_ プレフィックスのセル出力が 2 つ出る（本体レイヤー + _e フォルダの 2 子）
+    const bg1Cells = flatNames.filter(n => n.startsWith('_BG1_'))
+    expect(bg1Cells.length).toBe(2)
+  })
+
+  it('内側優先: パターンC で内側 _BG1 のみ昇格、外側 _原図 は autoMarked 据え置き', () => {
+    const psd = makePsd({
+      children: [
+        makeFolder('_原図', [
+          makeFolder('_e', [makeLayer({ name: '全体修正' })]),
+          makeFolder('_BG1', [
+            makeLayer({ name: 'レイヤー' }),
+            makeFolder('_e', [makeLayer({ name: 'BG1修正' })]),
+          ]),
+        ]),
+      ],
+    })
+    const tree = buildLayerTree(psd)
+    const promoted = promoteAutoMarkedByProcessMatch(tree, SETTINGS_WITH_E.processTable)
+    const entries = extractAllEntries(promoted, SETTINGS_WITH_E, 100, 100, 'white', false)
+    const flatNames = entries.map(e => e.flatName).sort()
+    // _原図 は据え置きなので _原図.jpg が出る
+    expect(flatNames).toContain('_原図.jpg')
+    // _BG1 は昇格してセル出力が 2 つ（本体 + _e フォルダのセル）
+    const bg1Cells = flatNames.filter(n => n.startsWith('_BG1_'))
+    expect(bg1Cells.length).toBe(2)
+    // 内側 _e は _BG1 の中のセル扱い、外側 _原図/_e は _原図 の autoMarked 出力に巻き込まれる
+    // （独立 _e.jpg が 1 つだけ衝突回避付きで出る可能性あり、但しパターンC は実務上発生しない想定）
+  })
+
+  it('processTable 空の場合は昇格せず autoMarked 出力のまま', () => {
+    const psd = makePsd({
+      children: [
+        makeFolder('_BG1', [
+          makeLayer({ name: 'レイヤー' }),
+          makeFolder('_e', [makeLayer({ name: '修正' })]),
+        ]),
+      ],
+    })
+    const tree = buildLayerTree(psd)
+    const promoted = promoteAutoMarkedByProcessMatch(tree, [])
+    const entries = extractAllEntries(promoted, DEFAULT_SETTINGS, 100, 100, 'white', false)
+    const flatNames = entries.map(e => e.flatName).sort()
+    expect(flatNames).toContain('_BG1.jpg')
+    expect(flatNames).toContain('_e.jpg')
   })
 })
