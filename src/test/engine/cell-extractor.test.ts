@@ -710,6 +710,51 @@ describe('extractAllEntries with auto-process promotion', () => {
     // （独立 _e.jpg が 1 つだけ衝突回避付きで出る可能性あり、但しパターンC は実務上発生しない想定）
   })
 
+  it('autoProcess 昇格フォルダのセル名は `_` 除去済み name（sequence モードでも）', () => {
+    // autoProcess 昇格では子フォルダ名が素材分類の意味を持つ。sequence 連番では
+    // 情報消失するため、cellLabel は常に `_` 除去済み name を使う。
+    const psd = makePsd({
+      children: [
+        makeFolder('_原図', [
+          makeFolder('_BOOK1', [makeLayer({ name: 'book1' })]),
+          makeFolder('_BG', [makeLayer({ name: 'bg1' })]),
+        ]),
+      ],
+    })
+    const tree = buildLayerTree(psd)
+    // _BG を processTable に追加して _原図 を昇格させる
+    const settings: ProjectSettings = {
+      processTable: [{ suffix: '_bg', folderNames: ['_BG'] }],
+      cellNamingMode: 'sequence',
+      archivePatterns: [],
+    }
+    const promoted = promoteAutoMarkedByProcessMatch(tree, settings.processTable)
+    const entries = extractAllEntries(promoted, settings, 100, 100, 'white', false)
+    const flatNames = entries.map(e => e.flatName).sort()
+    // 連番 _0001 / _0002 ではなく、子フォルダ名（`_` 除去）が反映される
+    expect(flatNames).toContain('_原図_BOOK1.jpg')
+    expect(flatNames).toContain('_原図_BG.jpg')
+    // 連番表記は出ない
+    expect(flatNames.some(n => /_\d{4}\.jpg$/.test(n))).toBe(false)
+  })
+
+  it('通常アニメフォルダ（非 autoProcess）では従来通り sequence 連番が使われる', () => {
+    const psd = makePsd({
+      children: [
+        makeAnimationFolder('A', [
+          makeFolder('1', [makeLayer()]),
+          makeFolder('2', [makeLayer()]),
+        ]),
+      ],
+    })
+    const tree = buildLayerTree(psd)
+    markManualAnimFolder(tree[0])
+    const entries = extractAllEntries(tree, DEFAULT_SETTINGS, 100, 100, 'white', false)
+    const flatNames = entries.map(e => e.flatName).sort()
+    expect(flatNames).toContain('A_0001.jpg')
+    expect(flatNames).toContain('A_0002.jpg')
+  })
+
   it('processTable 空の場合は昇格せず autoMarked 出力のまま', () => {
     const psd = makePsd({
       children: [
