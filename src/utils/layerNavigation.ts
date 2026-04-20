@@ -122,6 +122,23 @@ export function mergeExpandedFolders(
 }
 
 /**
+ * 明示的に閉じられたフォルダ集合を除外した展開集合を返す。
+ * Shift+スクロール巡回の仮展開がユーザーの「閉じる」意志を上書きしないようにする。
+ */
+export function subtractCollapsedFolders(
+  expandedFolders: Set<string>,
+  userCollapsedFolders: Set<string>,
+): Set<string> {
+  if (userCollapsedFolders.size === 0) return expandedFolders
+
+  const result = new Set<string>()
+  for (const id of expandedFolders) {
+    if (!userCollapsedFolders.has(id)) result.add(id)
+  }
+  return result
+}
+
+/**
  * 選択中のレイヤーを表示するために必要な一時展開フォルダだけを返す。
  * もともとユーザーが開いていたフォルダは含めないので、選択が外に出たら自然に閉じる。
  */

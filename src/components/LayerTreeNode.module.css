@@ -63,6 +63,12 @@
   transform: rotate(90deg);
 }
 
+/* Shift+スクロール巡回で一時的に開いているだけの状態。
+   本来ユーザーが開いた訳ではないことを薄い表示で示す。 */
+.expandChevronTransient {
+  opacity: 0.45;
+}
+
 .expandPlaceholder {
   width: 16px;
   flex-shrink: 0;
@@ -181,7 +187,22 @@
 }
 
 .typeIconAutoProcess {
-  filter: drop-shadow(0 0 3px var(--color-orange));
+  /* sepia+hue-rotate で絵文字の色味自体をオレンジ系に寄せ、
+     通常アニメフォルダ（無装飾の黒基調クラッパーボード）と区別する。
+     彩度・明度は控えめにして派手さを抑える。 */
+  filter:
+    sepia(1) saturate(2.2) hue-rotate(-18deg) brightness(0.85)
+    drop-shadow(0 0 3px var(--color-orange));
+}
+
+/* 通常レイヤー用の書類 SVG アイコン。
+   currentColor でテーマの text-secondary を引き継ぎ、ライトテーマでも輪郭が見えるようにする。 */
+.docIcon {
+  display: block;
+  width: 12px;
+  height: 12px;
+  margin: 0 auto;
+  color: var(--color-text-secondary);
 }
 
 .name {
