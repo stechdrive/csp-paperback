@@ -136,6 +136,7 @@ export function LayerTreeNode({
   const isMarked = layer.autoMarked || singleMarks.has(layer.id)
   const isManualAnimFolder = manualAnimFolderIds.has(layer.id)
   const isXdtsAnimFolder = layer.animationFolder?.detectedBy === 'xdts'
+  const isAutoProcessAnimFolder = layer.animationFolder?.detectedBy === 'autoProcess'
   const isAnimFolder = layer.isAnimationFolder || (layer.isFolder && isManualAnimFolder)
   const canToggleManualAnimFolder = layer.isFolder &&
     !isCell &&
@@ -245,7 +246,8 @@ export function LayerTreeNode({
   else if (layer.isFolder) typeIcon = '📁'
 
   let nameClass = styles.name
-  if (isAnimFolder) nameClass = `${styles.name} ${styles.nameAnim}`
+  if (isAutoProcessAnimFolder) nameClass = `${styles.name} ${styles.nameAnimAutoProcess}`
+  else if (isAnimFolder) nameClass = `${styles.name} ${styles.nameAnim}`
   else if (layer.autoMarked) nameClass = `${styles.name} ${styles.nameAutoMark}`
   else if (isCell) nameClass = `${styles.name} ${styles.nameCell}`
 

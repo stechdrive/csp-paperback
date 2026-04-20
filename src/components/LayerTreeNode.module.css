@@ -193,6 +193,10 @@
   color: var(--color-cyan);
 }
 
+.nameAnimAutoProcess {
+  color: var(--color-orange);
+}
+
 .nameAutoMark {
   color: var(--color-success);
 }
