@@ -7,6 +7,7 @@ import {
   flattenVisible,
   findLayerById,
   mergeExpandedFolders,
+  subtractCollapsedFolders,
 } from '../utils/layerNavigation'
 import type { OutputPreviewEntry } from '../hooks/useOutputPreview'
 import styles from './OutputPreview.module.css'
@@ -38,6 +39,7 @@ function LayerSeekBar() {
   const selectedLayerId = useAppStore(s => s.selectedLayerId)
   const selectedVirtualSetId = useAppStore(s => s.selectedVirtualSetId)
   const expandedFolders = useAppStore(s => s.expandedFolders)
+  const userCollapsedFolders = useAppStore(s => s.userCollapsedFolders)
   const manualAnimFolderIds = useAppStore(s => s.manualAnimFolderIds)
   const virtualSets = useAppStore(s => s.virtualSets)
   const singleMarks = useAppStore(s => s.singleMarks)
@@ -51,8 +53,11 @@ function LayerSeekBar() {
     [tree, manualAnimFolderIds, virtualSets],
   )
   const navigationExpandedFolders = useMemo(
-    () => mergeExpandedFolders(expandedFolders, shiftExpandableFolders),
-    [expandedFolders, shiftExpandableFolders],
+    () => subtractCollapsedFolders(
+      mergeExpandedFolders(expandedFolders, shiftExpandableFolders),
+      userCollapsedFolders,
+    ),
+    [expandedFolders, shiftExpandableFolders, userCollapsedFolders],
   )
   const entries = useMemo(() =>
     flattenVisible(tree, navigationExpandedFolders, manualAnimFolderIds, virtualSets),

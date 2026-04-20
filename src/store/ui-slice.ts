@@ -24,6 +24,11 @@ export interface UiSlice {
   selectedVsMemberId: string | null
   visibilityOverrides: Map<string, boolean>  // layerId → uiHidden
   expandedFolders: Set<string>
+  /**
+   * ユーザーが明示的に閉じたフォルダ。Shift+ホイール巡回で祖先が仮展開されていても、
+   * この集合にあるフォルダは閉じたまま表示する（ユーザーの開閉意志を尊重）。
+   */
+  userCollapsedFolders: Set<string>
   /** タイムラインの現在フレーム（0-based） */
   currentFrame: number
   setMobileUiScale: (scale: number) => void
@@ -44,6 +49,13 @@ export interface UiSlice {
   toggleLayerVisibility: (layerId: string) => void
   toggleFolderExpanded: (layerId: string) => void
   toggleFolderExpandedRecursive: (layerId: string) => void
+  /**
+   * フォルダの開閉を「視覚状態 → 反対方向」で明示的に設定する。
+   * 仮展開（Shift巡回による自動展開）されているフォルダを閉じると、
+   * userCollapsedFolders に記録され以降の仮展開を抑制する。
+   */
+  setFolderExpanded: (layerId: string, expanded: boolean) => void
+  setFolderExpandedRecursive: (layerId: string, expanded: boolean) => void
   resetVisibility: () => void
 }
 
@@ -89,6 +101,7 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
   selectedVsMemberId: null,
   visibilityOverrides: new Map(),
   expandedFolders: new Set(),
+  userCollapsedFolders: new Set(),
   currentFrame: 0,
 
   setMobileUiScale: (scale) => {
@@ -197,13 +210,16 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
   },
 
   toggleFolderExpanded: (layerId) => {
-    const current = new Set(get().expandedFolders)
-    if (current.has(layerId)) {
-      current.delete(layerId)
+    const expandedFolders = new Set(get().expandedFolders)
+    const userCollapsedFolders = new Set(get().userCollapsedFolders)
+    if (expandedFolders.has(layerId)) {
+      expandedFolders.delete(layerId)
     } else {
-      current.add(layerId)
+      expandedFolders.add(layerId)
     }
-    set({ expandedFolders: current })
+    // 永続状態を直接トグルする場合、明示的な閉じる意志は解除
+    userCollapsedFolders.delete(layerId)
+    set({ expandedFolders, userCollapsedFolders })
   },
 
   toggleFolderExpandedRecursive: (layerId) => {
@@ -224,12 +240,55 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
     }
 
     const ids = collectFolderIds(root)
-    const current = new Set(expandedFolders)
+    const nextExpanded = new Set(expandedFolders)
+    const nextCollapsed = new Set(get().userCollapsedFolders)
     for (const id of ids) {
-      if (willExpand) current.add(id)
-      else current.delete(id)
+      if (willExpand) nextExpanded.add(id)
+      else nextExpanded.delete(id)
+      nextCollapsed.delete(id)
     }
-    set({ expandedFolders: current })
+    set({ expandedFolders: nextExpanded, userCollapsedFolders: nextCollapsed })
+  },
+
+  setFolderExpanded: (layerId, expanded) => {
+    const expandedFolders = new Set(get().expandedFolders)
+    const userCollapsedFolders = new Set(get().userCollapsedFolders)
+    if (expanded) {
+      expandedFolders.add(layerId)
+      userCollapsedFolders.delete(layerId)
+    } else {
+      expandedFolders.delete(layerId)
+      userCollapsedFolders.add(layerId)
+    }
+    set({ expandedFolders, userCollapsedFolders })
+  },
+
+  setFolderExpandedRecursive: (layerId, expanded) => {
+    const { layerTree } = get()
+    const root = findLayerById(layerTree, layerId)
+    if (!root) return
+
+    function collectFolderIds(layer: CspLayer): string[] {
+      const ids: string[] = layer.isFolder ? [layer.id] : []
+      for (const child of layer.children) {
+        ids.push(...collectFolderIds(child))
+      }
+      return ids
+    }
+
+    const ids = collectFolderIds(root)
+    const nextExpanded = new Set(get().expandedFolders)
+    const nextCollapsed = new Set(get().userCollapsedFolders)
+    for (const id of ids) {
+      if (expanded) {
+        nextExpanded.add(id)
+        nextCollapsed.delete(id)
+      } else {
+        nextExpanded.delete(id)
+        nextCollapsed.add(id)
+      }
+    }
+    set({ expandedFolders: nextExpanded, userCollapsedFolders: nextCollapsed })
   },
 
   resetVisibility: () => {

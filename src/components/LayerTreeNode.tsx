@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react'
+import type { ReactNode } from 'react'
 import { useAppStore } from '../store'
 import type { CspLayer, VirtualSet } from '../types'
 import { isUnsupportedBlendMode } from '../engine/compositor'
@@ -18,14 +19,41 @@ interface LayerTreeNodeProps {
   selectedLayerId: string | null
   onSelect: (id: string) => void
   onToggleVisibility: (id: string) => void
-  onToggleExpanded: (id: string) => void
-  onToggleExpandedRecursive: (id: string) => void
+  onSetExpanded: (id: string, expanded: boolean) => void
+  onSetExpandedRecursive: (id: string, expanded: boolean) => void
   onToggleMark: (id: string) => void
   onToggleAnimFolder: (id: string) => void
   expandedFolders: Set<string>
+  /** Shift巡回で一時的に開いているだけのフォルダ（チェブロン視覚区別用） */
+  transientExpandedFolders?: Set<string>
   visibilityOverrides: Map<string, boolean>
   isCell?: boolean
   animParentId?: string
+}
+
+function DocumentIcon() {
+  return (
+    <svg
+      className={styles.docIcon}
+      viewBox="0 0 16 16"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      <path
+        d="M4 2 H10 L13 5 V13 A1 1 0 0 1 12 14 H4 A1 1 0 0 1 3 13 V3 A1 1 0 0 1 4 2 Z"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M10 2 V5 H13"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
 }
 
 function VisibilityIcon() {
@@ -104,11 +132,12 @@ export function LayerTreeNode({
   selectedLayerId,
   onSelect,
   onToggleVisibility,
-  onToggleExpanded,
-  onToggleExpandedRecursive,
+  onSetExpanded,
+  onSetExpandedRecursive,
   onToggleMark,
   onToggleAnimFolder,
   expandedFolders,
+  transientExpandedFolders,
   visibilityOverrides,
   isCell = false,
   animParentId,
@@ -133,6 +162,7 @@ export function LayerTreeNode({
     : (layer.hidden || layer.uiHidden)
   const isHidden = isUiHidden
   const isExpanded = expandedFolders.has(layer.id)
+  const isTransientExpanded = !!transientExpandedFolders?.has(layer.id)
   const isMarked = layer.autoMarked || singleMarks.has(layer.id)
   const isManualAnimFolder = manualAnimFolderIds.has(layer.id)
   const isXdtsAnimFolder = layer.animationFolder?.detectedBy === 'xdts'
@@ -191,12 +221,15 @@ export function LayerTreeNode({
 
   const handleExpandClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
+    // 視覚状態（仮展開も含む）の反対方向に切り替える。
+    // 仮展開を閉じるときは userCollapsedFolders に記録され、以降の仮展開が抑制される。
+    const nextExpanded = !isExpanded
     if (e.altKey) {
-      onToggleExpandedRecursive(layer.id)
+      onSetExpandedRecursive(layer.id, nextExpanded)
     } else {
-      onToggleExpanded(layer.id)
+      onSetExpanded(layer.id, nextExpanded)
     }
-  }, [layer.id, onToggleExpanded, onToggleExpandedRecursive])
+  }, [layer.id, isExpanded, onSetExpanded, onSetExpandedRecursive])
 
   const handleMarkClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
@@ -240,7 +273,7 @@ export function LayerTreeNode({
 
   const indentWidth = layer.depth * 16
 
-  let typeIcon = '🖼'
+  let typeIcon: ReactNode = <DocumentIcon />
   if (isAnimFolder) typeIcon = '🎬'
   else if (isCell) typeIcon = '🎞'
   else if (layer.isFolder) typeIcon = '📁'
@@ -299,16 +332,25 @@ export function LayerTreeNode({
         <div className={styles.indent} style={{ width: indentWidth }} />
 
         {layer.isFolder ? (
-          <button className={styles.expandBtn} onClick={handleExpandClick}>
-            <svg
-              className={`${styles.expandChevron} ${isExpanded ? styles.expandChevronOpen : ''}`}
-              viewBox="0 0 10 10"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path d="M3 2 L7 5 L3 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
+          <Tooltip content={isTransientExpanded
+            ? 'Shift+スクロール巡回で自動展開中\nクリックで閉じるとこのフォルダは巡回されません'
+            : ''
+          }>
+            <button className={styles.expandBtn} onClick={handleExpandClick}>
+              <svg
+                className={[
+                  styles.expandChevron,
+                  isExpanded ? styles.expandChevronOpen : '',
+                  isTransientExpanded ? styles.expandChevronTransient : '',
+                ].filter(Boolean).join(' ')}
+                viewBox="0 0 10 10"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path d="M3 2 L7 5 L3 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          </Tooltip>
         ) : (
           <div className={styles.expandPlaceholder} />
         )}
@@ -391,11 +433,12 @@ export function LayerTreeNode({
               selectedLayerId={selectedLayerId}
               onSelect={onSelect}
               onToggleVisibility={onToggleVisibility}
-              onToggleExpanded={onToggleExpanded}
-              onToggleExpandedRecursive={onToggleExpandedRecursive}
+              onSetExpanded={onSetExpanded}
+              onSetExpandedRecursive={onSetExpandedRecursive}
               onToggleMark={onToggleMark}
               onToggleAnimFolder={onToggleAnimFolder}
               expandedFolders={expandedFolders}
+              transientExpandedFolders={transientExpandedFolders}
               visibilityOverrides={visibilityOverrides}
               isCell={isAnimFolder}
               animParentId={isAnimFolder ? layer.id : undefined}

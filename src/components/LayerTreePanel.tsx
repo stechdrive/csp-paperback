@@ -12,6 +12,7 @@ import {
   flattenVisible,
   findLayerById,
   mergeExpandedFolders,
+  subtractCollapsedFolders,
 } from '../utils/layerNavigation'
 import styles from './LayerTreePanel.module.css'
 
@@ -19,6 +20,7 @@ export function LayerTreePanel() {
   const tree = useAppStore(selectLayerTreeWithVisibility)
   const selectedLayerId = useAppStore(s => s.selectedLayerId)
   const expandedFolders = useAppStore(s => s.expandedFolders)
+  const userCollapsedFolders = useAppStore(s => s.userCollapsedFolders)
   const visibilityOverrides = useAppStore(s => s.visibilityOverrides)
   const virtualSets = useAppStore(s => s.virtualSets)
   const selectedVirtualSetId = useAppStore(s => s.selectedVirtualSetId)
@@ -30,8 +32,8 @@ export function LayerTreePanel() {
   const selectAnimCell = useAppStore(s => s.selectAnimCell)
   const setFocusedAnimFolder = useAppStore(s => s.setFocusedAnimFolder)
   const toggleLayerVisibility = useAppStore(s => s.toggleLayerVisibility)
-  const toggleFolderExpanded = useAppStore(s => s.toggleFolderExpanded)
-  const toggleFolderExpandedRecursive = useAppStore(s => s.toggleFolderExpandedRecursive)
+  const setFolderExpanded = useAppStore(s => s.setFolderExpanded)
+  const setFolderExpandedRecursive = useAppStore(s => s.setFolderExpandedRecursive)
   const toggleSingleMark = useAppStore(s => s.toggleSingleMark)
   const toggleManualAnimFolder = useAppStore(s => s.toggleManualAnimFolder)
   const resetVisibility = useAppStore(s => s.resetVisibility)
@@ -48,8 +50,11 @@ export function LayerTreePanel() {
     [tree, manualAnimFolderIds, virtualSets],
   )
   const navigationExpandedFolders = useMemo(
-    () => mergeExpandedFolders(expandedFolders, shiftExpandableFolders),
-    [expandedFolders, shiftExpandableFolders],
+    () => subtractCollapsedFolders(
+      mergeExpandedFolders(expandedFolders, shiftExpandableFolders),
+      userCollapsedFolders,
+    ),
+    [expandedFolders, shiftExpandableFolders, userCollapsedFolders],
   )
   const selectedShiftExpandedFolders = useMemo(
     () => selectedVirtualSetId
@@ -70,9 +75,25 @@ export function LayerTreePanel() {
     [tree, selectedLayerId, selectedVirtualSetId, virtualSets, expandedFolders, shiftExpandableFolders],
   )
   const visibleExpandedFolders = useMemo(
-    () => mergeExpandedFolders(expandedFolders, selectedShiftExpandedFolders),
-    [expandedFolders, selectedShiftExpandedFolders],
+    () => subtractCollapsedFolders(
+      mergeExpandedFolders(expandedFolders, selectedShiftExpandedFolders),
+      userCollapsedFolders,
+    ),
+    [expandedFolders, selectedShiftExpandedFolders, userCollapsedFolders],
   )
+  /**
+   * 現在「仮展開のみで開いている」フォルダ集合。
+   * 視覚的には開いているが、ユーザーの永続状態では閉じている（Shift巡回由来）。
+   * LayerTreeNode でチェブロンを薄く表示するために使う。
+   */
+  const transientExpandedFolders = useMemo(() => {
+    if (selectedShiftExpandedFolders.size === 0) return selectedShiftExpandedFolders
+    const result = new Set<string>()
+    for (const id of selectedShiftExpandedFolders) {
+      if (!expandedFolders.has(id) && !userCollapsedFolders.has(id)) result.add(id)
+    }
+    return result
+  }, [selectedShiftExpandedFolders, expandedFolders, userCollapsedFolders])
 
   const scrollLayerIntoView = useCallback((layerId: string) => {
     requestAnimationFrame(() => {
@@ -207,11 +228,12 @@ export function LayerTreePanel() {
               selectedLayerId={selectedLayerId}
               onSelect={selectLayer}
               onToggleVisibility={toggleLayerVisibility}
-              onToggleExpanded={toggleFolderExpanded}
-              onToggleExpandedRecursive={toggleFolderExpandedRecursive}
+              onSetExpanded={setFolderExpanded}
+              onSetExpandedRecursive={setFolderExpandedRecursive}
               onToggleMark={toggleSingleMark}
               onToggleAnimFolder={toggleManualAnimFolder}
               expandedFolders={visibleExpandedFolders}
+              transientExpandedFolders={transientExpandedFolders}
               visibilityOverrides={visibilityOverrides}
             />
           ))
