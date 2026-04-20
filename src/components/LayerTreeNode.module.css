@@ -180,6 +180,10 @@
   filter: drop-shadow(0 0 3px var(--color-success)aa);
 }
 
+.typeIconAutoProcess {
+  filter: drop-shadow(0 0 3px var(--color-orange));
+}
+
 .name {
   font-size: 0.875rem;
   color: var(--color-text-primary);
@@ -191,6 +195,10 @@
 
 .nameAnim {
   color: var(--color-cyan);
+}
+
+.nameAnimAutoProcess {
+  color: var(--color-orange);
 }
 
 .nameAutoMark {

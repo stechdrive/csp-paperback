@@ -1,5 +1,6 @@
 import type { StateCreator } from 'zustand'
 import { canEnableManualAnimFolder } from '../utils/manual-animation-folder'
+import { selectLayerTreeWithVisibility } from './selectors'
 import type { AppStore } from './index'
 
 export interface AnimationSlice {
@@ -21,7 +22,9 @@ export const createAnimationSlice: StateCreator<AppStore, [], [], AnimationSlice
       return
     }
 
-    if (!canEnableManualAnimFolder(get().layerTree, layerId, current)) return
+    // 自動昇格を反映したツリーで判定する。
+    // 昇格で既に isAnimationFolder=true になっているフォルダには手動マークを上乗せできない。
+    if (!canEnableManualAnimFolder(selectLayerTreeWithVisibility(get()), layerId, current)) return
 
     get().pushHistory()
     current.add(layerId)

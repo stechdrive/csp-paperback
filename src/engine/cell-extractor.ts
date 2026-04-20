@@ -44,13 +44,21 @@ export function extractCells(
   const namingMode = projectSettings.cellNamingMode ?? 'sequence'
   const entries: OutputEntry[] = []
 
+  // autoProcess 昇格フォルダでは、配下のセル名（`_BG`, `_BOOK1` 等）が
+  // 素材分類の意味情報を持つ。連番化すると情報ロスするため、常に
+  // `_` 除去済みの name を cellLabel に使う（sequence/cellname の設定は
+  // 通常アニメフォルダ用で、autoProcess には合わないため上書き）。
+  const isAutoProcessAnim = animFolder.animationFolder?.detectedBy === 'autoProcess'
+
   for (let cellIdx = 0; cellIdx < visibleChildren.length; cellIdx++) {
     const cell = visibleChildren[cellIdx]
     // ファイル名プレフィックスはフォルダ名と同じ displayName を使う(Q3: 統一)
     const trackName = displayName
-    const cellLabel = namingMode === 'sequence'
-      ? String(visibleChildren.length - cellIdx).padStart(4, '0')
-      : cell.originalName
+    const cellLabel = isAutoProcessAnim
+      ? (cell.name || cell.originalName)
+      : namingMode === 'sequence'
+        ? String(visibleChildren.length - cellIdx).padStart(4, '0')
+        : cell.originalName
 
     if (!cell.isFolder) {
       // 単体レイヤー: XDTSキーフレーム画像 → そのまま1セル出力

@@ -1,5 +1,7 @@
 import type { AnimationFolderInfo, CspLayer } from '../types'
 import type { SingleMark } from '../types/marks'
+import type { ProcessFolderEntry } from '../types/project'
+import { promoteAutoMarkedByProcessMatch } from '../engine/tree-builder'
 import type { AppStore } from './index'
 
 /**
@@ -13,6 +15,7 @@ let _cache: {
   visibilityOverrides: Map<string, boolean>
   manualAnimFolderIds: Set<string>
   singleMarks: Map<string, SingleMark>
+  processTable: ProcessFolderEntry[]
   result: CspLayer[]
 } | null = null
 
@@ -20,6 +23,7 @@ let _navigatorCache: {
   layerTree: CspLayer[]
   visibilityOverrides: Map<string, boolean>
   xdtsData: AppStore['xdtsData']
+  processTable: ProcessFolderEntry[]
   result: CspLayer[]
 } | null = null
 
@@ -34,6 +38,8 @@ const emptySingleMarks = new Map<string, SingleMark>()
  */
 export function selectLayerTreeWithVisibility(state: AppStore): CspLayer[] {
   const { layerTree, visibilityOverrides, manualAnimFolderIds, singleMarks } = state
+  // projectSettings が欠けた部分モック state も許容する（既存テストとの後方互換）。
+  const processTable = state.projectSettings?.processTable ?? []
 
   // 入力参照がすべて前回と同じなら前回の結果を返す（無限ループ防止）
   if (
@@ -41,17 +47,21 @@ export function selectLayerTreeWithVisibility(state: AppStore): CspLayer[] {
     _cache.layerTree === layerTree &&
     _cache.visibilityOverrides === visibilityOverrides &&
     _cache.manualAnimFolderIds === manualAnimFolderIds &&
-    _cache.singleMarks === singleMarks
+    _cache.singleMarks === singleMarks &&
+    _cache.processTable === processTable
   ) {
     return _cache.result
   }
 
   const hasOverrides = visibilityOverrides.size > 0 || manualAnimFolderIds.size > 0 || singleMarks.size > 0
-  const result = hasOverrides
+  const overridden = hasOverrides
     ? applyOverrides(layerTree, visibilityOverrides, manualAnimFolderIds, singleMarks)
     : layerTree
+  // XDTS/手動マーク反映後に autoMarked の工程一致昇格を適用する。
+  // 既に isAnimationFolder=true のフォルダは昇格対象外なので順序は影響しない。
+  const result = promoteAutoMarkedByProcessMatch(overridden, processTable)
 
-  _cache = { layerTree, visibilityOverrides, manualAnimFolderIds, singleMarks, result }
+  _cache = { layerTree, visibilityOverrides, manualAnimFolderIds, singleMarks, processTable, result }
   return result
 }
 
@@ -67,20 +77,23 @@ export function selectLayerTreeForNavigator(state: AppStore): CspLayer[] {
   }
 
   const { layerTree, visibilityOverrides, xdtsData } = state
+  const processTable = state.projectSettings?.processTable ?? []
   if (
     _navigatorCache !== null &&
     _navigatorCache.layerTree === layerTree &&
     _navigatorCache.visibilityOverrides === visibilityOverrides &&
-    _navigatorCache.xdtsData === xdtsData
+    _navigatorCache.xdtsData === xdtsData &&
+    _navigatorCache.processTable === processTable
   ) {
     return _navigatorCache.result
   }
 
-  const result = visibilityOverrides.size > 0
+  const overridden = visibilityOverrides.size > 0
     ? applyOverrides(layerTree, visibilityOverrides, emptyManualAnimFolderIds, emptySingleMarks)
     : layerTree
+  const result = promoteAutoMarkedByProcessMatch(overridden, processTable)
 
-  _navigatorCache = { layerTree, visibilityOverrides, xdtsData, result }
+  _navigatorCache = { layerTree, visibilityOverrides, xdtsData, processTable, result }
   return result
 }
 
