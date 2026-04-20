@@ -37,6 +37,12 @@ CSP Paperback solves this outside the workflow: load your PSD and XDTS, and expo
 - Toggle any layer to include it as a standalone export outside of animation cells
 - Folders whose names start with `_` are detected automatically, and individual layers can be marked from the layer panel
 
+**Auto-detect animation folders by process subfolders**
+- When a `_`-prefixed folder contains a direct child folder whose name is registered in the process table (`_e`, `_s`, …), the parent is automatically treated as an animation folder
+- Useful for emitting the animator's raw art and the director's revision layer as separate sheets without any manual marking
+- Inner folder wins when multiple levels qualify (CSP never nests animation folders)
+- Names of cells inside an auto-detected animation folder preserve their folder names (not sequence numbers), so material identity stays in the filename
+
 **Export**
 - Preview each cell's composited output before exporting
 - Export all cells as a ZIP archive (JPEG or PNG, with optional transparency)
@@ -93,6 +99,12 @@ CSP Paperbackはその制約をPSDとXDTSを読み込むことでワークフロ
 **単体書き出し**
 - 任意のレイヤーを単体書き出し対象として指定し、アニメーションセルとは独立して書き出せる
 - `_` で始まるフォルダは自動検出され、任意のレイヤーは右パネルから個別にマークできる
+
+**工程フォルダによる自動アニメーションフォルダ化**
+- `_` で始まるフォルダの直下に工程テーブル登録名のフォルダ（`_e`、`_s`など）があると、その `_` フォルダを自動的にアニメーションフォルダとして扱う
+- 作画マンの背景原図と演出修正を、手動指定なしで別々のファイルとして書き出せる
+- `_` フォルダがネストしている場合は内側を優先（CSPの仕様でアニメーションフォルダは入れ子にならないため）
+- 自動アニメ化されたフォルダ配下のセル名は、連番ではなく直下のフォルダ名を採用（`_BG_BG1.jpg` のように素材分類情報が残る）
 
 **書き出し**
 - 各セルの合成結果を書き出し前にプレビューで確認できる

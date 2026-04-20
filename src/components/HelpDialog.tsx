@@ -13,6 +13,7 @@ const TOC = [
   { id: 'auto-mark', label: '単体出力の指定方法' },
   { id: 'single-mark', label: '★で後から指定' },
   { id: 'manual-anim-folder', label: '手動アニメフォルダ 🎬' },
+  { id: 'auto-anim-folder', label: '自動アニメフォルダ化 🎬' },
   { id: 'virtual-set', label: '仮想セル' },
   { id: 'process-table', label: '工程フォルダリスト' },
   { id: 'export-settings', label: '出力設定' },
@@ -909,6 +910,113 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               </div>
             </section>
 
+            {/* ===== 7b. 自動アニメフォルダ化 ===== */}
+            <section className={styles.section} data-section="auto-anim-folder">
+              <h2 className={styles.h1}>🎬 自動アニメーションフォルダ化（オレンジ）</h2>
+
+              <p className={styles.p}>
+                <span className={styles.strong}>自動アニメーションフォルダ化</span>は、
+                <code className={styles.code}>_</code> で始まるフォルダ（単体出力の対象）の
+                <span className={styles.em}>直下に工程フォルダ</span>（<code className={styles.code}>_e</code> や <code className={styles.code}>_s</code> 等、工程フォルダリストに登録されている名前）がある場合に、
+                その <code className={styles.code}>_</code> フォルダを
+                <span className={styles.em}>自動的にアニメーションフォルダとして扱う</span>仕組みです。
+                作画マンの背景原図と、それに対する演出修正などを、手動指定なしで別々のファイルとして書き出せます。
+                対象フォルダはレイヤーツリー上で<span className={styles.em}>オレンジ色</span>で表示されます。
+              </p>
+
+              <div className={styles.layerDiagram}>
+                <div className={styles.layerRow}>
+                  <span className={styles.iconFolder}>📁</span>
+                  <span className={styles.layerNameMark}>_原図</span>
+                  <span className={styles.labelMark}>★ 自動</span>
+                </div>
+                <div className={`${styles.layerRow} ${styles.indent1}`}>
+                  <span className={styles.iconAnim} style={{ filter: 'drop-shadow(0 0 3px var(--color-orange))' }}>🎬</span>
+                  <span className={styles.layerNameAnim} style={{ color: 'var(--color-orange)' }}>_BG</span>
+                  <span style={{ color: 'var(--color-text-subtle)', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
+                    ← 直下に <code className={styles.code}>_e</code> があるので自動アニメ化
+                  </span>
+                </div>
+                <div className={`${styles.layerRow} ${styles.indent2}`}>
+                  <span className={styles.iconLayer}>◆</span>
+                  <span className={styles.layerName}>BG1</span>
+                  <span style={{ color: 'var(--color-text-subtle)', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
+                    → <code className={styles.code}>_BG_BG1.jpg</code>（作画マンの原図）
+                  </span>
+                </div>
+                <div className={`${styles.layerRow} ${styles.indent2}`}>
+                  <span className={styles.iconFolder}>📁</span>
+                  <span className={styles.layerName}>_e</span>
+                  <span style={{ color: 'var(--color-text-subtle)', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
+                    → <code className={styles.code}>_BG_e.jpg</code>（演出修正）
+                  </span>
+                </div>
+                <div className={`${styles.layerRow} ${styles.indent1}`}>
+                  <span className={styles.iconFolder}>📁</span>
+                  <span className={styles.layerNameMark}>_BOOK1</span>
+                  <span className={styles.labelMark}>★ 自動</span>
+                  <span style={{ color: 'var(--color-text-subtle)', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
+                    ← 直下に工程フォルダがないので単体出力のまま
+                  </span>
+                </div>
+              </div>
+
+              <h3 className={styles.h2}>発動条件</h3>
+              <ul className={styles.ul}>
+                <li>
+                  対象フォルダの名前が <code className={styles.code}>_</code> で始まる（単体出力マークの対象である）
+                </li>
+                <li>
+                  対象フォルダの<span className={styles.strong}>直接の子</span>のいずれかが、工程フォルダリストに登録された名前のフォルダである（孫階層は見ません）
+                </li>
+                <li>
+                  対象フォルダがまだアニメーションフォルダとして確定していない（XDTS検出や手動指定が優先）
+                </li>
+                <li>
+                  対象フォルダの祖先がアニメーションフォルダではない（アニメーションフォルダは入れ子にしないCSPの仕様に準拠）
+                </li>
+                <li>
+                  対象フォルダの子孫にすでに自動アニメ化済みのフォルダがない（ネスト時は<span className={styles.strong}>内側を優先</span>）
+                </li>
+              </ul>
+
+              <h3 className={styles.h2}>セル名の扱い</h3>
+              <p className={styles.p}>
+                自動アニメ化されたフォルダ配下のセル名は、出力名の設定（連番／セル名）に関わらず
+                <span className={styles.strong}>直下のフォルダ／レイヤー名から <code className={styles.code}>_</code> を取り除いたもの</span>
+                を使用します。
+                <code className={styles.code}>_BG</code> のような親フォルダに対して、中身の <code className={styles.code}>BG1</code>、<code className={styles.code}>BOOK1</code> などは素材そのものの意味情報を持っているため、連番で上書きせず名前をそのまま残します。
+              </p>
+
+              <h3 className={styles.h2}>使う場面</h3>
+              <ul className={styles.ul}>
+                <li>
+                  <span className={styles.strong}>背景原図＋演出修正を別の「紙」として出したい</span>
+                  （作画マンの絵と、それに対する演出修正を別ファイルに）
+                </li>
+                <li>
+                  PSDには<code className={styles.code}>_BG</code>、<code className={styles.code}>_BOOK1</code>など素材分類フォルダを作り、工程修正（<code className={styles.code}>_e</code>等）を素材ごとに入れている運用
+                </li>
+                <li>
+                  手動で 🎬 を押して回る手間を省きたい場合
+                </li>
+              </ul>
+
+              <div className={styles.calloutTip}>
+                <span className={styles.strong}>💡 優先順位：</span>
+                アニメーションフォルダの判定は
+                <span className={styles.em}>XDTS検出 → 手動指定 → 自動アニメ化 → 単体出力</span>
+                の順で確定します。XDTSや🎬で明示した方が常に優先されるので、意図しない自動化を無効にしたい場合は🎬を外すか、工程フォルダリストから該当名を取り除いてください。
+              </div>
+
+              <div className={styles.calloutInfo}>
+                <span className={styles.strong}>工程フォルダリスト：</span>
+                工程として扱うフォルダ名は<span className={styles.em}>右上の「設定」ダイアログ</span>から編集できます。
+                プリセットは <code className={styles.code}>_e / 演出</code>、<code className={styles.code}>_s / 作監</code> など。
+                リストが空の場合は自動アニメ化は発動しません。
+              </div>
+            </section>
+
             {/* ===== 8. 仮想セル ===== */}
             <section className={styles.section} data-section="virtual-set">
               <h2 className={styles.h1}>🧩 仮想セル</h2>
@@ -1153,6 +1261,13 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 <span className={styles.strong}>💡 どちらの形式でも同じ工程フォルダリスト設定が使えます。</span>
                 サンプルでは「演出」がトラック分離型（アニメーションフォルダの親フォルダ名）として、
                 「_s」がセル内蔵型（セル内のサブフォルダ名）として、それぞれ自動的にマッチして分離出力されます。
+              </div>
+
+              <div className={styles.calloutInfo}>
+                <span className={styles.strong}>📎 自動アニメーションフォルダ化との連動：</span>
+                ここに登録したフォルダ名は、<code className={styles.code}>_</code> で始まるフォルダの直下に存在するとき、
+                その親フォルダを<span className={styles.em}>自動的にアニメーションフォルダとして扱う</span>条件にも使われます。
+                詳しくは「自動アニメフォルダ化」の項を参照してください。
               </div>
             </section>
 
