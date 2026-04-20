@@ -326,10 +326,10 @@ export function LayerTreeNode({
           </button>
         </Tooltip>
 
-        <span className={`${styles.typeIcon} ${isCell ? styles.typeIconCell : ''}`}>{typeIcon}</span>
+        <span className={`${styles.typeIcon} ${isCell ? styles.typeIconCell : ''} ${isAutoProcessAnimFolder ? styles.typeIconAutoProcess : ''}`}>{typeIcon}</span>
 
         <span className={nameClass} title={layer.originalName}>
-          {layer.autoMarked ? layer.originalName : (layer.name || layer.originalName)}
+          {(layer.autoMarked || isAutoProcessAnimFolder) ? layer.originalName : (layer.name || layer.originalName)}
         </span>
 
         {isUnsupportedBlendMode(layer.blendMode) && (
