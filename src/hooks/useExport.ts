@@ -3,13 +3,15 @@ import { useAppStore } from '../store'
 import { selectLayerTreeWithVisibility } from '../store/selectors'
 import { extractAllEntries, extractVirtualSetEntries } from '../engine/cell-extractor'
 import { flattenTree } from '../engine/flatten'
+import type { OutputDestination } from '../types/output'
 import { buildZipStream, saveZipStream, makeZipFileName } from '../utils/zip-builder'
+import { saveEntriesToDirectory, supportsDirectoryExport } from '../utils/directory-builder'
 
 export interface UseExportResult {
   isExporting: boolean
   progress: number  // 0〜1
   error: string | null
-  startExport: () => Promise<void>
+  startExport: (destination?: OutputDestination) => Promise<void>
 }
 
 export function useExport(): UseExportResult {
@@ -17,7 +19,7 @@ export function useExport(): UseExportResult {
   const [progress, setProgress] = useState(0)
   const [error, setError] = useState<string | null>(null)
 
-  const startExport = useCallback(async () => {
+  const startExport = useCallback(async (destination: OutputDestination = 'zip') => {
     const state = useAppStore.getState()
     const { docWidth, docHeight, docDpiX, docDpiY, psdFileName, outputConfig, projectSettings } = state
 
@@ -62,20 +64,40 @@ export function useExport(): UseExportResult {
 
       setProgress(0.5)
 
-      // ZIP 生成: canvas → Blob 変換をエントリ 1 枚ずつ逐次化するストリーム。
-      // buildZipStream 内部で canvas を release するため、ここで entries の canvas
-      // 参照は処理済みになる(呼び出し後に entries を再利用しないこと)。
-      const stream = buildZipStream(
-        entries, outputConfig, docDpiX, docDpiY,
-        (done, total) => {
-          // エントリ処理分 (0.5 → 0.95 の 0.45 幅) を done/total で案分
-          setProgress(0.5 + 0.45 * (done / total))
-        },
-      )
+      const handleEntryProgress = (done: number, total: number) => {
+        // エントリ処理分 (0.5 → 0.95 の 0.45 幅) を done/total で案分
+        setProgress(0.5 + 0.45 * (done / total))
+      }
 
-      // 保存: File System Access API が使えればネイティブ保存ダイアログから直接書き込み、
-      // それ以外は Blob 化してから downloadBlob でフォールバック
-      await saveZipStream(stream, makeZipFileName(psdFileName))
+      if (destination === 'directory') {
+        if (!supportsDirectoryExport()) {
+          throw new Error('このブラウザではフォルダ書き出しに対応していません')
+        }
+
+        await saveEntriesToDirectory(
+          entries,
+          outputConfig,
+          psdFileName,
+          docDpiX,
+          docDpiY,
+          handleEntryProgress,
+        )
+      } else {
+        // ZIP 生成: canvas → Blob 変換をエントリ 1 枚ずつ逐次化するストリーム。
+        // buildZipStream 内部で canvas を release するため、ここで entries の canvas
+        // 参照は処理済みになる(呼び出し後に entries を再利用しないこと)。
+        const stream = buildZipStream(
+          entries,
+          outputConfig,
+          docDpiX,
+          docDpiY,
+          handleEntryProgress,
+        )
+
+        // 保存: File System Access API が使えればネイティブ保存ダイアログから直接書き込み、
+        // それ以外は Blob 化してから downloadBlob でフォールバック
+        await saveZipStream(stream, makeZipFileName(psdFileName))
+      }
       setProgress(1)
     } catch (e) {
       // ユーザが保存ダイアログをキャンセルした場合 (AbortError) はエラー表示せず silent 終了

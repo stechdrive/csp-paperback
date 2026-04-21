@@ -146,7 +146,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               </p>
 
               <div className={styles.calloutSolution}>
-                CSP から PSD と XDTS を書き出し → CSP Paperback で読み込み → 柔軟なセル出力を ZIP で取得。
+                CSP から PSD と XDTS を書き出し → CSP Paperback で読み込み → 柔軟なセル出力を ZIP またはフォルダで取得。
                 アニメ制作現場の「痒いところに手が届く」出力パターンを自動化します。
               </div>
 
@@ -195,7 +195,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 <span className={styles.flowArrow}>→</span>
                 <div className={styles.flowBox}>
                   <div className={styles.flowBoxLabel}>Step 3</div>
-                  <div className={styles.flowBoxValue}>ZIP出力</div>
+                  <div className={styles.flowBoxValue}>書き出し</div>
                 </div>
               </div>
 
@@ -227,9 +227,9 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 <div className={styles.step}>
                   <div className={styles.stepNum}>3</div>
                   <div className={styles.stepBody}>
-                    <div className={styles.stepTitle}>必要に応じてマーク設定 → ZIP出力</div>
+                    <div className={styles.stepTitle}>必要に応じてマーク設定 → 書き出し</div>
                     <div className={styles.stepDesc}>
-                      単体出力と 🎬 手動アニメーションフォルダ指定を確認し、「出力」ボタンで ZIP をダウンロード。
+                      単体出力と 🎬 手動アニメーションフォルダ指定を確認し、「出力」ボタンで ZIP またはフォルダへ書き出します。
                       出力形式（JPG/PNG）、背景透過、出力時にセル名でフォルダを作るかをカスタマイズできます。
                     </div>
                   </div>
@@ -616,7 +616,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               <h2 className={styles.h1}>📁 単体出力の指定方法</h2>
 
               <p className={styles.p}>
-                単体出力は、セルの合成には混ぜたくないけれど ZIP には出したい素材を、
+                単体出力は、セルの合成には混ぜたくないけれど書き出しには含めたい素材を、
                 セルとは別ファイルにする機能です。背景原図、BOOK、撮影指示、PAN/SL 指示などに使います。
                 アニメーションしない素材を、CSPのアニメーションセル出力で自動出力させるためだけにアニメーションフォルダへ入れたり、
                 タイムシート上のトラックとして管理したりする必要はありません。
@@ -1063,7 +1063,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   <div className={styles.stepBody}>
                     <div className={styles.stepTitle}>出力</div>
                     <div className={styles.stepDesc}>
-                      メンバーと挿入位置が設定されている仮想セルは、出力ボタンでZIPに含まれます
+                      メンバーと挿入位置が設定されている仮想セルは、出力ボタンから ZIP / フォルダ書き出しの対象に含まれます
                     </div>
                   </div>
                 </div>
@@ -1449,4 +1449,3 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
     </div>
   )
 }
-

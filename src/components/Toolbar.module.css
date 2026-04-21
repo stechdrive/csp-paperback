@@ -101,6 +101,14 @@
   position: relative;
 }
 
+.exportWrap {
+  position: relative;
+}
+
+.exportCaret {
+  font-size: 0.75em;
+}
+
 .scaleWrap {
   position: relative;
 }
@@ -216,6 +224,10 @@
   padding: 0.25rem 0;
   display: flex;
   flex-direction: column;
+}
+
+.exportMenu {
+  min-width: 120px;
 }
 
 .menuItem {

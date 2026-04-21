@@ -75,14 +75,14 @@ export function sanitizePathSegment(segment: string): string {
 }
 
 /**
- * ZIP エントリパス全体をサニタイズする。
+ * 出力パス全体をサニタイズする。
  *
  * `/` 区切りで分割し、各セグメントを sanitizePathSegment で処理してから再結合する。
  * 空セグメント(`//` の連続、先頭末尾の `/` 等)は除去される。
  *
- * 入力が完全に空になった場合は `_` を返す(ZIP エントリ名は空不可)。
+ * 入力が完全に空になった場合は `_` を返す(出力ファイル名は空不可)。
  */
-export function sanitizeZipPath(path: string): string {
+export function sanitizeOutputPath(path: string): string {
   if (!path) return '_'
   // 先に「空セグメント(`//` の連続、先頭末尾の `/` 由来)」を除去してからサニタイズ。
   // sanitizePathSegment は空文字列を `_` に変換するので、フィルタは必ず先にやる。
@@ -91,6 +91,8 @@ export function sanitizeZipPath(path: string): string {
   const segments = rawSegments.map(sanitizePathSegment)
   return segments.join('/')
 }
+
+export const sanitizeZipPath = sanitizeOutputPath
 
 /**
  * 文字列を UTF-8 エンコード後のバイト長で truncate する。

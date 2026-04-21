@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useLayoutEffect } from 'react'
+import { useState, useRef, useCallback, useLayoutEffect, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import styles from './Tooltip.module.css'
 
@@ -9,9 +9,11 @@ interface TooltipProps {
   delay?: number
   /** ツールチップの配置（デフォルト top） */
   placement?: 'top' | 'bottom'
+  /** true の間はツールチップを表示しない */
+  disabled?: boolean
 }
 
-export function Tooltip({ content, children, delay = 300, placement = 'top' }: TooltipProps) {
+export function Tooltip({ content, children, delay = 300, placement = 'top', disabled = false }: TooltipProps) {
   const [visible, setVisible] = useState(false)
   const [rect, setRect] = useState<DOMRect | null>(null)
   const [resolvedPlacement, setResolvedPlacement] = useState<'top' | 'bottom'>(placement)
@@ -20,6 +22,7 @@ export function Tooltip({ content, children, delay = 300, placement = 'top' }: T
   const tooltipRef = useRef<HTMLDivElement>(null)
 
   const handleEnter = useCallback(() => {
+    if (disabled) return
     // display:contents な span は自身の box を持たないため firstElementChild から rect を取る
     const child = wrapRef.current?.firstElementChild ?? wrapRef.current
     const r = child?.getBoundingClientRect()
@@ -30,12 +33,18 @@ export function Tooltip({ content, children, delay = 300, placement = 'top' }: T
       setResolvedPlacement(placement === 'bottom' || !fitsTop ? 'bottom' : 'top')
     }
     timer.current = window.setTimeout(() => setVisible(true), delay)
-  }, [delay, placement])
+  }, [delay, disabled, placement])
 
   const handleLeave = useCallback(() => {
     clearTimeout(timer.current)
     setVisible(false)
   }, [])
+
+  useEffect(() => {
+    if (!disabled) return
+    clearTimeout(timer.current)
+    setVisible(false)
+  }, [disabled])
 
   // ツールチップ描画後に実際の幅を測ってX位置を確定する
   useLayoutEffect(() => {

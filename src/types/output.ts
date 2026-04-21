@@ -2,6 +2,7 @@ export type OutputFormat = 'jpg' | 'png'
 export type BackgroundMode = 'white' | 'transparent'
 export type StructureMode = 'hierarchy' | 'flat'
 export type ProcessSuffixPosition = 'after-cell' | 'before-cell'
+export type OutputDestination = 'zip' | 'directory'
 
 export interface OutputConfig {
   format: OutputFormat

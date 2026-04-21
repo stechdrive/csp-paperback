@@ -3,6 +3,8 @@ import { useAppStore } from '../store'
 import { useLocale } from '../i18n/locale'
 import { useExport } from '../hooks/useExport'
 import { useIsMobile } from '../hooks/useIsMobile'
+import type { OutputDestination } from '../types/output'
+import { supportsDirectoryExport } from '../utils/directory-builder'
 import {
   MAX_MOBILE_UI_SCALE,
   MIN_MOBILE_UI_SCALE,
@@ -145,11 +147,33 @@ export function Toolbar({ onFiles, isLoading, error, notification, canUndo, canR
   const psdFileName = useAppStore(s => s.psdFileName)
   const xdtsFileName = useAppStore(s => s.xdtsFileName)
   const openInputRef = useRef<HTMLInputElement>(null)
+  const exportMenuRef = useRef<HTMLDivElement>(null)
   const [showSettings, setShowSettings] = useState(false)
   const [showHelp, setShowHelp] = useState(false)
+  const [showExportMenu, setShowExportMenu] = useState(false)
   const { t } = useLocale()
   const { isExporting, progress, error: exportError, startExport } = useExport()
   const isMobile = useIsMobile()
+  const canExportToDirectory = supportsDirectoryExport()
+
+  useEffect(() => {
+    if (!showExportMenu) return
+    const handler = (e: MouseEvent | TouchEvent) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) {
+        setShowExportMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    document.addEventListener('touchstart', handler)
+    return () => {
+      document.removeEventListener('mousedown', handler)
+      document.removeEventListener('touchstart', handler)
+    }
+  }, [showExportMenu])
+
+  useEffect(() => {
+    if (isExporting) setShowExportMenu(false)
+  }, [isExporting])
 
   const handleOpenFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? [])
@@ -230,15 +254,58 @@ export function Toolbar({ onFiles, isLoading, error, notification, canUndo, canR
       {isMobile ? '⚙ ' : ''}{t.toolbar.settings}
     </button>
   )
+
+  const handleExportSelect = async (destination: OutputDestination) => {
+    setShowExportMenu(false)
+    await startExport(destination)
+  }
+
   const exportBtn = (
-    <Tooltip content="書き出し設定にしたがってセル画像を ZIP で出力" placement="bottom">
-      <button
-        className={`${styles.btn} ${styles.btnPrimary}`}
-        onClick={startExport}
-        disabled={!psdFileName || isExporting}
-      >
-        {isExporting ? t.export.exporting : t.toolbar.export}
-      </button>
+    <Tooltip
+      content={canExportToDirectory
+        ? t.export.triggerHintChoice
+        : t.export.triggerHintZip}
+      placement="bottom"
+      disabled={showExportMenu}
+    >
+      <div className={styles.exportWrap} ref={exportMenuRef}>
+        <button
+          className={`${styles.btn} ${styles.btnPrimary}`}
+          onClick={() => {
+            if (!canExportToDirectory) {
+              void handleExportSelect('zip')
+              return
+            }
+            setShowExportMenu(v => !v)
+          }}
+          disabled={!psdFileName || isExporting}
+          aria-haspopup={canExportToDirectory ? 'menu' : undefined}
+          aria-expanded={canExportToDirectory ? showExportMenu : undefined}
+        >
+          {isExporting ? t.export.exporting : t.toolbar.export}
+          {canExportToDirectory && <span className={styles.exportCaret}> ▾</span>}
+        </button>
+        {canExportToDirectory && showExportMenu && (
+          <div className={`${styles.overflowMenu} ${styles.exportMenu}`} role="menu">
+            <button
+              className={styles.menuItem}
+              onClick={() => void handleExportSelect('zip')}
+              disabled={isExporting}
+              role="menuitem"
+            >
+              {t.export.destinationZip}
+            </button>
+            <button
+              className={styles.menuItem}
+              onClick={() => void handleExportSelect('directory')}
+              disabled={isExporting}
+              role="menuitem"
+            >
+              {t.export.destinationDirectory}
+            </button>
+          </div>
+        )}
+      </div>
     </Tooltip>
   )
 

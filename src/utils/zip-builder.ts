@@ -1,8 +1,6 @@
 import { makeZip } from 'client-zip'
 import type { OutputEntry, OutputConfig } from '../types'
-import { canvasToBlob, replaceExtension } from './image-export'
-import { resolveEntryNames } from './naming'
-import { sanitizeZipPath } from './path-sanitize'
+import { prepareOutputEntries, streamOutputEntries } from './output-builder'
 
 /**
  * ZIP 出力パイプライン
@@ -22,38 +20,6 @@ import { sanitizeZipPath } from './path-sanitize'
  */
 
 /**
- * canvas → Blob 変換をエントリごとに逐次実行する AsyncGenerator。
- * 変換後に元の OutputEntry の canvas 参照を明示的に null 化して GC を促す。
- */
-async function* streamEntriesAsZipFiles(
-  resolved: Array<{ path: string; flatName: string }>,
-  originalEntries: OutputEntry[],
-  config: OutputConfig,
-  dpiX: number,
-  dpiY: number,
-  onProgress?: (done: number, total: number) => void,
-): AsyncGenerator<{ name: string; input: Blob }> {
-  const total = resolved.length
-  for (let i = 0; i < total; i++) {
-    const r = resolved[i]
-    const orig = originalEntries[i]
-    const canvas = orig.canvas
-    if (!canvas) {
-      // 既に release 済み(テスト等での多重呼び出し) → スキップ
-      continue
-    }
-    const blob = await canvasToBlob(canvas, config.format, config.jpgQuality, dpiX, dpiY)
-    // canvas 参照を明示的に切って GC 可能に
-    // OutputEntry.canvas の型は HTMLCanvasElement だが、runtime では release フラグとして null 代入する
-    ;(orig as { canvas: HTMLCanvasElement | null }).canvas = null
-
-    const name = config.structure === 'hierarchy' ? r.path : r.flatName
-    onProgress?.(i + 1, total)
-    yield { name, input: blob }
-  }
-}
-
-/**
  * OutputEntry[] から ZIP の ReadableStream を返す。
  *
  * 生成は遅延評価で、下流(pipeTo や Response)が読んだタイミングで
@@ -67,20 +33,20 @@ export function buildZipStream(
   dpiY = 0,
   onProgress?: (done: number, total: number) => void,
 ): ReadableStream<Uint8Array> {
-  // パスの正規化フロー:
-  // 1. 拡張子を config.format に揃える(replaceExtension)
-  // 2. Zip Slip / OS 禁則文字対策のサニタイズ(sanitizeZipPath)
-  //    - `..` セグメントや `/`,`\` の混入、Windows 予約名等を無害化
-  //    - レイヤー名や仮想セット名に危険な値が入っていても ZIP は安全に作られる
-  // 3. サニタイズ後の名前衝突を resolveEntryNames で `_2`, `_3` 付加で解決
-  const normalizedEntries = entries.map(e => ({
-    ...e,
-    path: sanitizeZipPath(replaceExtension(e.path, config.format)),
-    flatName: sanitizeZipPath(replaceExtension(e.flatName, config.format)),
-  }))
-  const resolved = resolveEntryNames(normalizedEntries)
+  const preparedEntries = prepareOutputEntries(entries, config)
 
-  return makeZip(streamEntriesAsZipFiles(resolved, entries, config, dpiX, dpiY, onProgress))
+  return makeZip((async function* () {
+    for await (const entry of streamOutputEntries(
+      preparedEntries,
+      entries,
+      config,
+      dpiX,
+      dpiY,
+      onProgress,
+    )) {
+      yield { name: entry.relativePath, input: entry.input }
+    }
+  })())
 }
 
 /**

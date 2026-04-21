@@ -45,7 +45,7 @@ CSP Paperback solves this outside the workflow: load your PSD and XDTS, and expo
 
 **Export**
 - Preview each cell's composited output before exporting
-- Export all cells as a ZIP archive (JPEG or PNG, with optional transparency)
+- Export all cells in bulk as either a ZIP archive or a folder tree (JPEG or PNG, with optional transparency)
 - File naming: sequential numbers or original CSP cell names
 - Per-process suffix support via a configurable process table (e.g. `_en`, `_lo`)
 
@@ -108,7 +108,7 @@ CSP Paperbackはその制約をPSDとXDTSを読み込むことでワークフロ
 
 **書き出し**
 - 各セルの合成結果を書き出し前にプレビューで確認できる
-- 全セルをZIPアーカイブで一括書き出し（JPEG / PNG・透明対応）
+- 全セルをZIPまたはフォルダツリーで一括書き出し（JPEG / PNG・透明対応）
 - ファイル命名：連番またはCSPのセル名
 - プロセステーブルで修正工程名のサフィックスを設定して書き出し（例：`_en`、`_lo`）
 

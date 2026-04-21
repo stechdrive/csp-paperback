@@ -1,5 +1,11 @@
 import type { StateCreator } from 'zustand'
-import type { OutputConfig, OutputFormat, BackgroundMode, StructureMode, ProcessSuffixPosition } from '../types'
+import type {
+  OutputConfig,
+  OutputFormat,
+  BackgroundMode,
+  StructureMode,
+  ProcessSuffixPosition,
+} from '../types'
 import { DEFAULT_OUTPUT_CONFIG } from '../types'
 import type { AppStore } from './index'
 
