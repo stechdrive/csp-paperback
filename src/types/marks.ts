@@ -9,12 +9,18 @@ export interface VirtualSetMember {
   opacity: number | null    // null = レイヤー元の不透明度を使用（0〜100）
 }
 
+export interface VirtualSetLayerOverride {
+  blendMode?: string
+  opacity?: number
+}
+
 export interface VirtualSet {
   id: string
   name: string
   insertionLayerId: string | null  // 差し込み階層位置のレイヤーID（未設定はnull）
   insertionPosition: 'above' | 'below' // insertionLayerIdの上/下どちらに差し込むか
   members: VirtualSetMember[]    // メンバーレイヤー一覧（フォルダも可）
+  layerOverrides?: Record<string, VirtualSetLayerOverride> // 仮想セル内だけの layerId → 合成設定
   expandToAnimationCells: boolean // 差し込み位置がアニメフォルダなら全セルに展開
   // VirtualSet 側は visible の意味。グローバル store の visibilityOverrides(uiHidden) とは逆。
   visibilityOverrides: Record<string, boolean> // layerId → 表示(true)/非表示(false)

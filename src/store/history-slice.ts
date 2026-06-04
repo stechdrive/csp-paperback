@@ -32,6 +32,12 @@ function snapshot(s: AppStore): UndoableState {
     virtualSets: s.virtualSets.map(vs => ({
       ...vs,
       members: vs.members.map(m => ({ ...m })),
+      layerOverrides: Object.fromEntries(
+        Object.entries(vs.layerOverrides ?? {}).map(([layerId, override]) => [
+          layerId,
+          { ...override },
+        ]),
+      ),
       visibilityOverrides: { ...vs.visibilityOverrides },
     })),
     manualAnimFolderIds: new Set(s.manualAnimFolderIds),

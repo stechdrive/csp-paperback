@@ -378,7 +378,7 @@ export function extractVirtualSetEntries(
     const memberIds = new Set(vs.members.map(m => m.layerId))
     const memberLayers = collectMembersInTreeOrder(tree, memberIds)
     const vsFlats = buildMemberFlatsWithOverride(
-      vs.members, memberLayers, docWidth, docHeight, vs.visibilityOverrides
+      vs.members, memberLayers, docWidth, docHeight, vs.visibilityOverrides, vs.layerOverrides ?? {}
     )
 
     if (vsFlats.length === 0 && lower.length === 0 && upper.length === 0) continue

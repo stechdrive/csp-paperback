@@ -85,7 +85,7 @@ export function useOutputPreview(): OutputPreviewEntry[] {
       if (memberLayers.length === 0) return []
       const contextFlats = flattenTree(collectContextSourceLayers(layerTree), docWidth, docHeight)
       const memberFlats = buildMemberFlatsWithOverride(
-        vs.members, memberLayers, docWidth, docHeight, vs.visibilityOverrides,
+        vs.members, memberLayers, docWidth, docHeight, vs.visibilityOverrides, vs.layerOverrides ?? {},
       )
       const canvas = compositeRoot(
         [...contextFlats, ...memberFlats], docWidth, docHeight, outputConfig.background,

@@ -42,29 +42,38 @@ interface VsMemberNodeProps {
   vsId: string
   overrides: Record<string, boolean>
   expandedIds: Set<string>
+  selectedLayerId: string | null
   onToggleExpand: (id: string) => void
   onToggleVisibility: (layerId: string, visible: boolean) => void
+  onSelectLayer: (layerId: string) => void
   depth: number
 }
 
 function VsMemberNode({
   layer,
-  vsId: _vsId,
+  vsId,
   overrides,
   expandedIds,
+  selectedLayerId,
   onToggleExpand,
   onToggleVisibility,
+  onSelectLayer,
   depth,
 }: VsMemberNodeProps) {
   // VS固有オーバーライドがあればそれを使い、なければレイヤー本来の状態を使う
   const visible = overrides[layer.id] ?? (!layer.hidden && !layer.uiHidden)
   const isExpanded = expandedIds.has(layer.id)
+  const isSelected = selectedLayerId === layer.id
 
   return (
     <>
       <div
-        className={`${styles.vsTreeNode} ${!visible ? styles.vsTreeNodeHidden : ''}`}
+        className={`${styles.vsTreeNode} ${isSelected ? styles.vsTreeNodeSelected : ''} ${!visible ? styles.vsTreeNodeHidden : ''}`}
         style={{ paddingLeft: `${4 + depth * 14}px` }}
+        onClick={e => {
+          e.stopPropagation()
+          onSelectLayer(layer.id)
+        }}
       >
         {layer.isFolder ? (
           <button
@@ -104,11 +113,13 @@ function VsMemberNode({
         <VsMemberNode
           key={child.id}
           layer={child}
-          vsId={_vsId}
+          vsId={vsId}
           overrides={overrides}
           expandedIds={expandedIds}
+          selectedLayerId={selectedLayerId}
           onToggleExpand={onToggleExpand}
           onToggleVisibility={onToggleVisibility}
+          onSelectLayer={onSelectLayer}
           depth={depth + 1}
         />
       ))}
@@ -130,7 +141,10 @@ export function VirtualSetItem({ virtualSet }: VirtualSetItemProps) {
   const setSelectedVirtualSet = useAppStore(s => s.setSelectedVirtualSet)
   const setSelectedVsMember = useAppStore(s => s.setSelectedVsMember)
   const selectedLayerId = useAppStore(s => s.selectedLayerId)
+  const selectedVsMemberSetId = useAppStore(s => s.selectedVsMemberSetId)
+  const selectedVsMemberId = useAppStore(s => s.selectedVsMemberId)
   const isSelected = selectedVirtualSetId === virtualSet.id
+  const selectedVirtualLayerId = selectedVsMemberSetId === virtualSet.id ? selectedVsMemberId : null
   const { t } = useLocale()
 
   // アイテム折りたたみ
@@ -217,6 +231,12 @@ export function VirtualSetItem({ virtualSet }: VirtualSetItemProps) {
     // コントロールバーのターゲットを更新（最後にクリックしたメンバー）
     setSelectedVsMember(virtualSet.id, layerId)
   }, [virtualSet.id, virtualSet.members, lastClickedId, setSelectedVsMember])
+
+  const handleTreeNodeSelect = useCallback((layerId: string) => {
+    setSelectedIds(new Set())
+    setLastClickedId(layerId)
+    setSelectedVsMember(virtualSet.id, layerId)
+  }, [virtualSet.id, setSelectedVsMember])
 
   // フォルダの展開トグル（ミニツリー用）
   const toggleVsExpanded = useCallback((id: string) => {
@@ -379,7 +399,7 @@ export function VirtualSetItem({ virtualSet }: VirtualSetItemProps) {
               >
                 {virtualSet.members.map((member, index) => {
                   const layer = selectLayerById(useAppStore.getState(), member.layerId)
-                  const isRowSelected = selectedIds.has(member.layerId)
+                  const isRowSelected = selectedIds.has(member.layerId) || selectedVirtualLayerId === member.layerId
                   const showLineAbove = insertLineIndex === index && insertLinePosition === 'above'
                   const showLineBelow = insertLineIndex === index && insertLinePosition === 'below'
                   const isExpanded = vsExpandedIds.has(member.layerId)
@@ -461,8 +481,10 @@ export function VirtualSetItem({ virtualSet }: VirtualSetItemProps) {
                           vsId={virtualSet.id}
                           overrides={virtualSet.visibilityOverrides}
                           expandedIds={vsExpandedIds}
+                          selectedLayerId={selectedVirtualLayerId}
                           onToggleExpand={toggleVsExpanded}
                           onToggleVisibility={handleToggleVisibility}
+                          onSelectLayer={handleTreeNodeSelect}
                           depth={1}
                         />
                       ))}

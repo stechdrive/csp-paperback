@@ -38,6 +38,7 @@ describe('marks-slice - virtualSet', () => {
     expect(virtualSets[0].name).toBe('背景セット')
     expect(virtualSets[0].insertionLayerId).toBeNull()
     expect(virtualSets[0].members).toEqual([])
+    expect(virtualSets[0].layerOverrides).toEqual({})
   })
 
   it('addVirtualSetでIDが自動生成される', () => {
@@ -117,5 +118,27 @@ describe('marks-slice - virtualSet', () => {
     useAppStore.getState().setVirtualSetMemberBlendMode(id, 'layer-1', null)
     const members = useAppStore.getState().virtualSets[0].members
     expect(members[0].blendMode).toBeNull()
+  })
+
+  it('setVirtualSetLayerOpacityでフォルダ配下レイヤーの仮想セル内overrideを保存する', () => {
+    useAppStore.getState().addVirtualSet('セット')
+    const id = useAppStore.getState().virtualSets[0].id
+    useAppStore.getState().addVirtualSetMember(id, 'folder-1')
+    useAppStore.getState().setVirtualSetLayerOpacity(id, 'child-1', 42)
+
+    const vs = useAppStore.getState().virtualSets[0]
+    expect(vs.members[0].opacity).toBeNull()
+    expect(vs.layerOverrides?.['child-1']?.opacity).toBe(42)
+  })
+
+  it('setVirtualSetLayerBlendModeでトップレベルメンバーの互換フィールドも更新する', () => {
+    useAppStore.getState().addVirtualSet('セット')
+    const id = useAppStore.getState().virtualSets[0].id
+    useAppStore.getState().addVirtualSetMember(id, 'layer-1')
+    useAppStore.getState().setVirtualSetLayerBlendMode(id, 'layer-1', 'screen')
+
+    const vs = useAppStore.getState().virtualSets[0]
+    expect(vs.members[0].blendMode).toBe('screen')
+    expect(vs.layerOverrides?.['layer-1']?.blendMode).toBe('screen')
   })
 })

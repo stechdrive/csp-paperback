@@ -5,7 +5,7 @@ import { VirtualSetItem } from './VirtualSetItem'
 import { BlendOpacityBar } from './BlendOpacityBar'
 import { Tooltip } from './Tooltip'
 import { selectLayerById } from '../store/selectors'
-import type { BlendMode } from '../types'
+import type { BlendMode, CspLayer } from '../types'
 import styles from './VirtualSetPanel.module.css'
 
 function Chevron({ open }: { open: boolean }) {
@@ -21,49 +21,61 @@ function Chevron({ open }: { open: boolean }) {
   )
 }
 
+function containsLayerId(layer: CspLayer, layerId: string): boolean {
+  if (layer.id === layerId) return true
+  return layer.children.some(child => containsLayerId(child, layerId))
+}
+
 export function VirtualSetPanel() {
   const virtualSets = useAppStore(s => s.virtualSets)
   const addVirtualSet = useAppStore(s => s.addVirtualSet)
   const selectedVsMemberSetId = useAppStore(s => s.selectedVsMemberSetId)
   const selectedVsMemberId = useAppStore(s => s.selectedVsMemberId)
-  const setVirtualSetMemberBlendMode = useAppStore(s => s.setVirtualSetMemberBlendMode)
-  const setVirtualSetMemberOpacity = useAppStore(s => s.setVirtualSetMemberOpacity)
+  const setVirtualSetLayerBlendMode = useAppStore(s => s.setVirtualSetLayerBlendMode)
+  const setVirtualSetLayerOpacity = useAppStore(s => s.setVirtualSetLayerOpacity)
   const { t } = useLocale()
   const [collapsed, setCollapsed] = useState(false)
 
-  // 選択中メンバーの情報を解決
-  const selectedMember = (() => {
+  // 選択中の仮想セル内レイヤー情報を解決
+  const selectedVirtualLayer = (() => {
     if (!selectedVsMemberSetId || !selectedVsMemberId) return null
     const vs = virtualSets.find(v => v.id === selectedVsMemberSetId)
     if (!vs) return null
-    const member = vs.members.find(m => m.layerId === selectedVsMemberId)
-    if (!member) return null
-    const layer = selectLayerById(useAppStore.getState(), member.layerId)
-    return { vs, member, layer }
+    const state = useAppStore.getState()
+    const layer = selectLayerById(state, selectedVsMemberId)
+    if (!layer) return null
+    const isInVirtualSet = vs.members.some(member => {
+      const memberLayer = selectLayerById(state, member.layerId)
+      return memberLayer ? containsLayerId(memberLayer, selectedVsMemberId) : false
+    })
+    if (!isInVirtualSet) return null
+    const member = vs.members.find(m => m.layerId === selectedVsMemberId) ?? null
+    const override = vs.layerOverrides?.[selectedVsMemberId]
+    return { vs, member, layer, override }
   })()
 
-  const effectiveBlendMode = selectedMember
-    ? (selectedMember.member.blendMode ?? selectedMember.layer?.blendMode ?? 'normal')
+  const effectiveBlendMode = selectedVirtualLayer
+    ? (selectedVirtualLayer.override?.blendMode
+        ?? selectedVirtualLayer.member?.blendMode
+        ?? selectedVirtualLayer.layer.blendMode
+        ?? 'normal')
     : 'normal'
-  const effectiveOpacity = selectedMember
-    ? (selectedMember.member.opacity ?? selectedMember.layer?.opacity ?? 100)
+  const effectiveOpacity = selectedVirtualLayer
+    ? (selectedVirtualLayer.override?.opacity
+        ?? selectedVirtualLayer.member?.opacity
+        ?? selectedVirtualLayer.layer.opacity
+        ?? 100)
     : 100
 
   const handleBlendModeChange = useCallback((value: string) => {
-    if (!selectedMember) return
-    const { vs, member, layer } = selectedMember
-    // レイヤー本来の値と同じなら override を解除（null）
-    const override = value === (layer?.blendMode ?? 'normal') ? null : value
-    setVirtualSetMemberBlendMode(vs.id, member.layerId, override)
-  }, [selectedMember, setVirtualSetMemberBlendMode])
+    if (!selectedVirtualLayer) return
+    setVirtualSetLayerBlendMode(selectedVirtualLayer.vs.id, selectedVirtualLayer.layer.id, value)
+  }, [selectedVirtualLayer, setVirtualSetLayerBlendMode])
 
   const handleOpacityChange = useCallback((value: number) => {
-    if (!selectedMember) return
-    const { vs, member, layer } = selectedMember
-    // レイヤー本来の値と同じなら override を解除（null）
-    const override = value === (layer?.opacity ?? 100) ? null : value
-    setVirtualSetMemberOpacity(vs.id, member.layerId, override)
-  }, [selectedMember, setVirtualSetMemberOpacity])
+    if (!selectedVirtualLayer) return
+    setVirtualSetLayerOpacity(selectedVirtualLayer.vs.id, selectedVirtualLayer.layer.id, value)
+  }, [selectedVirtualLayer, setVirtualSetLayerOpacity])
 
   return (
     <div className={styles.panel}>
@@ -93,8 +105,8 @@ export function VirtualSetPanel() {
       <BlendOpacityBar
         blendMode={effectiveBlendMode as BlendMode}
         opacity={effectiveOpacity}
-        disabled={!selectedMember}
-        showPassThrough={false}
+        disabled={!selectedVirtualLayer}
+        showPassThrough={selectedVirtualLayer?.layer.isFolder ?? false}
         onBlendModeChange={handleBlendModeChange}
         onOpacityChange={handleOpacityChange}
       />

@@ -15,6 +15,8 @@ export interface MarksSlice {
   reorderVirtualSetMembers: (setId: string, newOrder: string[]) => void
   setVirtualSetMemberBlendMode: (setId: string, layerId: string, blendMode: string | null) => void
   setVirtualSetMemberOpacity: (setId: string, layerId: string, opacity: number | null) => void
+  setVirtualSetLayerBlendMode: (setId: string, layerId: string, blendMode: string | null) => void
+  setVirtualSetLayerOpacity: (setId: string, layerId: string, opacity: number | null) => void
   setVirtualSetVisibilityOverride: (setId: string, layerId: string, visible: boolean) => void
 }
 
@@ -37,6 +39,54 @@ function captureVisibilitySnapshot(
   out[layer.id] = !layer.hidden && !globalUiHidden
   for (const child of layer.children) {
     captureVisibilitySnapshot(child, globalOverrides, out)
+  }
+}
+
+function setLayerBlendModeOverride(vs: VirtualSet, layerId: string, blendMode: string | null): VirtualSet {
+  const layerOverrides = { ...(vs.layerOverrides ?? {}) }
+  const current = { ...(layerOverrides[layerId] ?? {}) }
+  if (blendMode === null) {
+    delete current.blendMode
+  } else {
+    current.blendMode = blendMode
+  }
+
+  if (current.blendMode === undefined && current.opacity === undefined) {
+    delete layerOverrides[layerId]
+  } else {
+    layerOverrides[layerId] = current
+  }
+
+  return {
+    ...vs,
+    members: vs.members.map(m =>
+      m.layerId === layerId ? { ...m, blendMode } : m
+    ),
+    layerOverrides,
+  }
+}
+
+function setLayerOpacityOverride(vs: VirtualSet, layerId: string, opacity: number | null): VirtualSet {
+  const layerOverrides = { ...(vs.layerOverrides ?? {}) }
+  const current = { ...(layerOverrides[layerId] ?? {}) }
+  if (opacity === null) {
+    delete current.opacity
+  } else {
+    current.opacity = Math.max(0, Math.min(100, opacity))
+  }
+
+  if (current.blendMode === undefined && current.opacity === undefined) {
+    delete layerOverrides[layerId]
+  } else {
+    layerOverrides[layerId] = current
+  }
+
+  return {
+    ...vs,
+    members: vs.members.map(m =>
+      m.layerId === layerId ? { ...m, opacity } : m
+    ),
+    layerOverrides,
   }
 }
 
@@ -63,6 +113,7 @@ export const createMarksSlice: StateCreator<AppStore, [], [], MarksSlice> = (set
       insertionLayerId: null,
       insertionPosition: 'above',
       members: [],
+      layerOverrides: {},
       expandToAnimationCells: false,
       visibilityOverrides: {},
     }
@@ -137,30 +188,36 @@ export const createMarksSlice: StateCreator<AppStore, [], [], MarksSlice> = (set
   setVirtualSetMemberBlendMode: (setId, layerId, blendMode) => {
     get().pushHistory()
     set({
-      virtualSets: get().virtualSets.map(vs => {
-        if (vs.id !== setId) return vs
-        return {
-          ...vs,
-          members: vs.members.map(m =>
-            m.layerId === layerId ? { ...m, blendMode } : m
-          ),
-        }
-      }),
+      virtualSets: get().virtualSets.map(vs =>
+        vs.id === setId ? setLayerBlendModeOverride(vs, layerId, blendMode) : vs
+      ),
     })
   },
 
   setVirtualSetMemberOpacity: (setId, layerId, opacity) => {
     get().pushHistory()
     set({
-      virtualSets: get().virtualSets.map(vs => {
-        if (vs.id !== setId) return vs
-        return {
-          ...vs,
-          members: vs.members.map(m =>
-            m.layerId === layerId ? { ...m, opacity } : m
-          ),
-        }
-      }),
+      virtualSets: get().virtualSets.map(vs =>
+        vs.id === setId ? setLayerOpacityOverride(vs, layerId, opacity) : vs
+      ),
+    })
+  },
+
+  setVirtualSetLayerBlendMode: (setId, layerId, blendMode) => {
+    get().pushHistory()
+    set({
+      virtualSets: get().virtualSets.map(vs =>
+        vs.id === setId ? setLayerBlendModeOverride(vs, layerId, blendMode) : vs
+      ),
+    })
+  },
+
+  setVirtualSetLayerOpacity: (setId, layerId, opacity) => {
+    get().pushHistory()
+    set({
+      virtualSets: get().virtualSets.map(vs =>
+        vs.id === setId ? setLayerOpacityOverride(vs, layerId, opacity) : vs
+      ),
     })
   },
 
