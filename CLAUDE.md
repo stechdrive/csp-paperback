@@ -3,6 +3,7 @@
 ## プロジェクト概要
 CSP（Clip Studio Paint）のアニメーションセル出力の不備を補う、PSDベースのWebアプリ。
 gh-pagesで静的ホスティング。ブラウザ完結、サーバー不要。
+TauriでWindows/macOS向けデスクトップアプリとしてもビルド可能。
 
 ## 技術スタック
 - **React 19 + Vite + TypeScript**
@@ -12,6 +13,7 @@ gh-pagesで静的ホスティング。ブラウザ完結、サーバー不要。
 - **Canvas API** — 合成・ラスタライズ
 - **Vitest** — テスト（合成エンジンのゴールデンデータ比較）
 - **gh-pages** — デプロイ
+- **Tauri v2** — Windows/macOSデスクトップ配布（ファイル読み書きのみネイティブ化）
 
 ## ディレクトリ構成
 ```
@@ -33,6 +35,8 @@ npm run preview    # ビルド結果プレビュー
 npm run test       # テスト実行
 npm run test:ui    # テストUI
 npm run deploy     # gh-pagesへデプロイ（要リモートリポ設定）
+npm run tauri:dev  # Tauri開発アプリ起動
+npm run tauri:build # Tauriデスクトップバンドル生成
 ```
 
 ## 合成エンジンの基本ルール
@@ -46,6 +50,13 @@ npm run deploy     # gh-pagesへデプロイ（要リモートリポ設定）
 ## gh-pagesデプロイ設定
 - `vite.config.ts` の `base` は `/csp-paperback/` に設定済み
 - リモートリポ設定後に `npm run deploy` でデプロイ可能
+
+## デスクトップ配布設定
+- `src-tauri/` にTauri v2設定・Rustホスト・権限を配置
+- Tauri用ビルドは `npm run build:tauri` でVite `base` を `./` に切り替える
+- ローカル成果物は `src-tauri/target/` 配下（gitignore対象）
+- GitHub Release用のバイナリは `.github/workflows/desktop-release.yml` でタグpush時にドラフトリリースへアップロード
+- 詳細は `docs/desktop-release.md` 参照
 
 ## テスト方針
 - CSPの手動書き出し結果をゴールデンデータとして画像比較

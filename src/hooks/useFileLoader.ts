@@ -1,17 +1,18 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useAppStore } from '../store'
+import type { LoadableFile } from '../platform/files'
 
 export interface UseFileLoaderResult {
   isLoading: boolean
   error: string | null
   notification: string | null
-  loadFiles: (files: File[]) => Promise<void>
-  loadPsdFile: (file: File) => Promise<void>
-  loadXdtsFile: (file: File) => Promise<void>
+  loadFiles: (files: LoadableFile[]) => Promise<void>
+  loadPsdFile: (file: LoadableFile) => Promise<void>
+  loadXdtsFile: (file: LoadableFile) => Promise<void>
   clearError: () => void
 }
 
-function ext(file: File): string {
+function ext(file: LoadableFile): string {
   return file.name.toLowerCase().split('.').pop() ?? ''
 }
 
@@ -30,7 +31,7 @@ export function useFileLoader(): UseFileLoaderResult {
     return () => clearTimeout(timer)
   }, [notification])
 
-  const loadFiles = useCallback(async (files: File[]) => {
+  const loadFiles = useCallback(async (files: LoadableFile[]) => {
     if (files.length === 0) return
 
     setIsLoading(true)
@@ -66,8 +67,8 @@ export function useFileLoader(): UseFileLoaderResult {
     }
   }, [importSettings, loadPsd, loadXdts, resetProject])
 
-  const loadPsdFile = useCallback((file: File) => loadFiles([file]), [loadFiles])
-  const loadXdtsFile = useCallback((file: File) => loadFiles([file]), [loadFiles])
+  const loadPsdFile = useCallback((file: LoadableFile) => loadFiles([file]), [loadFiles])
+  const loadXdtsFile = useCallback((file: LoadableFile) => loadFiles([file]), [loadFiles])
   const clearError = useCallback(() => setError(null), [])
 
   return { isLoading, error, notification, loadFiles, loadPsdFile, loadXdtsFile, clearError }

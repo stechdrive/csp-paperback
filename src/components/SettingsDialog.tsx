@@ -4,6 +4,7 @@ import { useLocale } from '../i18n/locale'
 import { selectProcessTableErrors } from '../store/selectors'
 import type { ProcessFolderEntry } from '../types'
 import { APP_THEME_SWATCHES, type AppTheme } from '../theme'
+import { pickSettingsJsonFile, saveTextFile, supportsNativeOpenDialog } from '../platform/files'
 import styles from './SettingsDialog.module.css'
 import { DEFAULT_PROJECT_SETTINGS } from '../types'
 
@@ -72,15 +73,15 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
     updateProcessTable(next)
   }
 
-  const handleExport = () => {
+  const handleExport = async () => {
     const json = exportSettings()
-    const blob = new Blob([json], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'csp-paperback-settings.json'
-    a.click()
-    URL.revokeObjectURL(url)
+    try {
+      await saveTextFile('csp-paperback-settings.json', json, 'JSON', ['json'])
+    } catch (e) {
+      if (!(e instanceof DOMException && e.name === 'AbortError')) {
+        window.alert(e instanceof Error ? e.message : '設定の書き出しに失敗しました')
+      }
+    }
   }
 
   const handleArchiveChange = (i: number, value: string) => {
@@ -101,7 +102,18 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
     updateArchivePatterns(next)
   }
 
-  const handleImport = () => {
+  const handleImport = async () => {
+    if (supportsNativeOpenDialog()) {
+      const file = await pickSettingsJsonFile()
+      if (!file) return
+      const text = await file.text()
+      importSettings(text)
+      const s = useAppStore.getState().projectSettings
+      setTableRows(s.processTable)
+      setArchiveRows(s.archivePatterns ?? DEFAULT_PROJECT_SETTINGS.archivePatterns)
+      return
+    }
+
     const input = document.createElement('input')
     input.type = 'file'
     input.accept = '.json'
@@ -223,8 +235,8 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
             <div className={styles.sectionTitle}>{t.settings.shareSettings}</div>
             <div className={styles.hint}>{t.settings.shareSettingsHint}</div>
             <div className={styles.ioRow}>
-              <button className={styles.ioBtn} onClick={handleExport}>{t.settings.exportJson}</button>
-              <button className={styles.ioBtn} onClick={handleImport}>{t.settings.importJson}</button>
+              <button className={styles.ioBtn} onClick={() => void handleExport()}>{t.settings.exportJson}</button>
+              <button className={styles.ioBtn} onClick={() => void handleImport()}>{t.settings.importJson}</button>
             </div>
           </div>
         </div>

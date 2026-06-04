@@ -1,0 +1,19 @@
+[package]
+name = "csp-paperback"
+version = "1.14.0"
+description = "PSD-based animation cell export companion for Clip Studio Paint"
+authors = ["stechdrive"]
+edition = "2021"
+license = "MIT"
+
+[lib]
+name = "csp_paperback_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.6.2", features = [] }
+
+[dependencies]
+tauri = { version = "2.11.2", features = [] }
+tauri-plugin-dialog = "2.7.1"
+tauri-plugin-fs = "2.5.1"

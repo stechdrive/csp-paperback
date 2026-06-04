@@ -1,0 +1,79 @@
+name: desktop-release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag, for example v1.14.0'
+        required: true
+        type: string
+
+jobs:
+  build-desktop:
+    name: Build ${{ matrix.assetPlatform }}
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows-latest
+            assetPlatform: windows-x64
+            args: ''
+            rustTargets: 'x86_64-pc-windows-msvc'
+            uploadPlainBinary: true
+          - platform: macos-latest
+            assetPlatform: macos-arm64
+            args: '--target aarch64-apple-darwin'
+            rustTargets: 'aarch64-apple-darwin,x86_64-apple-darwin'
+            uploadPlainBinary: false
+          - platform: macos-latest
+            assetPlatform: macos-x64
+            args: '--target x86_64-apple-darwin'
+            rustTargets: 'aarch64-apple-darwin,x86_64-apple-darwin'
+            uploadPlainBinary: false
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rustTargets }}
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build and upload Tauri release assets
+        uses: tauri-apps/tauri-action@v0.6.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tauriScript: npm run tauri
+          tagName: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+          releaseName: CSP Paperback ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+          releaseBody: |
+            Desktop build for CSP Paperback.
+
+            Review these draft assets before publishing the release.
+            Windows includes installer assets and an experimental plain executable.
+            macOS includes app/dmg bundle assets and is not notarized unless signing secrets are configured separately.
+          releaseDraft: true
+          prerelease: false
+          uploadUpdaterJson: false
+          uploadUpdaterSignatures: false
+          uploadPlainBinary: ${{ matrix.uploadPlainBinary }}
+          releaseAssetNamePattern: CSP-Paperback_[version]_${{ matrix.assetPlatform }}[setup][ext]
+          args: ${{ matrix.args }}

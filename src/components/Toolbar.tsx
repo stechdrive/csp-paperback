@@ -4,6 +4,8 @@ import { useLocale } from '../i18n/locale'
 import { useExport } from '../hooks/useExport'
 import { useIsMobile } from '../hooks/useIsMobile'
 import type { OutputDestination } from '../types/output'
+import type { LoadableFile } from '../platform/files'
+import { pickProjectFiles, supportsNativeOpenDialog } from '../platform/files'
 import { supportsDirectoryExport } from '../utils/directory-builder'
 import {
   MAX_MOBILE_UI_SCALE,
@@ -133,7 +135,7 @@ function MobileUiScaleControl() {
 }
 
 interface ToolbarProps {
-  onFiles: (files: File[]) => Promise<void>
+  onFiles: (files: LoadableFile[]) => Promise<void>
   isLoading: boolean
   error: string | null
   notification: string | null
@@ -171,14 +173,20 @@ export function Toolbar({ onFiles, isLoading, error, notification, canUndo, canR
     }
   }, [showExportMenu])
 
-  useEffect(() => {
-    if (isExporting) setShowExportMenu(false)
-  }, [isExporting])
-
   const handleOpenFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? [])
     e.target.value = ''
     await onFiles(files)
+  }
+
+  const handleOpenButtonClick = async () => {
+    if (supportsNativeOpenDialog()) {
+      const files = await pickProjectFiles()
+      if (files.length > 0) await onFiles(files)
+      return
+    }
+
+    openInputRef.current?.click()
   }
 
   const openFileBtn = (
@@ -188,7 +196,7 @@ export function Toolbar({ onFiles, isLoading, error, notification, canUndo, canR
     >
       <button
         className={styles.btn}
-        onClick={() => openInputRef.current?.click()}
+        onClick={() => void handleOpenButtonClick()}
         disabled={isLoading}
       >
         ファイルを開く

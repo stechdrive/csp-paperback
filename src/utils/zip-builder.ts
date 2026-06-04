@@ -1,5 +1,6 @@
 import { makeZip } from 'client-zip'
 import type { OutputEntry, OutputConfig } from '../types'
+import { createAbortError, isDesktopRuntime } from '../platform/runtime'
 import { prepareOutputEntries, streamOutputEntries } from './output-builder'
 
 /**
@@ -64,6 +65,20 @@ export async function saveZipStream(
   stream: ReadableStream<Uint8Array>,
   fileName: string,
 ): Promise<void> {
+  if (isDesktopRuntime()) {
+    const { save } = await import('@tauri-apps/plugin-dialog')
+    const { writeFile } = await import('@tauri-apps/plugin-fs')
+    const path = await save({
+      title: 'ZIPを書き出す',
+      defaultPath: fileName,
+      filters: [{ name: 'ZIP archive', extensions: ['zip'] }],
+    })
+    if (path === null) throw createAbortError()
+
+    await writeFile(path, stream)
+    return
+  }
+
   type ShowSaveFilePicker = (options?: {
     suggestedName?: string
     types?: Array<{ description?: string; accept: Record<string, string[]> }>

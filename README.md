@@ -65,6 +65,11 @@ CSP Paperback solves this outside the workflow: load your PSD and XDTS, and expo
 | `.xdts` | Optional. Timeline data exported via *File > Export Animation > Export Timeline Information*. Used for multi-track cell synchronisation. |
 | `.json` | Optional. Shared process table and archive exclusion settings exported from the settings dialog. |
 
+### Desktop App
+
+The same React/Vite app can also run as a Tauri desktop app for Windows and macOS.
+See [docs/desktop-release.md](docs/desktop-release.md) for local build, artifact storage, and GitHub Release workflow details.
+
 ---
 
 ## 日本語
@@ -127,6 +132,11 @@ CSP Paperbackはその制約をPSDとXDTSを読み込むことでワークフロ
 | `.psd` | 必須。CLIPファイルをPSD形式で書き出したもの。 |
 | `.xdts` | 任意。*ファイル＞アニメーション書き出し＞タイムシート情報から出力*で書き出すタイムラインデータ。複数トラックのセル同期に使用。 |
 | `.json` | 任意。設定ダイアログから書き出した工程テーブルとアーカイブ除外設定。 |
+
+### デスクトップアプリ
+
+同じReact/ViteアプリをTauriでWindows/macOS向けデスクトップアプリとしてビルドできます。
+ローカルビルド、成果物の保存場所、GitHub Release運用は [docs/desktop-release.md](docs/desktop-release.md) を参照してください。
 
 ---
 

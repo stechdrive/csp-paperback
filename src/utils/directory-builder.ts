@@ -1,4 +1,5 @@
 import type { OutputConfig, OutputEntry } from '../types'
+import { createAbortError, isDesktopRuntime } from '../platform/runtime'
 import { makeExportBaseName, prepareOutputEntries, streamOutputEntries } from './output-builder'
 
 type ShowDirectoryPicker = (options?: {
@@ -12,7 +13,7 @@ function getDirectoryPicker(): ShowDirectoryPicker | undefined {
 }
 
 export function supportsDirectoryExport(): boolean {
-  return typeof getDirectoryPicker() === 'function'
+  return isDesktopRuntime() || typeof getDirectoryPicker() === 'function'
 }
 
 export async function saveEntriesToDirectory(
@@ -23,6 +24,10 @@ export async function saveEntriesToDirectory(
   dpiY = 0,
   onProgress?: (done: number, total: number) => void,
 ): Promise<string> {
+  if (isDesktopRuntime()) {
+    return saveEntriesToTauriDirectory(entries, config, psdFileName, dpiX, dpiY, onProgress)
+  }
+
   const directoryPicker = getDirectoryPicker()
   if (!directoryPicker) {
     throw new Error('このブラウザではフォルダ書き出しに対応していません')
@@ -59,6 +64,102 @@ export async function saveEntriesToDirectory(
   }
 
   return exportRoot.name
+}
+
+async function saveEntriesToTauriDirectory(
+  entries: OutputEntry[],
+  config: OutputConfig,
+  psdFileName: string,
+  dpiX = 0,
+  dpiY = 0,
+  onProgress?: (done: number, total: number) => void,
+): Promise<string> {
+  const { open } = await import('@tauri-apps/plugin-dialog')
+  const { writeFile } = await import('@tauri-apps/plugin-fs')
+  const { join } = await import('@tauri-apps/api/path')
+
+  const selected = await open({
+    title: '書き出し先フォルダを選択',
+    directory: true,
+    multiple: false,
+    recursive: true,
+  })
+  if (selected === null) throw createAbortError()
+
+  const exportRoot = await createUniqueChildDirectoryPath(selected, makeExportBaseName(psdFileName))
+  const preparedEntries = prepareOutputEntries(entries, config)
+  const directoryCache = new Map<string, string>()
+
+  for await (const entry of streamOutputEntries(
+    preparedEntries,
+    entries,
+    config,
+    dpiX,
+    dpiY,
+    onProgress,
+  )) {
+    const parentDirectory = await ensureDirectoryPathByString(
+      exportRoot.path,
+      entry.segments.slice(0, -1),
+      directoryCache,
+    )
+    const filePath = await join(parentDirectory, entry.fileName)
+    await writeFile(filePath, new Uint8Array(await entry.input.arrayBuffer()))
+  }
+
+  return exportRoot.name
+}
+
+async function createUniqueChildDirectoryPath(
+  parent: string,
+  baseName: string,
+): Promise<{ name: string; path: string }> {
+  const { exists, mkdir } = await import('@tauri-apps/plugin-fs')
+  const { join } = await import('@tauri-apps/api/path')
+
+  for (let index = 0; index < 1000; index++) {
+    const candidate = index === 0 ? baseName : `${baseName}_${index + 1}`
+    const candidatePath = await join(parent, candidate)
+    if (await exists(candidatePath)) continue
+
+    try {
+      await mkdir(candidatePath)
+      return { name: candidate, path: candidatePath }
+    } catch {
+      if (await exists(candidatePath)) continue
+      throw new Error(`保存先フォルダを作成できませんでした: ${candidate}`)
+    }
+  }
+
+  throw new Error('保存先フォルダ名の競合が多すぎるため書き出しを中止しました')
+}
+
+async function ensureDirectoryPathByString(
+  root: string,
+  segments: string[],
+  cache: Map<string, string>,
+): Promise<string> {
+  const { exists, mkdir } = await import('@tauri-apps/plugin-fs')
+  const { join } = await import('@tauri-apps/api/path')
+  let current = root
+  let path = ''
+
+  for (const segment of segments) {
+    path = path ? `${path}/${segment}` : segment
+    const cached = cache.get(path)
+    if (cached) {
+      current = cached
+      continue
+    }
+
+    current = await join(current, segment)
+    if (!await exists(current)) {
+      await mkdir(current)
+    }
+    cache.set(path, current)
+  }
+
+  return current
 }
 
 async function createUniqueChildDirectory(

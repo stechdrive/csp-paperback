@@ -43,12 +43,13 @@ export function Tooltip({ content, children, delay = 300, placement = 'top', dis
   useEffect(() => {
     if (!disabled) return
     clearTimeout(timer.current)
-    setVisible(false)
   }, [disabled])
+
+  const isTooltipVisible = visible && !disabled
 
   // ツールチップ描画後に実際の幅を測ってX位置を確定する
   useLayoutEffect(() => {
-    if (!visible || !rect || !tooltipRef.current) return
+    if (!isTooltipVisible || !rect || !tooltipRef.current) return
     const MARGIN = 8
     const vw = window.innerWidth
     const tip = tooltipRef.current.getBoundingClientRect()
@@ -61,7 +62,7 @@ export function Tooltip({ content, children, delay = 300, placement = 'top', dis
     if (tipLeft < MARGIN) adjusted = MARGIN + tip.width / 2
     tooltipRef.current.style.left = `${adjusted}px`
     tooltipRef.current.style.visibility = 'visible'
-  }, [visible, rect])
+  }, [isTooltipVisible, rect])
 
   const baseLeft = rect ? rect.left + rect.width / 2 : 0
   const tooltipStyle = rect ? {
@@ -74,7 +75,7 @@ export function Tooltip({ content, children, delay = 300, placement = 'top', dis
   return (
     <span ref={wrapRef} onMouseEnter={handleEnter} onMouseLeave={handleLeave} style={{ display: 'contents' }}>
       {children}
-      {visible && rect && createPortal(
+      {isTooltipVisible && rect && createPortal(
         <div
           ref={tooltipRef}
           className={`${styles.tooltip} ${resolvedPlacement === 'bottom' ? styles.bottom : styles.top}`}

@@ -1,9 +1,10 @@
 import { useState, useCallback, type ReactNode, type DragEvent } from 'react'
 import { useLocale } from '../i18n/locale'
+import type { LoadableFile } from '../platform/files'
 import styles from './FileDropZone.module.css'
 
 interface FileDropZoneProps {
-  onFiles: (files: File[]) => Promise<void>
+  onFiles: (files: LoadableFile[]) => Promise<void>
   children: ReactNode
 }
 
