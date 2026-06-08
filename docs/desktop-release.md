@@ -43,8 +43,8 @@ This publishes only the web build from `dist/`.
 Create and push a semver tag after the release commit is on the intended branch:
 
 ```bash
-git tag v1.14.0
-git push origin v1.14.0
+git tag v1.15.0
+git push origin v1.15.0
 ```
 
 The `desktop-release` workflow builds:
