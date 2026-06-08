@@ -1,6 +1,7 @@
 import type { StateCreator } from 'zustand'
 import type { SingleMark, VirtualSet } from '../types'
 import type { CspLayer } from '../types'
+import type { VirtualSetLayerOverride } from '../types/marks'
 import type { AppStore } from './index'
 import type { HistoryOptions } from './history-slice'
 
@@ -40,6 +41,20 @@ function captureVisibilitySnapshot(
   out[layer.id] = !layer.hidden && !globalUiHidden
   for (const child of layer.children) {
     captureVisibilitySnapshot(child, globalOverrides, out)
+  }
+}
+
+/** レイヤー（フォルダを含む）のサブツリー全体の現在の合成設定を仮想セル内初期値として固定する */
+function captureCompositeSnapshot(
+  layer: CspLayer,
+  out: Record<string, VirtualSetLayerOverride>,
+): void {
+  out[layer.id] = {
+    blendMode: layer.blendMode,
+    opacity: layer.opacity,
+  }
+  for (const child of layer.children) {
+    captureCompositeSnapshot(child, out)
   }
 }
 
@@ -150,8 +165,10 @@ export const createMarksSlice: StateCreator<AppStore, [], [], MarksSlice> = (set
     // 現在のグローバル表示状態を初期オーバーライドとして取得する
     const layer = findLayerInTree(state.layerTree, layerId)
     const newOverrides = { ...vs.visibilityOverrides }
+    const newLayerOverrides = { ...(vs.layerOverrides ?? {}) }
     if (layer) {
       captureVisibilitySnapshot(layer, state.visibilityOverrides, newOverrides)
+      captureCompositeSnapshot(layer, newLayerOverrides)
     }
 
     set({
@@ -161,6 +178,7 @@ export const createMarksSlice: StateCreator<AppStore, [], [], MarksSlice> = (set
           ...v,
           members: [{ layerId, blendMode: null, opacity: null }, ...v.members],  // 先頭に追加（上レイヤー扱い）
           visibilityOverrides: newOverrides,
+          layerOverrides: newLayerOverrides,
         }
       }),
     })

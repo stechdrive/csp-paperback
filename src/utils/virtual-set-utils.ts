@@ -60,6 +60,14 @@ function hasCompositeOverride(override: VirtualSetLayerOverride | undefined): bo
   return override?.blendMode !== undefined || override?.opacity !== undefined
 }
 
+function shouldIsolateFolderForComposite(
+  effectiveBlendMode: BlendMode,
+  effectiveOpacity: number,
+  hasOverride: boolean,
+): boolean {
+  return effectiveBlendMode !== 'pass through' || (hasOverride && effectiveOpacity !== 100)
+}
+
 /**
  * 仮想セル専用の合成設定を使ってフラット化する。
  * 通常の flattenTree と違い、override 済みフォルダは pass through でも一度グループ化し、
@@ -117,7 +125,7 @@ function flattenTreeWithCompositeOverrides(
       }
       if (childFlats.length === 0) return []
 
-      if (effectiveBlendMode === 'pass through' && !hasOverride) {
+      if (!shouldIsolateFolderForComposite(effectiveBlendMode, effectiveOpacity, hasOverride)) {
         return childFlats
       }
 

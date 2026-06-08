@@ -81,4 +81,58 @@ describe('virtual-set-utils', () => {
     expect(flats[0].sourceId).toBe(group.id)
     expect(flats[0].opacity).toBe(50)
   })
+
+  it('登録時に固定されたレイヤー不透明度は元レイヤー変更後も仮想セル内で維持される', () => {
+    const psd = makePsd({
+      children: [
+        makeLayer({ name: 'target', opacity: 0.8, blendMode: 'normal' }),
+      ],
+    })
+    const tree = buildLayerTree(psd)
+    const target = findLayerByName(tree, 'target')
+    const members: VirtualSetMember[] = [{ layerId: target.id, blendMode: null, opacity: null }]
+    const memberLayers = collectMembersInTreeOrder(tree, new Set([target.id]))
+
+    target.opacity = 20
+    target.agPsdRef.opacity = 0.2
+
+    const flats = buildMemberFlatsWithOverride(
+      members,
+      memberLayers,
+      100,
+      100,
+      {},
+      { [target.id]: { blendMode: 'normal', opacity: 80 } },
+    )
+
+    expect(flats[0].sourceId).toBe(target.id)
+    expect(flats[0].opacity).toBe(80)
+  })
+
+  it('pass throughかつ100%の固定フォルダは不要にグループ化しない', () => {
+    const psd = makePsd({
+      children: [
+        makePassThroughFolder('group', [
+          makeLayer({ name: 'bottom', opacity: 1 }),
+          makeLayer({ name: 'top', opacity: 1 }),
+        ]),
+      ],
+    })
+    const tree = buildLayerTree(psd)
+    const group = findLayerByName(tree, 'group')
+    const members: VirtualSetMember[] = [{ layerId: group.id, blendMode: null, opacity: null }]
+    const memberLayers = collectMembersInTreeOrder(tree, new Set([group.id]))
+
+    const flats = buildMemberFlatsWithOverride(
+      members,
+      memberLayers,
+      100,
+      100,
+      {},
+      { [group.id]: { blendMode: 'pass through', opacity: 100 } },
+    )
+
+    expect(flats).toHaveLength(2)
+    expect(flats.map(flat => flat.sourceId)).not.toContain(group.id)
+  })
 })

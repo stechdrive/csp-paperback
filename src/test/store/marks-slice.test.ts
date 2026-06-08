@@ -1,10 +1,13 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { useAppStore } from '../../store'
+import { buildLayerTree } from '../../engine/tree-builder'
+import { makeLayer, makePsd } from '../helpers/psd-factory'
 
 beforeEach(() => {
   useAppStore.setState({
     singleMarks: new Map(),
     virtualSets: [],
+    layerTree: [],
     selectedVirtualSetId: null,
     focusedAnimFolderId: null,
     _past: [],
@@ -78,6 +81,52 @@ describe('marks-slice - virtualSet', () => {
     expect(members).toHaveLength(1)
     expect(members[0].layerId).toBe('layer-1')
     expect(members[0].blendMode).toBeNull()
+  })
+
+  it('addVirtualSetMemberで登録時の合成設定を仮想セル内初期値として固定する', () => {
+    const tree = buildLayerTree(makePsd({
+      children: [makeLayer({ name: 'layer', opacity: 0.25, blendMode: 'multiply' })],
+    }))
+    const layer = tree[0]
+    useAppStore.setState({ layerTree: tree })
+    useAppStore.getState().addVirtualSet('セット')
+    const id = useAppStore.getState().virtualSets[0].id
+
+    useAppStore.getState().addVirtualSetMember(id, layer.id)
+
+    let vs = useAppStore.getState().virtualSets[0]
+    expect(vs.layerOverrides?.[layer.id]).toEqual({
+      blendMode: 'multiply',
+      opacity: 25,
+    })
+
+    useAppStore.getState().setLayerOpacity(layer.id, 80)
+    vs = useAppStore.getState().virtualSets[0]
+    expect(vs.layerOverrides?.[layer.id]?.opacity).toBe(25)
+  })
+
+  it('フォルダメンバー登録時は子孫レイヤーの合成設定も固定する', () => {
+    const tree = buildLayerTree(makePsd({
+      children: [
+        makeLayer({ name: 'folder', isFolder: true, opacity: 1, children: [
+          makeLayer({ name: 'child', opacity: 0.4, blendMode: 'screen' }),
+        ] }),
+      ],
+    }))
+    const folder = tree[0]
+    const child = folder.children[0]
+    useAppStore.setState({ layerTree: tree })
+    useAppStore.getState().addVirtualSet('セット')
+    const id = useAppStore.getState().virtualSets[0].id
+
+    useAppStore.getState().addVirtualSetMember(id, folder.id)
+
+    const vs = useAppStore.getState().virtualSets[0]
+    expect(vs.layerOverrides?.[folder.id]?.opacity).toBe(100)
+    expect(vs.layerOverrides?.[child.id]).toEqual({
+      blendMode: 'screen',
+      opacity: 40,
+    })
   })
 
   it('同じメンバーを重複追加しない', () => {
