@@ -8,11 +8,13 @@ beforeEach(() => {
   useAppStore.setState({
     rawPsd: null,
     psdFileName: null,
+    psdSourceDirectory: null,
     layerTree: [],
     docWidth: 0,
     docHeight: 0,
     xdtsData: null,
     xdtsFileName: null,
+    xdtsSourceDirectory: null,
     singleMarks: new Map(),
     virtualSets: [],
     manualAnimFolderIds: new Set(),
@@ -28,16 +30,22 @@ describe('psd-slice', () => {
     const state = useAppStore.getState()
     expect(state.rawPsd).toBeNull()
     expect(state.psdFileName).toBeNull()
+    expect(state.psdSourceDirectory).toBeNull()
     expect(state.layerTree).toEqual([])
     expect(state.docWidth).toBe(0)
     expect(state.docHeight).toBe(0)
   })
 
   it('resetPsdで状態をクリアする', () => {
-    useAppStore.setState({ psdFileName: 'test.psd', docWidth: 100 })
+    useAppStore.setState({
+      psdFileName: 'test.psd',
+      psdSourceDirectory: 'C:\\work\\cut001',
+      docWidth: 100,
+    })
     useAppStore.getState().resetPsd()
     const state = useAppStore.getState()
     expect(state.psdFileName).toBeNull()
+    expect(state.psdSourceDirectory).toBeNull()
     expect(state.docWidth).toBe(0)
   })
 
@@ -49,8 +57,10 @@ describe('psd-slice', () => {
 
     useAppStore.setState({
       psdFileName: 'test.psd',
+      psdSourceDirectory: 'C:\\work\\cut001',
       docWidth: 100,
       xdtsFileName: 'test.xdts',
+      xdtsSourceDirectory: 'C:\\work\\cut001',
       singleMarks: new Map([['layer-1', { layerId: 'layer-1', origin: 'manual' as const }]]),
       virtualSets: [{
         id: 'vs-1',
@@ -71,7 +81,9 @@ describe('psd-slice', () => {
     const state = useAppStore.getState()
 
     expect(state.psdFileName).toBeNull()
+    expect(state.psdSourceDirectory).toBeNull()
     expect(state.xdtsFileName).toBeNull()
+    expect(state.xdtsSourceDirectory).toBeNull()
     expect(state.singleMarks.size).toBe(0)
     expect(state.virtualSets).toEqual([])
     expect(state.manualAnimFolderIds.size).toBe(0)

@@ -1,9 +1,10 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { useAppStore } from '../store'
 import { useLocale } from '../i18n/locale'
 import { selectLayerById } from '../store/selectors'
 import { useDragSource, useDropZone, type DragPayload } from '../hooks/useDragDrop'
 import { Tooltip } from './Tooltip'
+import type { HistoryOptions } from '../store/history-slice'
 import type { CspLayer, VirtualSet } from '../types'
 import styles from './VirtualSetItem.module.css'
 
@@ -44,7 +45,7 @@ interface VsMemberNodeProps {
   expandedIds: Set<string>
   selectedLayerId: string | null
   onToggleExpand: (id: string) => void
-  onToggleVisibility: (layerId: string, visible: boolean) => void
+  onToggleVisibility: (layerId: string, visible: boolean, options?: HistoryOptions) => void
   onSelectLayer: (layerId: string) => void
   depth: number
 }
@@ -98,7 +99,7 @@ function VsMemberNode({
             if (!vsVisibilityDrag.active) return
             e.stopPropagation()
             if (visible !== vsVisibilityDrag.targetVisible) {
-              onToggleVisibility(layer.id, vsVisibilityDrag.targetVisible)
+              onToggleVisibility(layer.id, vsVisibilityDrag.targetVisible, { recordHistory: false })
             }
           }}
           title={visible ? '非表示にする' : '表示にする'}
@@ -137,6 +138,7 @@ export function VirtualSetItem({ virtualSet }: VirtualSetItemProps) {
   const removeVirtualSetMember = useAppStore(s => s.removeVirtualSetMember)
   const reorderVirtualSetMembers = useAppStore(s => s.reorderVirtualSetMembers)
   const setVirtualSetVisibilityOverride = useAppStore(s => s.setVirtualSetVisibilityOverride)
+  const pushHistory = useAppStore(s => s.pushHistory)
   const selectedVirtualSetId = useAppStore(s => s.selectedVirtualSetId)
   const setSelectedVirtualSet = useAppStore(s => s.setSelectedVirtualSet)
   const setSelectedVsMember = useAppStore(s => s.setSelectedVsMember)
@@ -160,6 +162,10 @@ export function VirtualSetItem({ virtualSet }: VirtualSetItemProps) {
 
   // フォルダメンバーの展開状態（ミニツリー用）
   const [vsExpandedIds, setVsExpandedIds] = useState<Set<string>>(new Set())
+  const nameEditStart = useRef(virtualSet.name)
+  const nameHistoryPushed = useRef(false)
+  const nameInputRef = useRef<HTMLInputElement>(null)
+  const autoSelectedNameId = useRef<string | null>(null)
 
   // 仮想セット自体をドラッグして右ペインに挿入位置を設定するためのドラッグソース
   const { draggable, onDragStart, onDragEnd } = useDragSource({
@@ -249,9 +255,44 @@ export function VirtualSetItem({ virtualSet }: VirtualSetItemProps) {
   }, [])
 
   // 可視性トグル
-  const handleToggleVisibility = useCallback((layerId: string, visible: boolean) => {
-    setVirtualSetVisibilityOverride(virtualSet.id, layerId, visible)
+  const handleToggleVisibility = useCallback((layerId: string, visible: boolean, options?: HistoryOptions) => {
+    setVirtualSetVisibilityOverride(virtualSet.id, layerId, visible, options)
   }, [virtualSet.id, setVirtualSetVisibilityOverride])
+
+  useEffect(() => {
+    if (!isSelected || virtualSet.name !== t.virtualSet.newSetName) return
+    if (autoSelectedNameId.current === virtualSet.id) return
+    autoSelectedNameId.current = virtualSet.id
+
+    requestAnimationFrame(() => {
+      const input = nameInputRef.current
+      if (!input) return
+      input.focus()
+      input.select()
+    })
+  }, [isSelected, virtualSet.id, virtualSet.name, t.virtualSet.newSetName])
+
+  const handleNameFocus = useCallback((e: React.FocusEvent<HTMLInputElement>) => {
+    nameEditStart.current = virtualSet.name
+    nameHistoryPushed.current = false
+    if (virtualSet.name === t.virtualSet.newSetName) {
+      e.currentTarget.select()
+    }
+  }, [virtualSet.name, t.virtualSet.newSetName])
+
+  const handleNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const name = e.target.value
+    if (!nameHistoryPushed.current && name !== nameEditStart.current) {
+      pushHistory()
+      nameHistoryPushed.current = true
+    }
+    updateVirtualSet(virtualSet.id, { name }, { recordHistory: false })
+  }, [virtualSet.id, updateVirtualSet, pushHistory])
+
+  const handleNameBlur = useCallback(() => {
+    nameEditStart.current = virtualSet.name
+    nameHistoryPushed.current = false
+  }, [virtualSet.name])
 
   // メンバーDnDハンドラ
   const handleMemberDragStart = useCallback((e: React.DragEvent, layerId: string) => {
@@ -347,9 +388,12 @@ export function VirtualSetItem({ virtualSet }: VirtualSetItemProps) {
           </div>
         </Tooltip>
         <input
+          ref={nameInputRef}
           className={styles.name}
           value={virtualSet.name}
-          onChange={e => updateVirtualSet(virtualSet.id, { name: e.target.value })}
+          onFocus={handleNameFocus}
+          onChange={handleNameChange}
+          onBlur={handleNameBlur}
           placeholder={t.virtualSet.newSetName}
         />
         <Tooltip content="この仮想セルを削除">
@@ -447,7 +491,7 @@ export function VirtualSetItem({ virtualSet }: VirtualSetItemProps) {
                             if (!vsVisibilityDrag.active) return
                             e.stopPropagation()
                             if (visible !== vsVisibilityDrag.targetVisible) {
-                              handleToggleVisibility(member.layerId, vsVisibilityDrag.targetVisible)
+                              handleToggleVisibility(member.layerId, vsVisibilityDrag.targetVisible, { recordHistory: false })
                             }
                           }}
                           title={visible ? '非表示にする' : '表示にする'}

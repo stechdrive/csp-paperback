@@ -64,13 +64,16 @@ export function buildZipStream(
 export async function saveZipStream(
   stream: ReadableStream<Uint8Array>,
   fileName: string,
+  defaultDirectory?: string,
 ): Promise<void> {
   if (isDesktopRuntime()) {
     const { save } = await import('@tauri-apps/plugin-dialog')
     const { writeFile } = await import('@tauri-apps/plugin-fs')
+    const { join } = await import('@tauri-apps/api/path')
+    const defaultPath = defaultDirectory ? await join(defaultDirectory, fileName) : fileName
     const path = await save({
       title: 'ZIPを書き出す',
-      defaultPath: fileName,
+      defaultPath,
       filters: [{ name: 'ZIP archive', extensions: ['zip'] }],
     })
     if (path === null) throw createAbortError()

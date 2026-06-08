@@ -6,20 +6,22 @@ import { buildLayerTree, detectAnimationFoldersByXdts } from '../engine/tree-bui
 import { sanitizeManualAnimFolderIds } from '../utils/manual-animation-folder'
 import { buildDefaultVisibilityOverrides } from '../utils/default-visibility'
 import type { AppStore } from './index'
+import type { HistoryOptions } from './history-slice'
 
 export interface PsdSlice {
   rawPsd: Psd | null
   psdFileName: string | null
+  psdSourceDirectory: string | null
   layerTree: CspLayer[]
   docWidth: number
   docHeight: number
   docDpiX: number  // pixels per inch (0 = 不明)
   docDpiY: number  // pixels per inch (0 = 不明)
-  loadPsd: (buffer: ArrayBuffer, fileName: string) => void
+  loadPsd: (buffer: ArrayBuffer, fileName: string, sourceDirectory?: string) => void
   resetProject: () => void
   resetPsd: () => void
-  setLayerBlendMode: (layerId: string, blendMode: BlendMode) => void
-  setLayerOpacity: (layerId: string, opacity: number) => void
+  setLayerBlendMode: (layerId: string, blendMode: BlendMode, options?: HistoryOptions) => void
+  setLayerOpacity: (layerId: string, opacity: number, options?: HistoryOptions) => void
 }
 
 function findFirstAnimFolder(layers: CspLayer[]): CspLayer | null {
@@ -31,16 +33,66 @@ function findFirstAnimFolder(layers: CspLayer[]): CspLayer | null {
   return null
 }
 
+function updateLayerBlendMode(
+  layers: CspLayer[],
+  layerId: string,
+  blendMode: BlendMode,
+): { layers: CspLayer[]; changed: boolean } {
+  let changed = false
+  const next = layers.map(layer => {
+    if (layer.id === layerId) {
+      if (layer.blendMode === blendMode) return layer
+      layer.agPsdRef.blendMode = blendMode
+      changed = true
+      return { ...layer, blendMode }
+    }
+
+    if (layer.children.length === 0) return layer
+    const childResult = updateLayerBlendMode(layer.children, layerId, blendMode)
+    if (!childResult.changed) return layer
+    changed = true
+    return { ...layer, children: childResult.layers }
+  })
+
+  return { layers: changed ? next : layers, changed }
+}
+
+function updateLayerOpacity(
+  layers: CspLayer[],
+  layerId: string,
+  opacity: number,
+): { layers: CspLayer[]; changed: boolean } {
+  let changed = false
+  const next = layers.map(layer => {
+    if (layer.id === layerId) {
+      if (layer.opacity === opacity) return layer
+      // agPsdRef.opacity は ag-psd が 0〜1 スケールで扱う
+      layer.agPsdRef.opacity = opacity / 100
+      changed = true
+      return { ...layer, opacity }
+    }
+
+    if (layer.children.length === 0) return layer
+    const childResult = updateLayerOpacity(layer.children, layerId, opacity)
+    if (!childResult.changed) return layer
+    changed = true
+    return { ...layer, children: childResult.layers }
+  })
+
+  return { layers: changed ? next : layers, changed }
+}
+
 export const createPsdSlice: StateCreator<AppStore, [], [], PsdSlice> = (set, get) => ({
   rawPsd: null,
   psdFileName: null,
+  psdSourceDirectory: null,
   layerTree: [],
   docWidth: 0,
   docHeight: 0,
   docDpiX: 0,
   docDpiY: 0,
 
-  loadPsd: (buffer, fileName) => {
+  loadPsd: (buffer, fileName, sourceDirectory) => {
     const psd = readPsdFile(buffer)
     const xdts = get().xdtsData ?? undefined
     const archivePatterns = get().projectSettings.archivePatterns
@@ -78,6 +130,7 @@ export const createPsdSlice: StateCreator<AppStore, [], [], PsdSlice> = (set, ge
     set({
       rawPsd: psd,
       psdFileName: fileName,
+      psdSourceDirectory: sourceDirectory ?? null,
       layerTree: tree,
       docWidth: psd.width,
       docHeight: psd.height,
@@ -115,6 +168,7 @@ export const createPsdSlice: StateCreator<AppStore, [], [], PsdSlice> = (set, ge
     set({
       rawPsd: null,
       psdFileName: null,
+      psdSourceDirectory: null,
       layerTree: [],
       docWidth: 0,
       docHeight: 0,
@@ -122,6 +176,7 @@ export const createPsdSlice: StateCreator<AppStore, [], [], PsdSlice> = (set, ge
       docDpiY: 0,
       xdtsData: null,
       xdtsFileName: null,
+      xdtsSourceDirectory: null,
       unmatchedTracks: [],
       singleMarks: new Map(),
       virtualSets: [],
@@ -144,37 +199,18 @@ export const createPsdSlice: StateCreator<AppStore, [], [], PsdSlice> = (set, ge
     })
   },
 
-  setLayerBlendMode: (layerId, blendMode) => {
-    const updateTree = (layers: CspLayer[]): CspLayer[] =>
-      layers.map(l => {
-        if (l.id === layerId) {
-          l.agPsdRef.blendMode = blendMode
-          return { ...l, blendMode }
-        }
-        if (l.children.length > 0) {
-          const newChildren = updateTree(l.children)
-          if (newChildren !== l.children) return { ...l, children: newChildren }
-        }
-        return l
-      })
-    set(s => ({ layerTree: updateTree(s.layerTree) }))
+  setLayerBlendMode: (layerId, blendMode, options) => {
+    const result = updateLayerBlendMode(get().layerTree, layerId, blendMode)
+    if (!result.changed) return
+    if (options?.recordHistory !== false) get().pushHistory()
+    set({ layerTree: result.layers })
   },
 
-  setLayerOpacity: (layerId, opacity) => {
+  setLayerOpacity: (layerId, opacity, options) => {
     const clamped = Math.max(0, Math.min(100, opacity))
-    const updateTree = (layers: CspLayer[]): CspLayer[] =>
-      layers.map(l => {
-        if (l.id === layerId) {
-          // agPsdRef.opacity は ag-psd が 0〜1 スケールで扱う
-          l.agPsdRef.opacity = clamped / 100
-          return { ...l, opacity: clamped }
-        }
-        if (l.children.length > 0) {
-          const newChildren = updateTree(l.children)
-          if (newChildren !== l.children) return { ...l, children: newChildren }
-        }
-        return l
-      })
-    set(s => ({ layerTree: updateTree(s.layerTree) }))
+    const result = updateLayerOpacity(get().layerTree, layerId, clamped)
+    if (!result.changed) return
+    if (options?.recordHistory !== false) get().pushHistory()
+    set({ layerTree: result.layers })
   },
 })

@@ -6,6 +6,7 @@ import { isUnsupportedBlendMode } from '../engine/compositor'
 import { useDragSource, getActiveDragPayload } from '../hooks/useDragDrop'
 import { Tooltip } from './Tooltip'
 import styles from './LayerTreeNode.module.css'
+import type { HistoryOptions } from '../store/history-slice'
 
 // 目玉アイコンをなぞって一括トグルするためのモジュールレベルドラッグ状態
 // targetHidden: ドラッグ開始時に決定した「適用する非表示状態」
@@ -18,7 +19,7 @@ interface LayerTreeNodeProps {
   layer: CspLayer
   selectedLayerId: string | null
   onSelect: (id: string) => void
-  onToggleVisibility: (id: string) => void
+  onToggleVisibility: (id: string, options?: HistoryOptions) => void
   onSetExpanded: (id: string, expanded: boolean) => void
   onSetExpandedRecursive: (id: string, expanded: boolean) => void
   onToggleMark: (id: string) => void
@@ -215,7 +216,7 @@ export function LayerTreeNode({
     e.stopPropagation()
     // ドラッグ中は targetHidden と現在の状態が違う場合のみ適用（同じなら skip）
     if (isUiHidden !== visibilityDrag.targetHidden) {
-      onToggleVisibility(layer.id)
+      onToggleVisibility(layer.id, { recordHistory: false })
     }
   }, [layer.id, isUiHidden, onToggleVisibility])
 

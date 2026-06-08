@@ -33,6 +33,7 @@ export function VirtualSetPanel() {
   const selectedVsMemberId = useAppStore(s => s.selectedVsMemberId)
   const setVirtualSetLayerBlendMode = useAppStore(s => s.setVirtualSetLayerBlendMode)
   const setVirtualSetLayerOpacity = useAppStore(s => s.setVirtualSetLayerOpacity)
+  const pushHistory = useAppStore(s => s.pushHistory)
   const { t } = useLocale()
   const [collapsed, setCollapsed] = useState(false)
 
@@ -74,8 +75,13 @@ export function VirtualSetPanel() {
 
   const handleOpacityChange = useCallback((value: number) => {
     if (!selectedVirtualLayer) return
-    setVirtualSetLayerOpacity(selectedVirtualLayer.vs.id, selectedVirtualLayer.layer.id, value)
+    setVirtualSetLayerOpacity(selectedVirtualLayer.vs.id, selectedVirtualLayer.layer.id, value, { recordHistory: false })
   }, [selectedVirtualLayer, setVirtualSetLayerOpacity])
+
+  const handleOpacityChangeStart = useCallback(() => {
+    if (!selectedVirtualLayer) return
+    pushHistory()
+  }, [selectedVirtualLayer, pushHistory])
 
   return (
     <div className={styles.panel}>
@@ -108,6 +114,7 @@ export function VirtualSetPanel() {
         disabled={!selectedVirtualLayer}
         showPassThrough={selectedVirtualLayer?.layer.isFolder ?? false}
         onBlendModeChange={handleBlendModeChange}
+        onOpacityChangeStart={handleOpacityChangeStart}
         onOpacityChange={handleOpacityChange}
       />
 

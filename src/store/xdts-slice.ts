@@ -9,12 +9,13 @@ import type { AppStore } from './index'
 export interface XdtsSlice {
   xdtsData: XdtsData | null
   xdtsFileName: string | null
+  xdtsSourceDirectory: string | null
   /**
    * XDTS にあるが PSD 側に対応する anim folder 候補が見つからなかったトラック。
    * 不一致警告 UI (ExportDialog) で表示する。
    */
   unmatchedTracks: XdtsTrack[]
-  loadXdts: (text: string, fileName: string) => void
+  loadXdts: (text: string, fileName: string, sourceDirectory?: string) => void
   clearXdts: () => void
   setUnmatchedTracks: (tracks: XdtsTrack[]) => void
 }
@@ -22,15 +23,21 @@ export interface XdtsSlice {
 export const createXdtsSlice: StateCreator<AppStore, [], [], XdtsSlice> = (set, get) => ({
   xdtsData: null,
   xdtsFileName: null,
+  xdtsSourceDirectory: null,
   unmatchedTracks: [],
 
   setUnmatchedTracks: (tracks) => {
     set({ unmatchedTracks: tracks })
   },
 
-  loadXdts: (text, fileName) => {
+  loadXdts: (text, fileName, sourceDirectory) => {
     const xdts = parseXdts(text)
-    set({ xdtsData: xdts, xdtsFileName: fileName, currentFrame: 0 })
+    set({
+      xdtsData: xdts,
+      xdtsFileName: fileName,
+      xdtsSourceDirectory: sourceDirectory ?? null,
+      currentFrame: 0,
+    })
 
     // PSD 読み込み前に XDTS が来た場合は loadPsd 側で反映されるので何もしない
     const { layerTree } = get()
@@ -60,7 +67,7 @@ export const createXdtsSlice: StateCreator<AppStore, [], [], XdtsSlice> = (set, 
 
   clearXdts: () => {
     const { layerTree } = get()
-    set({ xdtsData: null, xdtsFileName: null, currentFrame: 0 })
+    set({ xdtsData: null, xdtsFileName: null, xdtsSourceDirectory: null, currentFrame: 0 })
     if (layerTree.length > 0) {
       clearXdtsAnimFolders(layerTree)
       set({ layerTree: [...layerTree] })

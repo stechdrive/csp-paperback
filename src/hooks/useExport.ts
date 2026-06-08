@@ -21,7 +21,17 @@ export function useExport(): UseExportResult {
 
   const startExport = useCallback(async (destination: OutputDestination = 'zip') => {
     const state = useAppStore.getState()
-    const { docWidth, docHeight, docDpiX, docDpiY, psdFileName, outputConfig, projectSettings } = state
+    const {
+      docWidth,
+      docHeight,
+      docDpiX,
+      docDpiY,
+      psdFileName,
+      psdSourceDirectory,
+      xdtsSourceDirectory,
+      outputConfig,
+      projectSettings,
+    } = state
 
     if (!psdFileName || docWidth === 0) {
       setError('PSD ファイルが読み込まれていません')
@@ -33,6 +43,8 @@ export function useExport(): UseExportResult {
     setError(null)
 
     try {
+      const defaultExportDirectory = psdSourceDirectory ?? xdtsSourceDirectory ?? undefined
+
       // visibilityOverridesを反映したツリーを取得
       const tree = selectLayerTreeWithVisibility(state)
 
@@ -81,6 +93,7 @@ export function useExport(): UseExportResult {
           docDpiX,
           docDpiY,
           handleEntryProgress,
+          defaultExportDirectory,
         )
       } else {
         // ZIP 生成: canvas → Blob 変換をエントリ 1 枚ずつ逐次化するストリーム。
@@ -96,7 +109,7 @@ export function useExport(): UseExportResult {
 
         // 保存: File System Access API が使えればネイティブ保存ダイアログから直接書き込み、
         // それ以外は Blob 化してから downloadBlob でフォールバック
-        await saveZipStream(stream, makeZipFileName(psdFileName))
+        await saveZipStream(stream, makeZipFileName(psdFileName), defaultExportDirectory)
       }
       setProgress(1)
     } catch (e) {

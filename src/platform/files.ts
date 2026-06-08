@@ -3,17 +3,20 @@ import { createAbortError, isDesktopRuntime } from './runtime'
 
 export interface LoadableFile {
   name: string
+  sourceDirectory?: string
   text: () => Promise<string>
   arrayBuffer: () => Promise<ArrayBuffer>
 }
 
 class TauriLoadableFile implements LoadableFile {
   readonly name: string
+  readonly sourceDirectory?: string
   private readonly path: string
 
-  constructor(path: string) {
+  constructor(path: string, sourceDirectory?: string) {
     this.path = path
     this.name = fileNameFromPath(path)
+    this.sourceDirectory = sourceDirectory
   }
 
   async text(): Promise<string> {
@@ -51,7 +54,8 @@ export async function pickProjectFiles(): Promise<LoadableFile[]> {
 
   if (selected === null) return []
   const paths = Array.isArray(selected) ? selected : [selected]
-  return paths.map(path => new TauriLoadableFile(path))
+  const { dirname } = await import('@tauri-apps/api/path')
+  return Promise.all(paths.map(async path => new TauriLoadableFile(path, await dirname(path))))
 }
 
 export async function pickSettingsJsonFile(): Promise<LoadableFile | null> {
@@ -64,7 +68,10 @@ export async function pickSettingsJsonFile(): Promise<LoadableFile | null> {
     filters: [{ name: 'JSON', extensions: ['json'] }],
   })
 
-  return selected === null ? null : new TauriLoadableFile(selected)
+  if (selected === null) return null
+
+  const { dirname } = await import('@tauri-apps/api/path')
+  return new TauriLoadableFile(selected, await dirname(selected))
 }
 
 export async function saveTextFile(

@@ -8,6 +8,7 @@ import { findTimelineCellChildIndex } from '../utils/anim-cell-selection'
 import type { AppTheme } from '../theme'
 import { DEFAULT_APP_THEME } from '../theme'
 import type { AppStore } from './index'
+import type { HistoryOptions } from './history-slice'
 
 export interface UiSlice {
   mobileUiScale: number
@@ -46,7 +47,7 @@ export interface UiSlice {
   seekToFrame: (frameIndex: number) => void
   setFocusedAnimFolder: (id: string | null) => void
   setSelectedVirtualSet: (id: string | null) => void
-  toggleLayerVisibility: (layerId: string) => void
+  toggleLayerVisibility: (layerId: string, options?: HistoryOptions) => void
   toggleFolderExpanded: (layerId: string) => void
   toggleFolderExpandedRecursive: (layerId: string) => void
   /**
@@ -197,8 +198,8 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
     set({ selectedVirtualSetId: id, focusedAnimFolderId: null })
   },
 
-  toggleLayerVisibility: (layerId) => {
-    get().pushHistory()
+  toggleLayerVisibility: (layerId, options) => {
+    if (options?.recordHistory !== false) get().pushHistory()
     const current = new Map(get().visibilityOverrides)
     // 実効的な非表示状態を判定: 既存 override があればその値、なければ PSD の hidden/uiHidden を参照
     const layer = findLayerById(get().layerTree, layerId)

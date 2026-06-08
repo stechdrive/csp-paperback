@@ -39,6 +39,7 @@ export function LayerTreePanel() {
   const resetVisibility = useAppStore(s => s.resetVisibility)
   const setLayerBlendMode = useAppStore(s => s.setLayerBlendMode)
   const setLayerOpacity = useAppStore(s => s.setLayerOpacity)
+  const pushHistory = useAppStore(s => s.pushHistory)
   const setSelectedVirtualSet = useAppStore(s => s.setSelectedVirtualSet)
 
   const selectedLayer = useAppStore(s => selectedLayerId ? selectLayerById(s, selectedLayerId) : null)
@@ -189,8 +190,13 @@ export function LayerTreePanel() {
 
   const handleOpacityChange = useCallback((value: number) => {
     if (!selectedLayerId) return
-    setLayerOpacity(selectedLayerId, value)
+    setLayerOpacity(selectedLayerId, value, { recordHistory: false })
   }, [selectedLayerId, setLayerOpacity])
+
+  const handleOpacityChangeStart = useCallback(() => {
+    if (!selectedLayerId) return
+    pushHistory()
+  }, [selectedLayerId, pushHistory])
 
   return (
     <div className={styles.panel}>
@@ -210,6 +216,7 @@ export function LayerTreePanel() {
         disabled={!selectedLayer}
         showPassThrough={selectedLayer?.isFolder ?? true}
         onBlendModeChange={handleBlendModeChange}
+        onOpacityChangeStart={handleOpacityChangeStart}
         onOpacityChange={handleOpacityChange}
       />
 

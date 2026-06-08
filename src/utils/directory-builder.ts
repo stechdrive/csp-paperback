@@ -23,9 +23,10 @@ export async function saveEntriesToDirectory(
   dpiX = 0,
   dpiY = 0,
   onProgress?: (done: number, total: number) => void,
+  defaultDirectory?: string,
 ): Promise<string> {
   if (isDesktopRuntime()) {
-    return saveEntriesToTauriDirectory(entries, config, psdFileName, dpiX, dpiY, onProgress)
+    return saveEntriesToTauriDirectory(entries, config, psdFileName, dpiX, dpiY, onProgress, defaultDirectory)
   }
 
   const directoryPicker = getDirectoryPicker()
@@ -73,6 +74,7 @@ async function saveEntriesToTauriDirectory(
   dpiX = 0,
   dpiY = 0,
   onProgress?: (done: number, total: number) => void,
+  defaultDirectory?: string,
 ): Promise<string> {
   const { open } = await import('@tauri-apps/plugin-dialog')
   const { writeFile } = await import('@tauri-apps/plugin-fs')
@@ -83,6 +85,7 @@ async function saveEntriesToTauriDirectory(
     directory: true,
     multiple: false,
     recursive: true,
+    defaultPath: defaultDirectory,
   })
   if (selected === null) throw createAbortError()
 

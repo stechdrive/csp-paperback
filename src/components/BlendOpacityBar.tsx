@@ -31,16 +31,18 @@ interface DragNumberProps {
   min: number
   max: number
   disabled: boolean
+  onChangeStart?: () => void
   onChange: (v: number) => void
 }
 
-export function DragNumber({ value, min, max, disabled, onChange }: DragNumberProps) {
+export function DragNumber({ value, min, max, disabled, onChangeStart, onChange }: DragNumberProps) {
   const [editing, setEditing] = useState(false)
   const [editVal, setEditVal] = useState('')
   const dragging = useRef(false)
   const startX = useRef(0)
   const startVal = useRef(0)
   const moved = useRef(false)
+  const changeStarted = useRef(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -52,22 +54,30 @@ export function DragNumber({ value, min, max, disabled, onChange }: DragNumberPr
     e.preventDefault()
     dragging.current = true
     moved.current = false
+    changeStarted.current = false
     startX.current = e.clientX
     startVal.current = value
 
     const handleMove = (ev: MouseEvent) => {
       const delta = Math.round((ev.clientX - startX.current) / 2)
       if (Math.abs(delta) >= 1) moved.current = true
-      onChange(Math.max(min, Math.min(max, startVal.current + delta)))
+      const next = Math.max(min, Math.min(max, startVal.current + delta))
+      if (next === value && !changeStarted.current) return
+      if (!changeStarted.current) {
+        onChangeStart?.()
+        changeStarted.current = true
+      }
+      onChange(next)
     }
     const handleUp = () => {
       dragging.current = false
+      changeStarted.current = false
       window.removeEventListener('mousemove', handleMove)
       window.removeEventListener('mouseup', handleUp)
     }
     window.addEventListener('mousemove', handleMove)
     window.addEventListener('mouseup', handleUp)
-  }, [disabled, value, min, max, onChange])
+  }, [disabled, value, min, max, onChangeStart, onChange])
 
   const handleClick = useCallback(() => {
     if (disabled || moved.current) return
@@ -77,9 +87,15 @@ export function DragNumber({ value, min, max, disabled, onChange }: DragNumberPr
 
   const commitEdit = useCallback(() => {
     const n = parseInt(editVal, 10)
-    if (!isNaN(n)) onChange(Math.max(min, Math.min(max, n)))
+    if (!isNaN(n)) {
+      const next = Math.max(min, Math.min(max, n))
+      if (next !== value) {
+        onChangeStart?.()
+        onChange(next)
+      }
+    }
     setEditing(false)
-  }, [editVal, min, max, onChange])
+  }, [editVal, min, max, value, onChangeStart, onChange])
 
   if (editing) {
     return (
@@ -127,6 +143,7 @@ interface BlendOpacityBarProps {
   /** フォルダ選択時のみ「通過」を表示する場合 true */
   showPassThrough?: boolean
   onBlendModeChange: (value: string) => void
+  onOpacityChangeStart?: () => void
   onOpacityChange: (value: number) => void
 }
 
@@ -136,6 +153,7 @@ export function BlendOpacityBar({
   disabled,
   showPassThrough = true,
   onBlendModeChange,
+  onOpacityChangeStart,
   onOpacityChange,
 }: BlendOpacityBarProps) {
   return (
@@ -158,6 +176,7 @@ export function BlendOpacityBar({
         min={0}
         max={100}
         disabled={disabled}
+        onChangeStart={onOpacityChangeStart}
         onChange={onOpacityChange}
       />
     </div>

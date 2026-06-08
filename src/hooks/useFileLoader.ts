@@ -58,8 +58,8 @@ export function useFileLoader(): UseFileLoaderResult {
       }
 
       // XDTS を先に保持してから PSD を解析する。PSD 側の XDTS 検出を一度で確定させるため。
-      if (xdtsFile) loadXdts(await xdtsFile.text(), xdtsFile.name)
-      if (psdFile) loadPsd(await psdFile.arrayBuffer(), psdFile.name)
+      if (xdtsFile) loadXdts(await xdtsFile.text(), xdtsFile.name, xdtsFile.sourceDirectory)
+      if (psdFile) loadPsd(await psdFile.arrayBuffer(), psdFile.name, psdFile.sourceDirectory)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'ファイルの読み込みに失敗しました')
     } finally {

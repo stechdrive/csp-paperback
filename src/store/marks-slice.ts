@@ -2,22 +2,23 @@ import type { StateCreator } from 'zustand'
 import type { SingleMark, VirtualSet } from '../types'
 import type { CspLayer } from '../types'
 import type { AppStore } from './index'
+import type { HistoryOptions } from './history-slice'
 
 export interface MarksSlice {
   singleMarks: Map<string, SingleMark>
   virtualSets: VirtualSet[]
   toggleSingleMark: (layerId: string) => void
   addVirtualSet: (name: string) => void
-  updateVirtualSet: (id: string, updates: Partial<Omit<VirtualSet, 'id'>>) => void
+  updateVirtualSet: (id: string, updates: Partial<Omit<VirtualSet, 'id'>>, options?: HistoryOptions) => void
   removeVirtualSet: (id: string) => void
   addVirtualSetMember: (setId: string, layerId: string) => void
   removeVirtualSetMember: (setId: string, layerId: string) => void
   reorderVirtualSetMembers: (setId: string, newOrder: string[]) => void
-  setVirtualSetMemberBlendMode: (setId: string, layerId: string, blendMode: string | null) => void
-  setVirtualSetMemberOpacity: (setId: string, layerId: string, opacity: number | null) => void
-  setVirtualSetLayerBlendMode: (setId: string, layerId: string, blendMode: string | null) => void
-  setVirtualSetLayerOpacity: (setId: string, layerId: string, opacity: number | null) => void
-  setVirtualSetVisibilityOverride: (setId: string, layerId: string, visible: boolean) => void
+  setVirtualSetMemberBlendMode: (setId: string, layerId: string, blendMode: string | null, options?: HistoryOptions) => void
+  setVirtualSetMemberOpacity: (setId: string, layerId: string, opacity: number | null, options?: HistoryOptions) => void
+  setVirtualSetLayerBlendMode: (setId: string, layerId: string, blendMode: string | null, options?: HistoryOptions) => void
+  setVirtualSetLayerOpacity: (setId: string, layerId: string, opacity: number | null, options?: HistoryOptions) => void
+  setVirtualSetVisibilityOverride: (setId: string, layerId: string, visible: boolean, options?: HistoryOptions) => void
 }
 
 function findLayerInTree(layers: CspLayer[], id: string): CspLayer | null {
@@ -117,11 +118,15 @@ export const createMarksSlice: StateCreator<AppStore, [], [], MarksSlice> = (set
       expandToAnimationCells: false,
       visibilityOverrides: {},
     }
-    set({ virtualSets: [...get().virtualSets, newSet] })
+    set({
+      virtualSets: [...get().virtualSets, newSet],
+      selectedVirtualSetId: newSet.id,
+      focusedAnimFolderId: null,
+    })
   },
 
-  updateVirtualSet: (id, updates) => {
-    get().pushHistory()
+  updateVirtualSet: (id, updates, options) => {
+    if (options?.recordHistory !== false) get().pushHistory()
     set({
       virtualSets: get().virtualSets.map(vs =>
         vs.id === id ? { ...vs, ...updates } : vs
@@ -185,8 +190,8 @@ export const createMarksSlice: StateCreator<AppStore, [], [], MarksSlice> = (set
     })
   },
 
-  setVirtualSetMemberBlendMode: (setId, layerId, blendMode) => {
-    get().pushHistory()
+  setVirtualSetMemberBlendMode: (setId, layerId, blendMode, options) => {
+    if (options?.recordHistory !== false) get().pushHistory()
     set({
       virtualSets: get().virtualSets.map(vs =>
         vs.id === setId ? setLayerBlendModeOverride(vs, layerId, blendMode) : vs
@@ -194,8 +199,8 @@ export const createMarksSlice: StateCreator<AppStore, [], [], MarksSlice> = (set
     })
   },
 
-  setVirtualSetMemberOpacity: (setId, layerId, opacity) => {
-    get().pushHistory()
+  setVirtualSetMemberOpacity: (setId, layerId, opacity, options) => {
+    if (options?.recordHistory !== false) get().pushHistory()
     set({
       virtualSets: get().virtualSets.map(vs =>
         vs.id === setId ? setLayerOpacityOverride(vs, layerId, opacity) : vs
@@ -203,8 +208,8 @@ export const createMarksSlice: StateCreator<AppStore, [], [], MarksSlice> = (set
     })
   },
 
-  setVirtualSetLayerBlendMode: (setId, layerId, blendMode) => {
-    get().pushHistory()
+  setVirtualSetLayerBlendMode: (setId, layerId, blendMode, options) => {
+    if (options?.recordHistory !== false) get().pushHistory()
     set({
       virtualSets: get().virtualSets.map(vs =>
         vs.id === setId ? setLayerBlendModeOverride(vs, layerId, blendMode) : vs
@@ -212,8 +217,8 @@ export const createMarksSlice: StateCreator<AppStore, [], [], MarksSlice> = (set
     })
   },
 
-  setVirtualSetLayerOpacity: (setId, layerId, opacity) => {
-    get().pushHistory()
+  setVirtualSetLayerOpacity: (setId, layerId, opacity, options) => {
+    if (options?.recordHistory !== false) get().pushHistory()
     set({
       virtualSets: get().virtualSets.map(vs =>
         vs.id === setId ? setLayerOpacityOverride(vs, layerId, opacity) : vs
@@ -221,8 +226,8 @@ export const createMarksSlice: StateCreator<AppStore, [], [], MarksSlice> = (set
     })
   },
 
-  setVirtualSetVisibilityOverride: (setId, layerId, visible) => {
-    get().pushHistory()
+  setVirtualSetVisibilityOverride: (setId, layerId, visible, options) => {
+    if (options?.recordHistory !== false) get().pushHistory()
     set({
       virtualSets: get().virtualSets.map(vs => {
         if (vs.id !== setId) return vs

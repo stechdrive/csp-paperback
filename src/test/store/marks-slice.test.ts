@@ -5,6 +5,12 @@ beforeEach(() => {
   useAppStore.setState({
     singleMarks: new Map(),
     virtualSets: [],
+    selectedVirtualSetId: null,
+    focusedAnimFolderId: null,
+    _past: [],
+    _future: [],
+    canUndo: false,
+    canRedo: false,
   })
 })
 
@@ -39,6 +45,8 @@ describe('marks-slice - virtualSet', () => {
     expect(virtualSets[0].insertionLayerId).toBeNull()
     expect(virtualSets[0].members).toEqual([])
     expect(virtualSets[0].layerOverrides).toEqual({})
+    expect(useAppStore.getState().selectedVirtualSetId).toBe(virtualSets[0].id)
+    expect(useAppStore.getState().focusedAnimFolderId).toBeNull()
   })
 
   it('addVirtualSetでIDが自動生成される', () => {
