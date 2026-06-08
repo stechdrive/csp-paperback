@@ -67,8 +67,7 @@ CSP Paperback solves this outside the workflow: load your PSD and XDTS, and expo
 
 ### Desktop App
 
-The same React/Vite app can also run as a Tauri desktop app for Windows and macOS.
-See [docs/desktop-release.md](docs/desktop-release.md) for local build, artifact storage, and GitHub Release workflow details.
+Desktop builds are available from [GitHub Releases](https://github.com/stechdrive/csp-paperback/releases).
 
 ---
 
@@ -135,8 +134,7 @@ CSP Paperbackはその制約をPSDとXDTSを読み込むことでワークフロ
 
 ### デスクトップアプリ
 
-同じReact/ViteアプリをTauriでWindows/macOS向けデスクトップアプリとしてビルドできます。
-ローカルビルド、成果物の保存場所、GitHub Release運用は [docs/desktop-release.md](docs/desktop-release.md) を参照してください。
+デスクトップ版は [GitHub Releases](https://github.com/stechdrive/csp-paperback/releases) からダウンロードできます。
 
 ---
 
