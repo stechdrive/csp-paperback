@@ -54,6 +54,12 @@ export async function pickProjectFiles(): Promise<LoadableFile[]> {
 
   if (selected === null) return []
   const paths = Array.isArray(selected) ? selected : [selected]
+  return loadableFilesFromPaths(paths)
+}
+
+export async function loadableFilesFromPaths(paths: string[]): Promise<LoadableFile[]> {
+  if (!isDesktopRuntime()) return []
+
   const { dirname } = await import('@tauri-apps/api/path')
   return Promise.all(paths.map(async path => new TauriLoadableFile(path, await dirname(path))))
 }

@@ -79,13 +79,14 @@ async function saveEntriesToTauriDirectory(
   const { open } = await import('@tauri-apps/plugin-dialog')
   const { writeFile } = await import('@tauri-apps/plugin-fs')
   const { join } = await import('@tauri-apps/api/path')
+  const defaultPath = await makeTauriDirectoryDialogDefaultPath(defaultDirectory, psdFileName)
 
   const selected = await open({
     title: '書き出し先フォルダを選択',
     directory: true,
     multiple: false,
     recursive: true,
-    defaultPath: defaultDirectory,
+    defaultPath,
   })
   if (selected === null) throw createAbortError()
 
@@ -111,6 +112,16 @@ async function saveEntriesToTauriDirectory(
   }
 
   return exportRoot.name
+}
+
+async function makeTauriDirectoryDialogDefaultPath(
+  defaultDirectory: string | undefined,
+  psdFileName: string,
+): Promise<string | undefined> {
+  if (!defaultDirectory) return undefined
+
+  const { join } = await import('@tauri-apps/api/path')
+  return join(defaultDirectory, makeExportBaseName(psdFileName))
 }
 
 async function createUniqueChildDirectoryPath(
