@@ -72,13 +72,11 @@ jobs:
           releaseBody: |
             Desktop build for CSP Paperback.
 
-            Review these draft assets before publishing the release.
             Windows includes installer assets and an experimental plain executable.
             macOS includes app/dmg bundle assets and is not notarized unless signing secrets are configured separately.
-          releaseDraft: true
+          releaseDraft: false
           prerelease: false
-          uploadUpdaterJson: false
-          uploadUpdaterSignatures: false
+          includeUpdaterJson: false
           uploadPlainBinary: ${{ matrix.uploadPlainBinary }}
-          releaseAssetNamePattern: CSP-Paperback_[version]_${{ matrix.assetPlatform }}[setup][ext]
+          assetNamePattern: CSP-Paperback_[version]_${{ matrix.assetPlatform }}[setup][ext]
           args: ${{ matrix.args }}
