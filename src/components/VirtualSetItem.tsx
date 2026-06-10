@@ -2,7 +2,14 @@ import { useState, useCallback, useEffect, useRef } from 'react'
 import { useAppStore } from '../store'
 import { useLocale } from '../i18n/locale'
 import { selectLayerById } from '../store/selectors'
-import { useDragSource, useDropZone, type DragPayload } from '../hooks/useDragDrop'
+import {
+  isInternalPointerDragEnabled,
+  startInternalPointerDrag,
+  useDragSource,
+  useDropZone,
+  useInternalDropTarget,
+  type DragPayload,
+} from '../hooks/useDragDrop'
 import { Tooltip } from './Tooltip'
 import type { HistoryOptions } from '../store/history-slice'
 import type { CspLayer, VirtualSet } from '../types'
@@ -168,7 +175,7 @@ export function VirtualSetItem({ virtualSet }: VirtualSetItemProps) {
   const autoSelectedNameId = useRef<string | null>(null)
 
   // 仮想セット自体をドラッグして右ペインに挿入位置を設定するためのドラッグソース
-  const { draggable, onDragStart, onDragEnd } = useDragSource({
+  const { draggable, onDragStart, onDragEnd, onPointerDown } = useDragSource({
     type: 'virtualSet',
     virtualSetId: virtualSet.id,
   })
@@ -179,7 +186,9 @@ export function VirtualSetItem({ virtualSet }: VirtualSetItemProps) {
     }
   }, [virtualSet.id, addVirtualSetMember])
 
-  const { dropHandlers: memberDropHandlers, isOver: memberIsOver } = useDropZone(onMemberDrop)
+  const { dropHandlers: memberDropHandlers, dropRef: memberDropRef, isOver: memberIsOver } = useDropZone(onMemberDrop)
+  const memberListRef = useRef<HTMLDivElement | null>(null)
+  const memberNativeDraggable = !isInternalPointerDragEnabled()
 
   // 挿入位置の表示テキストを生成
   const state = useAppStore.getState()
@@ -303,6 +312,16 @@ export function VirtualSetItem({ virtualSet }: VirtualSetItemProps) {
     e.dataTransfer.setData('application/x-member-drag', virtualSet.id)
   }, [virtualSet.id, selectedIds])
 
+  const makeMemberDragPayload = useCallback((layerId: string): DragPayload => {
+    const dragIds = selectedIds.has(layerId) ? Array.from(selectedIds) : [layerId]
+    return { type: 'virtualSetMember', setId: virtualSet.id, layerIds: dragIds }
+  }, [virtualSet.id, selectedIds])
+
+  const handleMemberPointerDown = useCallback((e: React.PointerEvent, layerId: string) => {
+    e.stopPropagation()
+    startInternalPointerDrag(makeMemberDragPayload(layerId), e)
+  }, [makeMemberDragPayload])
+
   const handleMemberDragEnd = useCallback(() => {
     _draggingMemberInfo = null
     setInsertLineIndex(null)
@@ -362,6 +381,68 @@ export function VirtualSetItem({ virtualSet }: VirtualSetItemProps) {
     e.stopPropagation()
   }, [virtualSet.id])
 
+  const findMemberDropIndex = useCallback((clientX: number, clientY: number) => {
+    const list = memberListRef.current
+    if (!list) return null
+
+    const element = document
+      .elementFromPoint(clientX, clientY)
+      ?.closest<HTMLElement>('[data-vs-member-index]')
+    if (!element || !list.contains(element)) return null
+
+    const index = Number(element.dataset.vsMemberIndex)
+    if (!Number.isInteger(index)) return null
+
+    const rect = element.getBoundingClientRect()
+    const position: 'above' | 'below' = clientY - rect.top < rect.height / 2 ? 'above' : 'below'
+    return { index, position }
+  }, [])
+
+  const reorderMembers = useCallback((layerIds: string[], index: number, position: 'above' | 'below') => {
+    const draggingIds = new Set(layerIds)
+    const currentIds = virtualSet.members.map(m => m.layerId)
+    const remaining = currentIds.filter(id => !draggingIds.has(id))
+    const targetId = currentIds[index]
+    let insertPos = targetId ? remaining.indexOf(targetId) : remaining.length
+    if (insertPos === -1) insertPos = remaining.length
+    const finalInsertPos = position === 'below' ? insertPos + 1 : insertPos
+
+    reorderVirtualSetMembers(virtualSet.id, [
+      ...remaining.slice(0, finalInsertPos),
+      ...layerIds,
+      ...remaining.slice(finalInsertPos),
+    ])
+  }, [virtualSet.id, virtualSet.members, reorderVirtualSetMembers])
+
+  const { dropRef: memberListInternalDropRef } = useInternalDropTarget({
+    canDrop: payload => payload.type === 'virtualSetMember' && payload.setId === virtualSet.id,
+    onDragOver: (_payload, position) => {
+      const target = findMemberDropIndex(position.clientX, position.clientY)
+      if (!target) {
+        setInsertLineIndex(null)
+        return
+      }
+      setInsertLineIndex(target.index)
+      setInsertLinePosition(target.position)
+    },
+    onDragLeave: () => setInsertLineIndex(null),
+    onDrop: (payload, position) => {
+      if (payload.type !== 'virtualSetMember' || payload.setId !== virtualSet.id) return
+      const target = findMemberDropIndex(position.clientX, position.clientY)
+      if (!target) {
+        setInsertLineIndex(null)
+        return
+      }
+      reorderMembers(payload.layerIds, target.index, target.position)
+      setInsertLineIndex(null)
+    },
+  })
+
+  const setMemberListRef = useCallback((node: HTMLDivElement | null) => {
+    memberListRef.current = node
+    memberListInternalDropRef(node)
+  }, [memberListInternalDropRef])
+
   return (
     <div
       className={`${styles.item} ${isSelected ? styles.itemSelected : ''}`}
@@ -383,6 +464,7 @@ export function VirtualSetItem({ virtualSet }: VirtualSetItemProps) {
             draggable={draggable}
             onDragStart={onDragStart}
             onDragEnd={onDragEnd}
+            onPointerDown={onPointerDown}
           >
             ⠿
           </div>
@@ -436,6 +518,7 @@ export function VirtualSetItem({ virtualSet }: VirtualSetItemProps) {
             {/* メンバーリスト（縦に自由伸長） */}
             {virtualSet.members.length > 0 && (
               <div
+                ref={setMemberListRef}
                 className={styles.memberList}
                 onDragOver={handleListDragOver}
                 onDrop={handleMemberDrop}
@@ -455,12 +538,14 @@ export function VirtualSetItem({ virtualSet }: VirtualSetItemProps) {
                     <div key={member.layerId}>
                       {showLineAbove && <div className={styles.insertionLine} />}
                       <div
+                        data-vs-member-index={index}
                         className={`${styles.memberRow} ${isRowSelected ? styles.memberRowSelected : ''} ${!visible ? styles.memberRowHidden : ''}`}
                         onClick={e => handleMemberClick(e, member.layerId)}
-                        draggable
+                        draggable={memberNativeDraggable}
                         onDragStart={e => handleMemberDragStart(e, member.layerId)}
                         onDragEnd={handleMemberDragEnd}
                         onDragOver={e => handleMemberDragOver(e, index)}
+                        onPointerDown={e => handleMemberPointerDown(e, member.layerId)}
                       >
                         <div className={styles.memberDragHandle}>⠿</div>
 
@@ -542,6 +627,7 @@ export function VirtualSetItem({ virtualSet }: VirtualSetItemProps) {
 
             {/* 追加用ドロップゾーン（常に表示） */}
             <div
+              ref={memberDropRef}
               className={`${styles.dropZone} ${memberIsOver ? styles.dropZoneOver : ''}`}
               {...memberDropHandlers}
             >

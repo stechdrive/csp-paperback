@@ -1,9 +1,9 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useAppStore } from '../store'
 import type { CspLayer, VirtualSet } from '../types'
 import { isUnsupportedBlendMode } from '../engine/compositor'
-import { useDragSource, getActiveDragPayload } from '../hooks/useDragDrop'
+import { useDragSource, getActiveDragPayload, useInternalDropTarget } from '../hooks/useDragDrop'
 import { Tooltip } from './Tooltip'
 import styles from './LayerTreeNode.module.css'
 import type { HistoryOptions } from '../store/history-slice'
@@ -90,7 +90,7 @@ function VirtualSetBadge({ vs, indentWidth, onClear }: {
   onClear: () => void
 }) {
   const setSelectedVirtualSet = useAppStore(s => s.setSelectedVirtualSet)
-  const { draggable, onDragStart, onDragEnd } = useDragSource({ type: 'virtualSet', virtualSetId: vs.id })
+  const { draggable, onDragStart, onDragEnd, onPointerDown } = useDragSource({ type: 'virtualSet', virtualSetId: vs.id })
 
   const handleDragStart = useCallback((e: React.DragEvent) => {
     e.stopPropagation()
@@ -111,6 +111,7 @@ function VirtualSetBadge({ vs, indentWidth, onClear }: {
         draggable={draggable}
         onDragStart={handleDragStart}
         onDragEnd={onDragEnd}
+        onPointerDown={onPointerDown}
         title="ドラッグして挿入位置を変更"
       >
         ⠿
@@ -153,8 +154,9 @@ export function LayerTreeNode({
   const updateVirtualSet = useAppStore(s => s.updateVirtualSet)
   // 仮想セットドロップ時の挿入ライン表示状態（'above' | 'below' | null）
   const [insertPosition, setInsertPosition] = useState<'above' | 'below' | null>(null)
+  const rowRef = useRef<HTMLDivElement | null>(null)
 
-  const { draggable, onDragStart, onDragEnd } = useDragSource({ type: 'layer', layerId: layer.id })
+  const { draggable, onDragStart, onDragEnd, onPointerDown } = useDragSource({ type: 'layer', layerId: layer.id })
 
   const isSelected = selectedLayerId === layer.id
   // override があればその値、なければ PSD の hidden/uiHidden 両方を考慮した実効的な非表示状態
@@ -272,6 +274,31 @@ export function LayerTreeNode({
     setInsertPosition(null)
   }, [layer.id, insertPosition, updateVirtualSet])
 
+  const { dropRef: internalDropRef } = useInternalDropTarget({
+    canDrop: payload => payload.type === 'virtualSet',
+    onDragOver: (_payload, position) => {
+      const rect = rowRef.current?.getBoundingClientRect()
+      if (!rect) return
+      setInsertPosition(position.clientY - rect.top < rect.height / 2 ? 'above' : 'below')
+    },
+    onDragLeave: () => setInsertPosition(null),
+    onDrop: (payload, position) => {
+      if (payload.type !== 'virtualSet') return
+      const rect = rowRef.current?.getBoundingClientRect()
+      const insertionPosition = rect && position.clientY - rect.top < rect.height / 2 ? 'above' : 'below'
+      updateVirtualSet(payload.virtualSetId, {
+        insertionLayerId: layer.id,
+        insertionPosition,
+      })
+      setInsertPosition(null)
+    },
+  })
+
+  const setRowRef = useCallback((node: HTMLDivElement | null) => {
+    rowRef.current = node
+    internalDropRef(node)
+  }, [internalDropRef])
+
   const indentWidth = layer.depth * 16
 
   let typeIcon: ReactNode = <DocumentIcon />
@@ -320,12 +347,14 @@ export function LayerTreeNode({
       )}
 
       <div
+        ref={setRowRef}
         className={rowClass}
         data-layer-id={layer.id}
         onClick={handleRowClick}
         draggable={draggable}
         onDragStart={onDragStart}
         onDragEnd={onDragEnd}
+        onPointerDown={onPointerDown}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
