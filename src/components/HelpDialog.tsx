@@ -1311,7 +1311,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                     <td>連番 / 連番セル名 / セル名</td>
                     <td>
                       連番: <code className={styles.code}>A_0001.jpg</code>{'\n'}
-                      連番セル名: <code className={styles.code}>A_0001_ア.jpg</code>{'\n'}
+                      連番セル名: <code className={styles.code}>A_01_ア.jpg</code>{'\n'}
                       セル名: <code className={styles.code}>A_ア.jpg</code>（セル名をそのまま使用）
                     </td>
                   </tr>

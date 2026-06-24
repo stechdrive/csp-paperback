@@ -25,7 +25,7 @@ function buildNameSample(
   const cellLabel = mode === 'sequence'
     ? '0001'
     : mode === 'sequence-cellname'
-      ? '0001_ア'
+      ? '01_ア'
       : 'ア'
   const processSuffix = '_e'
   const fileName = processSuffixPosition === 'before-cell'

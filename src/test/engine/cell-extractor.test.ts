@@ -38,6 +38,12 @@ function markManualAnimFolder(layer: CspLayer): void {
   layer.animationFolder = { detectedBy: 'manual', trackName: layer.originalName }
 }
 
+function makeNumberedCellFolders(count: number) {
+  return Array.from({ length: count }, (_, index) =>
+    makeFolder(String(index + 1), [makeLayer({ name: `content-${index + 1}` })])
+  )
+}
+
 describe('extractCells', () => {
   it('アニメフォルダでない場合は空配列を返す', () => {
     const psd = makePsd({ children: [makeFolder('A', [])] })
@@ -88,8 +94,8 @@ describe('extractCells', () => {
 
     const result = extractCells(tree[0], SEQUENCE_CELL_NAME_SETTINGS, 100, 100, EMPTY_CONTEXT)
     expect(result).toHaveLength(2)
-    expect(result[0].flatName).toBe(`A_0002_${tree[0].children[0].originalName}.jpg`)
-    expect(result[1].flatName).toBe(`A_0001_${tree[0].children[1].originalName}.jpg`)
+    expect(result[0].flatName).toBe(`A_02_${tree[0].children[0].originalName}.jpg`)
+    expect(result[1].flatName).toBe(`A_01_${tree[0].children[1].originalName}.jpg`)
   })
 
   it('非表示セルを除外する', () => {
@@ -116,7 +122,7 @@ describe('extractCells', () => {
     const settings = makeSettingsWithTable([{ suffix: '_en', folderNames: ['EN', '演出修正'] }])
     const result = extractCells(tree[0], settings, 100, 100, EMPTY_CONTEXT)
 
-    // A0001.jpg（本体）と A0001_en.jpg（工程）の2枚
+    // A_0001.jpg（本体）と A_0001_en.jpg（工程）の2枚
     expect(result).toHaveLength(2)
     const names = result.map(e => e.flatName).sort()
     expect(names).toContain('A_0001.jpg')
@@ -241,6 +247,20 @@ describe('extractCells with parentSuffix', () => {
 })
 
 describe('extractAllEntries', () => {
+  it('最大可視セル数に合わせて全アニメフォルダの連番桁数を揃える', () => {
+    const shortAnim = makeAnimationFolder('A', makeNumberedCellFolders(2))
+    const longAnim = makeAnimationFolder('B', makeNumberedCellFolders(100))
+    const tree = buildLayerTree(makePsd({ children: [shortAnim, longAnim] }))
+    for (const layer of tree) markManualAnimFolder(layer)
+
+    const result = extractAllEntries(tree, SEQUENCE_CELL_NAME_SETTINGS, 100, 100)
+    const flatNames = result.map(e => e.flatName)
+    expect(flatNames).toContain('A_001_1.jpg')
+    expect(flatNames).toContain('A_002_2.jpg')
+    expect(flatNames).toContain('B_001_1.jpg')
+    expect(flatNames).toContain('B_100_100.jpg')
+  })
+
   it('ルート直下フォルダのprocessTable逆引きでparentSuffixが付加される', () => {
     const cell1 = makeLayer({ name: '1' })
     const animFolder = makeAnimationFolder('A', [cell1])
@@ -754,7 +774,7 @@ describe('extractAllEntries with auto-process promotion', () => {
     expect(flatNames).toContain('_原図_BOOK1.jpg')
     expect(flatNames).toContain('_原図_BG.jpg')
     // 連番表記は出ない
-    expect(flatNames.some(n => /_\d{4}\.jpg$/.test(n))).toBe(false)
+    expect(flatNames.some(n => /_\d{2,4}\.jpg$/.test(n))).toBe(false)
   })
 
   it('通常アニメフォルダ（非 autoProcess）では従来通り sequence 連番が使われる', () => {

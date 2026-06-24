@@ -4,6 +4,7 @@ import {
   formatSequenceNumber,
   makeAnimCellName,
   makeCellLabel,
+  getSequenceDigitsForCellCount,
   stripLeadingUnderscore,
   resolveEntryNames,
 } from '../../utils/naming'
@@ -66,6 +67,21 @@ describe('formatSequenceNumber', () => {
   })
 })
 
+describe('getSequenceDigitsForCellCount', () => {
+  it('99枚までは最低2桁を返す', () => {
+    expect(getSequenceDigitsForCellCount(1)).toBe(2)
+    expect(getSequenceDigitsForCellCount(99)).toBe(2)
+  })
+
+  it('100枚以上は必要桁数を4桁まで返す', () => {
+    expect(getSequenceDigitsForCellCount(100)).toBe(3)
+    expect(getSequenceDigitsForCellCount(999)).toBe(3)
+    expect(getSequenceDigitsForCellCount(1000)).toBe(4)
+    expect(getSequenceDigitsForCellCount(9999)).toBe(4)
+    expect(getSequenceDigitsForCellCount(10000)).toBe(4)
+  })
+})
+
 describe('makeAnimCellName', () => {
   it('フォルダ名_連番を生成する', () => {
     expect(makeAnimCellName('A', 0, 4)).toBe('A_0001')
@@ -84,7 +100,16 @@ describe('makeCellLabel', () => {
   })
 
   it('連番セル名モードでは連番の後ろにセル名を付加する', () => {
-    expect(makeCellLabel('sequence-cellname', 'ア', 12)).toBe('0012_ア')
+    expect(makeCellLabel('sequence-cellname', 'ア', 12)).toBe('12_ア')
+  })
+
+  it('指定された桁数を反映する', () => {
+    expect(makeCellLabel('sequence-cellname', 'ア', 12, 4)).toBe('0012_ア')
+  })
+
+  it('連番モードは指定桁数に関係なく4桁固定', () => {
+    expect(makeCellLabel('sequence', 'ア', 1, 2)).toBe('0001')
+    expect(makeCellLabel('sequence', 'ア', 12, 3)).toBe('0012')
   })
 
   it('セル名モードではセル名をそのまま返す', () => {

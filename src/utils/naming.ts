@@ -3,6 +3,10 @@
  */
 import type { CellNamingMode } from '../types'
 
+export const MIN_SEQUENCE_DIGITS = 2
+export const MAX_SEQUENCE_DIGITS = 4
+export const FIXED_SEQUENCE_DIGITS = 4
+
 /**
  * ファイル名衝突時に _2, _3 サフィックスを付与して一意にする
  * Windows/macOS の一般的なファイルシステムでの展開を考慮し、大文字小文字は区別しない
@@ -49,6 +53,20 @@ export function formatSequenceNumber(n: number, digits: number): string {
 }
 
 /**
+ * セル枚数に応じた連番桁数を返す。
+ * 最低2桁、通常運用の上限は4桁。4桁を超える番号自体は切り捨てない。
+ */
+export function getSequenceDigitsForCellCount(cellCount: number): number {
+  const normalizedCount = Number.isFinite(cellCount)
+    ? Math.max(1, Math.floor(cellCount))
+    : 1
+  return Math.min(
+    MAX_SEQUENCE_DIGITS,
+    Math.max(MIN_SEQUENCE_DIGITS, String(normalizedCount).length),
+  )
+}
+
+/**
  * アニメセル通常モードのファイル名を生成
  * 例: folderName='A', index=0, digits=4 → 'A_0001'
  */
@@ -64,12 +82,12 @@ export function makeCellLabel(
   mode: CellNamingMode,
   cellName: string,
   sequenceNumber: number,
-  digits = 4,
+  digits = MIN_SEQUENCE_DIGITS,
 ): string {
   const sequence = formatSequenceNumber(sequenceNumber, digits)
   switch (mode) {
     case 'sequence':
-      return sequence
+      return formatSequenceNumber(sequenceNumber, FIXED_SEQUENCE_DIGITS)
     case 'sequence-cellname':
       return `${sequence}_${cellName}`
     case 'cellname':

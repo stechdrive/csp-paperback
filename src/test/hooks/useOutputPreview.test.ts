@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { useOutputPreview } from '../../hooks/useOutputPreview'
 import { useAppStore } from '../../store'
 import { buildLayerTree, detectAnimationFoldersByXdts } from '../../engine/tree-builder'
-import { DEFAULT_OUTPUT_CONFIG, type XdtsData } from '../../types'
+import { DEFAULT_OUTPUT_CONFIG, DEFAULT_PROJECT_SETTINGS, type XdtsData } from '../../types'
 import { makeAnimationFolder, makeFolder, makeLayer, makePsd } from '../helpers/psd-factory'
 
 function detectAnim(tree: ReturnType<typeof buildLayerTree>, trackName: string) {
@@ -16,6 +16,17 @@ function detectAnim(tree: ReturnType<typeof buildLayerTree>, trackName: string) 
     fps: 24,
   }
   detectAnimationFoldersByXdts(tree, xdts)
+}
+
+function markManualAnimFolder(layer: ReturnType<typeof buildLayerTree>[number]): void {
+  layer.isAnimationFolder = true
+  layer.animationFolder = { detectedBy: 'manual', trackName: layer.originalName }
+}
+
+function makeNumberedCellFolders(count: number) {
+  return Array.from({ length: count }, (_, index) =>
+    makeFolder(String(index + 1), [makeLayer({ name: `content-${index + 1}` })])
+  )
 }
 
 beforeEach(() => {
@@ -65,8 +76,33 @@ describe('useOutputPreview', () => {
     const { result } = renderHook(() => useOutputPreview())
 
     expect(result.current).toHaveLength(1)
-    expect(result.current[0].flatName).toBe('A_0001_ア.png')
-    expect(result.current[0].path).toBe('A/A_0001_ア.png')
+    expect(result.current[0].flatName).toBe('A_01_ア.png')
+    expect(result.current[0].path).toBe('A/A_01_ア.png')
+  })
+
+  it('最大可視セル数に合わせた連番桁数をプレビュー名にも使う', () => {
+    const targetAnim = makeAnimationFolder('A', [makeFolder('1', [makeLayer()])])
+    const longAnim = makeAnimationFolder('B', makeNumberedCellFolders(100))
+    const tree = buildLayerTree(makePsd({ children: [targetAnim, longAnim] }))
+    for (const layer of tree) markManualAnimFolder(layer)
+
+    const target = tree.find(layer => layer.originalName === 'A')
+    expect(target).toBeDefined()
+
+    useAppStore.setState({
+      layerTree: tree,
+      docWidth: 100,
+      docHeight: 100,
+      outputConfig: { ...DEFAULT_OUTPUT_CONFIG, format: 'png', background: 'transparent' },
+      projectSettings: { ...DEFAULT_PROJECT_SETTINGS, cellNamingMode: 'sequence-cellname' },
+      focusedAnimFolderId: target!.id,
+    })
+
+    const { result } = renderHook(() => useOutputPreview())
+
+    expect(result.current).toHaveLength(1)
+    expect(result.current[0].flatName).toBe('A_001_1.png')
+    expect(result.current[0].path).toBe('A/A_001_1.png')
   })
 
   it('PNG選択時はマーク済みレイヤーのプレビュー名も.pngで返す', () => {

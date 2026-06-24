@@ -5,7 +5,7 @@ import { applyLayerMask, compositeGroup, compositeStack, createCanvas } from './
 import { collectMembersInTreeOrder, buildMemberFlatsWithOverride } from '../utils/virtual-set-utils'
 import { buildAssignmentFromDetectedFolders } from './anim-folder-assignment'
 import { computeDisplayNames } from './anim-folder-display-name'
-import { makeCellLabel, resolveNameCollisions } from '../utils/naming'
+import { getSequenceDigitsForCellCount, makeCellLabel, resolveNameCollisions } from '../utils/naming'
 
 /**
  * アニメーションフォルダからセルを抽出してOutputEntry[]を返す
@@ -32,6 +32,7 @@ export function extractCells(
   background: 'white' | 'transparent' = 'white',
   upperContextLayers: FlatLayer[] = [],
   processSuffixPosition: ProcessSuffixPosition = 'after-cell',
+  sequenceDigits?: number,
 ): OutputEntry[] {
   if (!animFolder.isAnimationFolder) return []
 
@@ -49,6 +50,7 @@ export function extractCells(
   // `_` 除去済みの name を cellLabel に使う（sequence/cellname の設定は
   // 通常アニメフォルダ用で、autoProcess には合わないため上書き）。
   const isAutoProcessAnim = animFolder.animationFolder?.detectedBy === 'autoProcess'
+  const cellSequenceDigits = sequenceDigits ?? getSequenceDigitsForCellCount(visibleChildren.length)
 
   for (let cellIdx = 0; cellIdx < visibleChildren.length; cellIdx++) {
     const cell = visibleChildren[cellIdx]
@@ -56,7 +58,7 @@ export function extractCells(
     const trackName = displayName
     const cellLabel = isAutoProcessAnim
       ? (cell.name || cell.originalName)
-      : makeCellLabel(namingMode, cell.originalName, visibleChildren.length - cellIdx)
+      : makeCellLabel(namingMode, cell.originalName, visibleChildren.length - cellIdx, cellSequenceDigits)
 
     if (!cell.isFolder) {
       // 単体レイヤー: XDTSキーフレーム画像 → そのまま1セル出力
@@ -146,6 +148,29 @@ export function buildCellFileName(
     return `${trackName}${processPart}_${cellLabel}.jpg`
   }
   return `${trackName}_${cellLabel}${processPart}.jpg`
+}
+
+export function getSequenceDigitsForAnimationFolders(tree: CspLayer[]): number {
+  let maxCellCount = 1
+
+  function walk(layers: CspLayer[]): void {
+    for (const layer of layers) {
+      if (layer.hidden || layer.uiHidden) continue
+
+      if (layer.isAnimationFolder) {
+        if (layer.animationFolder?.detectedBy !== 'autoProcess') {
+          const visibleCellCount = layer.children.filter(c => !c.hidden && !c.uiHidden).length
+          maxCellCount = Math.max(maxCellCount, visibleCellCount)
+        }
+        continue
+      }
+
+      if (layer.isFolder) walk(layer.children)
+    }
+  }
+
+  walk(tree)
+  return getSequenceDigitsForCellCount(maxCellCount)
 }
 
 function collectProcessSuffixes(...suffixes: string[]): string[] | undefined {
@@ -596,6 +621,9 @@ export function extractAllEntries(
   // 手動指定分だけその後ろに疑似 trackNo を追加する。
   const assignmentMap = buildEffectiveAnimationAssignment(tree)
   const displayNameMap = computeDisplayNames(tree, assignmentMap, animParentSuffixMap)
+  const sequenceDigits = projectSettings.cellNamingMode === 'sequence-cellname'
+    ? getSequenceDigitsForAnimationFolders(tree)
+    : undefined
 
   /**
    * inheritedLower: 祖先フォルダから継承されたlowerコンテキスト（外→内の順）
@@ -624,7 +652,7 @@ export function extractAllEntries(
         const cellEntries = extractCells(
           layer, projectSettings, docWidth, docHeight, thisLower,
           parentSuffix, displayName, background,
-          thisUpper, processSuffixPosition,
+          thisUpper, processSuffixPosition, sequenceDigits,
         )
         entries.push(...cellEntries)
         continue

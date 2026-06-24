@@ -11,6 +11,7 @@ import {
   collectMarkedLayerContext,
   buildParentSuffixMap,
   buildEffectiveAnimationAssignment,
+  getSequenceDigitsForAnimationFolders,
 } from '../engine/cell-extractor'
 import { computeDisplayNames } from '../engine/anim-folder-display-name'
 import { flattenTree, compositeRoot } from '../engine/flatten'
@@ -179,16 +180,21 @@ function previewAnimFolder(
   const assignment = buildEffectiveAnimationAssignment(layerTree)
   const displayNames = computeDisplayNames(layerTree, assignment, parentSuffixMap)
   const displayName = displayNames.get(animFolderId) ?? animFolder.originalName.trim()
+  const sequenceDigits = projectSettings.cellNamingMode === 'sequence-cellname'
+    ? getSequenceDigitsForAnimationFolders(layerTree)
+    : undefined
 
   const allEntries: OutputEntry[] = extractCells(
     animFolder, projectSettings, docWidth, docHeight, lowerContextFlats,
     parentSuffix, displayName, outputConfig.background, localUpperFlats,
-    outputConfig.processSuffixPosition,
+    outputConfig.processSuffixPosition, sequenceDigits,
   )
 
   // 選択セルのエントリに絞り込む
   const namingMode = projectSettings.cellNamingMode ?? 'sequence'
-  const cellLabel = makeCellLabel(namingMode, selectedCell.originalName, visibleChildren.length - clampedIndex)
+  const cellLabel = animFolder.animationFolder?.detectedBy === 'autoProcess'
+    ? (selectedCell.name || selectedCell.originalName)
+    : makeCellLabel(namingMode, selectedCell.originalName, visibleChildren.length - clampedIndex, sequenceDigits)
   const prefix = buildCellFileName(
     displayName, cellLabel, parentSuffix, '', outputConfig.processSuffixPosition,
   ).replace(/\.jpg$/i, '')
