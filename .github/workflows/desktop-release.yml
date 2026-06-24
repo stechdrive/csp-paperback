@@ -65,15 +65,8 @@ jobs:
           tagName: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
           releaseName: CSP Paperback ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
           releaseBody: |
-            Desktop build for CSP Paperback.
-
-            This release intentionally uploads exactly two Japanese UI assets:
-            - Windows x64 portable executable only.
-            - macOS Apple Silicon DMG only.
-
-            English UI assets, Windows installers, and Intel Mac assets are not produced.
-            macOS assets are not notarized unless signing secrets are configured separately.
-            Release artifacts are audited for local build path leakage before publication.
+            CSP Paperback 最新デスクトップバイナリ配布。
+            Version: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
           releaseDraft: true
           prerelease: false
           includeUpdaterJson: false
@@ -115,3 +108,16 @@ jobs:
 
       - name: Publish audited release
         run: gh release edit "$TAG_NAME" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease=false
+
+      - name: Delete older release entries
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release list --repo "$GITHUB_REPOSITORY" --limit 100 --json tagName --jq '.[].tagName' |
+          while IFS= read -r tag; do
+            if [[ -z "$tag" || "$tag" == "$TAG_NAME" ]]; then
+              continue
+            fi
+            echo "Deleting old release entry: $tag"
+            gh release delete "$tag" --repo "$GITHUB_REPOSITORY" --yes
+          done

@@ -51,6 +51,8 @@ The workflow creates or updates a draft release, scans `dist/` and generated Tau
 
 Do not produce English UI assets, Windows installers, macOS Intel builds, or macOS `.app.tar.gz` assets. macOS `.dmg` assets are not notarized unless signing secrets are configured separately.
 
+Release notes must stay minimal: state that the entry is the latest desktop binary distribution and show the version only. The workflow deletes older GitHub Release entries after the new release is published, while leaving Git tags intact.
+
 ## Safety checklist for Codex-assisted releases
 
 Before staging, committing, pushing, tagging, or publishing:
