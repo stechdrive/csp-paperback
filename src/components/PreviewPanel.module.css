@@ -94,7 +94,7 @@
 /* 出力プレビューセクションのヘッダー */
 .divider {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.5rem;
   padding: 0.3rem 0.75rem;
   font-size: 0.7rem;
@@ -103,7 +103,7 @@
   border-bottom: 1px solid var(--color-border-subtle);
   flex-shrink: 0;
   background: var(--color-surface-2);
-  overflow: hidden;
+  overflow: visible;
 }
 
 .outputZoomBadge {
@@ -125,7 +125,9 @@
   display: flex;
   gap: 0.3rem;
   flex-wrap: wrap;
-  overflow: hidden;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: visible;
 }
 
 .fileName {
@@ -135,10 +137,9 @@
   background: var(--color-border-subtle);
   border-radius: 3px;
   padding: 0.05rem 0.3rem;
-  white-space: nowrap;
-  max-width: 180px;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 /* 出力プレビュー: 残りの高さをすべて使う */
@@ -484,7 +485,7 @@
   }
 
   .fileName {
-    max-width: 9rem;
+    max-width: 100%;
   }
 
   /* ドロワー: タブバー（3.5rem + safe-area）の上に固定配置 */
