@@ -22,19 +22,14 @@ jobs:
       matrix:
         include:
           - platform: windows-latest
-            assetPlatform: windows-x64
-            args: ''
+            assetPlatform: ja-windows-x64-portable
+            args: '--no-bundle'
             rustTargets: 'x86_64-pc-windows-msvc'
             uploadPlainBinary: true
           - platform: macos-latest
-            assetPlatform: macos-arm64
-            args: '--target aarch64-apple-darwin'
-            rustTargets: 'aarch64-apple-darwin,x86_64-apple-darwin'
-            uploadPlainBinary: false
-          - platform: macos-latest
-            assetPlatform: macos-x64
-            args: '--target x86_64-apple-darwin'
-            rustTargets: 'aarch64-apple-darwin,x86_64-apple-darwin'
+            assetPlatform: ja-macos-arm64
+            args: '--target aarch64-apple-darwin --bundles dmg'
+            rustTargets: 'aarch64-apple-darwin'
             uploadPlainBinary: false
     runs-on: ${{ matrix.platform }}
     steps:
@@ -72,14 +67,18 @@ jobs:
           releaseBody: |
             Desktop build for CSP Paperback.
 
-            Windows includes installer assets and an experimental plain executable.
-            macOS includes app/dmg bundle assets and is not notarized unless signing secrets are configured separately.
+            This release intentionally uploads exactly two Japanese UI assets:
+            - Windows x64 portable executable only.
+            - macOS Apple Silicon DMG only.
+
+            English UI assets, Windows installers, and Intel Mac assets are not produced.
+            macOS assets are not notarized unless signing secrets are configured separately.
             Release artifacts are audited for local build path leakage before publication.
           releaseDraft: true
           prerelease: false
           includeUpdaterJson: false
           uploadPlainBinary: ${{ matrix.uploadPlainBinary }}
-          assetNamePattern: CSP-Paperback_[version]_${{ matrix.assetPlatform }}[setup][ext]
+          assetNamePattern: CSP-Paperback_[version]_${{ matrix.assetPlatform }}[ext]
           args: ${{ matrix.args }}
 
       - name: Audit release artifacts for path leaks
@@ -95,5 +94,24 @@ jobs:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       TAG_NAME: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
     steps:
+      - name: Verify release asset set
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${TAG_NAME#v}"
+          expected_windows="CSP-Paperback_${version}_ja-windows-x64-portable.exe"
+          expected_macos="CSP-Paperback_${version}_ja-macos-arm64.dmg"
+          mapfile -t assets < <(gh release view "$TAG_NAME" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name' | sort)
+          printf '%s\n' "${assets[@]}"
+          if [[ "${#assets[@]}" -ne 2 ]]; then
+            echo "Expected exactly 2 release assets, found ${#assets[@]}." >&2
+            exit 1
+          fi
+          if [[ "${assets[0]}" != "$expected_macos" || "${assets[1]}" != "$expected_windows" ]]; then
+            echo "Unexpected release assets. Expected:" >&2
+            printf '%s\n' "$expected_macos" "$expected_windows" >&2
+            exit 1
+          fi
+
       - name: Publish audited release
         run: gh release edit "$TAG_NAME" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease=false

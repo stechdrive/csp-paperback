@@ -4,6 +4,9 @@ import { homedir, tmpdir } from 'node:os'
 import { resolve } from 'node:path'
 
 const args = process.argv.slice(2)
+if (args.length === 0) {
+  args.push(...defaultReleaseArgs())
+}
 const env = { ...process.env }
 const encodedSeparator = '\x1f'
 
@@ -53,6 +56,12 @@ function collectRemapPrefixes() {
   if (process.env.CARGO_HOME) addPrefix(prefixes, process.env.CARGO_HOME, '$CARGO_HOME')
   if (process.env.RUSTUP_HOME) addPrefix(prefixes, process.env.RUSTUP_HOME, '$RUSTUP_HOME')
   return [...prefixes.values()]
+}
+
+function defaultReleaseArgs() {
+  if (process.platform === 'win32') return ['--no-bundle']
+  if (process.platform === 'darwin') return ['--target', 'aarch64-apple-darwin', '--bundles', 'dmg']
+  return []
 }
 
 function addPrefix(prefixes, from, to) {

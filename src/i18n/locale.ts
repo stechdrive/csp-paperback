@@ -1,14 +1,12 @@
 import { createContext, useContext } from 'react'
-import { en } from './en'
 import { ja, type Translations } from './ja'
 
-export type Locale = 'ja' | 'en'
+export type Locale = 'ja'
 
-export const translations: Record<Locale, Translations> = { ja, en }
+export const translations: Record<Locale, Translations> = { ja }
 
 export function detectLocale(): Locale {
-  const lang = typeof navigator !== 'undefined' ? navigator.language ?? '' : ''
-  return lang.startsWith('ja') ? 'ja' : 'en'
+  return 'ja'
 }
 
 export interface LocaleContextValue {
