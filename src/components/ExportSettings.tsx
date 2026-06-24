@@ -3,7 +3,7 @@ import { useAppStore } from '../store'
 import { useLocale } from '../i18n/locale'
 import { Tooltip } from './Tooltip'
 import { UnmatchedTracksWarning } from './UnmatchedTracksWarning'
-import type { CspLayer } from '../types'
+import type { CellNamingMode, CspLayer } from '../types'
 import styles from './ExportSettings.module.css'
 
 function collectAutoMarkedNames(layers: CspLayer[]): string[] {
@@ -16,13 +16,17 @@ function collectAutoMarkedNames(layers: CspLayer[]): string[] {
 }
 
 function buildNameSample(
-  mode: 'sequence' | 'cellname',
+  mode: CellNamingMode,
   structure: 'hierarchy' | 'flat',
   processSuffixPosition: 'after-cell' | 'before-cell',
   format: 'jpg' | 'png',
 ): string {
   const trackName = 'A'
-  const cellLabel = mode === 'sequence' ? '0001' : 'ア'
+  const cellLabel = mode === 'sequence'
+    ? '0001'
+    : mode === 'sequence-cellname'
+      ? '0001_ア'
+      : 'ア'
   const processSuffix = '_e'
   const fileName = processSuffixPosition === 'before-cell'
     ? `${trackName}${processSuffix}_${cellLabel}.${format}`
@@ -106,6 +110,10 @@ export function ExportSettings() {
             className={`${styles.toggle} ${projectSettings.cellNamingMode === 'sequence' ? styles.active : ''}`}
             onClick={() => setCellNamingMode('sequence')}
           >{t.settings.cellNamingSequence}</button>
+          <button
+            className={`${styles.toggle} ${projectSettings.cellNamingMode === 'sequence-cellname' ? styles.active : ''}`}
+            onClick={() => setCellNamingMode('sequence-cellname')}
+          >{t.settings.cellNamingSequenceCellname}</button>
           <button
             className={`${styles.toggle} ${projectSettings.cellNamingMode === 'cellname' ? styles.active : ''}`}
             onClick={() => setCellNamingMode('cellname')}

@@ -6,6 +6,7 @@ export interface ProcessFolderEntry {
 /** セル画像名の命名モード */
 export type CellNamingMode =
   | 'sequence'   // アニメフォルダ名_連番4桁.jpg（例: A_0001.jpg）
+  | 'sequence-cellname' // アニメフォルダ名_連番4桁_セル名.jpg（例: A_0001_ア.jpg）
   | 'cellname'   // アニメフォルダ名_セル名.jpg（例: A_A0001.jpg）
 
 export interface ProjectSettings {

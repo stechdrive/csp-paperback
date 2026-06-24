@@ -1,6 +1,7 @@
 /**
  * 出力ファイル名生成・衝突解決ユーティリティ
  */
+import type { CellNamingMode } from '../types'
 
 /**
  * ファイル名衝突時に _2, _3 サフィックスを付与して一意にする
@@ -53,6 +54,27 @@ export function formatSequenceNumber(n: number, digits: number): string {
  */
 export function makeAnimCellName(folderName: string, index: number, digits: number): string {
   return `${folderName}_${formatSequenceNumber(index + 1, digits)}`
+}
+
+/**
+ * アニメセル名部分を命名モードに応じて生成する。
+ * sequenceNumber は 1 始まり。
+ */
+export function makeCellLabel(
+  mode: CellNamingMode,
+  cellName: string,
+  sequenceNumber: number,
+  digits = 4,
+): string {
+  const sequence = formatSequenceNumber(sequenceNumber, digits)
+  switch (mode) {
+    case 'sequence':
+      return sequence
+    case 'sequence-cellname':
+      return `${sequence}_${cellName}`
+    case 'cellname':
+      return cellName
+  }
 }
 
 /**

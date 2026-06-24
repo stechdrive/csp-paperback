@@ -1,21 +1,22 @@
 {
   "name": "csp-paperback",
   "private": true,
-  "version": "1.15.2",
+  "version": "1.16.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "build:tauri": "tsc -b && vite build --base ./",
+    "audit:artifacts": "node scripts/audit-artifacts.mjs",
     "generate:testdata:collision": "node scripts/generate-collision-fixture.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build",
+    "tauri:build": "node scripts/tauri-build-with-remap.mjs",
     "test": "vitest",
     "test:ui": "vitest --ui",
-    "predeploy": "npm run build",
+    "predeploy": "npm run build && npm run audit:artifacts -- dist",
     "deploy": "gh-pages -d dist"
   },
   "dependencies": {

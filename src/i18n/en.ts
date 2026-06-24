@@ -59,6 +59,7 @@ export const en: Translations = {
     modeNormal: 'Normal',
     cellNaming: 'Output Name',
     cellNamingSequence: 'Sequence',
+    cellNamingSequenceCellname: 'Sequence + Cel',
     cellNamingCellname: 'Cel Name',
     archivePatterns: '_-Prefixed Folder Exclusion List',
     archivePatternHint: 'Register folder-name prefixes that start with "_" but should not be treated as standalone exports (prefix match).',

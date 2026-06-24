@@ -5,7 +5,7 @@ import { applyLayerMask, compositeGroup, compositeStack, createCanvas } from './
 import { collectMembersInTreeOrder, buildMemberFlatsWithOverride } from '../utils/virtual-set-utils'
 import { buildAssignmentFromDetectedFolders } from './anim-folder-assignment'
 import { computeDisplayNames } from './anim-folder-display-name'
-import { resolveNameCollisions } from '../utils/naming'
+import { makeCellLabel, resolveNameCollisions } from '../utils/naming'
 
 /**
  * アニメーションフォルダからセルを抽出してOutputEntry[]を返す
@@ -56,9 +56,7 @@ export function extractCells(
     const trackName = displayName
     const cellLabel = isAutoProcessAnim
       ? (cell.name || cell.originalName)
-      : namingMode === 'sequence'
-        ? String(visibleChildren.length - cellIdx).padStart(4, '0')
-        : cell.originalName
+      : makeCellLabel(namingMode, cell.originalName, visibleChildren.length - cellIdx)
 
     if (!cell.isFolder) {
       // 単体レイヤー: XDTSキーフレーム画像 → そのまま1セル出力

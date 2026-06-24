@@ -57,6 +57,7 @@ export const ja = {
     modeNormal: '通常',
     cellNaming: '出力名',
     cellNamingSequence: '連番',
+    cellNamingSequenceCellname: '連番セル名',
     cellNamingCellname: 'セル名',
     archivePatterns: '_付きフォルダの除外リスト',
     archivePatternHint: '名前の先頭が _ でも、単体出力としては扱わないフォルダ名を登録します（前方一致）。',

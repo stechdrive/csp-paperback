@@ -16,6 +16,12 @@ const CELL_NAME_SETTINGS: ProjectSettings = {
   archivePatterns: [],
 }
 
+const SEQUENCE_CELL_NAME_SETTINGS: ProjectSettings = {
+  processTable: [],
+  cellNamingMode: 'sequence-cellname',
+  archivePatterns: [],
+}
+
 const EMPTY_CONTEXT: FlatLayer[] = []
 
 function makeSettingsWithTable(entries: { suffix: string; folderNames: string[] }[]): ProjectSettings {
@@ -71,6 +77,19 @@ describe('extractCells', () => {
     expect(result[1].flatName).toBe('A_あ_2.jpg')
     expect(result[0].sourceCellId).toBe(tree[0].children[0].id)
     expect(result[1].sourceCellId).toBe(tree[0].children[1].id)
+  })
+
+  it('連番セル名出力では連番の後ろにセル名を付加する', () => {
+    const bottomCell = makeLayer({ name: 'あ' })
+    const topCell = makeLayer({ name: 'い' })
+    const animFolder = makeAnimationFolder('A', [bottomCell, topCell])
+    const tree = buildLayerTree(makePsd({ children: [animFolder] }))
+    detectAnim(tree, 'A')
+
+    const result = extractCells(tree[0], SEQUENCE_CELL_NAME_SETTINGS, 100, 100, EMPTY_CONTEXT)
+    expect(result).toHaveLength(2)
+    expect(result[0].flatName).toBe(`A_0002_${tree[0].children[0].originalName}.jpg`)
+    expect(result[1].flatName).toBe(`A_0001_${tree[0].children[1].originalName}.jpg`)
   })
 
   it('非表示セルを除外する', () => {

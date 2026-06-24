@@ -15,6 +15,7 @@ import {
 import { computeDisplayNames } from '../engine/anim-folder-display-name'
 import { flattenTree, compositeRoot } from '../engine/flatten'
 import { replaceExtension } from '../utils/image-export'
+import { makeCellLabel } from '../utils/naming'
 import { collectMembersInTreeOrder, buildMemberFlatsWithOverride } from '../utils/virtual-set-utils'
 import { resolveSelectedAnimCell } from '../utils/anim-cell-selection'
 import type { CspLayer, OutputEntry, ProjectSettings, OutputConfig, OutputFormat } from '../types'
@@ -187,9 +188,7 @@ function previewAnimFolder(
 
   // 選択セルのエントリに絞り込む
   const namingMode = projectSettings.cellNamingMode ?? 'sequence'
-  const cellLabel = namingMode === 'sequence'
-    ? String(visibleChildren.length - clampedIndex).padStart(4, '0')
-    : selectedCell.originalName
+  const cellLabel = makeCellLabel(namingMode, selectedCell.originalName, visibleChildren.length - clampedIndex)
   const prefix = buildCellFileName(
     displayName, cellLabel, parentSuffix, '', outputConfig.processSuffixPosition,
   ).replace(/\.jpg$/i, '')

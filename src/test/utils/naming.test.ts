@@ -3,6 +3,7 @@ import {
   resolveNameCollisions,
   formatSequenceNumber,
   makeAnimCellName,
+  makeCellLabel,
   stripLeadingUnderscore,
   resolveEntryNames,
 } from '../../utils/naming'
@@ -74,6 +75,20 @@ describe('makeAnimCellName', () => {
 
   it('桁数設定を反映する', () => {
     expect(makeAnimCellName('A', 0, 3)).toBe('A_001')
+  })
+})
+
+describe('makeCellLabel', () => {
+  it('連番モードではゼロ埋め連番を返す', () => {
+    expect(makeCellLabel('sequence', 'ア', 1)).toBe('0001')
+  })
+
+  it('連番セル名モードでは連番の後ろにセル名を付加する', () => {
+    expect(makeCellLabel('sequence-cellname', 'ア', 12)).toBe('0012_ア')
+  })
+
+  it('セル名モードではセル名をそのまま返す', () => {
+    expect(makeCellLabel('cellname', 'ア', 1)).toBe('ア')
   })
 })
 

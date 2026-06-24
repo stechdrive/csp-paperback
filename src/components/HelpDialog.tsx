@@ -982,7 +982,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
 
               <h3 className={styles.h2}>セル名の扱い</h3>
               <p className={styles.p}>
-                自動アニメ化されたフォルダ配下のセル名は、出力名の設定（連番／セル名）に関わらず
+                自動アニメ化されたフォルダ配下のセル名は、出力名の設定（連番／連番セル名／セル名）に関わらず
                 <span className={styles.strong}>直下のフォルダ／レイヤー名から <code className={styles.code}>_</code> を取り除いたもの</span>
                 を使用します。
                 <code className={styles.code}>_BG</code> のような親フォルダに対して、中身の <code className={styles.code}>BG1</code>、<code className={styles.code}>BOOK1</code> などは素材そのものの意味情報を持っているため、連番で上書きせず名前をそのまま残します。
@@ -1308,9 +1308,10 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   </tr>
                   <tr>
                     <td><span className={styles.strong}>セル命名</span></td>
-                    <td>連番 / セル名</td>
+                    <td>連番 / 連番セル名 / セル名</td>
                     <td>
                       連番: <code className={styles.code}>A_0001.jpg</code>{'\n'}
+                      連番セル名: <code className={styles.code}>A_0001_ア.jpg</code>{'\n'}
                       セル名: <code className={styles.code}>A_ア.jpg</code>（セル名をそのまま使用）
                     </td>
                   </tr>

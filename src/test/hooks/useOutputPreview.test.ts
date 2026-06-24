@@ -48,6 +48,27 @@ describe('useOutputPreview', () => {
     expect(result.current[0].path).toBe('A/A_0001.png')
   })
 
+  it('連番セル名モードではプレビュー名にもセル名を付加する', () => {
+    const animFolder = makeAnimationFolder('A', [makeLayer({ name: 'ア' })])
+    const tree = buildLayerTree(makePsd({ children: [animFolder] }))
+    detectAnim(tree, 'A')
+
+    useAppStore.setState({
+      layerTree: tree,
+      docWidth: 100,
+      docHeight: 100,
+      outputConfig: { ...DEFAULT_OUTPUT_CONFIG, format: 'png', background: 'transparent' },
+      projectSettings: { ...useAppStore.getState().projectSettings, cellNamingMode: 'sequence-cellname' },
+      focusedAnimFolderId: tree[0].id,
+    })
+
+    const { result } = renderHook(() => useOutputPreview())
+
+    expect(result.current).toHaveLength(1)
+    expect(result.current[0].flatName).toBe('A_0001_ア.png')
+    expect(result.current[0].path).toBe('A/A_0001_ア.png')
+  })
+
   it('PNG選択時はマーク済みレイヤーのプレビュー名も.pngで返す', () => {
     const markedFolder = makeFolder('_撮影指示', [makeLayer({ name: 'body' })])
     const tree = buildLayerTree(makePsd({ children: [markedFolder] }))

@@ -17,6 +17,7 @@ Run these before asking Codex to push or prepare a release:
 ```bash
 npm test
 npm run build
+npm run audit:artifacts -- dist
 npm run tauri:build -- --no-bundle
 ```
 
@@ -26,7 +27,7 @@ On Windows, a full local installer build can be tested with:
 npm run tauri:build
 ```
 
-The generated files remain in `src-tauri/target/release/bundle/`.
+The local `tauri:build` script runs Tauri with Rust path remapping so generated binaries do not contain the checkout path, user home directory, or temp build directory. The generated files remain in `src-tauri/target/release/bundle/`.
 
 ## Web deployment
 
@@ -36,15 +37,15 @@ The existing gh-pages flow remains unchanged:
 npm run deploy
 ```
 
-This publishes only the web build from `dist/`.
+This builds and audits `dist/`, then publishes only the web build from `dist/`.
 
 ## Desktop release
 
 Create and push a semver tag after the release commit is on the intended branch:
 
 ```bash
-git tag v1.15.0
-git push origin v1.15.0
+git tag vX.Y.Z
+git push origin vX.Y.Z
 ```
 
 The `desktop-release` workflow builds:
@@ -53,7 +54,7 @@ The `desktop-release` workflow builds:
 - Windows x64 plain executable: experimental portable-style `.exe`
 - macOS arm64 and x64 assets: `.app` bundle and `.dmg` when available from Tauri
 
-The workflow always creates or updates a draft release. Review the assets in GitHub, then publish manually.
+The workflow creates or updates a draft release, scans `dist/` and generated Tauri artifacts for local build path leakage, then publishes the release only after all platform jobs pass.
 
 macOS note: `.dmg` is the normal direct-download installer format. A `.app` bundle is the closest portable-style macOS artifact; macOS does not have a single-file portable app equivalent. Unsigned/unnotarized macOS builds may show Gatekeeper warnings until Apple signing and notarization secrets are added.
 
@@ -65,11 +66,13 @@ Before staging, committing, pushing, tagging, or publishing:
 git status --short
 git ls-files | rg '(^|/)(dist|target|node_modules|\.env|.*\.local)(/|$)'
 rg -n '([A-Z]:\\Users\\|/Users/|TOKEN|SECRET|PASSWORD|PRIVATE KEY|BEGIN [A-Z ]*KEY)' --glob '!node_modules/**' --glob '!src-tauri/target/**' --glob '!dist/**'
+npm run audit:artifacts -- dist
 ```
 
 Expected result:
 
 - No `dist/`, `node_modules/`, or `src-tauri/target/` files are tracked.
 - No local absolute user paths are present in committed source/config/docs.
+- `npm run audit:artifacts -- dist` passes before gh-pages deployment.
 - No secrets, certificates, private keys, or signing credentials are committed.
-- Release assets are draft-only until manually reviewed.
+- Release assets stay draft-only until the workflow artifact audit passes.
