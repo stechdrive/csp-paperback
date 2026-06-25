@@ -2,6 +2,7 @@ import { useCallback, useMemo, useRef } from 'react'
 import { useAppStore } from '../store'
 import { useLocale } from '../i18n/locale'
 import { selectLayerTreeWithVisibility, selectLayerById } from '../store/selectors'
+import { useDragAutoScroll } from '../hooks/useDragDrop'
 import { LayerTreeNode } from './LayerTreeNode'
 import { BlendOpacityBar } from './BlendOpacityBar'
 import { Tooltip } from './Tooltip'
@@ -45,6 +46,7 @@ export function LayerTreePanel() {
   const selectedLayer = useAppStore(s => selectedLayerId ? selectLayerById(s, selectedLayerId) : null)
 
   const treeRef = useRef<HTMLDivElement>(null)
+  const dragAutoScrollHandlers = useDragAutoScroll(treeRef)
 
   const shiftExpandableFolders = useMemo(
     () => collectShiftNavigationExpandableFolders(tree, manualAnimFolderIds, virtualSets),
@@ -220,7 +222,12 @@ export function LayerTreePanel() {
         onOpacityChange={handleOpacityChange}
       />
 
-      <div className={styles.tree} ref={treeRef} onWheel={handleWheel}>
+      <div
+        className={styles.tree}
+        ref={treeRef}
+        onWheel={handleWheel}
+        {...dragAutoScrollHandlers}
+      >
         {tree.length === 0 ? (
           <div className={styles.empty}>
             {t.layerTree.empty.split('\n').map((line, i) => (

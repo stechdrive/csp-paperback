@@ -41,6 +41,9 @@ interface InternalDropTarget {
 }
 
 const POINTER_DRAG_THRESHOLD = 4
+const AUTO_SCROLL_EDGE_PX = 48
+const AUTO_SCROLL_MAX_SPEED_PX = 18
+const AUTO_SCROLL_MIN_SPEED_PX = 2
 const internalDropTargets = new Map<HTMLElement, InternalDropTarget>()
 let activeInternalDropTarget: HTMLElement | null = null
 
@@ -195,6 +198,147 @@ export function useInternalDropTarget(target: InternalDropTarget): {
   }, [])
 
   return { dropRef, isOver }
+}
+
+interface DragAutoScrollOptions {
+  canScroll?: (payload: DragPayload) => boolean
+  edgeSize?: number
+  maxSpeed?: number
+}
+
+const canAutoScrollVirtualSet = (payload: DragPayload): boolean => payload.type === 'virtualSet'
+
+/**
+ * スクロール可能な要素の端にドラッグ中のポインターが近づいたら自動スクロールする。
+ * 右レイヤーツリーのように子要素側が dragover を stopPropagation する場合も拾えるよう、
+ * capture フェーズ用のハンドラーを返す。
+ */
+export function useDragAutoScroll<T extends HTMLElement>(
+  scrollRef: React.RefObject<T | null>,
+  {
+    canScroll = canAutoScrollVirtualSet,
+    edgeSize = AUTO_SCROLL_EDGE_PX,
+    maxSpeed = AUTO_SCROLL_MAX_SPEED_PX,
+  }: DragAutoScrollOptions = {},
+): {
+  onDragOverCapture: (e: React.DragEvent<HTMLElement>) => void
+  onDragLeaveCapture: (e: React.DragEvent<HTMLElement>) => void
+  onDropCapture: () => void
+  onDragEndCapture: () => void
+  onPointerMoveCapture: (e: React.PointerEvent<HTMLElement>) => void
+  onPointerLeaveCapture: () => void
+  onPointerUpCapture: () => void
+  onPointerCancelCapture: () => void
+} {
+  const pointerPositionRef = useRef<PointerPosition | null>(null)
+  const rafIdRef = useRef<number | null>(null)
+
+  const stopAutoScroll = useCallback(() => {
+    pointerPositionRef.current = null
+    if (rafIdRef.current !== null) {
+      window.cancelAnimationFrame(rafIdRef.current)
+      rafIdRef.current = null
+    }
+  }, [])
+
+  const getScrollDelta = useCallback((container: HTMLElement, clientY: number): number => {
+    const rect = container.getBoundingClientRect()
+    const topDistance = clientY - rect.top
+    const bottomDistance = rect.bottom - clientY
+
+    let delta = 0
+    if (topDistance >= 0 && topDistance < edgeSize) {
+      const intensity = (edgeSize - topDistance) / edgeSize
+      delta = -Math.max(AUTO_SCROLL_MIN_SPEED_PX, Math.ceil(maxSpeed * intensity))
+    } else if (bottomDistance >= 0 && bottomDistance < edgeSize) {
+      const intensity = (edgeSize - bottomDistance) / edgeSize
+      delta = Math.max(AUTO_SCROLL_MIN_SPEED_PX, Math.ceil(maxSpeed * intensity))
+    }
+
+    if (delta < 0 && container.scrollTop <= 0) return 0
+    if (delta > 0 && container.scrollTop + container.clientHeight >= container.scrollHeight) return 0
+    return delta
+  }, [edgeSize, maxSpeed])
+
+  const scrollStep = useCallback(function runScrollStep() {
+    const container = scrollRef.current
+    const position = pointerPositionRef.current
+    const payload = getActiveDragPayload()
+
+    if (!container || !position || !payload || !canScroll(payload)) {
+      rafIdRef.current = null
+      return
+    }
+
+    const delta = getScrollDelta(container, position.clientY)
+    if (delta === 0) {
+      rafIdRef.current = null
+      return
+    }
+
+    const previousScrollTop = container.scrollTop
+    container.scrollTop += delta
+
+    if (container.scrollTop !== previousScrollTop && isInternalPointerDragEnabled()) {
+      dispatchInternalDragOver(payload, position)
+    }
+
+    rafIdRef.current = window.requestAnimationFrame(runScrollStep)
+  }, [canScroll, getScrollDelta, scrollRef])
+
+  const updateAutoScroll = useCallback((position: PointerPosition) => {
+    const payload = getActiveDragPayload()
+    if (!payload || !canScroll(payload)) {
+      stopAutoScroll()
+      return
+    }
+
+    pointerPositionRef.current = position
+    if (rafIdRef.current === null) {
+      rafIdRef.current = window.requestAnimationFrame(scrollStep)
+    }
+  }, [canScroll, scrollStep, stopAutoScroll])
+
+  const handleDragOverCapture = useCallback((e: React.DragEvent<HTMLElement>) => {
+    updateAutoScroll({ clientX: e.clientX, clientY: e.clientY })
+  }, [updateAutoScroll])
+
+  const handleDragLeaveCapture = useCallback((e: React.DragEvent<HTMLElement>) => {
+    const nextTarget = e.relatedTarget
+    if (nextTarget instanceof Node && e.currentTarget.contains(nextTarget)) return
+    stopAutoScroll()
+  }, [stopAutoScroll])
+
+  const handlePointerMoveCapture = useCallback((e: React.PointerEvent<HTMLElement>) => {
+    updateAutoScroll({ clientX: e.clientX, clientY: e.clientY })
+  }, [updateAutoScroll])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    window.addEventListener('dragend', stopAutoScroll, true)
+    window.addEventListener('drop', stopAutoScroll, true)
+    window.addEventListener('pointerup', stopAutoScroll, true)
+    window.addEventListener('pointercancel', stopAutoScroll, true)
+
+    return () => {
+      window.removeEventListener('dragend', stopAutoScroll, true)
+      window.removeEventListener('drop', stopAutoScroll, true)
+      window.removeEventListener('pointerup', stopAutoScroll, true)
+      window.removeEventListener('pointercancel', stopAutoScroll, true)
+      stopAutoScroll()
+    }
+  }, [stopAutoScroll])
+
+  return {
+    onDragOverCapture: handleDragOverCapture,
+    onDragLeaveCapture: handleDragLeaveCapture,
+    onDropCapture: stopAutoScroll,
+    onDragEndCapture: stopAutoScroll,
+    onPointerMoveCapture: handlePointerMoveCapture,
+    onPointerLeaveCapture: stopAutoScroll,
+    onPointerUpCapture: stopAutoScroll,
+    onPointerCancelCapture: stopAutoScroll,
+  }
 }
 
 /**
