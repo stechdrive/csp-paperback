@@ -4,6 +4,11 @@ import { useAppStore } from '../store'
 import type { CspLayer, VirtualSet } from '../types'
 import { isUnsupportedBlendMode } from '../engine/compositor'
 import { useDragSource, getActiveDragPayload, useInternalDropTarget } from '../hooks/useDragDrop'
+import {
+  resolveVirtualSetFolderChildInsertionTarget,
+  resolveVirtualSetInsertionTarget,
+  type VirtualSetInsertionPosition,
+} from '../utils/virtual-set-insertion'
 import { Tooltip } from './Tooltip'
 import styles from './LayerTreeNode.module.css'
 import type { HistoryOptions } from '../store/history-slice'
@@ -11,6 +16,9 @@ import type { HistoryOptions } from '../store/history-slice'
 // 目玉アイコンをなぞって一括トグルするためのモジュールレベルドラッグ状態
 // targetHidden: ドラッグ開始時に決定した「適用する非表示状態」
 const visibilityDrag = { active: false, targetHidden: false }
+type DropPlacement = VirtualSetInsertionPosition | 'inside'
+const FOLDER_INSIDE_ZONE_START = 0.35
+const FOLDER_INSIDE_ZONE_END = 0.65
 if (typeof window !== 'undefined') {
   window.addEventListener('mouseup', () => { visibilityDrag.active = false })
 }
@@ -83,6 +91,16 @@ function VisibilityIcon() {
   )
 }
 
+function getDropPlacementFromPointer(clientY: number, rect: DOMRect, layer: CspLayer): DropPlacement {
+  const ratio = (clientY - rect.top) / rect.height
+  if (layer.isFolder && layer.children.length > 0) {
+    if (ratio < FOLDER_INSIDE_ZONE_START) return 'above'
+    if (ratio > FOLDER_INSIDE_ZONE_END) return 'below'
+    return 'inside'
+  }
+  return ratio < 0.5 ? 'above' : 'below'
+}
+
 /** 仮想セットのインライン表示バッジ */
 function VirtualSetBadge({ vs, indentWidth, onClear }: {
   vs: VirtualSet
@@ -152,8 +170,8 @@ export function LayerTreeNode({
   const focusedAnimFolderId = useAppStore(s => s.focusedAnimFolderId)
   const virtualSets = useAppStore(s => s.virtualSets)
   const updateVirtualSet = useAppStore(s => s.updateVirtualSet)
-  // 仮想セットドロップ時の挿入ライン表示状態（'above' | 'below' | null）
-  const [insertPosition, setInsertPosition] = useState<'above' | 'below' | null>(null)
+  // 仮想セットドロップ時の挿入ライン表示状態（'above' | 'inside' | 'below' | null）
+  const [dropPlacement, setDropPlacement] = useState<DropPlacement | null>(null)
   const rowRef = useRef<HTMLDivElement | null>(null)
 
   const { draggable, onDragStart, onDragEnd, onPointerDown } = useDragSource({ type: 'layer', layerId: layer.id })
@@ -244,7 +262,16 @@ export function LayerTreeNode({
     onToggleAnimFolder(layer.id)
   }, [layer.id, onToggleAnimFolder])
 
-  // 仮想セットのドラッグオーバー：上半分 → 'above'、下半分 → 'below'
+  const updateVirtualSetInsertion = useCallback((virtualSetId: string, placement: DropPlacement) => {
+    const tree = useAppStore.getState().layerTree
+    const target = placement === 'inside'
+      ? resolveVirtualSetFolderChildInsertionTarget(tree, layer.id)
+      : resolveVirtualSetInsertionTarget(tree, layer.id, placement)
+    if (!target) return
+    updateVirtualSet(virtualSetId, target)
+  }, [layer.id, updateVirtualSet])
+
+  // 仮想セットのドラッグオーバー：フォルダ中央は配下、上下端は同階層の挿入ライン
   const handleDragOver = useCallback((e: React.DragEvent) => {
     const payload = getActiveDragPayload()
     if (payload?.type !== 'virtualSet') return
@@ -252,45 +279,40 @@ export function LayerTreeNode({
     e.stopPropagation()
     e.dataTransfer.dropEffect = 'copy'
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
-    setInsertPosition(e.clientY - rect.top < rect.height / 2 ? 'above' : 'below')
-  }, [])
+    setDropPlacement(getDropPlacementFromPointer(e.clientY, rect, layer))
+  }, [layer])
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
     // currentTarget の外に出たときだけクリア
     if (!(e.currentTarget as HTMLElement).contains(e.relatedTarget as Node)) {
-      setInsertPosition(null)
+      setDropPlacement(null)
     }
   }, [])
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     const payload = getActiveDragPayload()
-    if (payload?.type !== 'virtualSet' || !insertPosition) return
+    if (payload?.type !== 'virtualSet') return
     e.preventDefault()
     e.stopPropagation()
-    updateVirtualSet(payload.virtualSetId, {
-      insertionLayerId: layer.id,
-      insertionPosition: insertPosition,
-    })
-    setInsertPosition(null)
-  }, [layer.id, insertPosition, updateVirtualSet])
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    updateVirtualSetInsertion(payload.virtualSetId, getDropPlacementFromPointer(e.clientY, rect, layer))
+    setDropPlacement(null)
+  }, [layer, updateVirtualSetInsertion])
 
   const { dropRef: internalDropRef } = useInternalDropTarget({
     canDrop: payload => payload.type === 'virtualSet',
     onDragOver: (_payload, position) => {
       const rect = rowRef.current?.getBoundingClientRect()
       if (!rect) return
-      setInsertPosition(position.clientY - rect.top < rect.height / 2 ? 'above' : 'below')
+      setDropPlacement(getDropPlacementFromPointer(position.clientY, rect, layer))
     },
-    onDragLeave: () => setInsertPosition(null),
+    onDragLeave: () => setDropPlacement(null),
     onDrop: (payload, position) => {
       if (payload.type !== 'virtualSet') return
       const rect = rowRef.current?.getBoundingClientRect()
-      const insertionPosition = rect && position.clientY - rect.top < rect.height / 2 ? 'above' : 'below'
-      updateVirtualSet(payload.virtualSetId, {
-        insertionLayerId: layer.id,
-        insertionPosition,
-      })
-      setInsertPosition(null)
+      if (!rect) return
+      updateVirtualSetInsertion(payload.virtualSetId, getDropPlacementFromPointer(position.clientY, rect, layer))
+      setDropPlacement(null)
     },
   })
 
@@ -326,8 +348,12 @@ export function LayerTreeNode({
     isSelected ? styles.rowSelected : '',
     isCellActive ? styles.rowCellActive : '',
     isHidden ? styles.rowHidden : '',
-    insertPosition ? styles.rowDropTarget : '',
+    dropPlacement === 'inside' ? styles.rowDropTarget : '',
   ].filter(Boolean).join(' ')
+
+  const childIndentWidth = layer.children[0]?.depth != null
+    ? layer.children[0].depth * 16
+    : indentWidth + 16
 
   return (
     <div className={styles.node}>
@@ -342,7 +368,7 @@ export function LayerTreeNode({
       ))}
 
       {/* 仮想セットドラッグ中の挿入ライン（上） */}
-      {insertPosition === 'above' && (
+      {dropPlacement === 'above' && (
         <div className={styles.insertionLine} style={{ marginLeft: indentWidth }} />
       )}
 
@@ -439,20 +465,10 @@ export function LayerTreeNode({
         )}
       </div>
 
-      {/* 仮想セットドラッグ中の挿入ライン（下） */}
-      {insertPosition === 'below' && (
-        <div className={styles.insertionLine} style={{ marginLeft: indentWidth }} />
+      {/* フォルダ配下に入る挿入ライン。行強調と短いラインで同階層挿入と区別する。 */}
+      {dropPlacement === 'inside' && (
+        <div className={styles.insertionLine} style={{ marginLeft: childIndentWidth }} />
       )}
-
-      {/* このレイヤーの下に挿入される仮想セットのバッジ */}
-      {vsBelow.map(vs => (
-        <VirtualSetBadge
-          key={vs.id}
-          vs={vs}
-          indentWidth={indentWidth}
-          onClear={() => updateVirtualSet(vs.id, { insertionLayerId: null, insertionPosition: 'above' })}
-        />
-      ))}
 
       {layer.isFolder && isExpanded && layer.children.length > 0 && (
         <div className={styles.children}>
@@ -476,6 +492,21 @@ export function LayerTreeNode({
           ))}
         </div>
       )}
+
+      {/* 仮想セットドラッグ中の挿入ライン（下） */}
+      {dropPlacement === 'below' && (
+        <div className={styles.insertionLine} style={{ marginLeft: indentWidth }} />
+      )}
+
+      {/* このレイヤーの下に挿入される仮想セットのバッジ */}
+      {vsBelow.map(vs => (
+        <VirtualSetBadge
+          key={vs.id}
+          vs={vs}
+          indentWidth={indentWidth}
+          onClear={() => updateVirtualSet(vs.id, { insertionLayerId: null, insertionPosition: 'above' })}
+        />
+      ))}
     </div>
   )
 }

@@ -335,7 +335,9 @@
 
 /* 仮想セットドラッグオーバー中のレイヤー行 */
 .rowDropTarget {
-  background: rgba(var(--color-accent-rgb), 0.06);
+  background: rgba(var(--color-accent-rgb), 0.12);
+  outline: 1px solid rgba(var(--color-accent-rgb), 0.58);
+  box-shadow: inset 3px 0 0 var(--color-accent);
 }
 
 /* 仮想セット挿入ライン（ドラッグ中に表示） */
@@ -507,5 +509,4 @@
     padding: 0.2rem;
   }
 }
-
 

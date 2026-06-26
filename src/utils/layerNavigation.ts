@@ -38,6 +38,15 @@ export function flattenVisible(
       isCell: !!parentAnimId,
       animParentId: parentAnimId,
     })
+    if (layer.isFolder && expandedFolders.has(layer.id) && layer.children.length > 0) {
+      result.push(...flattenVisible(
+        layer.children,
+        expandedFolders,
+        manualAnimFolderIds,
+        virtualSets,
+        isAnimFolder ? layer.id : parentAnimId,
+      ))
+    }
     for (const vs of virtualSets) {
       if (vs.insertionLayerId !== layer.id || vs.insertionPosition !== 'below') continue
       result.push({
@@ -48,15 +57,6 @@ export function flattenVisible(
         isCell: false,
         animParentId: undefined,
       })
-    }
-    if (layer.isFolder && expandedFolders.has(layer.id) && layer.children.length > 0) {
-      result.push(...flattenVisible(
-        layer.children,
-        expandedFolders,
-        manualAnimFolderIds,
-        virtualSets,
-        isAnimFolder ? layer.id : parentAnimId,
-      ))
     }
   }
   return result
@@ -84,21 +84,21 @@ export function collectShiftNavigationExpandableFolders(
   )
 
   function walk(layer: CspLayer): boolean {
-    let subtreeHasTarget =
+    const selfNeedsExpansion =
       isEffectiveAnimationFolder(layer, manualAnimFolderIds) ||
       layer.autoMarked ||
-      layer.singleMark ||
-      virtualSetInsertionIds.has(layer.id)
+      layer.singleMark
+    let descendantHasTarget = false
     for (const child of layer.children) {
       if (walk(child)) {
-        subtreeHasTarget = true
+        descendantHasTarget = true
       }
     }
-    if (layer.isFolder && subtreeHasTarget) {
+    if (layer.isFolder && (selfNeedsExpansion || descendantHasTarget)) {
       result.add(layer.id)
     }
 
-    return subtreeHasTarget
+    return selfNeedsExpansion || virtualSetInsertionIds.has(layer.id) || descendantHasTarget
   }
 
   for (const layer of layers) {

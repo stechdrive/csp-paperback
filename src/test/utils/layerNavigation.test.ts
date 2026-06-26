@@ -199,4 +199,45 @@ describe('Shift navigation expansion helpers', () => {
       entry.kind === 'virtualSet' ? entry.virtualSet?.name : entry.layer.originalName,
     )).toEqual(['root', 'vs-vs-above', 'target', 'vs-vs-below'])
   })
+
+  it('展開中フォルダのbelow仮想セットは子リストの後ろに並ぶ', () => {
+    const psd = makePsd({
+      children: [
+        makeFolder('bottom', []),
+        makeFolder('top', [
+          makeLayer({ name: 'child' }),
+        ]),
+      ],
+    })
+    const tree = buildLayerTree(psd)
+    const top = tree[0]
+    const virtualSets = [makeVirtualSet('vs-below-top', top.id, 'below')]
+    const entries = flattenVisible(
+      tree,
+      new Set([top.id]),
+      new Set(),
+      virtualSets,
+    )
+
+    expect(entries.map(entry =>
+      entry.kind === 'virtualSet' ? entry.virtualSet?.name : entry.layer.originalName,
+    )).toEqual(['top', 'child', 'vs-vs-below-top', 'bottom'])
+  })
+
+  it('仮想セットの差し込み対象フォルダ自体はShiftナビ用に一時展開しない', () => {
+    const psd = makePsd({
+      children: [
+        makeFolder('target-folder', [
+          makeLayer({ name: 'child' }),
+        ]),
+      ],
+    })
+    const tree = buildLayerTree(psd)
+    const target = tree[0]
+    const virtualSets = [makeVirtualSet('vs-below-folder', target.id, 'below')]
+
+    const expandable = collectShiftNavigationExpandableFolders(tree, new Set(), virtualSets)
+
+    expect(expandable.has(target.id)).toBe(false)
+  })
 })
