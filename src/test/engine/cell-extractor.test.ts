@@ -663,6 +663,21 @@ describe('extractMarkedLayers', () => {
     expect(result[0].flatName).toBe('_撮影指示.jpg')
   })
 
+  it('直下が_フォルダだけの親_フォルダは整理用コンテナとして出力しない', () => {
+    const psd = makePsd({
+      children: [
+        makeFolder('_TEST', [
+          makeFolder('_IMG', [makeLayer({ name: 'image' })]),
+        ]),
+      ],
+    })
+    const tree = buildLayerTree(psd)
+    const result = extractMarkedLayers(tree, 100, 100)
+    const flatNames = result.map(e => e.flatName).sort()
+    expect(flatNames).not.toContain('_TEST.jpg')
+    expect(flatNames).toContain('_IMG.jpg')
+  })
+
   it('非表示レイヤーを除外する', () => {
     const psd = makePsd({ children: [makeFolder('_hidden', [], 'normal')] })
     const tree = buildLayerTree(psd)
@@ -724,7 +739,7 @@ describe('extractAllEntries with auto-process promotion', () => {
     expect(bg1Cells.length).toBe(2)
   })
 
-  it('内側優先: パターンC で内側 _BG1 のみ昇格、外側 _原図 は autoMarked 据え置き', () => {
+  it('内側優先: パターンC で内側 _BG1 のみ昇格、外側 _原図 は整理用コンテナとして出力しない', () => {
     const psd = makePsd({
       children: [
         makeFolder('_原図', [
@@ -740,13 +755,55 @@ describe('extractAllEntries with auto-process promotion', () => {
     const promoted = promoteAutoMarkedByProcessMatch(tree, SETTINGS_WITH_E.processTable)
     const entries = extractAllEntries(promoted, SETTINGS_WITH_E, 100, 100, 'white', false)
     const flatNames = entries.map(e => e.flatName).sort()
-    // _原図 は据え置きなので _原図.jpg が出る
-    expect(flatNames).toContain('_原図.jpg')
+    // _原図 は直下の出力単位だけを束ねる整理用コンテナなので単独出力しない
+    expect(flatNames).not.toContain('_原図.jpg')
     // _BG1 は昇格してセル出力が 2 つ（本体 + _e フォルダのセル）
     const bg1Cells = flatNames.filter(n => n.startsWith('_BG1_'))
     expect(bg1Cells.length).toBe(2)
-    // 内側 _e は _BG1 の中のセル扱い、外側 _原図/_e は _原図 の autoMarked 出力に巻き込まれる
-    // （独立 _e.jpg が 1 つだけ衝突回避付きで出る可能性あり、但しパターンC は実務上発生しない想定）
+    // 外側 _e は _原図 の子として独立した autoMarked 出力になる
+    expect(flatNames).toContain('_e.jpg')
+  })
+
+  it('直下に通常フォルダが混じる_フォルダは従来通り単独出力する', () => {
+    const psd = makePsd({
+      children: [
+        makeFolder('_TEST', [
+          makeFolder('通常フォルダ', [makeLayer({ name: 'body' })]),
+          makeFolder('_IMG', [makeLayer({ name: 'image' })]),
+        ]),
+      ],
+    })
+    const tree = buildLayerTree(psd)
+    const entries = extractAllEntries(tree, DEFAULT_SETTINGS, 100, 100, 'white', false)
+    const flatNames = entries.map(e => e.flatName).sort()
+    expect(flatNames).toContain('_TEST.jpg')
+    expect(flatNames).toContain('_IMG.jpg')
+  })
+
+  it('親_フォルダ配下のXDTSアニメフォルダは出力し、親は整理用コンテナとして出力しない', () => {
+    const psd = makePsd({
+      children: [
+        makeFolder('_TEST', [
+          makeFolder('ANIME', [
+            makeLayer({ name: '1' }),
+          ]),
+        ]),
+      ],
+    })
+    const tree = buildLayerTree(psd)
+    detectAnimationFoldersByXdts(tree, {
+      tracks: [{ name: 'ANIME', trackNo: 0, cellNames: ['1'], frames: [] }],
+      version: 5,
+      header: { cut: '1', scene: '1' },
+      timeTableName: 'T1',
+      duration: 24,
+      fps: 24,
+    })
+
+    const entries = extractAllEntries(tree, DEFAULT_SETTINGS, 100, 100, 'white', false)
+    const flatNames = entries.map(e => e.flatName).sort()
+    expect(flatNames).not.toContain('_TEST.jpg')
+    expect(flatNames).toContain('ANIME_0001.jpg')
   })
 
   it('autoProcess 昇格フォルダのセル名は `_` 除去済み name（sequence モードでも）', () => {

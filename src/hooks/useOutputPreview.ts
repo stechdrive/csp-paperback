@@ -19,6 +19,7 @@ import { replaceExtension } from '../utils/image-export'
 import { makeCellLabel } from '../utils/naming'
 import { collectMembersInTreeOrder, buildMemberFlatsWithOverride } from '../utils/virtual-set-utils'
 import { resolveSelectedAnimCell } from '../utils/anim-cell-selection'
+import { isAutoMarkedContainerOutputSuppressed } from '../utils/auto-marked-container'
 import type { CspLayer, OutputEntry, ProjectSettings, OutputConfig, OutputFormat } from '../types'
 
 export interface OutputPreviewEntry {
@@ -123,7 +124,12 @@ export function useOutputPreview(): OutputPreviewEntry[] {
     // ── 3b. autoMarked/singleMark（アニメセル外） ──────────────────────────
     // extractAllEntries と同じ collectMarkedLayerContext を使用
     const markedLayer = findLayerById(layerTree, selectedLayerId)
-    if (markedLayer && !markedLayer.isAnimationFolder && (markedLayer.autoMarked || markedLayer.singleMark)) {
+    if (
+      markedLayer &&
+      !markedLayer.isAnimationFolder &&
+      (markedLayer.autoMarked || markedLayer.singleMark) &&
+      !isAutoMarkedContainerOutputSuppressed(markedLayer)
+    ) {
       const { lower, upper } = collectMarkedLayerContext(selectedLayerId, layerTree, docWidth, docHeight)
       const layerFlats = flattenTree([markedLayer], docWidth, docHeight)
       const canvas = compositeRoot(

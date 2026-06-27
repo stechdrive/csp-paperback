@@ -193,7 +193,7 @@ export function collectAnimFolderAncestorIds(tree: CspLayer[]): Set<string> {
  *
  * ルール:
  * - 祖先がアニメフォルダ（XDTS/手動/autoProcess いずれでも）なら対象外
- * - 子孫に既に昇格済みフォルダを含むなら対象外（内側優先）
+ * - 子孫に既にアニメーションフォルダを含むなら対象外（XDTS/手動/autoProcess 優先）
  * - 直接の子のみ照合（孫は見ない）
  * - 既に isAnimationFolder=true なら対象外（XDTS/手動が優先）
  * - 名前照合は trim + lowercase
@@ -221,23 +221,23 @@ export function promoteAutoMarkedByProcessMatch(
     )
   }
 
-  // ボトムアップ走査。戻り値は変更後レイヤーと、子孫に昇格を含むかのフラグ。
+  // ボトムアップ走査。戻り値は変更後レイヤーと、子孫にアニメフォルダを含むかのフラグ。
   function walk(
     layer: CspLayer,
     insideAnimFolder: boolean,
-  ): { next: CspLayer; hasPromotedDescendant: boolean; changed: boolean } {
+  ): { next: CspLayer; hasAnimationFolderInSubtree: boolean; changed: boolean } {
     const nextInside = insideAnimFolder || layer.isAnimationFolder
     const childResults = layer.children.map(c => walk(c, nextInside))
     const anyChildChanged = childResults.some(r => r.changed)
     const newChildren = anyChildChanged ? childResults.map(r => r.next) : layer.children
-    const childHasPromoted = childResults.some(r => r.hasPromotedDescendant)
+    const childHasAnimationFolder = childResults.some(r => r.hasAnimationFolderInSubtree)
 
     const shouldPromote =
       !insideAnimFolder &&
       !layer.isAnimationFolder &&
       layer.autoMarked &&
       layer.isFolder &&
-      !childHasPromoted &&
+      !childHasAnimationFolder &&
       hasDirectProcessChild(newChildren)
 
     if (shouldPromote) {
@@ -249,20 +249,22 @@ export function promoteAutoMarkedByProcessMatch(
           autoMarked: false,
           animationFolder: { detectedBy: 'autoProcess', trackName: layer.originalName },
         },
-        hasPromotedDescendant: true,
+        hasAnimationFolderInSubtree: true,
         changed: true,
       }
     }
+
+    const hasAnimationFolderInSubtree = layer.isAnimationFolder || childHasAnimationFolder
 
     if (anyChildChanged) {
       return {
         next: { ...layer, children: newChildren },
-        hasPromotedDescendant: childHasPromoted,
+        hasAnimationFolderInSubtree,
         changed: true,
       }
     }
 
-    return { next: layer, hasPromotedDescendant: childHasPromoted, changed: false }
+    return { next: layer, hasAnimationFolderInSubtree, changed: false }
   }
 
   const topResults = tree.map(l => walk(l, false))

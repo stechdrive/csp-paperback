@@ -9,6 +9,7 @@ import {
   mergeExpandedFolders,
   subtractCollapsedFolders,
 } from '../utils/layerNavigation'
+import { isAutoMarkedOutputTarget } from '../utils/auto-marked-container'
 import type { OutputPreviewEntry } from '../hooks/useOutputPreview'
 import styles from './OutputPreview.module.css'
 
@@ -101,7 +102,7 @@ function LayerSeekBar() {
     } else if (entry.layer.isAnimationFolder) {
       selectLayer(entry.id)
       setFocusedAnimFolder(entry.id)
-    } else if (entry.layer.autoMarked || singleMarks.has(entry.id)) {
+    } else if (isAutoMarkedOutputTarget(entry.layer) || singleMarks.has(entry.id)) {
       selectLayer(entry.id)
       setFocusedAnimFolder(null)
     } else {

@@ -14,6 +14,7 @@ import {
   resolveVirtualSetInsertionTarget,
   type VirtualSetInsertionPosition,
 } from '../utils/virtual-set-insertion'
+import { isAutoMarkedContainerOutputSuppressed } from '../utils/auto-marked-container'
 import { Tooltip } from './Tooltip'
 import styles from './LayerTreeNode.module.css'
 import type { HistoryOptions } from '../store/history-slice'
@@ -261,7 +262,9 @@ export function LayerTreeNode({
   const isHidden = isUiHidden
   const isExpanded = expandedFolders.has(layer.id)
   const isTransientExpanded = !!transientExpandedFolders?.has(layer.id)
-  const isMarked = layer.autoMarked || singleMarks.has(layer.id)
+  const isAutoMarkedContainerSuppressed = isAutoMarkedContainerOutputSuppressed(layer)
+  const isOutputAutoMarked = layer.autoMarked && !isAutoMarkedContainerSuppressed
+  const isMarked = isOutputAutoMarked || singleMarks.has(layer.id)
   const isManualAnimFolder = manualAnimFolderIds.has(layer.id)
   const isXdtsAnimFolder = layer.animationFolder?.detectedBy === 'xdts'
   const isAutoProcessAnimFolder = layer.animationFolder?.detectedBy === 'autoProcess'
@@ -291,14 +294,14 @@ export function LayerTreeNode({
     } else if (isAnimFolder) {
       onSelect(layer.id)
       setFocusedAnimFolder(layer.id)
-    } else if (layer.autoMarked || layer.singleMark) {
+    } else if (isMarked) {
       // autoMarked/singleMark クリック時: アニメフォーカス・仮想セット選択をクリアして出力プレビューを表示
       onSelect(layer.id)
       setFocusedAnimFolder(null)
     } else {
       onSelect(layer.id)
     }
-  }, [layer, isCell, animParentId, isAnimFolder, onSelect, selectAnimCell, setFocusedAnimFolder])
+  }, [layer, isCell, animParentId, isAnimFolder, isMarked, onSelect, selectAnimCell, setFocusedAnimFolder])
 
   const handleVisibilityMouseDown = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
@@ -406,7 +409,7 @@ export function LayerTreeNode({
   let nameClass = styles.name
   if (isAutoProcessAnimFolder) nameClass = `${styles.name} ${styles.nameAnimAutoProcess}`
   else if (isAnimFolder) nameClass = `${styles.name} ${styles.nameAnim}`
-  else if (layer.autoMarked) nameClass = `${styles.name} ${styles.nameAutoMark}`
+  else if (isOutputAutoMarked) nameClass = `${styles.name} ${styles.nameAutoMark}`
   else if (isCell) nameClass = `${styles.name} ${styles.nameCell}`
 
   const isCellActive = isCell && animParentId != null && (() => {
@@ -531,7 +534,7 @@ export function LayerTreeNode({
           </Tooltip>
         )}
 
-        {!layer.autoMarked && !layer.isAnimationFolder && (
+        {!isOutputAutoMarked && !layer.isAnimationFolder && (
           <Tooltip content={isMarked
             ? '単体書き出しのマークを解除する'
             : 'このレイヤーを単体書き出し対象にマークする\nタイムライン登録なしでも出力される'

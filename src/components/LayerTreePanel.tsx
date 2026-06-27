@@ -15,6 +15,7 @@ import {
   mergeExpandedFolders,
   subtractCollapsedFolders,
 } from '../utils/layerNavigation'
+import { isAutoMarkedOutputTarget } from '../utils/auto-marked-container'
 import styles from './LayerTreePanel.module.css'
 
 export function LayerTreePanel() {
@@ -157,7 +158,7 @@ export function LayerTreePanel() {
       } else if (entry.layer.isAnimationFolder) {
         selectLayer(entry.id)
         setFocusedAnimFolder(entry.id)
-      } else if (entry.layer.autoMarked || singleMarks.has(entry.id)) {
+      } else if (isAutoMarkedOutputTarget(entry.layer) || singleMarks.has(entry.id)) {
         selectLayer(entry.id)
         setFocusedAnimFolder(null)
       } else {

@@ -1,4 +1,5 @@
 import type { CspLayer, VirtualSet } from '../types'
+import { isAutoMarkedOutputTarget } from './auto-marked-container'
 
 export interface FlatEntry {
   id: string
@@ -86,7 +87,7 @@ export function collectShiftNavigationExpandableFolders(
   function walk(layer: CspLayer): boolean {
     const selfNeedsExpansion =
       isEffectiveAnimationFolder(layer, manualAnimFolderIds) ||
-      layer.autoMarked ||
+      isAutoMarkedOutputTarget(layer) ||
       layer.singleMark
     let descendantHasTarget = false
     for (const child of layer.children) {

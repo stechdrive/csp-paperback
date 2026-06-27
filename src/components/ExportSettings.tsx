@@ -1,15 +1,17 @@
 import { useMemo } from 'react'
 import { useAppStore } from '../store'
 import { useLocale } from '../i18n/locale'
+import { selectLayerTreeWithVisibility } from '../store/selectors'
 import { Tooltip } from './Tooltip'
 import { UnmatchedTracksWarning } from './UnmatchedTracksWarning'
 import type { CellNamingMode, CspLayer } from '../types'
+import { isAutoMarkedOutputTarget } from '../utils/auto-marked-container'
 import styles from './ExportSettings.module.css'
 
 function collectAutoMarkedNames(layers: CspLayer[]): string[] {
   const names: string[] = []
   for (const l of layers) {
-    if (l.autoMarked && !l.singleMark) names.push(l.originalName)
+    if (isAutoMarkedOutputTarget(l)) names.push(l.originalName)
     if (l.isFolder && !l.isAnimationFolder) names.push(...collectAutoMarkedNames(l.children))
   }
   return names
@@ -37,7 +39,7 @@ function buildNameSample(
 export function ExportSettings() {
   const outputConfig = useAppStore(s => s.outputConfig)
   const projectSettings = useAppStore(s => s.projectSettings)
-  const layerTree = useAppStore(s => s.layerTree)
+  const layerTree = useAppStore(selectLayerTreeWithVisibility)
   const unmatchedTracks = useAppStore(s => s.unmatchedTracks)
   const setFormat = useAppStore(s => s.setFormat)
   const setBackground = useAppStore(s => s.setBackground)

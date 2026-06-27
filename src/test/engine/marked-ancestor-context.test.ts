@@ -93,7 +93,7 @@ describe('extractAllEntries marked ancestor context regression', () => {
     ])
 
     const result = extractAllEntries(tree, DEFAULT_SETTINGS, 4, 4, 'white', false)
-    expect(result).toHaveLength(2)
+    expect(result).toHaveLength(1)
 
     const bg1 = result.find(entry => entry.flatName === '_BG1_0001.jpg')
     expect(bg1).toBeDefined()
@@ -128,7 +128,7 @@ describe('extractAllEntries marked ancestor context regression', () => {
       archivePatterns: [],
     }
     const result = extractAllEntries(tree, settings, 4, 4, 'white', false)
-    expect(result.map(entry => entry.flatName).sort()).toEqual(['_BG1_0001_en.jpg', '_原図.jpg'])
+    expect(result.map(entry => entry.flatName).sort()).toEqual(['_BG1_0001_en.jpg'])
 
     const enEntry = result.find(entry => entry.flatName === '_BG1_0001_en.jpg')
     expect(enEntry).toBeDefined()
@@ -165,7 +165,7 @@ describe('extractAllEntries marked ancestor context regression', () => {
     } as never)
 
     const result = extractAllEntries(tree, DEFAULT_SETTINGS, 4, 4, 'white', false)
-    expect(result.map(entry => entry.flatName).sort()).toEqual(['BOOK1_0001.jpg', '_原図.jpg'])
+    expect(result.map(entry => entry.flatName).sort()).toEqual(['BOOK1_0001.jpg'])
 
     const bookEntry = result.find(entry => entry.flatName === 'BOOK1_0001.jpg')
     expect(bookEntry).toBeDefined()
@@ -241,7 +241,7 @@ describe('extractAllEntries marked ancestor context regression', () => {
     } as never)
 
     const result = extractAllEntries(tree, DEFAULT_SETTINGS, 4, 4, 'white', false)
-    expect(result.map(entry => entry.flatName).sort()).toEqual(['BOOK1_0001.jpg', '_原図.jpg'])
+    expect(result.map(entry => entry.flatName).sort()).toEqual(['BOOK1_0001.jpg'])
 
     const bookEntry = result.find(entry => entry.flatName === 'BOOK1_0001.jpg')
     expect(bookEntry).toBeDefined()

@@ -5,7 +5,7 @@
  *
  * ルール:
  * - 祖先がアニメフォルダなら対象外
- * - 子孫に既に昇格済みフォルダを含むなら対象外（内側優先）
+ * - 子孫に既にアニメーションフォルダを含むなら対象外（XDTS/手動/autoProcess 優先）
  * - 直接の子のみ照合（孫は見ない）
  * - 既に isAnimationFolder=true なら対象外
  * - 名前照合は trim + lowercase
@@ -117,6 +117,37 @@ describe('promoteAutoMarkedByProcessMatch', () => {
     expect(bg1.animationFolder?.detectedBy).toBe('autoProcess')
     expect(genzu.isAnimationFolder).toBe(false)
     expect(genzu.autoMarked).toBe(true)
+  })
+
+  it('XDTSアニメフォルダ子孫を持つ_親は直接工程子があっても昇格しない', () => {
+    const psd = makePsd({
+      children: [
+        makeFolder('_TEST', [
+          makeFolder('_e', [makeLayer({ name: '全体修正' })]),
+          makeFolder('ANIME', [
+            makeLayer({ name: '1' }),
+          ]),
+        ]),
+      ],
+    })
+    const tree = buildLayerTree(psd, undefined, [])
+    const xdts: XdtsData = {
+      tracks: [{ name: 'ANIME', trackNo: 0, cellNames: ['1'], frames: [] }],
+      version: 5,
+      header: { cut: '1', scene: '1' },
+      timeTableName: 'T1',
+      duration: 24,
+      fps: 24,
+    }
+    detectAnimationFoldersByXdts(tree, xdts)
+    const promoted = promoteAutoMarkedByProcessMatch(tree, DEFAULT_TABLE)
+
+    const test = findByName(promoted, '_TEST')[0]
+    const anime = findByName(promoted, 'ANIME')[0]
+    expect(anime.isAnimationFolder).toBe(true)
+    expect(anime.animationFolder?.detectedBy).toBe('xdts')
+    expect(test.isAnimationFolder).toBe(false)
+    expect(test.autoMarked).toBe(true)
   })
 
   it('XDTS 優先: 既にアニメ化済みのフォルダは対象外（祖先ガード）', () => {

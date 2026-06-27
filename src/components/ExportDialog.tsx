@@ -5,12 +5,13 @@ import { useExport } from '../hooks/useExport'
 import { useLocale } from '../i18n/locale'
 import { Tooltip } from './Tooltip'
 import type { CspLayer } from '../types'
+import { isAutoMarkedOutputTarget } from '../utils/auto-marked-container'
 import styles from './ExportDialog.module.css'
 
 function collectAutoMarkedNames(layers: CspLayer[]): string[] {
   const names: string[] = []
   for (const l of layers) {
-    if (l.autoMarked && !l.singleMark && !l.isAnimationFolder) names.push(l.originalName)
+    if (isAutoMarkedOutputTarget(l)) names.push(l.originalName)
     if (l.isFolder && !l.isAnimationFolder) names.push(...collectAutoMarkedNames(l.children))
   }
   return names

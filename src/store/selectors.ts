@@ -2,6 +2,7 @@ import type { AnimationFolderInfo, CspLayer } from '../types'
 import type { SingleMark } from '../types/marks'
 import type { ProcessFolderEntry } from '../types/project'
 import { promoteAutoMarkedByProcessMatch } from '../engine/tree-builder'
+import { isAutoMarkedOutputTarget } from '../utils/auto-marked-container'
 import type { AppStore } from './index'
 
 /**
@@ -189,16 +190,17 @@ export function selectSelectedLayer(state: AppStore): CspLayer | null {
 export function selectMarkedLayerIds(state: AppStore): Set<string> {
   const ids = new Set<string>()
   const { manualAnimFolderIds } = state
+  const layerTree = selectLayerTreeWithVisibility(state)
 
   // _プレフィックス自動マーク
   function walkAutoMarked(layers: CspLayer[]): void {
     for (const layer of layers) {
       const isAnimFolder = layer.isAnimationFolder || (layer.isFolder && manualAnimFolderIds.has(layer.id))
-      if (layer.autoMarked && !isAnimFolder) ids.add(layer.id)
+      if (isAutoMarkedOutputTarget(layer) && !isAnimFolder) ids.add(layer.id)
       if (!isAnimFolder) walkAutoMarked(layer.children)
     }
   }
-  walkAutoMarked(state.layerTree)
+  walkAutoMarked(layerTree)
 
   // シングルマーク（手動）
   for (const [id] of state.singleMarks) {

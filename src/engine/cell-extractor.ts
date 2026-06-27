@@ -5,6 +5,7 @@ import { applyLayerMask, compositeGroup, compositeStack, createCanvas } from './
 import { collectMembersInTreeOrder, buildMemberFlatsWithOverride } from '../utils/virtual-set-utils'
 import { buildAssignmentFromDetectedFolders } from './anim-folder-assignment'
 import { computeDisplayNames } from './anim-folder-display-name'
+import { isAutoMarkedContainerOutputSuppressed } from '../utils/auto-marked-container'
 import { getSequenceDigitsForCellCount, makeCellLabel, resolveNameCollisions } from '../utils/naming'
 
 /**
@@ -562,7 +563,11 @@ export function extractMarkedLayers(
     for (const layer of layers) {
       if (layer.hidden || layer.uiHidden) continue
 
-      if (!layer.isAnimationFolder && (layer.autoMarked || layer.singleMark)) {
+      if (
+        !layer.isAnimationFolder &&
+        (layer.autoMarked || layer.singleMark) &&
+        !isAutoMarkedContainerOutputSuppressed(layer)
+      ) {
         const layerFlats = flattenTree([layer], docWidth, docHeight)
         const canvas = compositeWithContext(layerFlats, contextFlats, [], docWidth, docHeight)
         const fileName = `${layer.originalName}.jpg`
@@ -659,6 +664,13 @@ export function extractAllEntries(
       }
 
       if (layer.autoMarked || layer.singleMark) {
+        if (isAutoMarkedContainerOutputSuppressed(layer)) {
+          if (layer.isFolder) {
+            walkMarkedOrRegularFolderChildren(layers, i, layer, inheritedLower, inheritedUpper)
+          }
+          continue
+        }
+
         // 自動マークのみ（手動★なし）で除外設定の場合はスキップ
         if (layer.autoMarked && !layer.singleMark && excludeAutoMarked) {
           if (layer.isFolder) {
