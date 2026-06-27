@@ -44,6 +44,7 @@ const POINTER_DRAG_THRESHOLD = 4
 const AUTO_SCROLL_EDGE_PX = 48
 const AUTO_SCROLL_MAX_SPEED_PX = 18
 const AUTO_SCROLL_MIN_SPEED_PX = 2
+const DRAGGING_BODY_CLASS = 'is-csp-dragging'
 const internalDropTargets = new Map<HTMLElement, InternalDropTarget>()
 let activeInternalDropTarget: HTMLElement | null = null
 
@@ -88,6 +89,10 @@ function suppressNextClick(): void {
   window.setTimeout(() => document.removeEventListener('click', handler, true), 0)
 }
 
+function setDraggingBodyClass(enabled: boolean): void {
+  document.body.classList.toggle(DRAGGING_BODY_CLASS, enabled)
+}
+
 export function startInternalPointerDrag(payload: DragPayload, e: React.PointerEvent): void {
   if (!isInternalPointerDragEnabled()) return
   if (e.button !== 0) return
@@ -115,7 +120,7 @@ export function startInternalPointerDrag(payload: DragPayload, e: React.PointerE
     if (Math.hypot(dx, dy) < POINTER_DRAG_THRESHOLD) return
     dragging = true
     _activeDragPayload = payload
-    document.body.classList.add('is-internal-dragging')
+    setDraggingBodyClass(true)
   }
 
   const handlePointerMove = (event: PointerEvent) => {
@@ -136,14 +141,14 @@ export function startInternalPointerDrag(payload: DragPayload, e: React.PointerE
         suppressNextClick()
       }
     } finally {
-      document.body.classList.remove('is-internal-dragging')
+      setDraggingBodyClass(false)
       cleanup()
     }
   }
 
   const handlePointerCancel = (event: PointerEvent) => {
     if (event.pointerId !== pointerId) return
-    document.body.classList.remove('is-internal-dragging')
+    setDraggingBodyClass(false)
     cleanup()
   }
 
@@ -356,11 +361,13 @@ export function useDragSource(payload: DragPayload): DragHandlers & { isDragging
     _activeDragPayload = payload
     e.dataTransfer.setData(DRAG_DATA_KEY, JSON.stringify(payload))
     e.dataTransfer.effectAllowed = 'copy'
+    setDraggingBodyClass(true)
     setIsDragging(true)
   }, [nativeDraggable, payload])
 
   const onDragEnd = useCallback(() => {
     _activeDragPayload = null
+    setDraggingBodyClass(false)
     setIsDragging(false)
   }, [])
 

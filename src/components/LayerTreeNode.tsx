@@ -3,7 +3,12 @@ import type { ReactNode } from 'react'
 import { useAppStore } from '../store'
 import type { CspLayer, VirtualSet } from '../types'
 import { isUnsupportedBlendMode } from '../engine/compositor'
-import { useDragSource, getActiveDragPayload, useInternalDropTarget } from '../hooks/useDragDrop'
+import {
+  useDragSource,
+  getActiveDragPayload,
+  useInternalDropTarget,
+  type DragPayload,
+} from '../hooks/useDragDrop'
 import {
   resolveVirtualSetFolderChildInsertionTarget,
   resolveVirtualSetInsertionTarget,
@@ -101,6 +106,77 @@ function getDropPlacementFromPointer(clientY: number, rect: DOMRect, layer: CspL
   return ratio < 0.5 ? 'above' : 'below'
 }
 
+function isInsertionLineTarget(target: EventTarget | null, node: HTMLElement | null): boolean {
+  if (!(target instanceof Element) || !node) return false
+  const line = target.closest('[data-virtual-set-drop-line="true"]')
+  return !!line && node.contains(line)
+}
+
+function VirtualSetInsertionLine({
+  indentWidth,
+  placement,
+  onHover,
+  onLeave,
+  onDropVirtualSet,
+}: {
+  indentWidth: number
+  placement: DropPlacement
+  onHover: (placement: DropPlacement) => void
+  onLeave: () => void
+  onDropVirtualSet: (virtualSetId: string, placement: DropPlacement) => void
+}) {
+  const dropVirtualSet = useCallback((payload: DragPayload) => {
+    if (payload.type !== 'virtualSet') return
+    onDropVirtualSet(payload.virtualSetId, placement)
+  }, [onDropVirtualSet, placement])
+
+  const { dropRef } = useInternalDropTarget({
+    canDrop: payload => payload.type === 'virtualSet',
+    onDragOver: () => onHover(placement),
+    onDragLeave: onLeave,
+    onDrop: payload => {
+      dropVirtualSet(payload)
+      onLeave()
+    },
+  })
+
+  const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    const payload = getActiveDragPayload()
+    if (payload?.type !== 'virtualSet') return
+    e.preventDefault()
+    e.stopPropagation()
+    e.dataTransfer.dropEffect = 'copy'
+    onHover(placement)
+  }, [onHover, placement])
+
+  const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return
+    onLeave()
+  }, [onLeave])
+
+  const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    const payload = getActiveDragPayload()
+    if (payload?.type !== 'virtualSet') return
+    e.preventDefault()
+    e.stopPropagation()
+    dropVirtualSet(payload)
+    onLeave()
+  }, [dropVirtualSet, onLeave])
+
+  return (
+    <div
+      ref={dropRef}
+      className={styles.insertionLine}
+      style={{ marginLeft: indentWidth }}
+      data-virtual-set-drop-line="true"
+      aria-hidden="true"
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    />
+  )
+}
+
 /** 仮想セットのインライン表示バッジ */
 function VirtualSetBadge({ vs, indentWidth, onClear }: {
   vs: VirtualSet
@@ -172,6 +248,7 @@ export function LayerTreeNode({
   const updateVirtualSet = useAppStore(s => s.updateVirtualSet)
   // 仮想セットドロップ時の挿入ライン表示状態（'above' | 'inside' | 'below' | null）
   const [dropPlacement, setDropPlacement] = useState<DropPlacement | null>(null)
+  const nodeRef = useRef<HTMLDivElement | null>(null)
   const rowRef = useRef<HTMLDivElement | null>(null)
 
   const { draggable, onDragStart, onDragEnd, onPointerDown } = useDragSource({ type: 'layer', layerId: layer.id })
@@ -283,10 +360,8 @@ export function LayerTreeNode({
   }, [layer])
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
-    // currentTarget の外に出たときだけクリア
-    if (!(e.currentTarget as HTMLElement).contains(e.relatedTarget as Node)) {
-      setDropPlacement(null)
-    }
+    if (isInsertionLineTarget(e.relatedTarget, nodeRef.current)) return
+    setDropPlacement(null)
   }, [])
 
   const handleDrop = useCallback((e: React.DragEvent) => {
@@ -356,7 +431,7 @@ export function LayerTreeNode({
     : indentWidth + 16
 
   return (
-    <div className={styles.node}>
+    <div ref={nodeRef} className={styles.node}>
       {/* このレイヤーの上に挿入される仮想セットのバッジ */}
       {vsAbove.map(vs => (
         <VirtualSetBadge
@@ -369,7 +444,13 @@ export function LayerTreeNode({
 
       {/* 仮想セットドラッグ中の挿入ライン（上） */}
       {dropPlacement === 'above' && (
-        <div className={styles.insertionLine} style={{ marginLeft: indentWidth }} />
+        <VirtualSetInsertionLine
+          indentWidth={indentWidth}
+          placement="above"
+          onHover={setDropPlacement}
+          onLeave={() => setDropPlacement(null)}
+          onDropVirtualSet={updateVirtualSetInsertion}
+        />
       )}
 
       <div
@@ -467,7 +548,13 @@ export function LayerTreeNode({
 
       {/* フォルダ配下に入る挿入ライン。行強調と短いラインで同階層挿入と区別する。 */}
       {dropPlacement === 'inside' && (
-        <div className={styles.insertionLine} style={{ marginLeft: childIndentWidth }} />
+        <VirtualSetInsertionLine
+          indentWidth={childIndentWidth}
+          placement="inside"
+          onHover={setDropPlacement}
+          onLeave={() => setDropPlacement(null)}
+          onDropVirtualSet={updateVirtualSetInsertion}
+        />
       )}
 
       {layer.isFolder && isExpanded && layer.children.length > 0 && (
@@ -495,7 +582,13 @@ export function LayerTreeNode({
 
       {/* 仮想セットドラッグ中の挿入ライン（下） */}
       {dropPlacement === 'below' && (
-        <div className={styles.insertionLine} style={{ marginLeft: indentWidth }} />
+        <VirtualSetInsertionLine
+          indentWidth={indentWidth}
+          placement="below"
+          onHover={setDropPlacement}
+          onLeave={() => setDropPlacement(null)}
+          onDropVirtualSet={updateVirtualSetInsertion}
+        />
       )}
 
       {/* このレイヤーの下に挿入される仮想セットのバッジ */}
