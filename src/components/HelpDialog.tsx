@@ -460,13 +460,10 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               </p>
 
               <div className={styles.calloutInfo}>
-                <span className={styles.strong}>入れ子になった、先頭に _ を付けたレイヤーフォルダは親から抜かれません。</span>
-                親フォルダ自体が自動マークされている場合、その出力は配下の表示内容をまとめて合成します。
-                配下にある別の「先頭に _ を付けたレイヤーフォルダ」は、親の画像に含まれたまま、追加で個別ファイルとしても出力されます。
-                たとえば <code className={styles.code}>_原図.jpg</code> は <code className={styles.code}>_BOOK1</code> と
-                <code className={styles.code}>_BG</code> を含む原図全体で、
-                <code className={styles.code}>_BOOK1.jpg</code> と <code className={styles.code}>_BG.jpg</code> は
-                それぞれを取り出した追加出力です。
+                <span className={styles.strong}>単体出力の素材は、他の出力へ自動合成されません。</span>
+                通常フォルダの中に <code className={styles.code}>_BG</code> や ★ マーク素材があっても、
+                それらは独立した出力単位として扱われ、アニメセルや別素材のコンテキストから外れます。
+                通常の子が残る親フォルダは、その通常部分だけがコンテキストとして合成されます。
               </div>
 
               <div className={styles.compositeList}>
@@ -523,19 +520,6 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   </div>
                 </div>
                 <div className={styles.compositeItem}>
-                  <div className={styles.compositeFilename}>_撮影指示.jpg</div>
-                  <div className={styles.compositeFormula}>
-                    <span className={styles.compositeCtx}>memo</span>
-                    <span className={styles.compositeOp}>+</span>
-                    <span className={styles.compositeCtx}>Frame</span>
-                    <span className={styles.compositeOp}>+</span>
-                    <span className={styles.compositeTarget}>_撮影指示</span>
-                  </div>
-                  <div className={styles.compositeNote}>
-                    _撮影指示配下をまとめて出力。_PAN/_SL は除外されず、この後で個別にも出力
-                  </div>
-                </div>
-                <div className={styles.compositeItem}>
                   <div className={styles.compositeFilename}>_PAN.jpg</div>
                   <div className={styles.compositeFormula}>
                     <span className={styles.compositeCtx}>memo</span>
@@ -545,7 +529,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                     <span className={styles.compositeTarget}>_撮影指示/_PAN</span>
                   </div>
                   <div className={styles.compositeNote}>
-                    親の _撮影指示 に含まれたまま、_PAN 単体としても追加出力
+                    整理用の _撮影指示 配下から、_PAN を単体出力
                   </div>
                 </div>
                 <div className={styles.compositeItem}>
@@ -558,20 +542,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                     <span className={styles.compositeTarget}>_撮影指示/_SL</span>
                   </div>
                   <div className={styles.compositeNote}>
-                    親の _撮影指示 に含まれたまま、_SL 単体としても追加出力
-                  </div>
-                </div>
-                <div className={styles.compositeItem}>
-                  <div className={styles.compositeFilename}>_原図.jpg</div>
-                  <div className={styles.compositeFormula}>
-                    <span className={styles.compositeCtx}>memo</span>
-                    <span className={styles.compositeOp}>+</span>
-                    <span className={styles.compositeCtx}>Frame</span>
-                    <span className={styles.compositeOp}>+</span>
-                    <span className={styles.compositeTarget}>_原図（_BOOK1 + _BG を含む）</span>
-                  </div>
-                  <div className={styles.compositeNote}>
-                    _原図配下をまとめて出力。_BOOK1/_BG は除外されず、この後で個別にも出力
+                    整理用の _撮影指示 配下から、_SL を単体出力
                   </div>
                 </div>
                 <div className={styles.compositeItem}>
@@ -584,7 +555,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                     <span className={styles.compositeTarget}>_原図/_BOOK1</span>
                   </div>
                   <div className={styles.compositeNote}>
-                    親の _原図 に含まれたまま、_BOOK1 単体としても追加出力
+                    整理用の _原図 配下から、_BOOK1 を単体出力
                   </div>
                 </div>
                 <div className={styles.compositeItem}>
@@ -597,7 +568,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                     <span className={styles.compositeTarget}>_原図/_BG</span>
                   </div>
                   <div className={styles.compositeNote}>
-                    親の _原図 に含まれたまま、_BG 単体としても追加出力
+                    整理用の _原図 配下から、_BG を単体出力
                   </div>
                 </div>
               </div>
@@ -607,6 +578,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 ルート直下でアニメーションフォルダでも★マークでもない通常レイヤーは
                 <span className={styles.em}>コンテキストレイヤー</span>として、すべての出力画像に合成されます。
                 フレーム枠線やメモなど、全セルに共通して含めたいレイヤーをルート直下に置くだけで自動的に反映されます。
+                通常フォルダ内に単体出力素材が混在する場合は、その単体出力素材だけを除外し、通常の子はコンテキストとして残します。
                 一方 <code className={styles.code}>_pool</code> は <span className={styles.strong}>_付きフォルダの除外リスト</span> に一致するため、先頭が _ でも単体出力されません。
               </div>
             </section>
@@ -640,7 +612,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   <span className={styles.layerNameMark}>_撮影指示</span>
                   <span className={styles.labelMark}>★ 自動</span>
                   <span style={{ color: 'var(--color-text-subtle)', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
-                    → 「_撮影指示.jpg」として出力
+                    → 直下が出力対象だけなら整理用として親は出力しない
                   </span>
                 </div>
                 <div className={`${styles.layerRow} ${styles.indent1}`}>
@@ -661,7 +633,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   <span className={styles.layerNameMark}>_原図</span>
                   <span className={styles.labelMark}>★ 自動</span>
                   <span style={{ color: 'var(--color-text-subtle)', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
-                    → 「_原図.jpg」として出力
+                    → 直下が出力対象だけなら整理用として親は出力しない
                   </span>
                 </div>
                 <div className={`${styles.layerRow} ${styles.indent1}`}>
@@ -703,7 +675,10 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   単体出力にした素材は、アニメーションセルの合成対象から外れ、別ファイルとして出力されます
                 </li>
                 <li>
-                  親子で単体出力にした場合、親の出力には子の表示内容も含まれ、子は追加で個別にも出力されます
+                  通常フォルダの中に単体出力素材がある場合、通常の子はコンテキストに残り、単体出力素材だけが他の出力の合成対象から外れます
+                </li>
+                <li>
+                  <code className={styles.code}>_原図</code> のような親フォルダでも、直下の表示中要素が出力対象だけなら整理用コンテナとして扱われ、親自身の統合画像は出力しません
                 </li>
                 <li>
                   <span className={styles.strong}>アニメーションフォルダの中</span>にある、先頭に _ を付けたレイヤーフォルダは自動マークされません

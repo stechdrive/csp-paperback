@@ -355,6 +355,42 @@ function resolveFlatNameCollisions(entries: OutputEntry[]): void {
   }
 }
 
+function isIndependentOutputUnit(layer: CspLayer): boolean {
+  return layer.isAnimationFolder || layer.autoMarked || layer.singleMark
+}
+
+/**
+ * 出力コンテキストに合成してよいレイヤーだけを返す。
+ *
+ * autoMarked / singleMark は別ファイルとして出力される独立出力単位なので、
+ * 通常フォルダの内側にあってもコンテキストから再帰的に除外する。
+ * アニメーションフォルダ自身、またはアニメーション子孫を持つフォルダは
+ * 従来どおりアニメ枝のローカルコンテキストとして丸ごと除外する。
+ * 一方、通常の子が残るフォルダは、そのフォルダの不透明度・合成モード・マスクを保つため
+ * 子だけ差し替えたレイヤーとして残す。
+ */
+function toContextLayer(layer: CspLayer): CspLayer | null {
+  if (layer.hidden || layer.uiHidden) return null
+  if (isIndependentOutputUnit(layer)) return null
+
+  // アニメ子孫を持つフォルダは、その内部の通常レイヤーも該当アニメ枝の
+  // ローカルコンテキストとして扱う。無関係な出力へ広げないため従来どおり丸ごと除外する。
+  if (hasAnimFolderDescendant(layer)) return null
+
+  if (!layer.isFolder) return layer
+
+  const children = layer.children
+    .map(child => toContextLayer(child))
+    .filter((child): child is CspLayer => child !== null)
+
+  if (children.length === 0) return null
+  if (children.length === layer.children.length && children.every((child, index) => child === layer.children[index])) {
+    return layer
+  }
+
+  return { ...layer, children }
+}
+
 /**
  * 仮想セルの挿入位置を基準に上下コンテキストを収集する。
  *
@@ -389,13 +425,12 @@ function collectVsContextFlats(
 
         for (let j = 0; j < layers.length; j++) {
           const sib = layers[j]
-          if (sib.hidden || sib.uiHidden) continue
-          if (sib.isAnimationFolder || hasAnimFolderDescendant(sib)) continue
-          if (sib.autoMarked || sib.singleMark) continue
+          const contextLayer = toContextLayer(sib)
+          if (!contextLayer) continue
 
           const isUpper = insertionPosition === 'above' ? j < i : j <= i
-          if (isUpper) upperCsps.push(sib)
-          else lowerCsps.push(sib)
+          if (isUpper) upperCsps.push(contextLayer)
+          else lowerCsps.push(contextLayer)
         }
 
         lowerStack.push(flattenTree(lowerCsps, docWidth, docHeight))
@@ -412,12 +447,11 @@ function collectVsContextFlats(
         for (let j = 0; j < layers.length; j++) {
           if (j === i) continue
           const sib = layers[j]
-          if (sib.hidden || sib.uiHidden) continue
-          if (sib.isAnimationFolder || hasAnimFolderDescendant(sib)) continue
-          if (sib.autoMarked || sib.singleMark) continue
+          const contextLayer = toContextLayer(sib)
+          if (!contextLayer) continue
 
-          if (j < i) upperCsps.push(sib)
-          else lowerCsps.push(sib)
+          if (j < i) upperCsps.push(contextLayer)
+          else lowerCsps.push(contextLayer)
         }
 
         lowerStack.push(flattenTree(lowerCsps, docWidth, docHeight))
@@ -608,11 +642,10 @@ function splitSiblingsByPosition(
   for (let j = 0; j < layers.length; j++) {
     if (j === targetIdx) continue
     const sib = layers[j]
-    if (sib.hidden || sib.uiHidden) continue
-    if (sib.isAnimationFolder || hasAnimFolderDescendant(sib)) continue
-    if (sib.autoMarked || sib.singleMark) continue  // マーク済みはアニメセルのコンテキストに含めない
-    if (j < targetIdx) upperCsps.push(sib)  // 上にある → セルの上に描画
-    else lowerCsps.push(sib)                   // 下にある → セルの下に描画
+    const contextLayer = toContextLayer(sib)
+    if (!contextLayer) continue
+    if (j < targetIdx) upperCsps.push(contextLayer)  // 上にある → セルの上に描画
+    else lowerCsps.push(contextLayer)                   // 下にある → セルの下に描画
   }
   return [
     flattenTree(lowerCsps, docWidth, docHeight),
@@ -819,16 +852,8 @@ export function extractAllEntries(
 export function collectContextSourceLayers(layers: CspLayer[]): CspLayer[] {
   const result: CspLayer[] = []
   for (const layer of layers) {
-    if (layer.hidden || layer.uiHidden) continue
-    if (layer.isAnimationFolder) continue
-    // マーク済みレイヤーはグローバルコンテキストに含めない。
-    // アニメセルへの合成は splitSiblingsByPosition で兄弟として正しく処理される。
-    if (layer.autoMarked || layer.singleMark) continue
-    if (!hasAnimFolderDescendant(layer)) {
-      result.push(layer)
-    }
-    // アニメ子孫を持つフォルダはグローバルコンテキストから除外
-    // （内部の非アニメレイヤーはcollectLocalSiblingContextで取得）
+    const contextLayer = toContextLayer(layer)
+    if (contextLayer) result.push(contextLayer)
   }
   return result
 }
@@ -870,11 +895,10 @@ export function collectLocalSiblingContext(
         for (let j = 0; j < layers.length; j++) {
           if (j === i) continue
           const sib = layers[j]
-          if (sib.hidden || sib.uiHidden) continue
-          if (sib.isAnimationFolder || hasAnimFolderDescendant(sib)) continue
-          if (sib.autoMarked || sib.singleMark) continue  // マーク済みはアニメセルのコンテキストに含めない
-          if (j < i) upperCsps.push(sib)  // 上にある → upper
-          else lowerCsps.push(sib)          // 下にある → lower
+          const contextLayer = toContextLayer(sib)
+          if (!contextLayer) continue
+          if (j < i) upperCsps.push(contextLayer)  // 上にある → upper
+          else lowerCsps.push(contextLayer)          // 下にある → lower
         }
         lowerStack.push(flattenTree(lowerCsps, docWidth, docHeight))
         upperStack.push(flattenTree(upperCsps, docWidth, docHeight))
@@ -928,11 +952,10 @@ export function collectMarkedLayerContext(
         for (let j = 0; j < layers.length; j++) {
           if (j === i) continue
           const sib = layers[j]
-          if (sib.hidden || sib.uiHidden) continue
-          if (sib.isAnimationFolder || hasAnimFolderDescendant(sib)) continue
-          if (sib.autoMarked || sib.singleMark) continue
-          if (j < i) upperCsps.push(sib)
-          else lowerCsps.push(sib)
+          const contextLayer = toContextLayer(sib)
+          if (!contextLayer) continue
+          if (j < i) upperCsps.push(contextLayer)
+          else lowerCsps.push(contextLayer)
         }
         lowerStack.push(flattenTree(lowerCsps, docWidth, docHeight))
         upperStack.push(flattenTree(upperCsps, docWidth, docHeight))

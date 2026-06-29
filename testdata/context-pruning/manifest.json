@@ -1,0 +1,83 @@
+{
+  "name": "context-pruning",
+  "width": 960,
+  "height": 260,
+  "labels": {
+    "paper": {
+      "text": "./[BG]/paper",
+      "top": 18
+    },
+    "materialGuide": {
+      "text": "./[素材]/guide",
+      "top": 46
+    },
+    "materialBook": {
+      "text": "./[素材]/[BOOK]/book",
+      "top": 74
+    },
+    "materialBg": {
+      "text": "./[素材]/[_BG]/paint",
+      "top": 102
+    },
+    "animA": {
+      "text": "./[A]/1/body",
+      "top": 130
+    },
+    "fg": {
+      "text": "./[FG]/overlay",
+      "top": 158
+    }
+  },
+  "tracks": [
+    "A"
+  ],
+  "cases": {
+    "auto-child": {
+      "singleMarkPaths": [],
+      "entries": {
+        "A_0001.jpg": [
+          "paper",
+          "materialGuide",
+          "materialBook",
+          "animA",
+          "fg"
+        ],
+        "_BG.jpg": [
+          "paper",
+          "materialGuide",
+          "materialBg",
+          "materialBook",
+          "fg"
+        ]
+      }
+    },
+    "single-book": {
+      "singleMarkPaths": [
+        [
+          "素材",
+          "BOOK"
+        ]
+      ],
+      "entries": {
+        "A_0001.jpg": [
+          "paper",
+          "materialGuide",
+          "animA",
+          "fg"
+        ],
+        "_BG.jpg": [
+          "paper",
+          "materialGuide",
+          "materialBg",
+          "fg"
+        ],
+        "BOOK.jpg": [
+          "paper",
+          "materialGuide",
+          "materialBook",
+          "fg"
+        ]
+      }
+    }
+  }
+}
