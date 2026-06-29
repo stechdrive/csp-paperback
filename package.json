@@ -1,7 +1,7 @@
 {
   "name": "csp-paperback",
   "private": true,
-  "version": "1.16.6",
+  "version": "1.17.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -13,7 +13,7 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
-    "tauri:build": "node scripts/tauri-build-with-remap.mjs",
+    "tauri:build": "node scripts/tauri-build-with-remap.mjs && node scripts/copy-local-exe.mjs",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "predeploy": "npm run build && npm run audit:artifacts -- dist",

@@ -8,6 +8,7 @@ export type CellNamingMode =
   | 'sequence'   // アニメフォルダ名_連番4桁.jpg（例: A_0001.jpg）
   | 'sequence-cellname' // アニメフォルダ名_連番_セル名.jpg（例: A_01_ア.jpg）
   | 'cellname'   // アニメフォルダ名_セル名.jpg（例: A_A0001.jpg）
+  | 'sheet-sequence' // 同名セル系列をXDTS初出順で工程込み連番化（例: A_0001.jpg）
 
 export interface ProjectSettings {
   processTable: ProcessFolderEntry[]

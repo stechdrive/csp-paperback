@@ -1,4 +1,4 @@
-import type { CspLayer, FlatLayer, OutputEntry, ProjectSettings, ProcessSuffixPosition } from '../types'
+import type { CspLayer, FlatLayer, OutputEntry, ProjectSettings, ProcessSuffixPosition, XdtsData, XdtsTrack } from '../types'
 import type { VirtualSet } from '../types/marks'
 import { flattenTree } from './flatten'
 import { applyLayerMask, compositeGroup, compositeStack, createCanvas } from './compositor'
@@ -6,7 +6,7 @@ import { collectMembersInTreeOrder, buildMemberFlatsWithOverride } from '../util
 import { buildAssignmentFromDetectedFolders } from './anim-folder-assignment'
 import { computeDisplayNames } from './anim-folder-display-name'
 import { isAutoMarkedContainerOutputSuppressed } from '../utils/auto-marked-container'
-import { getSequenceDigitsForCellCount, makeCellLabel, resolveNameCollisions } from '../utils/naming'
+import { FIXED_SEQUENCE_DIGITS, formatSequenceNumber, getSequenceDigitsForCellCount, makeCellLabel, resolveNameCollisions } from '../utils/naming'
 
 /**
  * アニメーションフォルダからセルを抽出してOutputEntry[]を返す
@@ -34,6 +34,7 @@ export function extractCells(
   upperContextLayers: FlatLayer[] = [],
   processSuffixPosition: ProcessSuffixPosition = 'after-cell',
   sequenceDigits?: number,
+  sheetSequenceLabels?: Map<string, string>,
 ): OutputEntry[] {
   if (!animFolder.isAnimationFolder) return []
 
@@ -59,7 +60,8 @@ export function extractCells(
     const trackName = displayName
     const cellLabel = isAutoProcessAnim
       ? (cell.name || cell.originalName)
-      : makeCellLabel(namingMode, cell.originalName, visibleChildren.length - cellIdx, cellSequenceDigits)
+      : sheetSequenceLabels?.get(cell.id)
+        ?? makeCellLabel(namingMode, cell.originalName, visibleChildren.length - cellIdx, cellSequenceDigits)
 
     if (!cell.isFolder) {
       // 単体レイヤー: XDTSキーフレーム画像 → そのまま1セル出力
@@ -172,6 +174,75 @@ export function getSequenceDigitsForAnimationFolders(tree: CspLayer[]): number {
 
   walk(tree)
   return getSequenceDigitsForCellCount(maxCellCount)
+}
+
+interface SheetSequenceCell {
+  cellId: string
+  firstFrame: number
+  order: number
+}
+
+export function buildSheetSequenceLabels(
+  tree: CspLayer[],
+  xdtsData: XdtsData | null | undefined,
+  displayNameMap: Map<string, string>,
+): Map<string, string> {
+  const labels = new Map<string, string>()
+  if (!xdtsData) return labels
+
+  const tracksByNo = new Map(xdtsData.tracks.map(track => [track.trackNo, track]))
+  const groups = new Map<string, SheetSequenceCell[]>()
+  let order = 0
+
+  function walk(layers: CspLayer[]): void {
+    for (const layer of layers) {
+      if (
+        layer.isAnimationFolder &&
+        layer.animationFolder?.detectedBy === 'xdts' &&
+        typeof layer.animationFolder.trackNo === 'number'
+      ) {
+        const track = tracksByNo.get(layer.animationFolder.trackNo)
+        const displayName = displayNameMap.get(layer.id) ?? layer.originalName.trim()
+        if (track) {
+          const visibleChildren = layer.children.filter(c => !c.hidden && !c.uiHidden)
+          for (const cell of visibleChildren) {
+            const firstFrame = findFirstStartFrame(track, cell.originalName)
+            if (firstFrame === null) continue
+
+            const group = groups.get(displayName) ?? []
+            group.push({ cellId: cell.id, firstFrame, order: order++ })
+            groups.set(displayName, group)
+          }
+        }
+      }
+
+      if (layer.children.length > 0) walk(layer.children)
+    }
+  }
+
+  walk(tree)
+
+  for (const cells of groups.values()) {
+    const frames = [...new Set(cells.map(cell => cell.firstFrame))].sort((a, b) => a - b)
+    const frameToLabel = new Map<number, string>()
+    for (let i = 0; i < frames.length; i++) {
+      frameToLabel.set(frames[i], formatSequenceNumber(i + 1, FIXED_SEQUENCE_DIGITS))
+    }
+
+    for (const cell of cells.sort((a, b) => a.order - b.order)) {
+      const label = frameToLabel.get(cell.firstFrame)
+      if (label) labels.set(cell.cellId, label)
+    }
+  }
+
+  return labels
+}
+
+function findFirstStartFrame(track: XdtsTrack, cellName: string): number | null {
+  for (const frame of track.frames) {
+    if (frame.cellName === cellName) return frame.frameIndex
+  }
+  return null
 }
 
 function collectProcessSuffixes(...suffixes: string[]): string[] | undefined {
@@ -609,6 +680,7 @@ export function extractAllEntries(
   background: 'white' | 'transparent' = 'white',
   excludeAutoMarked = false,
   processSuffixPosition: ProcessSuffixPosition = 'after-cell',
+  xdtsData?: XdtsData | null,
 ): OutputEntry[] {
   const entries: OutputEntry[] = []
 
@@ -626,6 +698,9 @@ export function extractAllEntries(
   // 手動指定分だけその後ろに疑似 trackNo を追加する。
   const assignmentMap = buildEffectiveAnimationAssignment(tree)
   const displayNameMap = computeDisplayNames(tree, assignmentMap, animParentSuffixMap)
+  const sheetSequenceLabels = projectSettings.cellNamingMode === 'sheet-sequence'
+    ? buildSheetSequenceLabels(tree, xdtsData, displayNameMap)
+    : undefined
   const sequenceDigits = projectSettings.cellNamingMode === 'sequence-cellname'
     ? getSequenceDigitsForAnimationFolders(tree)
     : undefined
@@ -657,7 +732,7 @@ export function extractAllEntries(
         const cellEntries = extractCells(
           layer, projectSettings, docWidth, docHeight, thisLower,
           parentSuffix, displayName, background,
-          thisUpper, processSuffixPosition, sequenceDigits,
+          thisUpper, processSuffixPosition, sequenceDigits, sheetSequenceLabels,
         )
         entries.push(...cellEntries)
         continue

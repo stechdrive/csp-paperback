@@ -12,6 +12,7 @@ import {
   buildParentSuffixMap,
   buildEffectiveAnimationAssignment,
   getSequenceDigitsForAnimationFolders,
+  buildSheetSequenceLabels,
 } from '../engine/cell-extractor'
 import { computeDisplayNames } from '../engine/anim-folder-display-name'
 import { flattenTree, compositeRoot } from '../engine/flatten'
@@ -20,7 +21,7 @@ import { makeCellLabel } from '../utils/naming'
 import { collectMembersInTreeOrder, buildMemberFlatsWithOverride } from '../utils/virtual-set-utils'
 import { resolveSelectedAnimCell } from '../utils/anim-cell-selection'
 import { isAutoMarkedContainerOutputSuppressed } from '../utils/auto-marked-container'
-import type { CspLayer, OutputEntry, ProjectSettings, OutputConfig, OutputFormat } from '../types'
+import type { CspLayer, OutputEntry, ProjectSettings, OutputConfig, OutputFormat, XdtsData } from '../types'
 
 export interface OutputPreviewEntry {
   canvas: HTMLCanvasElement
@@ -63,6 +64,7 @@ export function useOutputPreview(): OutputPreviewEntry[] {
   const selectedCells = useAppStore(s => s.selectedCells)
   const projectSettings = useAppStore(s => s.projectSettings)
   const outputConfig = useAppStore(s => s.outputConfig)
+  const xdtsData = useAppStore(s => s.xdtsData)
   const docWidth = useAppStore(s => s.docWidth)
   const docHeight = useAppStore(s => s.docHeight)
 
@@ -102,7 +104,7 @@ export function useOutputPreview(): OutputPreviewEntry[] {
         focusedAnimFolderId,
         selectedCells.get(focusedAnimFolderId),
         null,
-        layerTree, projectSettings, outputConfig, docWidth, docHeight,
+        layerTree, projectSettings, outputConfig, xdtsData, docWidth, docHeight,
       )
     }
 
@@ -117,7 +119,7 @@ export function useOutputPreview(): OutputPreviewEntry[] {
         animCellCtx.animFolderId,
         animCellCtx.cellChildIndex,
         selectedLayerId,
-        layerTree, projectSettings, outputConfig, docWidth, docHeight,
+        layerTree, projectSettings, outputConfig, xdtsData, docWidth, docHeight,
       )
     }
 
@@ -142,7 +144,7 @@ export function useOutputPreview(): OutputPreviewEntry[] {
     return []
   }, [
     focusedAnimFolderId, selectedVirtualSetId, selectedLayerId,
-    virtualSets, selectedCells, layerTree, projectSettings, outputConfig,
+    virtualSets, selectedCells, layerTree, projectSettings, outputConfig, xdtsData,
     docWidth, docHeight,
   ])
 }
@@ -161,6 +163,7 @@ function previewAnimFolder(
   layerTree: CspLayer[],
   projectSettings: ProjectSettings,
   outputConfig: OutputConfig,
+  xdtsData: XdtsData | null,
   docWidth: number,
   docHeight: number,
 ): OutputPreviewEntry[] {
@@ -186,6 +189,9 @@ function previewAnimFolder(
   const assignment = buildEffectiveAnimationAssignment(layerTree)
   const displayNames = computeDisplayNames(layerTree, assignment, parentSuffixMap)
   const displayName = displayNames.get(animFolderId) ?? animFolder.originalName.trim()
+  const sheetSequenceLabels = projectSettings.cellNamingMode === 'sheet-sequence'
+    ? buildSheetSequenceLabels(layerTree, xdtsData, displayNames)
+    : undefined
   const sequenceDigits = projectSettings.cellNamingMode === 'sequence-cellname'
     ? getSequenceDigitsForAnimationFolders(layerTree)
     : undefined
@@ -193,14 +199,15 @@ function previewAnimFolder(
   const allEntries: OutputEntry[] = extractCells(
     animFolder, projectSettings, docWidth, docHeight, lowerContextFlats,
     parentSuffix, displayName, outputConfig.background, localUpperFlats,
-    outputConfig.processSuffixPosition, sequenceDigits,
+    outputConfig.processSuffixPosition, sequenceDigits, sheetSequenceLabels,
   )
 
   // 選択セルのエントリに絞り込む
   const namingMode = projectSettings.cellNamingMode ?? 'sequence'
   const cellLabel = animFolder.animationFolder?.detectedBy === 'autoProcess'
     ? (selectedCell.name || selectedCell.originalName)
-    : makeCellLabel(namingMode, selectedCell.originalName, visibleChildren.length - clampedIndex, sequenceDigits)
+    : sheetSequenceLabels?.get(selectedCell.id)
+      ?? makeCellLabel(namingMode, selectedCell.originalName, visibleChildren.length - clampedIndex, sequenceDigits)
   const prefix = buildCellFileName(
     displayName, cellLabel, parentSuffix, '', outputConfig.processSuffixPosition,
   ).replace(/\.jpg$/i, '')

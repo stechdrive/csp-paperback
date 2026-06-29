@@ -17,6 +17,7 @@ export function buildOutputEntriesFromState(
     outputConfig.background,
     outputConfig.excludeAutoMarked,
     outputConfig.processSuffixPosition,
+    state.xdtsData,
   )
 
   if (outputConfig.excludedProcessSuffixes.length > 0) {

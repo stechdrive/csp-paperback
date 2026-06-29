@@ -22,6 +22,12 @@ const SEQUENCE_CELL_NAME_SETTINGS: ProjectSettings = {
   archivePatterns: [],
 }
 
+const SHEET_SEQUENCE_SETTINGS: ProjectSettings = {
+  processTable: [{ suffix: '_e', folderNames: ['EN'] }],
+  cellNamingMode: 'sheet-sequence',
+  archivePatterns: [],
+}
+
 const EMPTY_CONTEXT: FlatLayer[] = []
 
 function makeSettingsWithTable(entries: { suffix: string; folderNames: string[] }[]): ProjectSettings {
@@ -374,6 +380,90 @@ describe('extractAllEntries', () => {
     // (n) 連番は付かない(namespace が別)
     expect(flatNames).not.toContain('A(2)_0001_en.jpg')
     expect(flatNames).not.toContain('A(2)_0001_bg.jpg')
+  })
+
+  it('シート連番では工程違いの同名セル系列をXDTS初出順で統合して番号を振る', () => {
+    const baseA = makeAnimationFolder('A', [
+      makeLayer({ name: 'A1' }),
+      makeLayer({ name: 'A2' }),
+      makeLayer({ name: 'A3' }),
+    ])
+    const enA = makeAnimationFolder('A', [
+      makeLayer({ name: 'A2修正' }),
+      makeLayer({ name: 'A2追加1' }),
+      makeLayer({ name: 'A2追加2' }),
+      makeLayer({ name: 'A3修正' }),
+    ])
+    const enRoot = makeFolder('EN', [enA])
+    const tree = buildLayerTree(makePsd({ children: [baseA, enRoot] }))
+    const xdts: XdtsData = {
+      tracks: [
+        {
+          name: 'A',
+          trackNo: 0,
+          cellNames: ['A1', 'A2', 'A3'],
+          frames: [
+            { frameIndex: 0, cellName: 'A1' },
+            { frameIndex: 5, cellName: 'A2' },
+            { frameIndex: 9, cellName: 'A3' },
+            { frameIndex: 17, cellName: 'A2' },
+          ],
+        },
+        {
+          name: 'A',
+          trackNo: 1,
+          cellNames: ['A2修正', 'A2追加1', 'A2追加2', 'A3修正'],
+          frames: [
+            { frameIndex: 5, cellName: 'A2修正' },
+            { frameIndex: 7, cellName: 'A2追加1' },
+            { frameIndex: 8, cellName: 'A2追加2' },
+            { frameIndex: 9, cellName: 'A3修正' },
+          ],
+        },
+      ],
+      version: 5,
+      header: { cut: '1', scene: '1' },
+      timeTableName: 'タイムライン1',
+      duration: 24,
+      fps: 24,
+    }
+    detectAnimationFoldersByXdts(tree, xdts)
+
+    const entries = extractAllEntries(
+      tree,
+      SHEET_SEQUENCE_SETTINGS,
+      100,
+      100,
+      'white',
+      false,
+      'after-cell',
+      xdts,
+    )
+    const flatNames = entries.map(e => e.flatName).sort()
+
+    expect(flatNames).toContain('A_0001.jpg')
+    expect(flatNames).toContain('A_0002.jpg')
+    expect(flatNames).toContain('A_0005.jpg')
+    expect(flatNames).toContain('A_0002_e.jpg')
+    expect(flatNames).toContain('A_0003_e.jpg')
+    expect(flatNames).toContain('A_0004_e.jpg')
+    expect(flatNames).toContain('A_0005_e.jpg')
+    expect(flatNames).not.toContain('A_0003.jpg')
+  })
+
+  it('シート連番はXDTSがない場合に従来の連番へフォールバックする', () => {
+    const animA = makeAnimationFolder('A', [
+      makeLayer({ name: 'A1' }),
+      makeLayer({ name: 'A2' }),
+    ])
+    const tree = buildLayerTree(makePsd({ children: [animA] }))
+    markManualAnimFolder(tree[0])
+
+    const entries = extractAllEntries(tree, SHEET_SEQUENCE_SETTINGS, 100, 100, 'white', false)
+    const flatNames = entries.map(e => e.flatName).sort()
+
+    expect(flatNames).toContain('A_0001.jpg')
+    expect(flatNames).toContain('A_0002.jpg')
   })
 
   it('A と a は別トラックとして割当し、出力名でも区別する', () => {

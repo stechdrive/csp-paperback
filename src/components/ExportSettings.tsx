@@ -24,7 +24,7 @@ function buildNameSample(
   format: 'jpg' | 'png',
 ): string {
   const trackName = 'A'
-  const cellLabel = mode === 'sequence'
+  const cellLabel = mode === 'sequence' || mode === 'sheet-sequence'
     ? '0001'
     : mode === 'sequence-cellname'
       ? '01_ア'
@@ -106,7 +106,9 @@ export function ExportSettings() {
       </div>
 
       <div className={styles.row}>
-        <span className={styles.label}>{t.settings.cellNaming}</span>
+        <Tooltip content={t.settings.cellNamingHint} placement="bottom">
+          <span className={styles.label}>{t.settings.cellNaming}</span>
+        </Tooltip>
         <div className={styles.toggleGroup}>
           <button
             className={`${styles.toggle} ${projectSettings.cellNamingMode === 'sequence' ? styles.active : ''}`}
@@ -120,6 +122,12 @@ export function ExportSettings() {
             className={`${styles.toggle} ${projectSettings.cellNamingMode === 'cellname' ? styles.active : ''}`}
             onClick={() => setCellNamingMode('cellname')}
           >{t.settings.cellNamingCellname}</button>
+          <Tooltip content={t.settings.cellNamingSheetSequenceHint} placement="bottom">
+            <button
+              className={`${styles.toggle} ${projectSettings.cellNamingMode === 'sheet-sequence' ? styles.active : ''}`}
+              onClick={() => setCellNamingMode('sheet-sequence')}
+            >{t.settings.cellNamingSheetSequence}</button>
+          </Tooltip>
         </div>
         <span className={styles.nameSample}>{nameSample}</span>
 

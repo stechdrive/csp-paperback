@@ -87,6 +87,7 @@ export function makeCellLabel(
   const sequence = formatSequenceNumber(sequenceNumber, digits)
   switch (mode) {
     case 'sequence':
+    case 'sheet-sequence':
       return formatSequenceNumber(sequenceNumber, FIXED_SEQUENCE_DIGITS)
     case 'sequence-cellname':
       return `${sequence}_${cellName}`

@@ -23,6 +23,8 @@ npm run tauri:build
 
 The local `tauri:build` script runs Tauri with Rust path remapping so generated binaries do not contain the checkout path, user home directory, or temp build directory. With no extra arguments, it follows the release asset policy: Windows builds a portable `.exe` only, and macOS builds an Apple Silicon `.dmg` only.
 
+For a local Windows handoff copy, set `CSP_PAPERBACK_EXE_COPY_DIR` in the environment or in ignored `.env.local`. After `npm run tauri:build` succeeds, the portable `csp-paperback.exe` is copied there. CI and release builds leave this unset, so GitHub Release assets are unchanged.
+
 ## Web deployment
 
 The existing gh-pages flow remains unchanged:
