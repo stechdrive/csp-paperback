@@ -64,6 +64,13 @@ export async function loadableFilesFromPaths(paths: string[]): Promise<LoadableF
   return Promise.all(paths.map(async path => new TauriLoadableFile(path, await dirname(path))))
 }
 
+export async function allowTauriLaunchFilePaths(): Promise<void> {
+  if (!isDesktopRuntime()) return
+
+  const { invoke } = await import('@tauri-apps/api/core')
+  await invoke('allow_launch_file_paths')
+}
+
 export async function pickSettingsJsonFile(): Promise<LoadableFile | null> {
   if (!isDesktopRuntime()) return null
 

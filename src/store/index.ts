@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { DEFAULT_PROJECT_SETTINGS } from '../types'
+import { DEFAULT_OUTPUT_CONFIG, DEFAULT_PROJECT_SETTINGS } from '../types'
 import { createPsdSlice, type PsdSlice } from './psd-slice'
 import { createXdtsSlice, type XdtsSlice } from './xdts-slice'
 import { createAnimationSlice, type AnimationSlice } from './animation-slice'
@@ -39,12 +39,14 @@ export const useAppStore = create<AppStore>()(
       version: 1,
       partialize: (state) => ({
         projectSettings: state.projectSettings,
+        quickExportConfig: state.quickExportConfig,
         mobileUiScale: state.mobileUiScale,
         activeTheme: state.activeTheme,
       }),
       merge: (persisted, current) => {
         const p = persisted as {
           projectSettings?: typeof DEFAULT_PROJECT_SETTINGS
+          quickExportConfig?: typeof DEFAULT_OUTPUT_CONFIG
           mobileUiScale?: number
           activeTheme?: unknown
         } | undefined
@@ -52,6 +54,7 @@ export const useAppStore = create<AppStore>()(
         return {
           ...current,
           projectSettings: { ...DEFAULT_PROJECT_SETTINGS, ...p?.projectSettings },
+          quickExportConfig: { ...DEFAULT_OUTPUT_CONFIG, ...p?.quickExportConfig },
           mobileUiScale: clampMobileUiScale(p?.mobileUiScale ?? DEFAULT_MOBILE_UI_SCALE),
           activeTheme: isAppTheme(persistedTheme) ? persistedTheme : DEFAULT_APP_THEME,
         }

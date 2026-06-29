@@ -131,6 +131,7 @@ function restoreSnapshot(
     projectSettings: state.projectSettings,
     visibilityOverrides: state.visibilityOverrides,
     outputConfig: state.outputConfig,
+    quickExportConfig: state.outputConfig,
     layerTree: restoreLayerAppearances(current.layerTree, state.layerAppearances),
     selectedVirtualSetId,
     selectedVsMemberSetId,

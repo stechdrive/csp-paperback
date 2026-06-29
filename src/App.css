@@ -171,6 +171,17 @@ body {
   overflow: hidden;
 }
 
+.app-boot {
+  display: flex;
+  min-height: 100vh;
+  min-height: 100dvh;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+  background: var(--color-bg-app);
+  font-size: 0.9rem;
+}
+
 @media (pointer: coarse) and (max-width: 1024px) {
   :root {
     /* 390px→16px, 480px→19.7px, 488px+→20px を基準に UI スケールを掛ける */

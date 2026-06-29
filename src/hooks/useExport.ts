@@ -1,11 +1,9 @@
 import { useState, useCallback } from 'react'
 import { useAppStore } from '../store'
-import { selectLayerTreeWithVisibility } from '../store/selectors'
-import { extractAllEntries, extractVirtualSetEntries } from '../engine/cell-extractor'
-import { flattenTree } from '../engine/flatten'
 import type { OutputDestination } from '../types/output'
 import { buildZipStream, saveZipStream, makeZipFileName } from '../utils/zip-builder'
 import { saveEntriesToDirectory, supportsDirectoryExport } from '../utils/directory-builder'
+import { buildOutputEntriesFromState } from '../utils/export-entries'
 
 export interface UseExportResult {
   isExporting: boolean
@@ -23,14 +21,12 @@ export function useExport(): UseExportResult {
     const state = useAppStore.getState()
     const {
       docWidth,
-      docHeight,
       docDpiX,
       docDpiY,
       psdFileName,
       psdSourceDirectory,
       xdtsSourceDirectory,
       outputConfig,
-      projectSettings,
     } = state
 
     if (!psdFileName || docWidth === 0) {
@@ -45,34 +41,13 @@ export function useExport(): UseExportResult {
     try {
       const defaultExportDirectory = psdSourceDirectory ?? xdtsSourceDirectory ?? undefined
 
-      // visibilityOverridesを反映したツリーを取得
-      const tree = selectLayerTreeWithVisibility(state)
-
       setProgress(0.1)
 
-      // 全出力エントリを生成（scope=allの場合）
-      // displayName はツリー上に固定済みの XDTS trackNo と手動指定分から計算される
-      let entries = extractAllEntries(
-        tree, projectSettings, docWidth, docHeight,
-        outputConfig.background, outputConfig.excludeAutoMarked,
-        outputConfig.processSuffixPosition,
-      )
-
-      // 除外された工程サフィックスをポストフィルタ
-      if (outputConfig.excludedProcessSuffixes.length > 0) {
-        const excluded = new Set(outputConfig.excludedProcessSuffixes)
-        entries = entries.filter(entry =>
-          !entry.processSuffixes?.some(suffix => excluded.has(suffix))
-        )
-      }
+      // 全出力エントリを生成。displayName はツリー上に固定済みの XDTS trackNo
+      // と手動指定分から計算される。
+      const entries = buildOutputEntriesFromState(state)
 
       setProgress(0.4)
-
-      // 仮想セルのエントリを追加（常に出力）
-      const vsEntries = extractVirtualSetEntries(
-        tree, state.virtualSets, docWidth, docHeight, outputConfig.background
-      )
-      entries = [...entries, ...vsEntries]
 
       setProgress(0.5)
 
@@ -123,10 +98,6 @@ export function useExport(): UseExportResult {
       setIsExporting(false)
     }
   }, [])
-
-  // flattenTreeはcell-extractor内部で使用されるが、useExport自体でも
-  // プレビューコンテキスト計算に使う可能性があるためimport維持
-  void flattenTree
 
   return { isExporting, progress, error, startExport }
 }

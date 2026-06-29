@@ -67,6 +67,32 @@ export async function saveEntriesToDirectory(
   return exportRoot.name
 }
 
+export async function saveEntriesToDirectoryPath(
+  entries: OutputEntry[],
+  config: OutputConfig,
+  psdFileName: string,
+  parentDirectory: string,
+  dpiX = 0,
+  dpiY = 0,
+  onProgress?: (done: number, total: number) => void,
+): Promise<string> {
+  if (!isDesktopRuntime()) {
+    throw new Error('クイック書き出しはデスクトップ版でのみ利用できます')
+  }
+
+  const exportRoot = await createUniqueChildDirectoryPath(parentDirectory, makeExportBaseName(psdFileName))
+  await writeEntriesToTauriDirectory(
+    entries,
+    config,
+    exportRoot.path,
+    dpiX,
+    dpiY,
+    onProgress,
+  )
+
+  return exportRoot.path
+}
+
 async function saveEntriesToTauriDirectory(
   entries: OutputEntry[],
   config: OutputConfig,
@@ -77,8 +103,6 @@ async function saveEntriesToTauriDirectory(
   defaultDirectory?: string,
 ): Promise<string> {
   const { open } = await import('@tauri-apps/plugin-dialog')
-  const { writeFile } = await import('@tauri-apps/plugin-fs')
-  const { join } = await import('@tauri-apps/api/path')
   const defaultPath = await makeTauriDirectoryDialogDefaultPath(defaultDirectory, psdFileName)
 
   const selected = await open({
@@ -91,6 +115,21 @@ async function saveEntriesToTauriDirectory(
   if (selected === null) throw createAbortError()
 
   const exportRoot = await createUniqueChildDirectoryPath(selected, makeExportBaseName(psdFileName))
+  await writeEntriesToTauriDirectory(entries, config, exportRoot.path, dpiX, dpiY, onProgress)
+
+  return exportRoot.name
+}
+
+async function writeEntriesToTauriDirectory(
+  entries: OutputEntry[],
+  config: OutputConfig,
+  exportRootPath: string,
+  dpiX = 0,
+  dpiY = 0,
+  onProgress?: (done: number, total: number) => void,
+): Promise<void> {
+  const { writeFile } = await import('@tauri-apps/plugin-fs')
+  const { join } = await import('@tauri-apps/api/path')
   const preparedEntries = prepareOutputEntries(entries, config)
   const directoryCache = new Map<string, string>()
 
@@ -103,15 +142,13 @@ async function saveEntriesToTauriDirectory(
     onProgress,
   )) {
     const parentDirectory = await ensureDirectoryPathByString(
-      exportRoot.path,
+      exportRootPath,
       entry.segments.slice(0, -1),
       directoryCache,
     )
     const filePath = await join(parentDirectory, entry.fileName)
     await writeFile(filePath, new Uint8Array(await entry.input.arrayBuffer()))
   }
-
-  return exportRoot.name
 }
 
 async function makeTauriDirectoryDialogDefaultPath(

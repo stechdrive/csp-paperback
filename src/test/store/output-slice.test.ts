@@ -3,7 +3,10 @@ import { useAppStore } from '../../store'
 import { DEFAULT_OUTPUT_CONFIG } from '../../types'
 
 beforeEach(() => {
-  useAppStore.setState({ outputConfig: { ...DEFAULT_OUTPUT_CONFIG } })
+  useAppStore.setState({
+    outputConfig: { ...DEFAULT_OUTPUT_CONFIG },
+    quickExportConfig: { ...DEFAULT_OUTPUT_CONFIG },
+  })
 })
 
 describe('output-slice', () => {
@@ -24,6 +27,14 @@ describe('output-slice', () => {
   it('setFormatでpngに変更すると背景がtransparentになる', () => {
     useAppStore.getState().setFormat('png')
     expect(useAppStore.getState().outputConfig.background).toBe('transparent')
+  })
+
+  it('出力設定変更をクイック書き出し設定にも保存する', () => {
+    useAppStore.getState().setFormat('png')
+    useAppStore.getState().setStructure('hierarchy')
+    useAppStore.getState().setExcludeAutoMarked(true)
+
+    expect(useAppStore.getState().quickExportConfig).toEqual(useAppStore.getState().outputConfig)
   })
 
   it('pngのときはtransparent背景を選択できる', () => {
