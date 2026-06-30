@@ -9,6 +9,7 @@ const TOC = [
   { id: 'problem', label: 'CSPセル出力の課題' },
   { id: 'overview', label: 'CSP Paperbackとは' },
   { id: 'workflow', label: '基本ワークフロー' },
+  { id: 'quick-export', label: 'クイック書き出し' },
   { id: 'example', label: 'サンプルで理解する' },
   { id: 'auto-mark', label: '単体出力の指定方法' },
   { id: 'single-mark', label: '★で後から指定' },
@@ -164,6 +165,9 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   <span className={styles.strong}>仮想セル</span> — 任意のセルとBGなどのレイヤーを自由に組み合わせて合成画像を出力
                 </li>
                 <li>
+                  <span className={styles.strong}>デスクトップ版クイック書き出し</span> — PSD と XDTS を EXE にドロップして、確認操作なしで同じフォルダへ一括出力
+                </li>
+                <li>
                   <span className={styles.strong}>工程フォルダリスト</span> — セル内のフォルダ名に応じて、演出、作監など
                   自動でサフィックス付き分離出力
                 </li>
@@ -219,7 +223,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                       「ファイルを開く」ボタンで PSD と XDTS を同時選択して開きます
                       （ドラッグ＆ドロップにも対応）。
                       XDTSのトラック情報からアニメーションフォルダが自動検出されます。
-                      CSP側で非表示だったためXDTSに出てこないフォルダなど、XDTSから拾えないものだけレイヤーツリーから補助的に手動指定できます。
+                      CSP側で非表示だったためXDTSに出てこないフォルダは自動検出されないので、必要なものだけ表示状態にしてレイヤーツリーから補助的に手動指定できます。
                       出力対象のレイヤーを選ぶと出力時のプレビューが表示されます。XDTS読み込み済みの場合はシークバーでタイムシートを再生した状態を確認できます。
                     </div>
                   </div>
@@ -245,7 +249,79 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               </div>
             </section>
 
-            {/* ===== 4. サンプルで理解する ===== */}
+            {/* ===== 4. クイック書き出し ===== */}
+            <section className={styles.section} data-section="quick-export">
+              <h2 className={styles.h1}>⚡ クイック書き出し</h2>
+
+              <p className={styles.p}>
+                デスクトップ版では、<span className={styles.strong}>PSD と XDTS を1つずつ EXE またはショートカットにドロップ</span>すると、
+                画面上で設定を触らずに、自動で読み込みから書き出しまで実行できます。
+                同じ設定で大量のカットを書き出すときに使う機能です。
+              </p>
+
+              <div className={styles.calloutInfo}>
+                <span className={styles.strong}>デスクトップ版のダウンロード：</span>
+                最新版のEXEは{' '}
+                <a
+                  className={styles.externalLink}
+                  href="https://github.com/stechdrive/csp-paperback/releases"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  GitHub Releases
+                </a>
+                {' '}から取得できます。
+              </div>
+
+              <div className={styles.stepList}>
+                <div className={styles.step}>
+                  <div className={styles.stepNum}>1</div>
+                  <div className={styles.stepBody}>
+                    <div className={styles.stepTitle}>先に出力設定を決める</div>
+                    <div className={styles.stepDesc}>
+                      アプリを普通に起動して、JPG/PNG、背景、階層/フラット、工程名の位置、どの工程・単体出力を含めるかを設定します。
+                      クイック書き出しでもこの設定が使われます。
+                    </div>
+                  </div>
+                </div>
+                <div className={styles.step}>
+                  <div className={styles.stepNum}>2</div>
+                  <div className={styles.stepBody}>
+                    <div className={styles.stepTitle}>PSD と XDTS を EXE にドロップ</div>
+                    <div className={styles.stepDesc}>
+                      <code className={styles.code}>cut001.psd</code> と <code className={styles.code}>cut001.xdts</code> のように、
+                      PSD と XDTS を1つずつ選んで CSP Paperback の EXE またはショートカットへドロップします。
+                    </div>
+                  </div>
+                </div>
+                <div className={styles.step}>
+                  <div className={styles.stepNum}>3</div>
+                  <div className={styles.stepBody}>
+                    <div className={styles.stepTitle}>XDTSと同じ場所へ自動出力</div>
+                    <div className={styles.stepDesc}>
+                      XDTS があるフォルダの中に、PSD名を元にした出力フォルダを作って書き出します。
+                      同名フォルダがある場合は末尾に番号を付けて衝突を避けます。
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.calloutInfo}>
+                <span className={styles.strong}>使えるファイル：</span>
+                クイック書き出しは <code className={styles.code}>.psd</code> と <code className={styles.code}>.xdts</code> を
+                <span className={styles.strong}> 1つずつ</span>渡した場合だけ動きます。
+                複数PSD、複数XDTS、PSDだけ、XDTSだけではエラーになります。
+              </div>
+
+              <div className={styles.calloutTip}>
+                <span className={styles.strong}>💡 向いている運用：</span>
+                クイック書き出し中はレイヤーツリーで★や🎬を追加する確認工程がありません。
+                カットごとに出したい背景原図・撮影指示・修正工程は、CSP側で <code className={styles.code}>_</code> 命名や工程フォルダ名を整えておくと安定します。
+                名前を変えたくない素材をカットごとに★指定したい場合は、アプリを普通に起動して読み込んでから書き出してください。
+              </div>
+            </section>
+
+            {/* ===== 5. サンプルで理解する ===== */}
             <section className={styles.section} data-section="example">
               <h2 className={styles.h1}>📋 サンプルで理解する</h2>
 
@@ -260,13 +336,13 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 <div className={styles.layerRow}>
                   <span className={styles.iconLayer}>◆</span>
                   <span className={styles.layerName}>memo</span>
-                  <span className={styles.labelContext}>コンテキスト（全出力に合成）</span>
+                  <span className={styles.labelContext}>共通素材（全出力に重なる）</span>
                 </div>
                 {/* Frame */}
                 <div className={styles.layerRow}>
                   <span className={styles.iconFolder}>📁</span>
                   <span className={styles.layerName}>Frame</span>
-                  <span className={styles.labelContext}>コンテキスト（全出力に合成）</span>
+                  <span className={styles.labelContext}>共通素材（全出力に重なる）</span>
                 </div>
                 {/* _撮影指示 */}
                 <div className={styles.layerRow}>
@@ -455,15 +531,15 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               <p className={styles.p}>
                 このサンプルで出力すると、以下のファイルが生成されます。
                 各ファイルは<span className={styles.strong}>対象レイヤー</span>と
-                <span className={styles.strong}>コンテキストレイヤー</span>（memo, Frame）を合成した結果です。
+                <span className={styles.strong}>共通素材</span>（memo, Frame）を重ねた結果です。
                 合成式はレイヤーツリーの上（前面）→ 下（背面）の順で表記しています。
               </p>
 
               <div className={styles.calloutInfo}>
-                <span className={styles.strong}>単体出力の素材は、他の出力へ自動合成されません。</span>
-                通常フォルダの中に <code className={styles.code}>_BG</code> や ★ マーク素材があっても、
-                それらは独立した出力単位として扱われ、アニメセルや別素材のコンテキストから外れます。
-                通常の子が残る親フォルダは、その通常部分だけがコンテキストとして合成されます。
+                <span className={styles.strong}>単体出力の素材は、他の画像には混ざりません。</span>
+                同じフォルダの中に <code className={styles.code}>_BG</code> や ★ マーク素材があっても、
+                それらは別ファイルとして扱われ、アニメセルや別素材の画像には入りません。
+                同じ親フォルダの中に普通の素材が残っている場合は、その普通の素材だけが一緒に重なります。
               </div>
 
               <div className={styles.compositeList}>
@@ -574,12 +650,12 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               </div>
 
               <div className={styles.calloutTip}>
-                <span className={styles.strong}>💡 コンテキストレイヤーとは：</span>
-                ルート直下でアニメーションフォルダでも★マークでもない通常レイヤーは
-                <span className={styles.em}>コンテキストレイヤー</span>として、すべての出力画像に合成されます。
-                フレーム枠線やメモなど、全セルに共通して含めたいレイヤーをルート直下に置くだけで自動的に反映されます。
-                通常フォルダ内に単体出力素材が混在する場合は、その単体出力素材だけを除外し、通常の子はコンテキストとして残します。
-                一方 <code className={styles.code}>_pool</code> は <span className={styles.strong}>_付きフォルダの除外リスト</span> に一致するため、先頭が _ でも単体出力されません。
+                <span className={styles.strong}>💡 一緒に重なる共通素材：</span>
+                フレーム枠線、メモ、用紙など、表示中の普通のレイヤーはセルや単体素材を書き出すときに一緒に重なります。
+                このヘルプでは必要に応じて、それを<span className={styles.em}>コンテキストレイヤー</span>と呼びます。
+                フォルダの中に <code className={styles.code}>_BG</code> や ★ 素材が混ざっていても、その素材だけは他の画像に混ざらず、残りの普通のレイヤーだけが一緒に重なります。
+                <code className={styles.code}>_pool</code> のように除外リストに入っている名前は、先頭が _ でも別ファイルにはなりません。
+                表示したままだと普通の素材として重なることがあるので、出力に入れたくない作業用フォルダは非表示にしてください。
               </div>
             </section>
 
@@ -612,7 +688,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   <span className={styles.layerNameMark}>_撮影指示</span>
                   <span className={styles.labelMark}>★ 自動</span>
                   <span style={{ color: 'var(--color-text-subtle)', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
-                    → 直下が出力対象だけなら整理用として親は出力しない
+                    → 直下が別ファイル素材だけなら整理用として親は出力しない
                   </span>
                 </div>
                 <div className={`${styles.layerRow} ${styles.indent1}`}>
@@ -633,7 +709,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   <span className={styles.layerNameMark}>_原図</span>
                   <span className={styles.labelMark}>★ 自動</span>
                   <span style={{ color: 'var(--color-text-subtle)', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
-                    → 直下が出力対象だけなら整理用として親は出力しない
+                    → 直下が別ファイル素材だけなら整理用として親は出力しない
                   </span>
                 </div>
                 <div className={`${styles.layerRow} ${styles.indent1}`}>
@@ -668,17 +744,22 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               <ul className={styles.ul}>
                 <li>
                   レイヤーフォルダ名の先頭に <code className={styles.code}>_</code> を付ける方法は
-                  <span className={styles.strong}>フォルダ限定</span>の事前指定です。
+                  CSP側で先に「これは別ファイルで出したい」と決めておく方法です。
                   <span className={styles.em}>★</span> は読み込み後にレイヤー・フォルダのどちらにも付けられます
                 </li>
                 <li>
-                  単体出力にした素材は、アニメーションセルの合成対象から外れ、別ファイルとして出力されます
+                  CSPで非表示にして保存した <code className={styles.code}>_</code> フォルダも、読み込み直後は「出したい素材」として表示ONになります。
+                  アプリ上で目を閉じたものは出力されません
                 </li>
                 <li>
-                  通常フォルダの中に単体出力素材がある場合、通常の子はコンテキストに残り、単体出力素材だけが他の出力の合成対象から外れます
+                  表示中の単体出力素材は、アニメーションセルの合成対象から外れ、別ファイルとして出力されます
                 </li>
                 <li>
-                  <code className={styles.code}>_原図</code> のような親フォルダでも、直下の表示中要素が出力対象だけなら整理用コンテナとして扱われ、親自身の統合画像は出力しません
+                  フォルダ内に単体出力素材と普通の素材が混ざっている場合、単体出力素材だけが別ファイルになり、普通の素材はセル画像に一緒に重なります
+                </li>
+                <li>
+                  <code className={styles.code}>_原図</code> のような親フォルダの直下が「別ファイルで出す素材」だけなら、親は整理用フォルダとして扱い、親全体をまとめた画像は出しません。
+                  直下に普通のレイヤーや普通のフォルダが混じる場合は、親全体をまとめた画像も出します
                 </li>
                 <li>
                   <span className={styles.strong}>アニメーションフォルダの中</span>にある、先頭に _ を付けたレイヤーフォルダは自動マークされません
@@ -691,7 +772,8 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 <li>
                     <span className={styles.strong}>_付きフォルダの除外リスト</span>
                     （デフォルト: <code className={styles.code}>_old</code>、<code className={styles.code}>_pool</code>）
-                    に一致するフォルダは、先頭が _ でも単体出力の対象になりません
+                    に一致するフォルダは、先頭が _ でも別ファイルにはなりません。
+                    表示中なら普通の素材としてセル画像に重なることがあるため、完全に出力へ入れたくない作業用フォルダは非表示にしてください
                 </li>
               </ul>
 
@@ -773,8 +855,8 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               </table>
 
               <div className={styles.calloutInfo}>
-                マークされたレイヤーは、上下のコンテキストレイヤー（アニメーションフォルダ外の通常レイヤー）
-                と合成された状態で出力されます。アニメーションセルの素材には混ぜ込まず、合成モード（乗算、スクリーン等）もそのまま反映されます。
+                マークされたレイヤーは、フレーム枠線やメモなど周囲の共通素材と重なった状態で出力されます。
+                アニメーションセルの素材には混ぜ込まず、合成モード（乗算、スクリーン等）もそのまま反映されます。
               </div>
             </section>
 
@@ -793,9 +875,11 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               </p>
 
               <div className={styles.calloutTip}>
-                <span className={styles.strong}>⚠ 書き出し前の確認：</span>
-                書き出したい素材が入っているアニメーションフォルダは、親フォルダも含めて表示状態にしてください。
-                非表示のまま書き出してXDTSに出なかったフォルダも、この手動アニメーションフォルダ指定で補えます。
+                <span className={styles.strong}>⚠ 非表示とXDTS：</span>
+                CSP側でアニメーションフォルダを非表示にしたままXDTSを書き出すと、そのトラックがXDTSに入らないことがあります。
+                XDTSに入っていないフォルダは、PSDに残っていても自動ではセル出力になりません。
+                必要な場合は、親フォルダも含めて表示状態にしてから 🎬 で指定してください。
+                アプリ上で非表示にしたアニメーションフォルダやセルは書き出されません。
               </div>
 
               <div className={styles.layerDiagram}>
@@ -939,21 +1023,27 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               <h3 className={styles.h2}>発動条件</h3>
               <ul className={styles.ul}>
                 <li>
-                  対象フォルダの名前が <code className={styles.code}>_</code> で始まる（単体出力マークの対象である）
+                  フォルダ名が <code className={styles.code}>_</code> で始まり、_付きフォルダの除外リストに入っていない
                 </li>
                 <li>
-                  対象フォルダの<span className={styles.strong}>直接の子</span>のいずれかが、工程フォルダリストに登録された名前のフォルダである（孫階層は見ません）
+                  そのフォルダの<span className={styles.strong}>直下</span>に、工程フォルダリストへ登録した名前のフォルダがある（孫階層は見ません）
                 </li>
                 <li>
-                  対象フォルダがまだアニメーションフォルダとして確定していない（XDTS検出や手動指定が優先）
+                  そのフォルダがXDTS検出や🎬手動指定で、すでにセル出力のフォルダになっていない
                 </li>
                 <li>
-                  対象フォルダの祖先がアニメーションフォルダではない（アニメーションフォルダは入れ子にしないCSPの仕様に準拠）
+                  そのフォルダが、別のアニメーションフォルダの中に入っていない
                 </li>
                 <li>
-                  対象フォルダの子孫にすでに自動アニメ化済みのフォルダがない（ネスト時は<span className={styles.strong}>内側を優先</span>）
+                  そのフォルダの中に、すでにセル出力になるフォルダがない（入れ子になった場合は<span className={styles.strong}>内側を優先</span>）
                 </li>
               </ul>
+
+              <div className={styles.calloutInfo}>
+                CSPで非表示にして保存した <code className={styles.code}>_</code> フォルダも、読み込み直後は「出したい素材」として表示ONになり、この判定の対象になります。
+                一方、CSPではアニメーションフォルダだったが非表示のままXDTSに出なかったフォルダは、この自動アニメ化だけでは拾われません。
+                必要な場合は表示状態にして 🎬 で手動指定してください。
+              </div>
 
               <h3 className={styles.h2}>セル名の扱い</h3>
               <p className={styles.p}>
@@ -981,7 +1071,8 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 <span className={styles.strong}>💡 優先順位：</span>
                 アニメーションフォルダの判定は
                 <span className={styles.em}>XDTS検出 → 手動指定 → 自動アニメ化 → 単体出力</span>
-                の順で確定します。XDTSや🎬で明示した方が常に優先されるので、意図しない自動化を無効にしたい場合は🎬を外すか、工程フォルダリストから該当名を取り除いてください。
+                の順で決まります。XDTSや🎬で明示した方が常に優先されます。
+                手動指定をやめたい場合は🎬を外し、自動アニメ化だけを止めたい場合は工程フォルダリストから該当名を取り除いてください。
               </div>
 
               <div className={styles.calloutInfo}>
@@ -1282,12 +1373,13 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                     </td>
                   </tr>
                   <tr>
-                    <td><span className={styles.strong}>セル命名</span></td>
-                    <td>連番 / 連番セル名 / セル名</td>
+                    <td><span className={styles.strong}>出力名</span></td>
+                    <td>連番 / 連番セル名 / セル名 / シート連番</td>
                     <td>
                       連番: <code className={styles.code}>A_0001.jpg</code>{'\n'}
                       連番セル名: <code className={styles.code}>A_01_ア.jpg</code>{'\n'}
-                      セル名: <code className={styles.code}>A_ア.jpg</code>（セル名をそのまま使用）
+                      セル名: <code className={styles.code}>A_ア.jpg</code>{'\n'}
+                      シート連番: タイムシート上の順番で番号を合わせる
                     </td>
                   </tr>
                   <tr>
@@ -1301,9 +1393,79 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 </tbody>
               </table>
 
+              <h3 className={styles.h2}>出力名のかんたん例</h3>
+              <p className={styles.p}>
+                たとえばアニメーションフォルダ <code className={styles.code}>A</code> に
+                セル <code className={styles.code}>1</code>、<code className={styles.code}>2</code>、<code className={styles.code}>3</code> があり、
+                2番だけ演出修正（<code className={styles.code}>_e</code>）がある場合です。
+              </p>
+
+              <table className={styles.comparisonTable}>
+                <thead>
+                  <tr>
+                    <th>出力名</th>
+                    <th>どういう時に使う？</th>
+                    <th>出力例</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>連番</td>
+                    <td>セル名より、出力順の番号でそろえたい</td>
+                    <td>
+                      <code className={styles.code}>A_0001.jpg</code><br />
+                      <code className={styles.code}>A_0002.jpg</code><br />
+                      <code className={styles.code}>A_0003.jpg</code>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>連番セル名</td>
+                    <td>番号もセル名も残したい</td>
+                    <td>
+                      <code className={styles.code}>A_01_1.jpg</code><br />
+                      <code className={styles.code}>A_02_2.jpg</code><br />
+                      <code className={styles.code}>A_03_3.jpg</code>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>セル名</td>
+                    <td>CSPのセル名をそのままファイル名に使いたい</td>
+                    <td>
+                      <code className={styles.code}>A_1.jpg</code><br />
+                      <code className={styles.code}>A_2.jpg</code><br />
+                      <code className={styles.code}>A_3.jpg</code>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>シート連番</td>
+                    <td>本体と修正工程を、タイムシート上の同じ位置の番号でそろえたい</td>
+                    <td>
+                      <code className={styles.code}>A_0001.jpg</code><br />
+                      <code className={styles.code}>A_0002.jpg</code><br />
+                      <code className={styles.code}>A_0002_e.jpg</code><br />
+                      <code className={styles.code}>A_0003.jpg</code>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <div className={styles.calloutTip}>
+                <span className={styles.strong}>💡 シート連番はこういう意味です：</span>
+                修正工程が2番にだけある場合、普通の連番だと修正工程側では最初の1枚なので
+                <code className={styles.code}>A_0001_e.jpg</code> になりがちです。
+                シート連番にすると、タイムシート上で2番目の位置にある修正として
+                <code className={styles.code}>A_0002_e.jpg</code> になります。
+              </div>
+
               <div className={styles.calloutInfo}>
                 <span className={styles.strong}>DPI情報：</span>
                 PSD に含まれる DPI（解像度）情報は、出力する JPG/PNG ファイルにも埋め込まれます。
+              </div>
+
+              <div className={styles.calloutTip}>
+                <span className={styles.strong}>クイック書き出しとの関係：</span>
+                デスクトップ版で PSD と XDTS を EXE にドロップして書き出す場合も、この画面で保存されている出力設定を使います。
+                先に通常起動で設定を確認しておくと、その後はドロップだけで同じ設定の書き出しを繰り返せます。
               </div>
 
               <h3 className={styles.h2}>合成エンジンの不透明度ルール</h3>
@@ -1327,7 +1489,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 <tbody>
                   <tr>
                     <td>
-                      <span className={styles.strong}>構造コンテナ</span>
+                      <span className={styles.strong}>フォルダなどの入れ物</span>
                       <br />
                       <span style={{ fontSize: '0.75rem', color: 'var(--color-text-dim)' }}>
                         工程フォルダ本体、アニメーションフォルダ直下の単体セルレイヤー など
@@ -1397,6 +1559,10 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 <li>
                   <span className={styles.strong}>ドラッグ＆ドロップ</span> —
                   PSD、XDTS、JSON ファイルをウィンドウにドロップで読み込み
+                </li>
+                <li>
+                  <span className={styles.strong}>EXEへのドロップ</span> —
+                  デスクトップ版では PSD と XDTS を1つずつ EXE またはショートカットにドロップすると、そのままクイック書き出しを開始
                 </li>
                 <li>
                   <span className={styles.strong}>複数ファイル同時選択</span> —
