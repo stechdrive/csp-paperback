@@ -14,10 +14,17 @@ import type { CspLayer, XdtsData, XdtsTrack } from '../types'
 export function buildDefaultVisibilityOverrides(
   layers: CspLayer[],
   xdts?: XdtsData | null,
+  sharedCutMode = false,
 ): Map<string, boolean> {
   const overrides = new Map<string, boolean>()
   addAutoMarkedShowOverrides(layers, overrides)
-  if (xdts) addXdtsUnusedCellHiddenOverrides(layers, xdts, overrides, true)
+  if (xdts) {
+    if (sharedCutMode) {
+      addXdtsAnimationFolderShowOverrides(layers, overrides)
+    } else {
+      addXdtsUnusedCellHiddenOverrides(layers, xdts, overrides, true)
+    }
+  }
   return overrides
 }
 
@@ -67,6 +74,24 @@ function addAutoMarkedShowOverrides(
     if (layer.autoMarked && layer.hidden) overrides.set(layer.id, false)
     if (layer.children.length > 0) addAutoMarkedShowOverrides(layer.children, overrides)
   }
+}
+
+/**
+ * 兼用カット用: XDTS と対応したアニメーションフォルダ自体だけを初期表示ONにする。
+ * 配下セルの表示状態は PSD の状態を尊重し、XDTS のキー有無では変更しない。
+ */
+export function addXdtsAnimationFolderShowOverrides(
+  layers: CspLayer[],
+  overrides: Map<string, boolean>,
+): Map<string, boolean> {
+  for (const layer of layers) {
+    if (layer.isAnimationFolder && layer.animationFolder?.detectedBy === 'xdts') {
+      if (layer.hidden) overrides.set(layer.id, false)
+      continue
+    }
+    if (layer.children.length > 0) addXdtsAnimationFolderShowOverrides(layer.children, overrides)
+  }
+  return overrides
 }
 
 function collectTimelineReachableCellIds(

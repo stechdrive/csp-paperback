@@ -1,12 +1,14 @@
 import type { StateCreator } from 'zustand'
 import type { ProjectSettings, ProcessFolderEntry, CellNamingMode } from '../types'
 import { DEFAULT_PROJECT_SETTINGS } from '../types'
+import { buildDefaultVisibilityOverrides } from '../utils/default-visibility'
 import type { AppStore } from './index'
 
 export interface ProjectSlice {
   projectSettings: ProjectSettings
   updateProcessTable: (table: ProcessFolderEntry[]) => void
   setCellNamingMode: (mode: CellNamingMode) => void
+  setSharedCutMode: (enabled: boolean) => void
   updateArchivePatterns: (patterns: string[]) => void
   importSettings: (json: string) => void
   exportSettings: () => string
@@ -23,6 +25,21 @@ export const createProjectSlice: StateCreator<AppStore, [], [], ProjectSlice> = 
   setCellNamingMode: (mode) => {
     get().pushHistory()
     set({ projectSettings: { ...get().projectSettings, cellNamingMode: mode } })
+  },
+
+  setSharedCutMode: (enabled) => {
+    const { projectSettings, layerTree, xdtsData } = get()
+    if (!!projectSettings.sharedCutMode === enabled) return
+
+    get().pushHistory()
+    const nextSettings = { ...projectSettings, sharedCutMode: enabled }
+    const nextState: Partial<AppStore> = { projectSettings: nextSettings }
+
+    if (layerTree.length > 0) {
+      nextState.visibilityOverrides = buildDefaultVisibilityOverrides(layerTree, xdtsData, enabled)
+    }
+
+    set(nextState as AppStore)
   },
 
   updateArchivePatterns: (patterns) => {

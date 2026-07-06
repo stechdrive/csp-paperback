@@ -46,6 +46,7 @@ export function ExportSettings() {
   const setStructure = useAppStore(s => s.setStructure)
   const setProcessSuffixPosition = useAppStore(s => s.setProcessSuffixPosition)
   const setCellNamingMode = useAppStore(s => s.setCellNamingMode)
+  const setSharedCutMode = useAppStore(s => s.setSharedCutMode)
   const toggleProcessSuffixExclusion = useAppStore(s => s.toggleProcessSuffixExclusion)
   const setAllProcessSuffixExclusions = useAppStore(s => s.setAllProcessSuffixExclusions)
   const setExcludeAutoMarked = useAppStore(s => s.setExcludeAutoMarked)
@@ -130,6 +131,18 @@ export function ExportSettings() {
           </Tooltip>
         </div>
         <span className={styles.nameSample}>{nameSample}</span>
+
+        <Tooltip content={t.export.sharedCutHint} placement="bottom">
+          <label className={styles.switchLabel}>
+            <span className={styles.label}>{t.export.sharedCut}</span>
+            <span
+              className={`${styles.switch} ${projectSettings.sharedCutMode ? styles.switchOn : ''}`}
+              onClick={() => setSharedCutMode(!projectSettings.sharedCutMode)}
+              role="switch"
+              aria-checked={!!projectSettings.sharedCutMode}
+            />
+          </label>
+        </Tooltip>
 
         <Tooltip content={t.export.structureHint} placement="bottom">
           <label className={styles.switchLabel}>

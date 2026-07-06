@@ -29,6 +29,7 @@ export function ExportDialog({ onClose }: ExportDialogProps) {
   const setBackground = useAppStore(s => s.setBackground)
   const setStructure = useAppStore(s => s.setStructure)
   const setProcessSuffixPosition = useAppStore(s => s.setProcessSuffixPosition)
+  const setSharedCutMode = useAppStore(s => s.setSharedCutMode)
   const toggleProcessSuffixExclusion = useAppStore(s => s.toggleProcessSuffixExclusion)
   const setAllProcessSuffixExclusions = useAppStore(s => s.setAllProcessSuffixExclusions)
   const setExcludeAutoMarked = useAppStore(s => s.setExcludeAutoMarked)
@@ -100,6 +101,21 @@ export function ExportDialog({ onClose }: ExportDialogProps) {
               aria-checked={outputConfig.structure === 'hierarchy'}
             />
           </label>
+        </div>
+
+        {/* 兼用カット */}
+        <div className={styles.section}>
+          <Tooltip content={t.export.sharedCutHint} placement="bottom">
+            <label className={styles.switchRow}>
+              <span className={styles.label}>{t.export.sharedCut}</span>
+              <span
+                className={`${styles.switch} ${projectSettings.sharedCutMode ? styles.switchOn : ''}`}
+                onClick={() => setSharedCutMode(!projectSettings.sharedCutMode)}
+                role="switch"
+                aria-checked={!!projectSettings.sharedCutMode}
+              />
+            </label>
+          </Tooltip>
         </div>
 
 

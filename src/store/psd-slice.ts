@@ -123,7 +123,7 @@ export const createPsdSlice: StateCreator<AppStore, [], [], PsdSlice> = (set, ge
     }
     collectExpanded(tree)
 
-    const initialVisibility = buildDefaultVisibilityOverrides(tree, xdts)
+    const initialVisibility = buildDefaultVisibilityOverrides(tree, xdts, !!get().projectSettings.sharedCutMode)
 
     const manualAnimFolderIds = sanitizeManualAnimFolderIds(tree, get().manualAnimFolderIds)
 

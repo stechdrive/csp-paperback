@@ -294,7 +294,7 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
 
   resetVisibility: () => {
     get().pushHistory()
-    const { layerTree, xdtsData } = get()
-    set({ visibilityOverrides: buildDefaultVisibilityOverrides(layerTree, xdtsData) })
+    const { layerTree, xdtsData, projectSettings } = get()
+    set({ visibilityOverrides: buildDefaultVisibilityOverrides(layerTree, xdtsData, !!projectSettings.sharedCutMode) })
   },
 })

@@ -23,6 +23,8 @@ export const ja = {
     processSuffixPositionHint: 'OFF: セル番号の後ろ（A_0001_e.jpg）\nON: セル番号の前（A_e_0001.jpg）\nONにすると工程ごとにシーケンス読み込みしやすくなります。',
     processSuffixAfterCell: '後ろ',
     processSuffixBeforeCell: '前',
+    sharedCut: '兼用カット',
+    sharedCutHint: 'このカットと兼用になっている他のカットで使うセルもまとめて書き出します。',
     quality: '品質',
     cancel: 'キャンセル',
     exportZip: '書き出し',
