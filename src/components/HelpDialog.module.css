@@ -178,6 +178,49 @@
   color: var(--color-info-soft);
 }
 
+.templateDownloadRow {
+  margin-top: 0.9rem;
+}
+
+.templateDownloadButton {
+  max-width: 100%;
+  padding: 0.5rem 0.85rem;
+  border: 1px solid rgba(var(--color-info-rgb), 0.38);
+  border-radius: 5px;
+  background: rgba(var(--color-info-rgb), 0.13);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  white-space: normal;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.templateDownloadButton:hover:not(:disabled) {
+  background: rgba(var(--color-info-rgb), 0.22);
+  border-color: rgba(var(--color-info-rgb), 0.55);
+}
+
+.templateDownloadButton:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.templateDownloadStatus,
+.templateDownloadError {
+  margin-top: 0.4rem;
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+.templateDownloadStatus {
+  color: var(--color-success);
+}
+
+.templateDownloadError {
+  color: var(--color-danger);
+}
+
 /* ─── Bullet list ─── */
 .ul {
   margin: 0.5rem 0 0.75rem 0;

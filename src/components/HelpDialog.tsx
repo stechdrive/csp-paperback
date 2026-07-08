@@ -1,4 +1,5 @@
 import { useRef, useCallback } from 'react'
+import { SampleTemplateDownloadButton } from './SampleTemplateDownloadButton'
 import styles from './HelpDialog.module.css'
 
 interface HelpDialogProps {
@@ -9,6 +10,7 @@ const TOC = [
   { id: 'problem', label: 'CSPセル出力の課題' },
   { id: 'overview', label: 'CSP Paperbackとは' },
   { id: 'workflow', label: '基本ワークフロー' },
+  { id: 'sample-template', label: 'サンプルテンプレート' },
   { id: 'quick-export', label: 'クイック書き出し' },
   { id: 'example', label: 'サンプルで理解する' },
   { id: 'auto-mark', label: '単体出力の指定方法' },
@@ -246,6 +248,33 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 PSDとXDTSを読み込み済みの状態で新しいPSDまたはXDTSを開くと、新規プロジェクトとして読み直します。
                 工程フォルダリストと _付きフォルダの除外リストは設定ダイアログから保存・読み込みして共有できます。
                 各スタジオで使っているテンプレートや命名ルールに合わせて調整してください。
+              </div>
+            </section>
+
+            {/* ===== サンプル作画テンプレート ===== */}
+            <section className={styles.section} data-section="sample-template">
+              <h2 className={styles.h1}>サンプル作画テンプレート(.clip)</h2>
+
+              <p className={styles.p}>
+                CSP Paperbackの動作を試しやすいように、推奨作画工程をあらかじめ分けたClip Studio Paint用のサンプルテンプレートです。
+              </p>
+
+              <div className={styles.calloutInfo}>
+                <span className={styles.strong}>このテンプレートの使用は必須ではありません。</span>
+                普段使っているクリスタの作画ファイルから書き出したPSDでも利用できます。
+              </div>
+
+              <p className={styles.p}>
+                工程名は固定ではありません。スタジオや案件ごとの命名ルールに合わせて、設定画面の工程フォルダリストから変更できます。
+              </p>
+
+              <div className={styles.templateDownloadRow}>
+                <SampleTemplateDownloadButton
+                  className={styles.templateDownloadButton}
+                  statusClassName={styles.templateDownloadStatus}
+                  errorClassName={styles.templateDownloadError}
+                  label="サンプル作画テンプレート(.clip)をダウンロード"
+                />
               </div>
             </section>
 

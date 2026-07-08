@@ -177,6 +177,82 @@
   margin-bottom: 1rem;
 }
 
+.templateGuide {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  border: 1px solid rgba(var(--color-info-rgb), 0.24);
+  border-radius: 6px;
+  background: rgba(var(--color-info-rgb), 0.07);
+}
+
+.templateTitle {
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.5;
+  color: var(--color-text-primary);
+  margin-bottom: 0.35rem;
+}
+
+.templateText {
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.65;
+  color: var(--color-text-muted);
+}
+
+.templateText + .templateText {
+  margin-top: 0.3rem;
+}
+
+.templateStrong {
+  color: var(--color-text-primary);
+  font-weight: 700;
+}
+
+.templateAction {
+  margin-top: 0.65rem;
+}
+
+.templateButton {
+  width: 100%;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--color-text-primary);
+  background: rgba(var(--color-info-rgb), 0.14);
+  border: 1px solid rgba(var(--color-info-rgb), 0.34);
+  border-radius: 5px;
+  padding: 0.45rem 0.65rem;
+  cursor: pointer;
+  white-space: normal;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.templateButton:hover:not(:disabled) {
+  background: rgba(var(--color-info-rgb), 0.24);
+  border-color: rgba(var(--color-info-rgb), 0.52);
+}
+
+.templateButton:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.templateStatus,
+.templateError {
+  margin-top: 0.35rem;
+  font-size: 0.7rem;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.templateStatus {
+  color: var(--color-success);
+}
+
+.templateError {
+  color: var(--color-danger);
+}
+
 .emptyStep {
   display: flex;
   gap: 0.6rem;

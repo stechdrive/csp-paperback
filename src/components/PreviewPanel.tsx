@@ -8,6 +8,7 @@ import { OutputPreview } from './OutputPreview'
 import { ExportSettings } from './ExportSettings'
 import { TimelineSeekBar } from './TimelineSeekBar'
 import { useSampleLoader } from '../hooks/useSampleLoader'
+import { SampleTemplateDownloadButton } from './SampleTemplateDownloadButton'
 import styles from './PreviewPanel.module.css'
 
 function NavigatorCanvas({ height }: { height: number }) {
@@ -46,6 +47,32 @@ function SampleLoadButton() {
       <button className={styles.sampleButton} onClick={loadSample} disabled={loading}>
         {loading ? '読み込み中…' : 'サンプルデータで試す'}
       </button>
+    </div>
+  )
+}
+
+function SampleTemplateGuide() {
+  return (
+    <div className={styles.templateGuide}>
+      <div className={styles.templateTitle}>サンプル作画テンプレート(.clip)</div>
+      <p className={styles.templateText}>
+        CSP Paperbackの動作を試しやすいように、推奨作画工程をあらかじめ分けたClip Studio Paint用のサンプルテンプレートです。
+      </p>
+      <p className={styles.templateText}>
+        <strong className={styles.templateStrong}>このテンプレートの使用は必須ではありません。</strong>
+        普段使っているクリスタの作画ファイルから書き出したPSDでも利用できます。
+      </p>
+      <p className={styles.templateText}>
+        工程名はスタジオや案件のルールに合わせて、設定から変更できます。
+      </p>
+      <div className={styles.templateAction}>
+        <SampleTemplateDownloadButton
+          className={styles.templateButton}
+          statusClassName={styles.templateStatus}
+          errorClassName={styles.templateError}
+          label="サンプル作画テンプレート(.clip)をダウンロード"
+        />
+      </div>
     </div>
   )
 }
@@ -146,6 +173,8 @@ export function PreviewPanel() {
             )}
 
             <div className={styles.emptyTitle}>はじめに — ClipStudioPaint 側の準備</div>
+
+            <SampleTemplateGuide />
 
             <div className={styles.emptyStep}>
               <div className={styles.emptyStepNum}>1</div>
