@@ -52,6 +52,16 @@ The local `tauri:build` script runs Tauri with Rust path remapping so generated 
 
 For a local Windows handoff copy, set `CSP_PAPERBACK_EXE_COPY_DIR` in the environment or in ignored `.env.local`. After `npm run tauri:build` succeeds, the portable `csp-paperback.exe` is copied there. CI and release builds leave this unset, so GitHub Release assets are unchanged.
 
+## Update check
+
+The desktop app does not self-update or download binaries inside the app.
+Users can manually check for updates from the help dialog. That action fetches
+only the latest GitHub Release metadata from
+`https://api.github.com/repos/stechdrive/csp-paperback/releases/latest` and
+opens the GitHub Releases page in the user's default browser when an update is
+available. PSD/XDTS contents, file names, settings, and generated images are not
+sent.
+
 ## Web deployment
 
 The existing gh-pages flow remains unchanged:

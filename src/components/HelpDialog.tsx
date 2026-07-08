@@ -1,5 +1,6 @@
 import { useRef, useCallback } from 'react'
 import { SampleTemplateDownloadButton } from './SampleTemplateDownloadButton'
+import { UpdateCheckPanel } from './UpdateCheckPanel'
 import styles from './HelpDialog.module.css'
 
 interface HelpDialogProps {
@@ -9,6 +10,7 @@ interface HelpDialogProps {
 const TOC = [
   { id: 'problem', label: 'CSPセル出力の課題' },
   { id: 'overview', label: 'CSP Paperbackとは' },
+  { id: 'privacy', label: '通信とファイルアクセス' },
   { id: 'workflow', label: '基本ワークフロー' },
   { id: 'sample-template', label: 'サンプルテンプレート' },
   { id: 'quick-export', label: 'クイック書き出し' },
@@ -182,6 +184,33 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   合成モードをそのまま出力
                 </li>
               </ul>
+            </section>
+
+            {/* ===== 通信とファイルアクセス ===== */}
+            <section className={styles.section} data-section="privacy">
+              <h2 className={styles.h1}>通信とファイルアクセス</h2>
+
+              <p className={styles.p}>
+                CSP Paperback は、読み込んだ PSD / XDTS / 設定内容 / 生成画像を外部サーバーへ送信しません。
+                合成処理と画像生成は、ブラウザ版ではブラウザ内、デスクトップ版では端末内で完結します。
+              </p>
+
+              <div className={styles.calloutInfo}>
+                <span className={styles.strong}>更新確認について：</span>
+                デスクトップ版で「更新を確認」ボタンを押した時だけ、
+                GitHub Releases の最新バージョン情報を取得するために GitHub API へ通信します。
+                作品データ、ファイル名、設定内容、生成画像は送信しません。
+                最新版のダウンロードはアプリ内では行わず、ユーザーの既定ブラウザで GitHub Releases を開きます。
+              </div>
+
+              <div className={styles.calloutTip}>
+                <span className={styles.strong}>ブラウザ版の保存権限について：</span>
+                フォルダ書き出しでは、ブラウザの安全機能により選択したフォルダへの書き込み許可が求められます。
+                CSP Paperback は選択フォルダ内に出力用フォルダを作成し、生成した画像を書き込みます。
+                作品データをアップロードする処理ではありません。
+              </div>
+
+              <UpdateCheckPanel />
             </section>
 
             {/* ===== 3. 基本ワークフロー ===== */}

@@ -6,6 +6,7 @@ import { useIsMobile } from '../hooks/useIsMobile'
 import type { OutputDestination } from '../types/output'
 import type { LoadableFile } from '../platform/files'
 import { pickProjectFiles, supportsNativeOpenDialog } from '../platform/files'
+import { isDesktopRuntime } from '../platform/runtime'
 import { supportsDirectoryExport } from '../utils/directory-builder'
 import {
   MAX_MOBILE_UI_SCALE,
@@ -157,6 +158,7 @@ export function Toolbar({ onFiles, isLoading, error, notification, canUndo, canR
   const { isExporting, progress, error: exportError, startExport } = useExport()
   const isMobile = useIsMobile()
   const canExportToDirectory = supportsDirectoryExport()
+  const desktopRuntime = isDesktopRuntime()
 
   useEffect(() => {
     if (!showExportMenu) return
@@ -271,7 +273,9 @@ export function Toolbar({ onFiles, isLoading, error, notification, canUndo, canR
   const exportBtn = (
     <Tooltip
       content={canExportToDirectory
-        ? t.export.triggerHintChoice
+        ? desktopRuntime
+          ? t.export.triggerHintChoiceDesktop
+          : t.export.triggerHintChoiceBrowser
         : t.export.triggerHintZip}
       placement="bottom"
       disabled={showExportMenu}

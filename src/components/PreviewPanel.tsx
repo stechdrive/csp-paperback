@@ -10,6 +10,7 @@ import { TimelineSeekBar } from './TimelineSeekBar'
 import { useSampleLoader } from '../hooks/useSampleLoader'
 import { SampleTemplateDownloadButton } from './SampleTemplateDownloadButton'
 import { isDesktopRuntime } from '../platform/runtime'
+import { DESKTOP_RELEASES_URL } from '../platform/external-links'
 import styles from './PreviewPanel.module.css'
 
 function NavigatorCanvas({ height }: { height: number }) {
@@ -40,7 +41,6 @@ function NavigatorCanvas({ height }: { height: number }) {
 const NAV_HEIGHT_DEFAULT = 270
 const NAV_HEIGHT_MIN = 40
 const NAV_HEIGHT_MAX = 600
-const DESKTOP_RELEASE_URL = 'https://github.com/stechdrive/csp-paperback/releases'
 
 function SampleLoadButton() {
   const { loadSample, loading } = useSampleLoader()
@@ -49,6 +49,20 @@ function SampleLoadButton() {
       <button className={styles.sampleButton} onClick={loadSample} disabled={loading}>
         {loading ? '読み込み中…' : 'サンプルデータで試す'}
       </button>
+    </div>
+  )
+}
+
+function PrivacyNotice() {
+  const desktop = isDesktopRuntime()
+  return (
+    <div className={styles.privacyNotice}>
+      <div className={styles.privacyTitle}>作品データは外部送信しません</div>
+      <div className={styles.privacyText}>
+        {desktop
+          ? 'PSD/XDTSの処理と画像生成は端末内で完結します。更新確認ボタンを押した時のみ GitHub Releases の最新情報を確認します。'
+          : 'PSD/XDTSの処理と画像生成はブラウザ内で完結します。作品データをアップロードする処理ではありません。'}
+      </div>
     </div>
   )
 }
@@ -90,7 +104,7 @@ function DesktopReleaseGuide() {
       </p>
       <a
         className={styles.desktopGuideLink}
-        href={DESKTOP_RELEASE_URL}
+        href={DESKTOP_RELEASES_URL}
         target="_blank"
         rel="noreferrer"
       >
@@ -197,6 +211,7 @@ export function PreviewPanel() {
 
             <div className={styles.emptyTitle}>はじめに — ClipStudioPaint 側の準備</div>
 
+            <PrivacyNotice />
             <SampleTemplateGuide />
             <DesktopReleaseGuide />
 

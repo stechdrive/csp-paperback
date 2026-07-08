@@ -1,0 +1,90 @@
+.panel {
+  margin-top: 0.9rem;
+  padding: 0.75rem;
+  border: 1px solid rgba(var(--color-info-rgb), 0.22);
+  border-radius: 6px;
+  background: rgba(var(--color-info-rgb), 0.06);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  justify-content: space-between;
+}
+
+.title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.5;
+  color: var(--color-text-primary);
+}
+
+.note {
+  font-size: 0.75rem;
+  line-height: 1.55;
+  color: var(--color-text-muted);
+}
+
+.button,
+.linkButton {
+  flex-shrink: 0;
+  padding: 0.42rem 0.75rem;
+  border: 1px solid rgba(var(--color-info-rgb), 0.36);
+  border-radius: 5px;
+  background: rgba(var(--color-info-rgb), 0.12);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.button:hover:not(:disabled),
+.linkButton:hover {
+  background: rgba(var(--color-info-rgb), 0.22);
+  border-color: rgba(var(--color-info-rgb), 0.52);
+}
+
+.button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.latest,
+.update,
+.error {
+  margin-top: 0.65rem;
+  font-size: 0.78rem;
+  line-height: 1.6;
+}
+
+.latest {
+  color: var(--color-success);
+}
+
+.update {
+  color: var(--color-warning-soft);
+}
+
+.error {
+  color: var(--color-danger-soft);
+}
+
+.linkButton {
+  display: block;
+  margin-top: 0.5rem;
+}
+
+@media (pointer: coarse) and (max-width: 1024px) {
+  .header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .button,
+  .linkButton {
+    width: 100%;
+    min-height: 2.25rem;
+  }
+}

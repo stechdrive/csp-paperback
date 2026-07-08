@@ -57,6 +57,11 @@ CSP Paperback solves this outside the workflow: load your PSD and XDTS, and expo
 - Export and import those shared settings as JSON from the settings dialog
 - No account, no server — everything runs in the browser and nothing leaves your machine
 
+**Privacy and file access**
+- PSD/XDTS files, settings, and generated images are not uploaded
+- The desktop app contacts GitHub Releases only when the user manually checks for updates
+- Folder export writes generated images into a user-selected folder; browser permission prompts are for that local write access
+
 ### Supported Files
 
 | File | Purpose |
@@ -134,6 +139,11 @@ CSP Paperbackはその制約をPSDとXDTSを読み込むことでワークフロ
 - 工程テーブルとアーカイブ除外設定はローカルストレージに保存
 - スタジオ内で共有したい設定は設定ダイアログからJSONで書き出し・読み込み可能
 - アカウント不要・サーバー不要。すべてブラウザ内で完結し、データは外部に送信されない
+
+**通信とファイルアクセス**
+- PSD/XDTS、設定内容、生成画像は外部サーバーへ送信しません
+- デスクトップ版は、ユーザーが手動で更新確認した時だけ GitHub Releases の最新情報を確認します
+- フォルダ書き出し時のブラウザ権限表示は、選択したローカルフォルダへ生成画像を書き込むためのものです
 
 ### 対応ファイル
 
