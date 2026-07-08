@@ -9,6 +9,7 @@ import { ExportSettings } from './ExportSettings'
 import { TimelineSeekBar } from './TimelineSeekBar'
 import { useSampleLoader } from '../hooks/useSampleLoader'
 import { SampleTemplateDownloadButton } from './SampleTemplateDownloadButton'
+import { isDesktopRuntime } from '../platform/runtime'
 import styles from './PreviewPanel.module.css'
 
 function NavigatorCanvas({ height }: { height: number }) {
@@ -39,6 +40,7 @@ function NavigatorCanvas({ height }: { height: number }) {
 const NAV_HEIGHT_DEFAULT = 270
 const NAV_HEIGHT_MIN = 40
 const NAV_HEIGHT_MAX = 600
+const DESKTOP_RELEASE_URL = 'https://github.com/stechdrive/csp-paperback/releases'
 
 function SampleLoadButton() {
   const { loadSample, loading } = useSampleLoader()
@@ -73,6 +75,27 @@ function SampleTemplateGuide() {
           label="サンプル作画テンプレート(.clip)をダウンロード"
         />
       </div>
+    </div>
+  )
+}
+
+function DesktopReleaseGuide() {
+  if (isDesktopRuntime()) return null
+
+  return (
+    <div className={styles.desktopGuide}>
+      <div className={styles.desktopGuideTitle}>デスクトップ版（バイナリ版）もあります</div>
+      <p className={styles.desktopGuideText}>
+        Windows / macOS版では、PSDとXDTSをアプリにドロップしてクイック書き出しできます。
+      </p>
+      <a
+        className={styles.desktopGuideLink}
+        href={DESKTOP_RELEASE_URL}
+        target="_blank"
+        rel="noreferrer"
+      >
+        デスクトップ版をダウンロード
+      </a>
     </div>
   )
 }
@@ -175,6 +198,7 @@ export function PreviewPanel() {
             <div className={styles.emptyTitle}>はじめに — ClipStudioPaint 側の準備</div>
 
             <SampleTemplateGuide />
+            <DesktopReleaseGuide />
 
             <div className={styles.emptyStep}>
               <div className={styles.emptyStepNum}>1</div>

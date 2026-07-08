@@ -253,6 +253,50 @@
   color: var(--color-danger);
 }
 
+.desktopGuide {
+  margin-bottom: 1rem;
+  padding: 0.7rem 0.75rem;
+  border: 1px solid rgba(var(--color-success-rgb), 0.24);
+  border-radius: 6px;
+  background: rgba(var(--color-success-rgb), 0.07);
+}
+
+.desktopGuideTitle {
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1.5;
+  color: var(--color-text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.desktopGuideText {
+  margin: 0 0 0.55rem;
+  font-size: 0.72rem;
+  line-height: 1.6;
+  color: var(--color-text-muted);
+}
+
+.desktopGuideLink {
+  display: block;
+  width: 100%;
+  padding: 0.42rem 0.65rem;
+  border: 1px solid rgba(var(--color-success-rgb), 0.34);
+  border-radius: 5px;
+  background: rgba(var(--color-success-rgb), 0.12);
+  color: var(--color-text-primary);
+  font-size: 0.75rem;
+  line-height: 1.45;
+  text-align: center;
+  text-decoration: none;
+  white-space: normal;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.desktopGuideLink:hover {
+  background: rgba(var(--color-success-rgb), 0.22);
+  border-color: rgba(var(--color-success-rgb), 0.5);
+}
+
 .emptyStep {
   display: flex;
   gap: 0.6rem;
