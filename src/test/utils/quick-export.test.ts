@@ -20,7 +20,7 @@ vi.mock('../../utils/directory-builder', () => ({
 import { resolveQuickExportFilePair } from '../../utils/quick-export'
 
 describe('resolveQuickExportFilePair', () => {
-  it('PSDとXDTSを1つずつ解決する', () => {
+  it('PSDとXDTSを1つずつ同じ起動引数から解決する', () => {
     expect(resolveQuickExportFilePair([
       String.raw`C:\work\cut001\cut001.psd`,
       String.raw`C:\work\cut001\cut001.xdts`,
@@ -37,7 +37,7 @@ describe('resolveQuickExportFilePair', () => {
   it('PSDまたはXDTSが不足している場合はエラーにする', () => {
     expect(() => resolveQuickExportFilePair([
       String.raw`C:\work\cut001\cut001.psd`,
-    ])).toThrow('PSDとXDTSを1つずつ')
+    ])).toThrow('PSDとXDTSを1つずつ同時に')
   })
 
   it('複数ペアはエラーにする', () => {
@@ -45,6 +45,6 @@ describe('resolveQuickExportFilePair', () => {
       String.raw`C:\work\cut001\cut001.psd`,
       String.raw`C:\work\cut001\cut001.xdts`,
       String.raw`C:\work\cut002\cut002.psd`,
-    ])).toThrow('PSDとXDTSを1つずつ')
+    ])).toThrow('PSDとXDTSを1つずつ同時に')
   })
 })

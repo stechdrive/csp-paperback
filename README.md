@@ -83,7 +83,7 @@ Clip Studio Paint（CSP）のアニメーションセル書き出しを補完す
 **→ [アプリを開く](https://stechdrive.github.io/csp-paperback/)**
 
 **デスクトップ版（Windows EXEなど）** は [GitHub Releases](https://github.com/stechdrive/csp-paperback/releases) からダウンロードできます。
-ブラウザ版と同じ合成・書き出し機能に加えて、EXEへPSD/XDTSをドロップするクイック書き出しが使えます。
+ブラウザ版と同じ合成・書き出し機能に加えて、EXEへPSD/XDTSの2ファイルをまとめてドロップするクイック書き出しが使えます。
 
 ### 何のためのツールか
 
@@ -114,7 +114,8 @@ CSP Paperbackはその制約をPSDとXDTSを読み込むことでワークフロ
 - 単体書き出しにした素材はセル画像へ自動で混ざらず、背景原図・BOOK・撮影指示などを別ファイルとして出せる
 
 **デスクトップ版クイック書き出し**
-- PSDとXDTSを1つずつEXEまたはショートカットへドロップすると、自動で読み込みから書き出しまで実行
+- PSDとXDTSを1つずつ同時に選択し、EXEまたはショートカットへまとめてドロップすると、自動で読み込みから書き出しまで実行
+- PSDだけ、XDTSだけを先にドロップして、もう片方を待つ動作ではありません
 - XDTSと同じフォルダに、PSD名を元にした出力フォルダを作成
 - 通常起動時に保存されている出力形式・背景・フォルダ分け・出力対象設定を使用
 - カットごとに手動で★や🎬を付ける確認工程はないため、`_` 命名や工程フォルダリストで運用をそろえておく用途向け
@@ -158,7 +159,7 @@ CSP Paperbackはその制約をPSDとXDTSを読み込むことでワークフロ
 デスクトップ版は [GitHub Releases](https://github.com/stechdrive/csp-paperback/releases) からダウンロードできます。
 
 - WindowsではReleasesのAssetsから `csp-paperback.exe` を取得して起動
-- EXEまたはショートカットへPSD/XDTSを1つずつドロップするとクイック書き出し
+- EXEまたはショートカットへPSD/XDTSの2ファイルをまとめてドロップするとクイック書き出し
 - ブラウザの保存ダイアログを使わず、ローカルフォルダへ直接書き出し可能
 - Web版と同じく、PSD/XDTSの中身を外部サーバーへ送信しません
 

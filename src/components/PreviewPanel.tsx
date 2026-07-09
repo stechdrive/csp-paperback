@@ -100,7 +100,7 @@ function DesktopReleaseGuide() {
     <div className={styles.desktopGuide}>
       <div className={styles.desktopGuideTitle}>デスクトップ版（バイナリ版）もあります</div>
       <p className={styles.desktopGuideText}>
-        Windows / macOS版では、PSDとXDTSをアプリにドロップしてクイック書き出しできます。
+        Windows / macOS版では、PSDとXDTSの2ファイルを同時にアプリへドロップしてクイック書き出しできます。
       </p>
       <a
         className={styles.desktopGuideLink}

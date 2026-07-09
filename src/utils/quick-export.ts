@@ -39,7 +39,7 @@ export function resolveQuickExportFilePair(paths: string[]): QuickExportFilePair
 
   if (psdPaths.length === 0 && xdtsPaths.length === 0) return null
   if (psdPaths.length !== 1 || xdtsPaths.length !== 1) {
-    throw new Error('クイック書き出しにはPSDとXDTSを1つずつドロップしてください')
+    throw new Error('クイック書き出しにはPSDとXDTSを1つずつ同時にドロップしてください')
   }
 
   return {

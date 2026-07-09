@@ -169,7 +169,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   <span className={styles.strong}>仮想セル</span> — 任意のセルとBGなどのレイヤーを自由に組み合わせて合成画像を出力
                 </li>
                 <li>
-                  <span className={styles.strong}>デスクトップ版クイック書き出し</span> — PSD と XDTS を EXE にドロップして、確認操作なしで同じフォルダへ一括出力
+                  <span className={styles.strong}>デスクトップ版クイック書き出し</span> — PSD/XDTS の2ファイルを同時に EXE へドロップして、確認操作なしで同じフォルダへ一括出力
                 </li>
                 <li>
                   <span className={styles.strong}>工程フォルダリスト</span> — セル内のフォルダ名に応じて、演出、作監など
@@ -312,8 +312,9 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               <h2 className={styles.h1}>⚡ クイック書き出し</h2>
 
               <p className={styles.p}>
-                デスクトップ版では、<span className={styles.strong}>PSD と XDTS を1つずつ EXE またはショートカットにドロップ</span>すると、
+                デスクトップ版では、<span className={styles.strong}>PSD と XDTS の2ファイルを同時に EXE またはショートカットへまとめてドロップ</span>すると、
                 画面上で設定を触らずに、自動で読み込みから書き出しまで実行できます。
+                片方だけ先にドロップして、もう片方を待つ動作ではありません。
                 同じ設定で大量のカットを書き出すときに使う機能です。
               </p>
 
@@ -345,10 +346,10 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 <div className={styles.step}>
                   <div className={styles.stepNum}>2</div>
                   <div className={styles.stepBody}>
-                    <div className={styles.stepTitle}>PSD と XDTS を EXE にドロップ</div>
+                    <div className={styles.stepTitle}>PSD と XDTS をまとめて EXE にドロップ</div>
                     <div className={styles.stepDesc}>
                       <code className={styles.code}>cut001.psd</code> と <code className={styles.code}>cut001.xdts</code> のように、
-                      PSD と XDTS を1つずつ選んで CSP Paperback の EXE またはショートカットへドロップします。
+                      PSD と XDTS を1つずつ同時に選んで CSP Paperback の EXE またはショートカットへまとめてドロップします。
                     </div>
                   </div>
                 </div>
@@ -367,8 +368,8 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               <div className={styles.calloutInfo}>
                 <span className={styles.strong}>使えるファイル：</span>
                 クイック書き出しは <code className={styles.code}>.psd</code> と <code className={styles.code}>.xdts</code> を
-                <span className={styles.strong}> 1つずつ</span>渡した場合だけ動きます。
-                複数PSD、複数XDTS、PSDだけ、XDTSだけではエラーになります。
+                <span className={styles.strong}> 1つずつ同じ起動で</span>渡した場合だけ動きます。
+                複数PSD、複数XDTS、PSDだけ、XDTSだけ、片方ずつの別起動ではエラーになります。
               </div>
 
               <div className={styles.calloutTip}>
@@ -1522,7 +1523,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
 
               <div className={styles.calloutTip}>
                 <span className={styles.strong}>クイック書き出しとの関係：</span>
-                デスクトップ版で PSD と XDTS を EXE にドロップして書き出す場合も、この画面で保存されている出力設定を使います。
+                デスクトップ版で PSD と XDTS の2ファイルを同時に EXE へドロップして書き出す場合も、この画面で保存されている出力設定を使います。
                 先に通常起動で設定を確認しておくと、その後はドロップだけで同じ設定の書き出しを繰り返せます。
               </div>
 
@@ -1620,7 +1621,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 </li>
                 <li>
                   <span className={styles.strong}>EXEへのドロップ</span> —
-                  デスクトップ版では PSD と XDTS を1つずつ EXE またはショートカットにドロップすると、そのままクイック書き出しを開始
+                  デスクトップ版では PSD と XDTS の2ファイルを同時に EXE またはショートカットへまとめてドロップすると、そのままクイック書き出しを開始
                 </li>
                 <li>
                   <span className={styles.strong}>複数ファイル同時選択</span> —
