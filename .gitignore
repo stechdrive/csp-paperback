@@ -14,9 +14,11 @@ src-tauri/target
 src-tauri/gen
 *.local
 
-# Claude Code (local/generated files)
+# Local/generated development files
 .claude/
+.codex/
 AGENTS.md
+CLAUDE.md
 .tmp/
 
 # Editor directories and files
