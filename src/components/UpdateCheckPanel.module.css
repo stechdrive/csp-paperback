@@ -76,6 +76,66 @@
   margin-top: 0.5rem;
 }
 
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.58);
+}
+
+.dialog {
+  width: min(28rem, 100%);
+  border: 1px solid var(--color-border-strong);
+  border-radius: 8px;
+  background: var(--color-surface-1);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+}
+
+.dialogHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.dialogTitle {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.closeButton {
+  padding: 0.2rem 0.4rem;
+  border: 0;
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.closeButton:hover {
+  color: var(--color-text-primary);
+}
+
+.dialogBody {
+  padding: 1rem;
+}
+
+.dialogBody > .button {
+  margin-top: 0.75rem;
+}
+
+.checking {
+  font-size: 0.8rem;
+  line-height: 1.6;
+  color: var(--color-info);
+}
+
 @media (pointer: coarse) and (max-width: 1024px) {
   .header {
     align-items: stretch;

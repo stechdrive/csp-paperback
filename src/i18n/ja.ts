@@ -3,6 +3,7 @@ export const ja = {
     openPsd: 'PSD を開く',
     openXdts: 'XDTS を開く',
     settings: '設定',
+    updateCheck: '更新確認',
     export: '出力',
     loading: '読み込み中…',
     uiScale: '表示サイズ',

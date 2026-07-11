@@ -55,7 +55,7 @@ For a local Windows handoff copy, set `CSP_PAPERBACK_EXE_COPY_DIR` in the enviro
 ## Update check
 
 The desktop app does not self-update or download binaries inside the app.
-Users can manually check for updates from the help dialog. That action fetches
+Users can manually check for updates from the toolbar or help dialog. That action fetches
 only the latest GitHub Release metadata from
 `https://api.github.com/repos/stechdrive/csp-paperback/releases/latest` and
 opens the GitHub Releases page in the user's default browser when an update is

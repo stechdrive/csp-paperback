@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { useLocale } from '../i18n/locale'
 import { isDesktopRuntime } from '../platform/runtime'
 import { checkDesktopUpdate, type DesktopUpdateInfo } from '../platform/update-check'
 import { openDesktopReleasesPage } from '../platform/external-links'
@@ -10,12 +11,10 @@ type CheckState =
   | { status: 'success'; info: DesktopUpdateInfo }
   | { status: 'error'; message: string }
 
-export function UpdateCheckPanel() {
+function useUpdateCheck() {
   const [state, setState] = useState<CheckState>({ status: 'idle' })
 
-  if (!isDesktopRuntime()) return null
-
-  const handleCheck = async () => {
+  const handleCheck = useCallback(async () => {
     setState({ status: 'checking' })
     try {
       setState({ status: 'success', info: await checkDesktopUpdate() })
@@ -25,9 +24,9 @@ export function UpdateCheckPanel() {
         message: '更新情報を取得できませんでした。時間をおいて再度確認してください。',
       })
     }
-  }
+  }, [])
 
-  const handleOpenRelease = async () => {
+  const handleOpenRelease = useCallback(async () => {
     try {
       await openDesktopReleasesPage()
     } catch {
@@ -36,7 +35,49 @@ export function UpdateCheckPanel() {
         message: 'GitHub Releases を開けませんでした。ブラウザで手動アクセスしてください。',
       })
     }
-  }
+  }, [])
+
+  return { state, handleCheck, handleOpenRelease }
+}
+
+function UpdateCheckResult({
+  state,
+  onOpenRelease,
+}: {
+  state: CheckState
+  onOpenRelease: () => void
+}) {
+  return (
+    <>
+      {state.status === 'success' && (
+        <div className={state.info.hasUpdate ? styles.update : styles.latest}>
+          {state.info.hasUpdate
+            ? `新しい版 v${state.info.latestVersion} があります。現在の版は v${state.info.currentVersion} です。`
+            : `最新版です。現在の版: v${state.info.currentVersion}`}
+          {state.info.hasUpdate && (
+            <button
+              className={styles.linkButton}
+              type="button"
+              onClick={onOpenRelease}
+            >
+              GitHub Releases をブラウザで開く
+            </button>
+          )}
+        </div>
+      )}
+
+      {state.status === 'error' && (
+        <div className={styles.error}>{state.message}</div>
+      )}
+    </>
+  )
+}
+
+export function UpdateCheckPanel() {
+  const { t } = useLocale()
+  const { state, handleCheck, handleOpenRelease } = useUpdateCheck()
+
+  if (!isDesktopRuntime()) return null
 
   return (
     <div className={styles.panel}>
@@ -53,30 +94,49 @@ export function UpdateCheckPanel() {
           onClick={() => void handleCheck()}
           disabled={state.status === 'checking'}
         >
-          {state.status === 'checking' ? '確認中…' : '更新を確認'}
+          {state.status === 'checking' ? '確認中…' : t.toolbar.updateCheck}
         </button>
       </div>
 
-      {state.status === 'success' && (
-        <div className={state.info.hasUpdate ? styles.update : styles.latest}>
-          {state.info.hasUpdate
-            ? `新しい版 v${state.info.latestVersion} があります。現在の版は v${state.info.currentVersion} です。`
-            : `最新版です。現在の版: v${state.info.currentVersion}`}
-          {state.info.hasUpdate && (
-            <button
-              className={styles.linkButton}
-              type="button"
-              onClick={() => void handleOpenRelease()}
-            >
-              GitHub Releases をブラウザで開く
+      <UpdateCheckResult state={state} onOpenRelease={() => void handleOpenRelease()} />
+    </div>
+  )
+}
+
+interface UpdateCheckDialogProps {
+  onClose: () => void
+}
+
+export function UpdateCheckDialog({ onClose }: UpdateCheckDialogProps) {
+  const { t } = useLocale()
+  const { state, handleCheck, handleOpenRelease } = useUpdateCheck()
+  const startedRef = useRef(false)
+
+  useEffect(() => {
+    if (startedRef.current) return
+    startedRef.current = true
+    void handleCheck()
+  }, [handleCheck])
+
+  return (
+    <div className={styles.overlay} onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+      <div className={styles.dialog} role="dialog" aria-modal="true" aria-labelledby="update-check-title">
+        <div className={styles.dialogHeader}>
+          <span id="update-check-title" className={styles.dialogTitle}>{t.toolbar.updateCheck}</span>
+          <button className={styles.closeButton} type="button" onClick={onClose} aria-label="閉じる">✕</button>
+        </div>
+        <div className={styles.dialogBody}>
+          {state.status === 'checking' && (
+            <div className={styles.checking}>GitHub Releases の最新情報を確認しています…</div>
+          )}
+          <UpdateCheckResult state={state} onOpenRelease={() => void handleOpenRelease()} />
+          {state.status === 'error' && (
+            <button className={styles.button} type="button" onClick={() => void handleCheck()}>
+              {t.toolbar.updateCheck}
             </button>
           )}
         </div>
-      )}
-
-      {state.status === 'error' && (
-        <div className={styles.error}>{state.message}</div>
-      )}
+      </div>
     </div>
   )
 }

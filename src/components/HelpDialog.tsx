@@ -1,4 +1,5 @@
 import { useRef, useCallback } from 'react'
+import { useLocale } from '../i18n/locale'
 import { SampleTemplateDownloadButton } from './SampleTemplateDownloadButton'
 import { UpdateCheckPanel } from './UpdateCheckPanel'
 import styles from './HelpDialog.module.css'
@@ -27,6 +28,7 @@ const TOC = [
 
 export function HelpDialog({ onClose }: HelpDialogProps) {
   const contentRef = useRef<HTMLDivElement>(null)
+  const { t } = useLocale()
 
   const scrollTo = useCallback((id: string) => {
     const el = contentRef.current?.querySelector(`[data-section="${id}"]`)
@@ -197,7 +199,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
 
               <div className={styles.calloutInfo}>
                 <span className={styles.strong}>更新確認について：</span>
-                デスクトップ版で「更新を確認」ボタンを押した時だけ、
+                デスクトップ版で「{t.toolbar.updateCheck}」ボタンを押した時だけ、
                 GitHub Releases の最新バージョン情報を取得するために GitHub API へ通信します。
                 作品データ、ファイル名、設定内容、生成画像は送信しません。
                 最新版のダウンロードはアプリ内では行わず、ユーザーの既定ブラウザで GitHub Releases を開きます。

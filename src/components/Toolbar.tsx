@@ -16,6 +16,7 @@ import {
 } from '../utils/mobile-ui-scale'
 import { SettingsDialog } from './SettingsDialog'
 import { HelpDialog } from './HelpDialog'
+import { UpdateCheckDialog } from './UpdateCheckPanel'
 import { Tooltip } from './Tooltip'
 import styles from './Toolbar.module.css'
 
@@ -153,6 +154,7 @@ export function Toolbar({ onFiles, isLoading, error, notification, canUndo, canR
   const exportMenuRef = useRef<HTMLDivElement>(null)
   const [showSettings, setShowSettings] = useState(false)
   const [showHelp, setShowHelp] = useState(false)
+  const [showUpdateCheck, setShowUpdateCheck] = useState(false)
   const [showExportMenu, setShowExportMenu] = useState(false)
   const { t } = useLocale()
   const { isExporting, progress, error: exportError, startExport } = useExport()
@@ -264,6 +266,14 @@ export function Toolbar({ onFiles, isLoading, error, notification, canUndo, canR
       {isMobile ? '⚙ ' : ''}{t.toolbar.settings}
     </button>
   )
+  const updateCheckBtn = desktopRuntime ? (
+    <button
+      className={isMobile ? styles.menuItem : styles.btn}
+      onClick={() => setShowUpdateCheck(true)}
+    >
+      {t.toolbar.updateCheck}
+    </button>
+  ) : null
 
   const handleExportSelect = async (destination: OutputDestination) => {
     setShowExportMenu(false)
@@ -342,6 +352,11 @@ export function Toolbar({ onFiles, isLoading, error, notification, canUndo, canR
             <button className={styles.btn} onClick={() => setShowHelp(true)}>?</button>
           </Tooltip>
         )}
+        {!isMobile && updateCheckBtn && (
+          <Tooltip content="GitHub Releases でアプリの最新版を確認" placement="bottom">
+            {updateCheckBtn}
+          </Tooltip>
+        )}
         {!isMobile && (
           <Tooltip content={"書き出し詳細設定・工程フォルダリストの編集\n各スタジオのテンプレートや命名ルールに合わせて調整できます"} placement="bottom">
             <button className={styles.btn} onClick={() => setShowSettings(true)}>{t.toolbar.settings}</button>
@@ -355,14 +370,16 @@ export function Toolbar({ onFiles, isLoading, error, notification, canUndo, canR
           <OverflowMenu>
             <button className={styles.menuItem} onClick={onUndo} disabled={!canUndo}>↩ 元に戻す</button>
             <button className={styles.menuItem} onClick={onRedo} disabled={!canRedo}>↪ やり直し</button>
-            {settingsBtn}
             {helpBtn}
+            {updateCheckBtn}
+            {settingsBtn}
           </OverflowMenu>
         )}
       </div>
 
       {showSettings && <SettingsDialog onClose={() => setShowSettings(false)} />}
       {showHelp && <HelpDialog onClose={() => setShowHelp(false)} />}
+      {showUpdateCheck && <UpdateCheckDialog onClose={() => setShowUpdateCheck(false)} />}
     </>
   )
 }
