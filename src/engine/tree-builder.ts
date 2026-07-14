@@ -30,6 +30,38 @@ function hasAdjustment(layer: Layer): boolean {
   return layer.adjustment !== undefined
 }
 
+function normalizeAutoMarkFolderName(name: string): string {
+  return name.trim().toLowerCase()
+}
+
+/**
+ * フォルダ名が単体出力の自動マーク条件に一致するか判定する。
+ *
+ * - `_` プレフィックスは従来どおり自動マーク
+ * - 設定リストは trim + lowercase の完全一致
+ * - archivePatterns は両方に対する前方一致の除外として最優先
+ * - 空の設定値は無視する
+ */
+export function matchesAutoMarkFolderName(
+  originalName: string,
+  archivePatterns: string[] = [],
+  autoMarkFolderNames: string[] = [],
+): boolean {
+  const isArchive = archivePatterns.some(pattern => (
+    pattern.length > 0 && originalName.startsWith(pattern)
+  ))
+  if (isArchive) return false
+  if (originalName.startsWith('_')) return true
+
+  const normalizedName = normalizeAutoMarkFolderName(originalName)
+  if (normalizedName.length === 0) return false
+
+  return autoMarkFolderNames.some(name => {
+    const normalizedCandidate = normalizeAutoMarkFolderName(name)
+    return normalizedCandidate.length > 0 && normalizedCandidate === normalizedName
+  })
+}
+
 /**
  * ag-psd Layerを再帰的にCspLayerに変換する
  */
@@ -37,8 +69,9 @@ function convertLayer(
   layer: Layer,
   parentId: string | null,
   depth: number,
-  animFolderContext: boolean, // アニメーションフォルダ内かどうか（_プレフィックス無視判定用）
-  archivePatterns: string[]
+  animFolderContext: boolean, // アニメーションフォルダ内かどうか（自動マーク無視判定用）
+  archivePatterns: string[],
+  autoMarkFolderNames: string[],
 ): CspLayer {
   const id = crypto.randomUUID()
   const originalName = layer.name ?? ''
@@ -52,9 +85,12 @@ function convertLayer(
   const folder = isFolder(layer)
   const animFolder = isAnimationFolder()
 
-  // _プレフィックス自動マーク（アニメーションフォルダ内・アーカイブパターン一致は除外）
-  const isArchive = archivePatterns.some(p => originalName.startsWith(p))
-  const autoMarked = !animFolderContext && originalName.startsWith('_') && folder && !isArchive
+  // 単体出力の自動マーク（アニメーションフォルダ内・除外パターン一致は対象外）
+  const autoMarked = !animFolderContext && folder && matchesAutoMarkFolderName(
+    originalName,
+    archivePatterns,
+    autoMarkFolderNames,
+  )
 
   const top = layer.top ?? 0
   const left = layer.left ?? 0
@@ -63,10 +99,10 @@ function convertLayer(
 
   // 子レイヤーの変換
   // ag-psdはボトムファースト順で返すので逆順にしてPhotoshop UI順（トップファースト）に統一する
-  // アニメーションフォルダ内では_プレフィックスを自動マークしない
+  // アニメーションフォルダ内では単体出力の自動マークを付けない
   const nextContext = animFolderContext || animFolder
   const children: CspLayer[] = (layer.children ?? []).slice().reverse().map(child =>
-    convertLayer(child, id, depth + 1, nextContext, archivePatterns)
+    convertLayer(child, id, depth + 1, nextContext, archivePatterns, autoMarkFolderNames)
   )
 
   return {
@@ -283,11 +319,19 @@ export function promoteAutoMarkedByProcessMatch(
 export function buildLayerTree(
   psd: Psd,
   _xdts?: XdtsData,
-  archivePatterns: string[] = []
+  archivePatterns: string[] = [],
+  autoMarkFolderNames: string[] = [],
 ): CspLayer[] {
   // ag-psdはボトムファースト順で返すので逆順にしてPhotoshop UI順（トップファースト）に統一する
   const children = (psd.children ?? []).slice().reverse()
-  const tree = children.map(layer => convertLayer(layer, null, 0, false, archivePatterns))
+  const tree = children.map(layer => convertLayer(
+    layer,
+    null,
+    0,
+    false,
+    archivePatterns,
+    autoMarkFolderNames,
+  ))
 
   // クリスタが自動生成する「用紙」レイヤー（最下層）を自動的に非表示に設定する。
   // 白背景として合成されてしまうため、PNG透過出力時に意図しない結果を防ぐ。

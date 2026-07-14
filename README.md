@@ -35,7 +35,8 @@ CSP Paperback solves this outside the workflow: load your PSD and XDTS, and expo
 
 **Export as Single**
 - Toggle any layer to include it as a standalone export outside of animation cells
-- Folders whose names start with `_` are detected automatically, and individual layers can be marked from the layer panel
+- Folders whose names start with `_`, or whose exact names are registered in the auto-mark settings, are detected automatically; `撮影指示` and `原図` are registered by default
+- Individual layers can also be marked from the layer panel
 
 **Auto-detect animation folders by process subfolders**
 - When a `_`-prefixed folder contains a direct child folder whose name is registered in the process table (`_e`, `_s`, …), the parent is automatically treated as an animation folder
@@ -53,7 +54,7 @@ CSP Paperback solves this outside the workflow: load your PSD and XDTS, and expo
 - Ctrl+Z / Ctrl+Shift+Z to undo or redo any editing operation (marks, virtual sets, visibility, settings)
 
 **Persistence**
-- Process table and archive exclusion settings are saved in local storage
+- Process table, auto-mark folder names, and exclusion settings are saved in local storage
 - Export and import those shared settings as JSON from the settings dialog
 - No account, no server — everything runs in the browser and nothing leaves your machine
 
@@ -110,7 +111,8 @@ CSP Paperbackはその制約をPSDとXDTSを読み込むことでワークフロ
 
 **単体書き出し**
 - 任意のレイヤーを単体書き出し対象として指定し、アニメーションセルとは独立して書き出せる
-- `_` で始まるフォルダは自動検出され、任意のレイヤーは右パネルから個別にマークできる
+- `_` で始まるフォルダ、または設定へ登録した名前と完全一致するフォルダは自動検出される（初期設定: `撮影指示`、`原図`）
+- 任意のレイヤーは右パネルから個別にマークできる
 - 単体書き出しにした素材はセル画像へ自動で混ざらず、背景原図・BOOK・撮影指示などを別ファイルとして出せる
 
 **デスクトップ版クイック書き出し**
@@ -137,7 +139,7 @@ CSP Paperbackはその制約をPSDとXDTSを読み込むことでワークフロ
 - Ctrl+Z / Ctrl+Shift+Z で操作を取り消し・やり直せる（マーク・仮想セット・表示切替・設定など全操作対応）
 
 **設定の永続化**
-- 工程テーブルとアーカイブ除外設定はローカルストレージに保存
+- 工程テーブル、自動マークするフォルダ名、除外設定はローカルストレージに保存
 - スタジオ内で共有したい設定は設定ダイアログからJSONで書き出し・読み込み可能
 - アカウント不要・サーバー不要。すべてブラウザ内で完結し、データは外部に送信されない
 

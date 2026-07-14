@@ -57,6 +57,8 @@ function snapshot(s: AppStore): UndoableState {
         ...e,
         folderNames: [...e.folderNames],
       })),
+      autoMarkFolderNames: [...s.projectSettings.autoMarkFolderNames],
+      archivePatterns: [...s.projectSettings.archivePatterns],
     },
     visibilityOverrides: new Map(s.visibilityOverrides),
     outputConfig: { ...s.outputConfig },

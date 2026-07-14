@@ -75,7 +75,7 @@ describe('c001 golden (image pixel match)', () => {
     const xdts = parseXdts(xdtsText)
 
     // ツリー構築 + XDTS 検出
-    const baseTree = buildLayerTree(psd, xdts, DEFAULT_PROJECT_SETTINGS.archivePatterns)
+    const baseTree = buildLayerTree(psd, xdts, DEFAULT_PROJECT_SETTINGS.archivePatterns, DEFAULT_PROJECT_SETTINGS.autoMarkFolderNames)
     detectAnimationFoldersByXdts(baseTree, xdts)
 
     const virtualSets = buildC001VirtualSets(baseTree)

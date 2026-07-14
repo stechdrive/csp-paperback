@@ -15,7 +15,9 @@ export interface ProjectSettings {
   cellNamingMode: CellNamingMode
   /** 兼用カット: XDTS未使用セルを初期OFFにせず、XDTS検出アニメフォルダ自体を表示ONにする */
   sharedCutMode?: boolean
-  /** _プレフィックス自動マーク・自動表示から除外するパターン（前方一致）。デフォルト: ['_old', '_pool'] */
+  /** _プレフィックス以外に単体出力として自動マークするフォルダ名（完全一致） */
+  autoMarkFolderNames: string[]
+  /** 自動マーク・自動表示から除外するパターン（前方一致）。デフォルト: ['_old', '_pool'] */
   archivePatterns: string[]
 }
 
@@ -29,5 +31,6 @@ export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
   ],
   cellNamingMode: 'sequence',
   sharedCutMode: false,
+  autoMarkFolderNames: ['撮影指示', '原図'],
   archivePatterns: ['_old', '_pool'],
 }

@@ -12,10 +12,28 @@ interface SettingsDialogProps {
   onClose: () => void
 }
 
+function cleanAutoMarkNames(rows: string[]): string[] {
+  const seen = new Set<string>()
+  const result: string[] = []
+  for (const row of rows) {
+    const trimmed = row.trim()
+    const normalized = trimmed.toLowerCase()
+    if (!trimmed || seen.has(normalized)) continue
+    seen.add(normalized)
+    result.push(trimmed)
+  }
+  return result
+}
+
+function cleanPatterns(rows: string[]): string[] {
+  return [...new Set(rows.map(row => row.trim()).filter(Boolean))]
+}
+
 export function SettingsDialog({ onClose }: SettingsDialogProps) {
   const projectSettings = useAppStore(s => s.projectSettings)
   const activeTheme = useAppStore(s => s.activeTheme)
   const updateProcessTable = useAppStore(s => s.updateProcessTable)
+  const updateAutoMarkFolderNames = useAppStore(s => s.updateAutoMarkFolderNames)
   const updateArchivePatterns = useAppStore(s => s.updateArchivePatterns)
   const importSettings = useAppStore(s => s.importSettings)
   const exportSettings = useAppStore(s => s.exportSettings)
@@ -24,6 +42,9 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
 
   const [tableRows, setTableRows] = useState<ProcessFolderEntry[]>(
     projectSettings.processTable
+  )
+  const [autoMarkRows, setAutoMarkRows] = useState<string[]>(
+    projectSettings.autoMarkFolderNames ?? DEFAULT_PROJECT_SETTINGS.autoMarkFolderNames
   )
   const [archiveRows, setArchiveRows] = useState<string[]>(
     projectSettings.archivePatterns ?? DEFAULT_PROJECT_SETTINGS.archivePatterns
@@ -102,6 +123,24 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
     updateArchivePatterns(next)
   }
 
+  const handleAutoMarkChange = (i: number, value: string) => {
+    const next = autoMarkRows.map((name, idx) => idx === i ? value : name)
+    setAutoMarkRows(next)
+    updateAutoMarkFolderNames(next)
+  }
+
+  const addAutoMarkRow = () => {
+    const next = [...autoMarkRows, '']
+    setAutoMarkRows(next)
+    updateAutoMarkFolderNames(next)
+  }
+
+  const removeAutoMarkRow = (i: number) => {
+    const next = autoMarkRows.filter((_, idx) => idx !== i)
+    setAutoMarkRows(next)
+    updateAutoMarkFolderNames(next)
+  }
+
   const handleImport = async () => {
     if (supportsNativeOpenDialog()) {
       const file = await pickSettingsJsonFile()
@@ -110,6 +149,7 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
       importSettings(text)
       const s = useAppStore.getState().projectSettings
       setTableRows(s.processTable)
+      setAutoMarkRows(s.autoMarkFolderNames ?? DEFAULT_PROJECT_SETTINGS.autoMarkFolderNames)
       setArchiveRows(s.archivePatterns ?? DEFAULT_PROJECT_SETTINGS.archivePatterns)
       return
     }
@@ -124,6 +164,7 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
       importSettings(text)
       const s = useAppStore.getState().projectSettings
       setTableRows(s.processTable)
+      setAutoMarkRows(s.autoMarkFolderNames ?? DEFAULT_PROJECT_SETTINGS.autoMarkFolderNames)
       setArchiveRows(s.archivePatterns ?? DEFAULT_PROJECT_SETTINGS.archivePatterns)
     }
     input.click()
@@ -134,6 +175,16 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
     if (cleaned.length !== tableRows.length) {
       setTableRows(cleaned)
       updateProcessTable(cleaned)
+    }
+    const cleanedAutoMarkRows = cleanAutoMarkNames(autoMarkRows)
+    if (JSON.stringify(cleanedAutoMarkRows) !== JSON.stringify(autoMarkRows)) {
+      setAutoMarkRows(cleanedAutoMarkRows)
+      updateAutoMarkFolderNames(cleanedAutoMarkRows)
+    }
+    const cleanedArchiveRows = cleanPatterns(archiveRows)
+    if (JSON.stringify(cleanedArchiveRows) !== JSON.stringify(archiveRows)) {
+      setArchiveRows(cleanedArchiveRows)
+      updateArchivePatterns(cleanedArchiveRows)
     }
     onClose()
   }
@@ -212,7 +263,26 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
             <button className={styles.addRowBtn} onClick={addRow}>{t.settings.addRow}</button>
           </div>
 
-          {/* _付きフォルダの除外リスト */}
+          {/* 単体出力の自動マーク */}
+          <div className={styles.section}>
+            <div className={styles.sectionTitle}>{t.settings.autoMarkFolders}</div>
+            <div className={styles.hint}>{t.settings.autoMarkFolderHint}</div>
+            {autoMarkRows.map((name, i) => (
+              <div key={i} className={styles.patternRow}>
+                <input
+                  className={styles.tableInput}
+                  value={name}
+                  onChange={e => handleAutoMarkChange(i, e.target.value)}
+                  placeholder={t.settings.autoMarkFolderPlaceholder}
+                />
+                <button className={styles.removeRowBtn} onClick={() => removeAutoMarkRow(i)}>✕</button>
+              </div>
+            ))}
+            <button className={styles.addRowBtn} onClick={addAutoMarkRow}>{t.settings.addPattern}</button>
+            <div className={styles.hint}>{t.settings.autoMarkReloadHint}</div>
+          </div>
+
+          {/* 自動マークの除外リスト */}
           <div className={styles.section}>
             <div className={styles.sectionTitle}>{t.settings.archivePatterns}</div>
             <div className={styles.hint}>{t.settings.archivePatternHint}</div>

@@ -8,7 +8,7 @@ import type { CspLayer, XdtsData, XdtsTrack } from '../types'
  * - false = UI上で表示
  * 仮想セットの visibilityOverrides（visible=true/false）とは意味が逆なので注意。
  *
- * - PSD 上で非表示の _ 自動マークフォルダは、出力対象として扱うため初期表示ONにする
+ * - PSD 上で非表示の自動マークフォルダは、出力対象として扱うため初期表示ONにする
  * - XDTS で検出したアニメーションフォルダでは、タイムラインから到達できないセルを初期表示OFFにする
  */
 export function buildDefaultVisibilityOverrides(

@@ -277,7 +277,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 <span className={styles.strong}>💡 Tips：</span>
                 PSD と XDTS は同時に選択して「ファイルを開く」で読み込めます。
                 PSDとXDTSを読み込み済みの状態で新しいPSDまたはXDTSを開くと、新規プロジェクトとして読み直します。
-                工程フォルダリストと _付きフォルダの除外リストは設定ダイアログから保存・読み込みして共有できます。
+                工程フォルダリスト、自動マークするフォルダ名、除外リストは設定ダイアログから保存・読み込みして共有できます。
                 各スタジオで使っているテンプレートや命名ルールに合わせて調整してください。
               </div>
             </section>
@@ -541,7 +541,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 このサンプルには CSP Paperback の主要機能がすべて詰まっています：
                 <span className={styles.strong}>単体出力</span>（_撮影指示、_原図、_BOOK1、_BG はレイヤーフォルダ名の先頭に _ を付けて自動指定）、
                 <span className={styles.strong}>工程フォルダリスト</span>によるトラック分離型（演出）とセル内蔵型（_s）、
-                <span className={styles.strong}>_付きフォルダの除外リスト</span>（_pool）。
+                <span className={styles.strong}>自動マークの除外リスト</span>（_pool）。
                 各機能の詳細は以降のセクションで解説します。
               </div>
 
@@ -730,18 +730,19 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 アニメーションしない素材を、CSPのアニメーションセル出力で自動出力させるためだけにアニメーションフォルダへ入れたり、
                 タイムシート上のトラックとして管理したりする必要はありません。
                 便利に使うなら、CSP側で作業している時点でレイヤーフォルダ名の先頭へ
-                <code className={styles.code}>_</code>（アンダースコア）を付けておく運用がおすすめです。
+                <code className={styles.code}>_</code>（アンダースコア）を付けるか、設定の「単体出力の自動マーク」へフォルダ名を登録します。
+                初期設定では <code className={styles.code}>撮影指示</code> と <code className={styles.code}>原図</code> が登録されています。
                 名前を変えたくない素材や、読み込み後に追加で別出力したい素材は右ペインの
-                <span className={styles.em}> ★ </span>で指定します。どちらも出力上は同じ「単体出力」です。
+                <span className={styles.em}> ★ </span>で指定します。どの方法も出力上は同じ「単体出力」です。
               </p>
 
               <div className={styles.layerDiagram}>
                 <div className={styles.layerRow}>
-                  <span className={styles.iconMark}>★</span>
+                  <span className={styles.iconFolder}>📁</span>
                   <span className={styles.layerNameMark}>撮影指示</span>
-                  <span className={styles.labelMark}>手動</span>
+                  <span className={styles.labelMark}>★ 自動</span>
                   <span style={{ color: 'var(--color-text-subtle)', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
-                    → CSP側の名前を変えずに「撮影指示.jpg」として出力
+                    → 初期登録名に一致し「撮影指示.jpg」として出力
                   </span>
                 </div>
                 <div className={styles.layerRow}>
@@ -806,10 +807,11 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 <li>
                   レイヤーフォルダ名の先頭に <code className={styles.code}>_</code> を付ける方法は
                   CSP側で先に「これは別ファイルで出したい」と決めておく方法です。
+                  CSP側の名前を変えたくない場合は、設定の「自動マークするフォルダ名」へ完全一致する名前を登録できます。
                   <span className={styles.em}>★</span> は読み込み後にレイヤー・フォルダのどちらにも付けられます
                 </li>
                 <li>
-                  CSPで非表示にして保存した <code className={styles.code}>_</code> フォルダも、読み込み直後は「出したい素材」として表示ONになります。
+                  CSPで非表示にして保存した自動マーク対象フォルダも、読み込み直後は「出したい素材」として表示ONになります。
                   アプリ上で目を閉じたものは出力されません
                 </li>
                 <li>
@@ -823,17 +825,17 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   直下に普通のレイヤーや普通のフォルダが混じる場合は、親全体をまとめた画像も出します
                 </li>
                 <li>
-                  <span className={styles.strong}>アニメーションフォルダの中</span>にある、先頭に _ を付けたレイヤーフォルダは自動マークされません
+                  <span className={styles.strong}>アニメーションフォルダの中</span>にある自動マーク候補のレイヤーフォルダは、独立した単体出力にはなりません
                   （アニメーションセルとして扱われます）
                 </li>
                 <li>
-                  先頭に _ を付けたレイヤーフォルダがXDTSで検出された場合、または 🎬 で手動指定された場合は、
+                  自動マーク対象のレイヤーフォルダがXDTSで検出された場合、または 🎬 で手動指定された場合は、
                   単体出力ではなく<span className={styles.strong}>アニメーションフォルダとしてのセル出力</span>を優先します
                 </li>
                 <li>
-                    <span className={styles.strong}>_付きフォルダの除外リスト</span>
+                    <span className={styles.strong}>自動マークの除外リスト</span>
                     （デフォルト: <code className={styles.code}>_old</code>、<code className={styles.code}>_pool</code>）
-                    に一致するフォルダは、先頭が _ でも別ファイルにはなりません。
+                    に一致するフォルダは、先頭が _ または登録名に一致しても別ファイルにはなりません。
                     表示中なら普通の素材としてセル画像に重なることがあるため、完全に出力へ入れたくない作業用フォルダは非表示にしてください
                 </li>
               </ul>
@@ -843,8 +845,8 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 CSPで作業している時点から「セル合成には混ぜず、別素材として出す」と決めている背景原図や撮影指示は、
                 レイヤーフォルダ名の先頭に <code className={styles.code}>_</code> を付けておくのが推奨です。
                 CSP Paperbackで読み込んだ時点で単体出力として扱われるため、カットごとに ★ を押し直す必要がありません。
-                読み込み後に追加で別出力したい素材や、CSP側の名前を変えたくない素材は ★ で後から指定します。
-                「設定」ダイアログの「_付きフォルダの除外リスト」で、<code className={styles.code}>_old</code> や
+                同じフォルダ名を繰り返し使う場合は「自動マークするフォルダ名」へ登録し、そのカットだけ追加で別出力したい素材は ★ で後から指定します。
+                「設定」ダイアログの「自動マークの除外リスト」で、<code className={styles.code}>_old</code> や
                 <code className={styles.code}>_pool</code> のような作業用フォルダを単体出力の対象から外せます。
               </div>
             </section>
@@ -854,7 +856,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               <h2 className={styles.h1}>⭐ ★で後から単体出力</h2>
 
               <p className={styles.p}>
-                ★ は「レイヤーフォルダ名の先頭に <code className={styles.code}>_</code> を付ける」方法と同じ単体出力を、CSP側の名前を変えずに
+                ★ は「レイヤーフォルダ名の先頭に <code className={styles.code}>_</code> を付ける／設定へ名前を登録する」方法と同じ単体出力を、
                 読み込み後のレイヤーツリーで指定するためのボタンです。
                 レイヤーツリーの各レイヤー/フォルダの横にある
                 <span className={styles.em}> ★ ボタン</span>をクリックすると、
@@ -899,7 +901,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 <tbody>
                   <tr>
                     <td>マーク方法</td>
-                    <td>CSP側でレイヤーフォルダ名の先頭に <code className={styles.code}>_</code> を付ける</td>
+                    <td>CSP側で先頭に <code className={styles.code}>_</code> を付ける、または設定へフォルダ名を登録</td>
                     <td>CSP Paperback 読み込み後に ★ ボタンクリック</td>
                   </tr>
                   <tr>
@@ -909,7 +911,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   </tr>
                   <tr>
                     <td>CSP側での準備</td>
-                    <td>フォルダ名変更のみ</td>
+                    <td>フォルダ名変更、またはPaperback設定への登録</td>
                     <td>不要（Paperback上で設定）</td>
                   </tr>
                 </tbody>
@@ -1084,7 +1086,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               <h3 className={styles.h2}>発動条件</h3>
               <ul className={styles.ul}>
                 <li>
-                  フォルダ名が <code className={styles.code}>_</code> で始まり、_付きフォルダの除外リストに入っていない
+                  フォルダ名が <code className={styles.code}>_</code> で始まるか「自動マークするフォルダ名」に一致し、自動マークの除外リストに入っていない
                 </li>
                 <li>
                   そのフォルダの<span className={styles.strong}>直下</span>に、工程フォルダリストへ登録した名前のフォルダがある（孫階層は見ません）
@@ -1635,7 +1637,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               <ul className={styles.ul}>
                 <li>
                   <span className={styles.strong}>設定を書き出す / 読み込む</span> —
-                  工程フォルダリストと _付きフォルダの除外リストを保存・読み込みできます。スタジオ内で同じ設定を共有したり、別端末へ移したりするときに使います
+                  工程フォルダリスト、自動マークするフォルダ名、除外リストを保存・読み込みできます。スタジオ内で同じ設定を共有したり、別端末へ移したりするときに使います
                 </li>
               </ul>
 

@@ -95,8 +95,8 @@ export const createPsdSlice: StateCreator<AppStore, [], [], PsdSlice> = (set, ge
   loadPsd: (buffer, fileName, sourceDirectory) => {
     const psd = readPsdFile(buffer)
     const xdts = get().xdtsData ?? undefined
-    const archivePatterns = get().projectSettings.archivePatterns
-    const tree = buildLayerTree(psd, xdts, archivePatterns)
+    const { archivePatterns, autoMarkFolderNames } = get().projectSettings
+    const tree = buildLayerTree(psd, xdts, archivePatterns, autoMarkFolderNames)
 
     // XDTS があれば anim folder 検出を実行し、警告 UI 用に unmatchedTracks を保存
     if (xdts) {

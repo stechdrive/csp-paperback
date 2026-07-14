@@ -9,6 +9,7 @@ export interface ProjectSlice {
   updateProcessTable: (table: ProcessFolderEntry[]) => void
   setCellNamingMode: (mode: CellNamingMode) => void
   setSharedCutMode: (enabled: boolean) => void
+  updateAutoMarkFolderNames: (names: string[]) => void
   updateArchivePatterns: (patterns: string[]) => void
   importSettings: (json: string) => void
   exportSettings: () => string
@@ -42,6 +43,11 @@ export const createProjectSlice: StateCreator<AppStore, [], [], ProjectSlice> = 
     set(nextState as AppStore)
   },
 
+  updateAutoMarkFolderNames: (names) => {
+    get().pushHistory()
+    set({ projectSettings: { ...get().projectSettings, autoMarkFolderNames: names } })
+  },
+
   updateArchivePatterns: (patterns) => {
     get().pushHistory()
     set({ projectSettings: { ...get().projectSettings, archivePatterns: patterns } })
@@ -51,7 +57,18 @@ export const createProjectSlice: StateCreator<AppStore, [], [], ProjectSlice> = 
     try {
       const parsed = JSON.parse(json) as ProjectSettings
       get().pushHistory()
-      set({ projectSettings: { ...DEFAULT_PROJECT_SETTINGS, ...parsed } })
+      set({
+        projectSettings: {
+          ...DEFAULT_PROJECT_SETTINGS,
+          ...parsed,
+          autoMarkFolderNames: Array.isArray(parsed.autoMarkFolderNames)
+            ? parsed.autoMarkFolderNames
+            : DEFAULT_PROJECT_SETTINGS.autoMarkFolderNames,
+          archivePatterns: Array.isArray(parsed.archivePatterns)
+            ? parsed.archivePatterns
+            : DEFAULT_PROJECT_SETTINGS.archivePatterns,
+        },
+      })
     } catch {
       console.error('Failed to import project settings')
     }

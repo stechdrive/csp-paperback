@@ -7,31 +7,35 @@ import type { CspLayer, ProjectSettings, XdtsData, FlatLayer } from '../../types
 const DEFAULT_SETTINGS: ProjectSettings = {
   processTable: [],
   cellNamingMode: 'sequence',
+  autoMarkFolderNames: [],
   archivePatterns: [],
 }
 
 const CELL_NAME_SETTINGS: ProjectSettings = {
   processTable: [],
   cellNamingMode: 'cellname',
+  autoMarkFolderNames: [],
   archivePatterns: [],
 }
 
 const SEQUENCE_CELL_NAME_SETTINGS: ProjectSettings = {
   processTable: [],
   cellNamingMode: 'sequence-cellname',
+  autoMarkFolderNames: [],
   archivePatterns: [],
 }
 
 const SHEET_SEQUENCE_SETTINGS: ProjectSettings = {
   processTable: [{ suffix: '_e', folderNames: ['EN'] }],
   cellNamingMode: 'sheet-sequence',
+  autoMarkFolderNames: [],
   archivePatterns: [],
 }
 
 const EMPTY_CONTEXT: FlatLayer[] = []
 
 function makeSettingsWithTable(entries: { suffix: string; folderNames: string[] }[]): ProjectSettings {
-  return { processTable: entries, cellNamingMode: 'sequence', archivePatterns: [] }
+  return { processTable: entries, cellNamingMode: 'sequence', autoMarkFolderNames: [], archivePatterns: [] }
 }
 
 function detectAnim(tree: ReturnType<typeof buildLayerTree>, trackName: string) {
@@ -753,6 +757,14 @@ describe('extractMarkedLayers', () => {
     expect(result[0].flatName).toBe('_撮影指示.jpg')
   })
 
+  it('登録名由来の自動マークフォルダをOutputEntryとして返す', () => {
+    const psd = makePsd({ children: [makeFolder('原図', [makeLayer({ name: 'image' })])] })
+    const tree = buildLayerTree(psd, undefined, [], ['原図'])
+    const result = extractMarkedLayers(tree, 100, 100)
+    expect(result).toHaveLength(1)
+    expect(result[0].flatName).toBe('原図.jpg')
+  })
+
   it('直下が_フォルダだけの親_フォルダは整理用コンテナとして出力しない', () => {
     const psd = makePsd({
       children: [
@@ -781,6 +793,7 @@ describe('extractAllEntries with auto-process promotion', () => {
   const SETTINGS_WITH_E: ProjectSettings = {
     processTable: [{ suffix: '_e', folderNames: ['_e', '演出'] }],
     cellNamingMode: 'sequence',
+    autoMarkFolderNames: [],
     archivePatterns: [],
   }
 
@@ -912,6 +925,7 @@ describe('extractAllEntries with auto-process promotion', () => {
     const settings: ProjectSettings = {
       processTable: [{ suffix: '_bg', folderNames: ['_BG'] }],
       cellNamingMode: 'sequence',
+      autoMarkFolderNames: [],
       archivePatterns: [],
     }
     const promoted = promoteAutoMarkedByProcessMatch(tree, settings.processTable)

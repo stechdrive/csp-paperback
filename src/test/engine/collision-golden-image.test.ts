@@ -189,7 +189,7 @@ describe('collision golden (image pixel match)', () => {
     )
     const xdts = parseXdts(xdtsText)
 
-    const tree = buildLayerTree(psd, xdts, DEFAULT_PROJECT_SETTINGS.archivePatterns)
+    const tree = buildLayerTree(psd, xdts, DEFAULT_PROJECT_SETTINGS.archivePatterns, DEFAULT_PROJECT_SETTINGS.autoMarkFolderNames)
     const assignResult = detectAnimationFoldersByXdts(tree, xdts)
     expect(assignResult.unmatchedTracks).toHaveLength(0)
 

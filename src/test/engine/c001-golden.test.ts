@@ -36,7 +36,7 @@ describe('c001 golden (path identity)', () => {
     const xdts = parseXdts(xdtsText)
 
     // ツリー構築
-    const tree = buildLayerTree(psd, xdts, DEFAULT_PROJECT_SETTINGS.archivePatterns)
+    const tree = buildLayerTree(psd, xdts, DEFAULT_PROJECT_SETTINGS.archivePatterns, DEFAULT_PROJECT_SETTINGS.autoMarkFolderNames)
 
     // XDTS 検出(新ロジックで assignTracksToFolders + 割当された layer のみ anim folder 化)
     const assignResult = detectAnimationFoldersByXdts(tree, xdts)
@@ -88,7 +88,7 @@ describe('c001 golden (path identity)', () => {
     const xdtsText = fs.readFileSync(path.join(TESTDATA, 'c001.xdts'), 'utf-8')
     const psd = readPsdFile(psdBuf.buffer.slice(psdBuf.byteOffset, psdBuf.byteOffset + psdBuf.byteLength))
     const xdts = parseXdts(xdtsText)
-    const tree = buildLayerTree(psd, xdts, DEFAULT_PROJECT_SETTINGS.archivePatterns)
+    const tree = buildLayerTree(psd, xdts, DEFAULT_PROJECT_SETTINGS.archivePatterns, DEFAULT_PROJECT_SETTINGS.autoMarkFolderNames)
     detectAnimationFoldersByXdts(tree, xdts)
     const entries = extractAllEntries(
       tree, DEFAULT_PROJECT_SETTINGS, psd.width, psd.height, 'white', false,

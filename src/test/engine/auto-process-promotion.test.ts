@@ -36,6 +36,24 @@ function findByName(tree: CspLayer[], name: string): CspLayer[] {
 }
 
 describe('promoteAutoMarkedByProcessMatch', () => {
+  it('登録名由来の自動マークも工程一致でアニメフォルダに昇格する', () => {
+    const psd = makePsd({
+      children: [
+        makeFolder('原図', [
+          makeLayer({ name: 'レイヤー' }),
+          makeFolder('_e', [makeLayer({ name: '修正' })]),
+        ]),
+      ],
+    })
+    const tree = buildLayerTree(psd, undefined, [], ['原図'])
+    const promoted = promoteAutoMarkedByProcessMatch(tree, DEFAULT_TABLE)
+
+    const genzu = findByName(promoted, '原図')[0]
+    expect(genzu.isAnimationFolder).toBe(true)
+    expect(genzu.autoMarked).toBe(false)
+    expect(genzu.animationFolder?.detectedBy).toBe('autoProcess')
+  })
+
   it('基本: _BG1/{レイヤー, _e/} → _BG1 がアニメフォルダに昇格', () => {
     const psd = makePsd({
       children: [

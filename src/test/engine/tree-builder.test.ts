@@ -6,7 +6,7 @@ import {
   collectAnimFolderAncestorIds,
 } from '../../engine/tree-builder'
 import { makeLayer, makePsd, makeFolder, makeAnimationFolder, makePassThroughFolder } from '../helpers/psd-factory'
-import type { XdtsData } from '../../types'
+import { DEFAULT_PROJECT_SETTINGS, type XdtsData } from '../../types'
 
 describe('buildLayerTree', () => {
   it('空のPSDで空配列を返す', () => {
@@ -49,6 +49,60 @@ describe('buildLayerTree', () => {
     const psd = makePsd({ children: [makeLayer({ name: '_layer' })] })
     const tree = buildLayerTree(psd)
     expect(tree[0].autoMarked).toBe(false) // フォルダのみ自動マーク
+  })
+
+  it('デフォルト登録名のフォルダを_なしでも自動マークする', () => {
+    const psd = makePsd({
+      children: [makeFolder('撮影指示', []), makeFolder('原図', [])],
+    })
+    const tree = buildLayerTree(
+      psd,
+      undefined,
+      DEFAULT_PROJECT_SETTINGS.archivePatterns,
+      DEFAULT_PROJECT_SETTINGS.autoMarkFolderNames,
+    )
+
+    expect(tree.every(layer => layer.autoMarked)).toBe(true)
+  })
+
+  it('登録名は前後空白と大文字小文字を無視して完全一致する', () => {
+    const tree = buildLayerTree(
+      makePsd({ children: [makeFolder('  Book  ', [])] }),
+      undefined,
+      [],
+      ['BOOK'],
+    )
+    expect(tree[0].autoMarked).toBe(true)
+  })
+
+  it('登録名は前方一致ではない', () => {
+    const tree = buildLayerTree(
+      makePsd({ children: [makeFolder('原図_old', [])] }),
+      undefined,
+      [],
+      ['原図'],
+    )
+    expect(tree[0].autoMarked).toBe(false)
+  })
+
+  it('登録名に一致しても除外パターンが優先される', () => {
+    const tree = buildLayerTree(
+      makePsd({ children: [makeFolder('原図', [])] }),
+      undefined,
+      ['原'],
+      ['原図'],
+    )
+    expect(tree[0].autoMarked).toBe(false)
+  })
+
+  it('登録名に一致する通常レイヤーは自動マークしない', () => {
+    const tree = buildLayerTree(
+      makePsd({ children: [makeLayer({ name: '原図' })] }),
+      undefined,
+      [],
+      ['原図'],
+    )
+    expect(tree[0].autoMarked).toBe(false)
   })
 
   it('xdts検出後のアニメーションフォルダ内の_プレフィックスは自動マークしない', () => {

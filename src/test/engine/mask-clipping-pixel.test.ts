@@ -152,7 +152,7 @@ describe('extractCells empty output background behavior', () => {
 
     const entries = extractCells(
       tree[0],
-      { processTable: [], cellNamingMode: 'sequence', archivePatterns: [] },
+      { processTable: [], cellNamingMode: 'sequence', autoMarkFolderNames: [], archivePatterns: [] },
       2,
       1,
       [],
@@ -181,7 +181,7 @@ describe('extractCells empty output background behavior', () => {
 
     const entries = extractCells(
       tree[0],
-      { processTable: [], cellNamingMode: 'sequence', archivePatterns: [] },
+      { processTable: [], cellNamingMode: 'sequence', autoMarkFolderNames: [], archivePatterns: [] },
       2,
       1,
       [],

@@ -21,6 +21,22 @@ function makeXdts(cellNames: string[]): XdtsData {
 }
 
 describe('default visibility overrides', () => {
+  it('登録名で自動マークされた非表示フォルダを初期表示ONにする', () => {
+    const sourceFolder = makeFolder('原図', [makeLayer({ name: '線画' })])
+    sourceFolder.hidden = true
+    const tree = buildLayerTree(
+      makePsd({ children: [sourceFolder] }),
+      undefined,
+      [],
+      ['原図'],
+    )
+
+    const overrides = buildDefaultVisibilityOverrides(tree)
+
+    expect(tree[0].autoMarked).toBe(true)
+    expect(overrides.get(tree[0].id)).toBe(false)
+  })
+
   it('XDTSで使われていないアニメセルを初期非表示にする', () => {
     const animA = makeFolder('A', [
       makeLayer({ name: '1' }),
