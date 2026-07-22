@@ -70,7 +70,7 @@ describe('ExportSettings naming controls', () => {
     fireEvent.click(screen.getByRole('button', { name: 'セル名' }))
     expect(screen.queryByRole('button', { name: '自動' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '4桁' })).not.toBeInTheDocument()
-    expect(screen.getByText('A_ア_e.jpg')).toBeInTheDocument()
+    expect(screen.getByText('A1_e.jpg')).toBeInTheDocument()
   })
 
   it('中央ペインの各選択肢にユーザー向けツールチップを表示する', () => {
@@ -89,7 +89,7 @@ describe('ExportSettings naming controls', () => {
       ['透明（PNG のみ）', '透明な部分を残したまま書き出します。PNGを選んでいるときだけ使えます。'],
       ['連番', 'フォルダ内のセルへ1、2…の順番で番号を付けます。桁数は出力する最大番号に合わせます。'],
       ['連番セル名', 'A_1_ア.jpgのように、連番とクリスタのセル名を両方付けます。'],
-      ['セル名', 'クリスタのセル名をそのままファイル名に使います。'],
+      ['セル名', 'クリスタのセル名を使います。A1 / A_1のようにアニメーションフォルダ名から始まるセルは、同じフォルダ名を重ねて付けません。'],
       ['シート連番', /XDTSのタイムライン順に番号を付け/],
       ['自動', '出力する最大番号に合わせて桁数を自動調整します。1〜9は1桁、10〜99は2桁になります。'],
       ['4桁', 'すべて0001、0002…の4桁で書き出します。'],

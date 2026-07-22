@@ -116,6 +116,8 @@ export function makeCellLabel(
 
 export interface CellFileNameOptions {
   trackName: string
+  /** PSD上の元アニメーションフォルダ名。セル名先頭の重複判定に使う */
+  rawTrackName?: string
   cellLabel: string
   parentSuffix?: string
   processSuffix?: string
@@ -123,17 +125,50 @@ export interface CellFileNameOptions {
   trackCellSeparator?: '_' | ''
   /** セル名末尾が今回付ける工程サフィックスと完全一致する場合、重複付加を抑止する */
   suppressDuplicateProcessSuffix?: boolean
+  /** セル名が元フォルダ名 + 連番で始まる場合、フォルダ名の重複付加を抑止する */
+  suppressDuplicateTrackPrefix?: boolean
+}
+
+export interface EmbeddedTrackPrefix {
+  separator: '_' | ''
+  remainder: string
+}
+
+/**
+ * セル名先頭が「元アニメーションフォルダ名 + 数字」または
+ * 「元アニメーションフォルダ名 + _ + 数字」かを判定する。
+ *
+ * A10 を A1 + 0 と誤認しないよう、フォルダ名末尾が数字なら
+ * 区切りなしの一致は採用しない。比較は完全一致（大文字小文字を区別）。
+ */
+export function parseEmbeddedTrackPrefix(
+  rawTrackName: string,
+  cellLabel: string,
+): EmbeddedTrackPrefix | null {
+  const normalizedTrackName = rawTrackName.trim()
+  if (!normalizedTrackName || !cellLabel.startsWith(normalizedTrackName)) return null
+
+  const remainder = cellLabel.slice(normalizedTrackName.length)
+  if (/^_\d/.test(remainder)) {
+    return { separator: '_', remainder: remainder.slice(1) }
+  }
+  if (!/\d$/.test(normalizedTrackName) && /^\d/.test(remainder)) {
+    return { separator: '', remainder }
+  }
+  return null
 }
 
 /** アニメーションセルの最終ファイル名を一元的に組み立てる。 */
 export function makeCellFileName({
   trackName,
+  rawTrackName,
   cellLabel,
   parentSuffix = '',
   processSuffix = '',
   processSuffixPosition = 'after-cell',
   trackCellSeparator = '_',
   suppressDuplicateProcessSuffix = false,
+  suppressDuplicateTrackPrefix = false,
 }: CellFileNameOptions): string {
   const rawProcessPart = `${parentSuffix}${processSuffix}`
   const processPart = suppressDuplicateProcessSuffix
@@ -141,6 +176,18 @@ export function makeCellFileName({
     && cellLabel.endsWith(rawProcessPart)
     ? ''
     : rawProcessPart
+
+  const embeddedTrackPrefix = suppressDuplicateTrackPrefix && rawTrackName
+    ? parseEmbeddedTrackPrefix(rawTrackName, cellLabel)
+    : null
+
+  if (embeddedTrackPrefix) {
+    const { separator, remainder } = embeddedTrackPrefix
+    if (processSuffixPosition === 'before-cell' && processPart) {
+      return `${trackName}${processPart}${separator}${remainder}.jpg`
+    }
+    return `${trackName}${separator}${remainder}${processPart}.jpg`
+  }
 
   if (processSuffixPosition === 'before-cell' && processPart) {
     return `${trackName}${processPart}${trackCellSeparator}${cellLabel}.jpg`

@@ -67,6 +67,7 @@ export function extractCells(
     projectSettings.animationSequenceSeparator ?? 'underscore',
   )
   const suppressDuplicateProcessSuffix = !isAutoProcessAnim && namingMode === 'cellname'
+  const suppressDuplicateTrackPrefix = !isAutoProcessAnim && namingMode === 'cellname'
 
   for (let cellIdx = 0; cellIdx < visibleChildren.length; cellIdx++) {
     const cell = visibleChildren[cellIdx]
@@ -85,11 +86,13 @@ export function extractCells(
       const canvas = compositeWithContext(cellFlats, lowerContextLayers, upperContextLayers, docWidth, docHeight, background)
       const fileName = makeCellFileName({
         trackName,
+        rawTrackName: animFolder.originalName,
         cellLabel,
         parentSuffix,
         processSuffixPosition,
         trackCellSeparator,
         suppressDuplicateProcessSuffix,
+        suppressDuplicateTrackPrefix,
       })
       entries.push({
         path: `${folderName}/${fileName}`,
@@ -127,11 +130,13 @@ export function extractCells(
         const canvas = compositeWithContext(bodyFlats, lowerContextLayers, upperContextLayers, docWidth, docHeight, background)
         const fileName = makeCellFileName({
           trackName,
+          rawTrackName: animFolder.originalName,
           cellLabel,
           parentSuffix,
           processSuffixPosition,
           trackCellSeparator,
           suppressDuplicateProcessSuffix,
+          suppressDuplicateTrackPrefix,
         })
         entries.push({
           path: `${folderName}/${fileName}`,
@@ -152,12 +157,14 @@ export function extractCells(
         const canvas = compositeWithContext(processFlats, lowerContextLayers, upperContextLayers, docWidth, docHeight, background)
         const fileName = makeCellFileName({
           trackName,
+          rawTrackName: animFolder.originalName,
           cellLabel,
           parentSuffix,
           processSuffix: suffix,
           processSuffixPosition,
           trackCellSeparator,
           suppressDuplicateProcessSuffix,
+          suppressDuplicateTrackPrefix,
         })
         entries.push({
           path: `${folderName}/${fileName}`,

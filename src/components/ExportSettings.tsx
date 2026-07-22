@@ -34,14 +34,17 @@ function buildNameSample(
   animationSequenceSeparator: 'underscore' | 'none',
 ): string {
   const trackName = 'A'
-  const cellLabel = makeCellLabel(mode, 'ア', 1, sequenceDigits)
+  const sampleCellName = mode === 'cellname' ? 'A1' : 'ア'
+  const cellLabel = makeCellLabel(mode, sampleCellName, 1, sequenceDigits)
   const fileName = makeCellFileName({
     trackName,
+    rawTrackName: trackName,
     cellLabel,
     processSuffix: '_e',
     processSuffixPosition,
     trackCellSeparator: resolveAnimationSequenceSeparator(mode, animationSequenceSeparator),
     suppressDuplicateProcessSuffix: mode === 'cellname',
+    suppressDuplicateTrackPrefix: mode === 'cellname',
   }).replace(/\.jpg$/i, `.${format}`)
   return structure === 'hierarchy' ? `${trackName}/${fileName}` : fileName
 }

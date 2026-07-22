@@ -151,7 +151,7 @@ describe('useOutputPreview', () => {
 
     const { result } = renderHook(() => useOutputPreview())
     expect(result.current).toHaveLength(1)
-    expect(result.current[0].flatName).toBe('B_B1_e.jpg')
+    expect(result.current[0].flatName).toBe('B1_e.jpg')
   })
 
   it('PNG選択時はマーク済みレイヤーのプレビュー名も.pngで返す', () => {

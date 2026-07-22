@@ -236,6 +236,7 @@ function previewAnimFolder(
       )
   const prefix = makeCellFileName({
     trackName: displayName,
+    rawTrackName: animFolder.originalName,
     cellLabel,
     parentSuffix,
     processSuffixPosition: outputConfig.processSuffixPosition,
@@ -244,6 +245,7 @@ function previewAnimFolder(
       projectSettings.animationSequenceSeparator ?? 'underscore',
     ),
     suppressDuplicateProcessSuffix: !isAutoProcessAnim && namingMode === 'cellname',
+    suppressDuplicateTrackPrefix: !isAutoProcessAnim && namingMode === 'cellname',
   }).replace(/\.jpg$/i, '')
 
   let entries = allEntries.filter(e => e.sourceCellId === selectedCell.id)

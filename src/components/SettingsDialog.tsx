@@ -68,7 +68,7 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
   )
   const sampleCellLabel = makeCellLabel(
     projectSettings.cellNamingMode,
-    'ア',
+    projectSettings.cellNamingMode === 'cellname' ? 'A1' : 'ア',
     1,
     sampleDigits,
   )
@@ -300,6 +300,7 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
                   <span className={styles.sampleLabel}>
                     {makeCellFileName({
                       trackName: 'A',
+                      rawTrackName: 'A',
                       cellLabel: sampleCellLabel,
                       processSuffix: row.suffix,
                       processSuffixPosition: outputConfig.processSuffixPosition,
@@ -308,6 +309,7 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
                         projectSettings.animationSequenceSeparator ?? 'underscore',
                       ),
                       suppressDuplicateProcessSuffix: projectSettings.cellNamingMode === 'cellname',
+                      suppressDuplicateTrackPrefix: projectSettings.cellNamingMode === 'cellname',
                     }).replace(/\.jpg$/i, `.${outputConfig.format}`)}
                   </span>
                   <button className={styles.removeRowBtn} onClick={() => removeRow(i)}>✕</button>

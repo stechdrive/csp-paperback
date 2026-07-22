@@ -342,7 +342,7 @@ describe('extractAllEntries', () => {
 
     const result = extractAllEntries(tree, settings, 100, 100)
     expect(result).toHaveLength(1)
-    expect(result[0].flatName).toBe('B_B1_e.jpg')
+    expect(result[0].flatName).toBe('B1_e.jpg')
     expect(result[0].processSuffixes).toEqual(['_e'])
   })
 
@@ -358,7 +358,7 @@ describe('extractAllEntries', () => {
 
     const result = extractAllEntries(tree, settings, 100, 100)
     expect(result).toHaveLength(1)
-    expect(result[0].flatName).toBe('B_B1_e.jpg')
+    expect(result[0].flatName).toBe('B1_e.jpg')
     expect(result[0].processSuffixes).toEqual(['_e'])
   })
 
@@ -373,7 +373,7 @@ describe('extractAllEntries', () => {
       processTable: [{ suffix: '_e', folderNames: ['_e'] }],
     }
 
-    expect(extractAllEntries(tree, settings, 100, 100)[0].flatName).toBe('B_B1_e2_e.jpg')
+    expect(extractAllEntries(tree, settings, 100, 100)[0].flatName).toBe('B1_e2_e.jpg')
   })
 
   it('最大可視セル数に合わせて全アニメフォルダの連番桁数を揃える', () => {
@@ -467,6 +467,33 @@ describe('extractAllEntries', () => {
     expect(flatNames).toContain('A_あ.jpg')
     expect(flatNames).toContain('A(2)_あ.jpg')
     expect(flatNames).not.toContain('A_あ_2.jpg')
+  })
+
+  it('セル名出力では同名フォルダの表示番号を保ちながら先頭の重複を避ける', () => {
+    const animA1 = makeAnimationFolder('A', [makeLayer({ name: 'A1' })])
+    const animA2 = makeAnimationFolder('A', [makeLayer({ name: 'A_1' })])
+    const tree = buildLayerTree(makePsd({ children: [animA1, animA2] }))
+    markManualAnimFolder(tree[0])
+    markManualAnimFolder(tree[1])
+
+    const flatNames = extractAllEntries(tree, CELL_NAME_SETTINGS, 100, 100, 'white', false)
+      .map(entry => entry.flatName)
+      .sort()
+    expect(flatNames).toEqual(['A(2)_1.jpg', 'A1.jpg'])
+  })
+
+  it('重複回避後に同名になったセルは既存の衝突解決で上書きを防ぐ', () => {
+    const animA = makeAnimationFolder('A', [
+      makeLayer({ name: 'A_1' }),
+      makeLayer({ name: '1' }),
+    ])
+    const tree = buildLayerTree(makePsd({ children: [animA] }))
+    markManualAnimFolder(tree[0])
+
+    const flatNames = extractAllEntries(tree, CELL_NAME_SETTINGS, 100, 100, 'white', false)
+      .map(entry => entry.flatName)
+      .sort()
+    expect(flatNames).toEqual(['A_1.jpg', 'A_1_2.jpg'])
   })
 
   it('同名アニメフォルダは parentSuffix が異なれば別 namespace で両方 "A" (process variants)', () => {

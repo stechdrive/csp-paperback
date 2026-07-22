@@ -1447,7 +1447,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                     <td>
                       連番: <code className={styles.code}>A_1.jpg</code>{'\n'}
                       連番セル名: <code className={styles.code}>A_1_ア.jpg</code>{'\n'}
-                      セル名: <code className={styles.code}>A_ア.jpg</code>{'\n'}
+                      セル名: <code className={styles.code}>A1 → A1.jpg</code>（A_A1にはしない）{'\n'}
                       シート連番: タイムシート上の順番で番号を合わせる
                     </td>
                   </tr>

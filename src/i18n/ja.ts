@@ -87,7 +87,7 @@ export const ja = {
     cellNamingSequenceCellname: '連番セル名',
     cellNamingSequenceCellnameHint: 'A_1_ア.jpgのように、連番とクリスタのセル名を両方付けます。',
     cellNamingCellname: 'セル名',
-    cellNamingCellnameHint: 'クリスタのセル名をそのままファイル名に使います。',
+    cellNamingCellnameHint: 'クリスタのセル名を使います。A1 / A_1のようにアニメーションフォルダ名から始まるセルは、同じフォルダ名を重ねて付けません。',
     cellNamingSheetSequence: 'シート連番',
     cellNamingSheetSequenceHint: 'シート連番: XDTSのタイムライン順に番号を付け、同じタイミングのチェック工程セルを同じ番号に揃えます。\nPSDとXDTSのセル名・タイムラインが正しく対応している必要があります。\n例: 作画A1,A2,A3 / 演出修正A2のみ → A_1, A_2, A_2_e, A_3',
     autoMarkFolders: '単体出力の自動マーク',
