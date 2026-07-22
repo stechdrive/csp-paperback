@@ -139,143 +139,193 @@ export function ExportSettings() {
         </div>
       </div>
 
-      <div className={styles.row}>
-        <Tooltip content={t.settings.cellNamingHint} placement="bottom">
-          <span className={styles.label}>{t.settings.cellNaming}</span>
-        </Tooltip>
-        <div className={styles.toggleGroup}>
-          <Tooltip content={t.settings.cellNamingSequenceHint} placement="bottom">
-            <button
-              className={`${styles.toggle} ${projectSettings.cellNamingMode === 'sequence' ? styles.active : ''}`}
-              onClick={() => setCellNamingMode('sequence')}
-            >{t.settings.cellNamingSequence}</button>
-          </Tooltip>
-          <Tooltip content={t.settings.cellNamingSequenceCellnameHint} placement="bottom">
-            <button
-              className={`${styles.toggle} ${projectSettings.cellNamingMode === 'sequence-cellname' ? styles.active : ''}`}
-              onClick={() => setCellNamingMode('sequence-cellname')}
-            >{t.settings.cellNamingSequenceCellname}</button>
-          </Tooltip>
-          <Tooltip content={t.settings.cellNamingCellnameHint} placement="bottom">
-            <button
-              className={`${styles.toggle} ${projectSettings.cellNamingMode === 'cellname' ? styles.active : ''}`}
-              onClick={() => setCellNamingMode('cellname')}
-            >{t.settings.cellNamingCellname}</button>
-          </Tooltip>
-          <Tooltip content={t.settings.cellNamingSheetSequenceHint} placement="bottom">
-            <button
-              className={`${styles.toggle} ${projectSettings.cellNamingMode === 'sheet-sequence' ? styles.active : ''}`}
-              onClick={() => setCellNamingMode('sheet-sequence')}
-            >{t.settings.cellNamingSheetSequence}</button>
+      <div className={styles.namingBlock} data-testid="naming-settings">
+        <div className={styles.namingControls}>
+          <div className={styles.inlineOption}>
+            <Tooltip content={t.settings.cellNamingHint} placement="bottom">
+              <span className={styles.label}>{t.settings.cellNaming}</span>
+            </Tooltip>
+            <div className={styles.toggleGroup}>
+              <Tooltip content={t.settings.cellNamingSequenceHint} placement="bottom">
+                <button
+                  className={`${styles.toggle} ${projectSettings.cellNamingMode === 'sequence' ? styles.active : ''}`}
+                  onClick={() => setCellNamingMode('sequence')}
+                >{t.settings.cellNamingSequence}</button>
+              </Tooltip>
+              <Tooltip content={t.settings.cellNamingSequenceCellnameHint} placement="bottom">
+                <button
+                  className={`${styles.toggle} ${projectSettings.cellNamingMode === 'sequence-cellname' ? styles.active : ''}`}
+                  onClick={() => setCellNamingMode('sequence-cellname')}
+                >{t.settings.cellNamingSequenceCellname}</button>
+              </Tooltip>
+              <Tooltip content={t.settings.cellNamingCellnameHint} placement="bottom">
+                <button
+                  className={`${styles.toggle} ${projectSettings.cellNamingMode === 'cellname' ? styles.active : ''}`}
+                  onClick={() => setCellNamingMode('cellname')}
+                >{t.settings.cellNamingCellname}</button>
+              </Tooltip>
+              <Tooltip content={t.settings.cellNamingSheetSequenceHint} placement="bottom">
+                <button
+                  className={`${styles.toggle} ${projectSettings.cellNamingMode === 'sheet-sequence' ? styles.active : ''}`}
+                  onClick={() => setCellNamingMode('sheet-sequence')}
+                >{t.settings.cellNamingSheetSequence}</button>
+              </Tooltip>
+            </div>
+          </div>
+
+          <div className={styles.inlineOption}>
+            <Tooltip
+              content={isSequenceMode ? t.settings.sequenceDigitsHint : t.settings.sequenceOptionsUnavailableHint}
+              placement="bottom"
+            >
+              <span className={styles.label}>{t.settings.sequenceDigits}</span>
+            </Tooltip>
+            <div className={styles.toggleGroup}>
+              <Tooltip
+                content={isSequenceMode ? t.settings.sequenceDigitsAutoHint : t.settings.sequenceOptionsUnavailableHint}
+                placement="bottom"
+              >
+                <button
+                  className={`${styles.toggle} ${(projectSettings.sequenceDigitMode ?? 'auto') === 'auto' ? styles.active : ''} ${!isSequenceMode ? styles.disabled : ''}`}
+                  onClick={() => {
+                    if (isSequenceMode) setSequenceDigitMode('auto')
+                  }}
+                  aria-disabled={!isSequenceMode}
+                >{t.settings.sequenceDigitsAuto}</button>
+              </Tooltip>
+              <Tooltip
+                content={isSequenceMode ? t.settings.sequenceDigitsFixed4Hint : t.settings.sequenceOptionsUnavailableHint}
+                placement="bottom"
+              >
+                <button
+                  className={`${styles.toggle} ${projectSettings.sequenceDigitMode === 'fixed-4' ? styles.active : ''} ${!isSequenceMode ? styles.disabled : ''}`}
+                  onClick={() => {
+                    if (isSequenceMode) setSequenceDigitMode('fixed-4')
+                  }}
+                  aria-disabled={!isSequenceMode}
+                >{t.settings.sequenceDigitsFixed4}</button>
+              </Tooltip>
+            </div>
+          </div>
+
+          <div className={styles.inlineOption}>
+            <Tooltip
+              content={isSequenceMode ? t.settings.animationSequenceSeparatorHint : t.settings.sequenceOptionsUnavailableHint}
+              placement="bottom"
+            >
+              <span className={styles.label}>{t.settings.animationSequenceSeparator}</span>
+            </Tooltip>
+            <div className={styles.toggleGroup}>
+              <Tooltip
+                content={isSequenceMode ? t.settings.animationSequenceSeparatorUnderscoreHint : t.settings.sequenceOptionsUnavailableHint}
+                placement="bottom"
+              >
+                <button
+                  className={`${styles.toggle} ${(projectSettings.animationSequenceSeparator ?? 'underscore') === 'underscore' ? styles.active : ''} ${!isSequenceMode ? styles.disabled : ''}`}
+                  onClick={() => {
+                    if (isSequenceMode) setAnimationSequenceSeparator('underscore')
+                  }}
+                  aria-disabled={!isSequenceMode}
+                >{t.settings.animationSequenceSeparatorUnderscore}</button>
+              </Tooltip>
+              <Tooltip
+                content={isSequenceMode ? t.settings.animationSequenceSeparatorNoneHint : t.settings.sequenceOptionsUnavailableHint}
+                placement="bottom"
+              >
+                <button
+                  className={`${styles.toggle} ${projectSettings.animationSequenceSeparator === 'none' ? styles.active : ''} ${!isSequenceMode ? styles.disabled : ''}`}
+                  onClick={() => {
+                    if (isSequenceMode) setAnimationSequenceSeparator('none')
+                  }}
+                  aria-disabled={!isSequenceMode}
+                >{t.settings.animationSequenceSeparatorNone}</button>
+              </Tooltip>
+            </div>
+          </div>
+        </div>
+
+        <div className={styles.nameSampleRow} data-testid="name-sample-row">
+          <span className={styles.label}>{t.export.outputNameSample}</span>
+          <span className={styles.nameSample} title={nameSample}>{nameSample}</span>
+        </div>
+      </div>
+
+      <div className={styles.switchGrid} data-testid="export-option-switch-grid">
+        <div className={styles.switchItem} data-switch-option="shared-cut">
+          <Tooltip content={t.export.sharedCutHint} placement="bottom">
+            <label className={styles.switchLabel}>
+              <span className={styles.label}>{t.export.sharedCut}</span>
+              <span
+                className={`${styles.switch} ${projectSettings.sharedCutMode ? styles.switchOn : ''}`}
+                onClick={() => setSharedCutMode(!projectSettings.sharedCutMode)}
+                role="switch"
+                aria-label={t.export.sharedCut}
+                aria-checked={!!projectSettings.sharedCutMode}
+              />
+              <span className={styles.switchValue}>
+                {projectSettings.sharedCutMode ? t.export.switchOn : t.export.switchOff}
+              </span>
+            </label>
           </Tooltip>
         </div>
-        <span className={styles.nameSample}>{nameSample}</span>
 
-        {isSequenceMode && (
-          <>
-            <div className={styles.inlineOption}>
-              <Tooltip content={t.settings.sequenceDigitsHint} placement="bottom">
-                <span className={styles.label}>{t.settings.sequenceDigits}</span>
-              </Tooltip>
-              <div className={styles.toggleGroup}>
-                <Tooltip content={t.settings.sequenceDigitsAutoHint} placement="bottom">
-                  <button
-                    className={`${styles.toggle} ${(projectSettings.sequenceDigitMode ?? 'auto') === 'auto' ? styles.active : ''}`}
-                    onClick={() => setSequenceDigitMode('auto')}
-                  >{t.settings.sequenceDigitsAuto}</button>
-                </Tooltip>
-                <Tooltip content={t.settings.sequenceDigitsFixed4Hint} placement="bottom">
-                  <button
-                    className={`${styles.toggle} ${projectSettings.sequenceDigitMode === 'fixed-4' ? styles.active : ''}`}
-                    onClick={() => setSequenceDigitMode('fixed-4')}
-                  >{t.settings.sequenceDigitsFixed4}</button>
-                </Tooltip>
-              </div>
-            </div>
+        <div className={styles.switchItem} data-switch-option="structure">
+          <Tooltip content={t.export.structureHint} placement="bottom">
+            <label className={styles.switchLabel}>
+              <span className={styles.label}>{t.export.structure}</span>
+              <span
+                className={`${styles.switch} ${outputConfig.structure === 'hierarchy' ? styles.switchOn : ''}`}
+                onClick={() => setStructure(outputConfig.structure === 'hierarchy' ? 'flat' : 'hierarchy')}
+                role="switch"
+                aria-label={t.export.structure}
+                aria-checked={outputConfig.structure === 'hierarchy'}
+              />
+              <span className={styles.switchValue}>
+                {outputConfig.structure === 'hierarchy' ? t.export.switchOn : t.export.switchOff}
+              </span>
+            </label>
+          </Tooltip>
+        </div>
 
-            <div className={styles.inlineOption}>
-              <Tooltip content={t.settings.animationSequenceSeparatorHint} placement="bottom">
-                <span className={styles.label}>{t.settings.animationSequenceSeparator}</span>
-              </Tooltip>
-              <div className={styles.toggleGroup}>
-                <Tooltip content={t.settings.animationSequenceSeparatorUnderscoreHint} placement="bottom">
-                  <button
-                    className={`${styles.toggle} ${(projectSettings.animationSequenceSeparator ?? 'underscore') === 'underscore' ? styles.active : ''}`}
-                    onClick={() => setAnimationSequenceSeparator('underscore')}
-                  >{t.settings.animationSequenceSeparatorUnderscore}</button>
-                </Tooltip>
-                <Tooltip content={t.settings.animationSequenceSeparatorNoneHint} placement="bottom">
-                  <button
-                    className={`${styles.toggle} ${projectSettings.animationSequenceSeparator === 'none' ? styles.active : ''}`}
-                    onClick={() => setAnimationSequenceSeparator('none')}
-                  >{t.settings.animationSequenceSeparatorNone}</button>
-                </Tooltip>
-              </div>
-            </div>
-          </>
-        )}
+        <div className={styles.switchItem} data-switch-option="process-position">
+          <Tooltip content={t.export.processSuffixPositionHint} placement="bottom">
+            <label className={styles.switchLabel}>
+              <span className={styles.label}>{t.export.processSuffixPosition}</span>
+              <span
+                className={`${styles.switch} ${outputConfig.processSuffixPosition === 'before-cell' ? styles.switchOn : ''}`}
+                onClick={() => setProcessSuffixPosition(outputConfig.processSuffixPosition === 'before-cell' ? 'after-cell' : 'before-cell')}
+                role="switch"
+                aria-label={t.export.processSuffixPosition}
+                aria-checked={outputConfig.processSuffixPosition === 'before-cell'}
+              />
+              <span className={styles.switchValue}>
+                {outputConfig.processSuffixPosition === 'before-cell'
+                  ? t.export.processSuffixBeforeCell
+                  : t.export.processSuffixAfterCell}
+              </span>
+            </label>
+          </Tooltip>
+        </div>
 
-        <Tooltip content={t.export.sharedCutHint} placement="bottom">
-          <label className={styles.switchLabel}>
-            <span className={styles.label}>{t.export.sharedCut}</span>
-            <span
-              className={`${styles.switch} ${projectSettings.sharedCutMode ? styles.switchOn : ''}`}
-              onClick={() => setSharedCutMode(!projectSettings.sharedCutMode)}
-              role="switch"
-              aria-label={t.export.sharedCut}
-              aria-checked={!!projectSettings.sharedCutMode}
-            />
-          </label>
-        </Tooltip>
-
-        <Tooltip content={t.export.structureHint} placement="bottom">
-          <label className={styles.switchLabel}>
-            <span className={styles.label}>{t.export.structure}</span>
-            <span
-              className={`${styles.switch} ${outputConfig.structure === 'hierarchy' ? styles.switchOn : ''}`}
-              onClick={() => setStructure(outputConfig.structure === 'hierarchy' ? 'flat' : 'hierarchy')}
-              role="switch"
-              aria-label={t.export.structure}
-              aria-checked={outputConfig.structure === 'hierarchy'}
-            />
-          </label>
-        </Tooltip>
-
-        <Tooltip content={t.export.processSuffixPositionHint} placement="bottom">
-          <label className={styles.switchLabel}>
-            <span className={styles.label}>{t.export.processSuffixPosition}</span>
-            <span
-              className={`${styles.switch} ${outputConfig.processSuffixPosition === 'before-cell' ? styles.switchOn : ''}`}
-              onClick={() => setProcessSuffixPosition(outputConfig.processSuffixPosition === 'before-cell' ? 'after-cell' : 'before-cell')}
-              role="switch"
-              aria-label={t.export.processSuffixPosition}
-              aria-checked={outputConfig.processSuffixPosition === 'before-cell'}
-            />
-            <span className={styles.switchValue}>
-              {outputConfig.processSuffixPosition === 'before-cell'
-                ? t.export.processSuffixBeforeCell
-                : t.export.processSuffixAfterCell}
-            </span>
-          </label>
-        </Tooltip>
-
-        <Tooltip content={t.export.revisionBorderHint} placement="bottom">
-          <label className={styles.switchLabel}>
-            <span className={styles.label}>{t.export.revisionBorder}</span>
-            <span
-              className={`${styles.switch} ${outputConfig.revisionBorderEnabled ? styles.switchOn : ''}`}
-              onClick={() => setRevisionBorderEnabled(!outputConfig.revisionBorderEnabled)}
-              role="switch"
-              aria-label={t.export.revisionBorder}
-              aria-checked={outputConfig.revisionBorderEnabled}
-            />
-            <span className={styles.switchValue}>
-              {outputConfig.revisionBorderEnabled
-                ? t.export.revisionBorderOn
-                : t.export.revisionBorderOff}
-            </span>
-          </label>
-        </Tooltip>
+        <div className={styles.switchItem} data-switch-option="revision-border">
+          <Tooltip content={t.export.revisionBorderHint} placement="bottom">
+            <label className={styles.switchLabel}>
+              <span className={styles.label}>{t.export.revisionBorder}</span>
+              <span
+                className={`${styles.switch} ${outputConfig.revisionBorderEnabled ? styles.switchOn : ''}`}
+                onClick={() => setRevisionBorderEnabled(!outputConfig.revisionBorderEnabled)}
+                role="switch"
+                aria-label={t.export.revisionBorder}
+                aria-checked={outputConfig.revisionBorderEnabled}
+              />
+              <span className={styles.switchValue}>
+                {outputConfig.revisionBorderEnabled
+                  ? t.export.revisionBorderOn
+                  : t.export.revisionBorderOff}
+              </span>
+            </label>
+          </Tooltip>
+        </div>
       </div>
 
       <div className={styles.row}>

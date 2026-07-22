@@ -6,6 +6,7 @@
   background: var(--color-surface-1);
   border-bottom: 1px solid var(--color-border-subtle);
   flex-shrink: 0;
+  container-type: inline-size;
 }
 
 .row {
@@ -39,6 +40,20 @@
 
 .inlineOption .toggleGroup {
   margin-right: 0;
+}
+
+.namingBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.namingControls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  flex-wrap: wrap;
 }
 
 .toggle {
@@ -78,11 +93,24 @@
 }
 
 .switchLabel {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(4rem, max-content);
   align-items: center;
   gap: 0.4rem;
   cursor: pointer;
-  margin-right: 0.5rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.switchGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.35rem 0.9rem;
+  min-width: 0;
+}
+
+.switchItem {
+  min-width: 0;
 }
 
 .switch {
@@ -120,7 +148,7 @@
 .switchValue {
   font-size: 0.7rem;
   color: var(--color-text-primary);
-  min-width: 1.75rem;
+  min-width: 3rem;
 }
 
 .nameSample {
@@ -132,7 +160,17 @@
   border-radius: 4px;
   padding: 0.1rem 0.35rem;
   white-space: nowrap;
-  margin-right: 0.5rem;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nameSampleRow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
 }
 
 .chipGroup {
