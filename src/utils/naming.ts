@@ -8,7 +8,7 @@ import type {
   SequenceDigitMode,
 } from '../types'
 
-export const MIN_SEQUENCE_DIGITS = 2
+export const MIN_SEQUENCE_DIGITS = 1
 export const MAX_SEQUENCE_DIGITS = 4
 export const FIXED_SEQUENCE_DIGITS = 4
 
@@ -59,7 +59,7 @@ export function formatSequenceNumber(n: number, digits: number): string {
 
 /**
  * セル枚数に応じた連番桁数を返す。
- * 最低2桁、通常運用の上限は4桁。4桁を超える番号自体は切り捨てない。
+ * 最低1桁、通常運用の上限は4桁。4桁を超える番号自体は切り捨てない。
  */
 export function getSequenceDigitsForCellCount(cellCount: number): number {
   const normalizedCount = Number.isFinite(cellCount)

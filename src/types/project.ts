@@ -21,7 +21,7 @@ export type AnimationSequenceSeparator = 'underscore' | 'none'
 export interface ProjectSettings {
   processTable: ProcessFolderEntry[]
   cellNamingMode: CellNamingMode
-  /** auto: 出力全体の最大連番に合わせる（最低2桁） / fixed-4: 常に4桁 */
+  /** auto: 出力全体の最大連番に合わせる（最低1桁） / fixed-4: 常に4桁 */
   sequenceDigitMode: SequenceDigitMode
   /** 連番の直前に _ を入れるか */
   animationSequenceSeparator: AnimationSequenceSeparator

@@ -71,8 +71,10 @@ describe('formatSequenceNumber', () => {
 })
 
 describe('getSequenceDigitsForCellCount', () => {
-  it('99枚までは最低2桁を返す', () => {
-    expect(getSequenceDigitsForCellCount(1)).toBe(2)
+  it('1〜9枚は1桁、10〜99枚は2桁を返す', () => {
+    expect(getSequenceDigitsForCellCount(1)).toBe(1)
+    expect(getSequenceDigitsForCellCount(9)).toBe(1)
+    expect(getSequenceDigitsForCellCount(10)).toBe(2)
     expect(getSequenceDigitsForCellCount(99)).toBe(2)
   })
 
@@ -87,7 +89,9 @@ describe('getSequenceDigitsForCellCount', () => {
 
 describe('resolveSequenceDigits', () => {
   it('自動では最大連番に合わせる', () => {
-    expect(resolveSequenceDigits('auto', 1)).toBe(2)
+    expect(resolveSequenceDigits('auto', 1)).toBe(1)
+    expect(resolveSequenceDigits('auto', 9)).toBe(1)
+    expect(resolveSequenceDigits('auto', 10)).toBe(2)
     expect(resolveSequenceDigits('auto', 100)).toBe(3)
   })
 

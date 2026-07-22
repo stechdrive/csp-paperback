@@ -122,8 +122,8 @@ describe('extractCells', () => {
 
     const result = extractCells(tree[0], SEQUENCE_CELL_NAME_SETTINGS, 100, 100, EMPTY_CONTEXT)
     expect(result).toHaveLength(2)
-    expect(result[0].flatName).toBe(`A_02_${tree[0].children[0].originalName}.jpg`)
-    expect(result[1].flatName).toBe(`A_01_${tree[0].children[1].originalName}.jpg`)
+    expect(result[0].flatName).toBe(`A_2_${tree[0].children[0].originalName}.jpg`)
+    expect(result[1].flatName).toBe(`A_1_${tree[0].children[1].originalName}.jpg`)
   })
 
   it('非表示セルを除外する', () => {
@@ -311,7 +311,7 @@ describe('extractAllEntries', () => {
       animationSequenceSeparator: 'none',
     }
 
-    expect(extractAllEntries(tree, settings, 100, 100)[0].flatName).toBe('A01.jpg')
+    expect(extractAllEntries(tree, settings, 100, 100)[0].flatName).toBe('A1.jpg')
   })
 
   it('工程名を前に置く場合も工程名と連番の区切りを省略できる', () => {
@@ -326,7 +326,7 @@ describe('extractAllEntries', () => {
     }
 
     expect(extractAllEntries(tree, settings, 100, 100, 'white', false, 'before-cell')[0].flatName)
-      .toBe('A_e01.jpg')
+      .toBe('A_e1.jpg')
   })
 
   it('セル名末尾に工程サフィックスが完全一致する場合は重複付加しない', () => {

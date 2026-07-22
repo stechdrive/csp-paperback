@@ -55,8 +55,8 @@ describe('useOutputPreview', () => {
     const { result } = renderHook(() => useOutputPreview())
 
     expect(result.current).toHaveLength(1)
-    expect(result.current[0].flatName).toBe('A_01.png')
-    expect(result.current[0].path).toBe('A/A_01.png')
+    expect(result.current[0].flatName).toBe('A_1.png')
+    expect(result.current[0].path).toBe('A/A_1.png')
   })
 
   it('連番セル名モードではプレビュー名にもセル名を付加する', () => {
@@ -76,8 +76,8 @@ describe('useOutputPreview', () => {
     const { result } = renderHook(() => useOutputPreview())
 
     expect(result.current).toHaveLength(1)
-    expect(result.current[0].flatName).toBe('A_01_ア.png')
-    expect(result.current[0].path).toBe('A/A_01_ア.png')
+    expect(result.current[0].flatName).toBe('A_1_ア.png')
+    expect(result.current[0].path).toBe('A/A_1_ア.png')
   })
 
   it('最大可視セル数に合わせた連番桁数をプレビュー名にも使う', () => {

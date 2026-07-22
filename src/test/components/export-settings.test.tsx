@@ -49,7 +49,7 @@ describe('ExportSettings naming controls', () => {
     render(<ExportSettings />)
 
     expect(useAppStore.getState().projectSettings.sequenceDigitMode).toBe('auto')
-    expect(screen.getByText('A_01_e.jpg')).toBeInTheDocument()
+    expect(screen.getByText('A_1_e.jpg')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: '4桁' }))
     expect(useAppStore.getState().projectSettings.sequenceDigitMode).toBe('fixed-4')
@@ -61,7 +61,7 @@ describe('ExportSettings naming controls', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'なし' }))
     expect(useAppStore.getState().projectSettings.animationSequenceSeparator).toBe('none')
-    expect(screen.getByText('A01_e.jpg')).toBeInTheDocument()
+    expect(screen.getByText('A1_e.jpg')).toBeInTheDocument()
   })
 
   it('セル名出力では連番専用オプションを隠す', () => {
@@ -87,13 +87,13 @@ describe('ExportSettings naming controls', () => {
       ['PNG', '線や色を劣化させずにPNGで書き出します。透明背景を使いたい場合はこちらを選びます。'],
       ['白ベタ', '透明な部分を白で埋めて書き出します。JPGとPNGのどちらでも使えます。'],
       ['透明（PNG のみ）', '透明な部分を残したまま書き出します。PNGを選んでいるときだけ使えます。'],
-      ['連番', 'フォルダ内のセルへ01、02…の順番で番号を付けます。'],
-      ['連番セル名', 'A_01_ア.jpgのように、連番とクリスタのセル名を両方付けます。'],
+      ['連番', 'フォルダ内のセルへ1、2…の順番で番号を付けます。桁数は出力する最大番号に合わせます。'],
+      ['連番セル名', 'A_1_ア.jpgのように、連番とクリスタのセル名を両方付けます。'],
       ['セル名', 'クリスタのセル名をそのままファイル名に使います。'],
       ['シート連番', /XDTSのタイムライン順に番号を付け/],
-      ['自動', '出力する最大番号に合わせて桁数を自動調整します。通常は01、02…の2桁です。'],
+      ['自動', '出力する最大番号に合わせて桁数を自動調整します。1〜9は1桁、10〜99は2桁になります。'],
       ['4桁', 'すべて0001、0002…の4桁で書き出します。'],
-      ['_ あり', 'A_01.jpgのように、フォルダ名と番号の間へ「_」を入れます。'],
+      ['_ あり', 'A_1.jpgのように、フォルダ名と番号の間へ「_」を入れます。'],
       ['なし', 'A01.jpgのように、フォルダ名と番号を区切らず続けます。'],
       ['全ON', 'すべての修正工程と自動マーク素材を書き出し対象にします。'],
       ['全OFF', 'すべての修正工程と自動マーク素材を書き出し対象から外します。'],
