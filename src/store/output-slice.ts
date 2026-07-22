@@ -9,11 +9,11 @@ import type {
 import { DEFAULT_OUTPUT_CONFIG } from '../types'
 import type { AppStore } from './index'
 
-export type OutputConfigTarget = 'current' | 'quick'
+export type OutputConfigTarget = 'current' | 'saved'
 
 export interface OutputSlice {
   outputConfig: OutputConfig
-  quickExportConfig: OutputConfig
+  savedOutputConfig: OutputConfig
   setFormat: (format: OutputFormat, target?: OutputConfigTarget) => void
   setBackground: (bg: BackgroundMode, target?: OutputConfigTarget) => void
   setStructure: (mode: StructureMode, target?: OutputConfigTarget) => void
@@ -27,7 +27,7 @@ export interface OutputSlice {
 
 export const createOutputSlice: StateCreator<AppStore, [], [], OutputSlice> = (set, get) => {
   const getTargetConfig = (target: OutputConfigTarget) => (
-    target === 'quick' ? get().quickExportConfig : get().outputConfig
+    target === 'saved' ? get().savedOutputConfig : get().outputConfig
   )
 
   const updateTargetConfig = (
@@ -35,18 +35,18 @@ export const createOutputSlice: StateCreator<AppStore, [], [], OutputSlice> = (s
     update: (current: OutputConfig) => OutputConfig,
   ) => {
     const outputConfig = update(getTargetConfig(target))
-    if (target === 'quick') {
-      set({ quickExportConfig: outputConfig })
+    if (target === 'saved') {
+      set({ savedOutputConfig: outputConfig })
       return
     }
 
     get().pushHistory()
-    set({ outputConfig, quickExportConfig: outputConfig })
+    set({ outputConfig, savedOutputConfig: outputConfig })
   }
 
   return {
     outputConfig: DEFAULT_OUTPUT_CONFIG,
-    quickExportConfig: DEFAULT_OUTPUT_CONFIG,
+    savedOutputConfig: DEFAULT_OUTPUT_CONFIG,
 
     setFormat: (format, target = 'current') => {
       updateTargetConfig(target, current => ({

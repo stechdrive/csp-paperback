@@ -34,7 +34,7 @@ function resetStore() {
     selectedVsMemberId: null,
     currentFrame: 0,
     outputConfig: { ...DEFAULT_OUTPUT_CONFIG },
-    quickExportConfig: { ...DEFAULT_OUTPUT_CONFIG },
+    savedOutputConfig: { ...DEFAULT_OUTPUT_CONFIG },
     projectSettings: DEFAULT_PROJECT_SETTINGS,
     activeTheme: DEFAULT_APP_THEME,
     _past: [],

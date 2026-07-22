@@ -19,7 +19,7 @@ beforeEach(() => {
     manualAnimFolderIds: new Set(),
     projectSettings: DEFAULT_PROJECT_SETTINGS,
     outputConfig: DEFAULT_OUTPUT_CONFIG,
-    quickExportConfig: DEFAULT_OUTPUT_CONFIG,
+    savedOutputConfig: DEFAULT_OUTPUT_CONFIG,
     xdtsData: null,
     xdtsFileName: null,
     unmatchedTracks: [],

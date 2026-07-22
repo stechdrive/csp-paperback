@@ -83,7 +83,7 @@ export async function runQuickExport(
   }
 
   onProgress({ progress: 0.38, message: '出力画像を合成しています' })
-  const outputConfig = loadedState.quickExportConfig
+  const outputConfig = loadedState.savedOutputConfig
   const entries = buildOutputEntriesFromState(loadedState, outputConfig)
   if (entries.length === 0) {
     throw new Error('出力対象がありません')

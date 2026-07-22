@@ -5,7 +5,7 @@ import { DEFAULT_OUTPUT_CONFIG } from '../../types'
 beforeEach(() => {
   useAppStore.setState({
     outputConfig: { ...DEFAULT_OUTPUT_CONFIG },
-    quickExportConfig: { ...DEFAULT_OUTPUT_CONFIG },
+    savedOutputConfig: { ...DEFAULT_OUTPUT_CONFIG },
   })
 })
 
@@ -30,12 +30,12 @@ describe('output-slice', () => {
     expect(useAppStore.getState().outputConfig.background).toBe('transparent')
   })
 
-  it('出力設定変更をクイック書き出し設定にも保存する', () => {
+  it('現在の出力設定変更を次回用の設定にも保存する', () => {
     useAppStore.getState().setFormat('png')
     useAppStore.getState().setStructure('hierarchy')
     useAppStore.getState().setExcludeAutoMarked(true)
 
-    expect(useAppStore.getState().quickExportConfig).toEqual(useAppStore.getState().outputConfig)
+    expect(useAppStore.getState().savedOutputConfig).toEqual(useAppStore.getState().outputConfig)
   })
 
   it('pngのときはtransparent背景を選択できる', () => {
@@ -66,16 +66,16 @@ describe('output-slice', () => {
     expect(useAppStore.getState().outputConfig.processSuffixPosition).toBe('before-cell')
   })
 
-  it('修正工程フチの変更を通常・クイック書き出しへ反映する', () => {
+  it('修正工程フチの変更を現在・保存済み設定へ反映する', () => {
     useAppStore.getState().setRevisionBorderEnabled(false)
     expect(useAppStore.getState().outputConfig.revisionBorderEnabled).toBe(false)
-    expect(useAppStore.getState().quickExportConfig.revisionBorderEnabled).toBe(false)
+    expect(useAppStore.getState().savedOutputConfig.revisionBorderEnabled).toBe(false)
   })
 
-  it('起動画面からは保存済みクイック設定だけを変更する', () => {
+  it('起動画面からは保存済み設定だけを変更する', () => {
     useAppStore.setState({
       outputConfig: { ...DEFAULT_OUTPUT_CONFIG, revisionBorderEnabled: true },
-      quickExportConfig: {
+      savedOutputConfig: {
         ...DEFAULT_OUTPUT_CONFIG,
         format: 'png',
         background: 'transparent',
@@ -84,10 +84,10 @@ describe('output-slice', () => {
       },
     })
 
-    useAppStore.getState().setRevisionBorderEnabled(false, 'quick')
+    useAppStore.getState().setRevisionBorderEnabled(false, 'saved')
 
     expect(useAppStore.getState().outputConfig.revisionBorderEnabled).toBe(true)
-    expect(useAppStore.getState().quickExportConfig).toMatchObject({
+    expect(useAppStore.getState().savedOutputConfig).toMatchObject({
       format: 'png',
       background: 'transparent',
       structure: 'hierarchy',

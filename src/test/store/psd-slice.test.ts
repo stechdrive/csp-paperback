@@ -20,7 +20,7 @@ beforeEach(() => {
     manualAnimFolderIds: new Set(),
     selectedLayerId: null,
     outputConfig: DEFAULT_OUTPUT_CONFIG,
-    quickExportConfig: DEFAULT_OUTPUT_CONFIG,
+    savedOutputConfig: DEFAULT_OUTPUT_CONFIG,
     projectSettings: DEFAULT_PROJECT_SETTINGS,
     activeTheme: DEFAULT_APP_THEME,
   })
@@ -75,7 +75,12 @@ describe('psd-slice', () => {
       manualAnimFolderIds: new Set(['folder-1']),
       selectedLayerId: 'layer-1',
       outputConfig: { ...DEFAULT_OUTPUT_CONFIG, format: 'png', background: 'transparent' },
-      quickExportConfig: { ...DEFAULT_OUTPUT_CONFIG, format: 'png', background: 'transparent' },
+      savedOutputConfig: {
+        ...DEFAULT_OUTPUT_CONFIG,
+        format: 'png',
+        background: 'transparent',
+        structure: 'hierarchy',
+      },
       projectSettings,
     })
 
@@ -90,11 +95,17 @@ describe('psd-slice', () => {
     expect(state.virtualSets).toEqual([])
     expect(state.manualAnimFolderIds.size).toBe(0)
     expect(state.selectedLayerId).toBeNull()
-    expect(state.outputConfig).toEqual(DEFAULT_OUTPUT_CONFIG)
-    expect(state.quickExportConfig).toEqual({
+    expect(state.outputConfig).toEqual({
       ...DEFAULT_OUTPUT_CONFIG,
       format: 'png',
       background: 'transparent',
+      structure: 'hierarchy',
+    })
+    expect(state.savedOutputConfig).toEqual({
+      ...DEFAULT_OUTPUT_CONFIG,
+      format: 'png',
+      background: 'transparent',
+      structure: 'hierarchy',
     })
     expect(state.projectSettings).toEqual(projectSettings)
   })

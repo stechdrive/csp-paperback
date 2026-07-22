@@ -344,8 +344,9 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   <div className={styles.stepBody}>
                     <div className={styles.stepTitle}>先に出力設定を決める</div>
                     <div className={styles.stepDesc}>
-                      アプリを普通に起動すると、中央ペイン上部にクイック書き出し設定が表示されます。
-                      JPG/PNG、背景、階層/フラット、出力名、修正工程フチ、どの工程・単体出力を含めるかをここで設定します。
+                      アプリを普通に起動し、中央ペイン上部の「書き出し設定」で、JPG/PNG、背景、階層/フラット、
+                      出力名、修正工程フチ、どの工程・単体出力を含めるかを設定します。
+                      この設定は通常のPSD読み込みとクイック書き出しで共通して使われます。
                     </div>
                   </div>
                 </div>

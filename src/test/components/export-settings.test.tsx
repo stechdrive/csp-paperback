@@ -9,7 +9,7 @@ beforeEach(() => {
     layerTree: [],
     unmatchedTracks: [],
     outputConfig: { ...DEFAULT_OUTPUT_CONFIG },
-    quickExportConfig: { ...DEFAULT_OUTPUT_CONFIG },
+    savedOutputConfig: { ...DEFAULT_OUTPUT_CONFIG },
     projectSettings: {
       ...DEFAULT_PROJECT_SETTINGS,
       processTable: DEFAULT_PROJECT_SETTINGS.processTable.map(entry => ({
@@ -32,10 +32,10 @@ afterEach(() => {
 })
 
 describe('ExportSettings naming controls', () => {
-  it('クイック書き出し対象では保存済み設定を表示し、その設定だけを変更する', () => {
+  it('起動画面では保存済み設定を表示し、その設定だけを変更する', () => {
     useAppStore.setState({
       outputConfig: { ...DEFAULT_OUTPUT_CONFIG, revisionBorderEnabled: true },
-      quickExportConfig: {
+      savedOutputConfig: {
         ...DEFAULT_OUTPUT_CONFIG,
         format: 'png',
         background: 'transparent',
@@ -44,14 +44,14 @@ describe('ExportSettings naming controls', () => {
       },
     })
 
-    render(<ExportSettings configTarget="quick" />)
+    render(<ExportSettings configTarget="saved" />)
 
     expect(screen.getByRole('button', { name: '透明（PNG のみ）' })).toHaveAttribute('aria-disabled', 'false')
     expect(screen.getByRole('switch', { name: 'フォルダ分け' })).toHaveAttribute('aria-checked', 'true')
 
     fireEvent.click(screen.getByRole('switch', { name: '修正工程' }))
-    expect(useAppStore.getState().quickExportConfig.revisionBorderEnabled).toBe(false)
-    expect(useAppStore.getState().quickExportConfig.format).toBe('png')
+    expect(useAppStore.getState().savedOutputConfig.revisionBorderEnabled).toBe(false)
+    expect(useAppStore.getState().savedOutputConfig.format).toBe('png')
     expect(useAppStore.getState().outputConfig.revisionBorderEnabled).toBe(true)
   })
 
@@ -64,7 +64,7 @@ describe('ExportSettings naming controls', () => {
 
     fireEvent.click(toggle)
     expect(useAppStore.getState().outputConfig.revisionBorderEnabled).toBe(false)
-    expect(useAppStore.getState().quickExportConfig.revisionBorderEnabled).toBe(false)
+    expect(useAppStore.getState().savedOutputConfig.revisionBorderEnabled).toBe(false)
     expect(screen.getByText('フチなし')).toBeInTheDocument()
   })
 

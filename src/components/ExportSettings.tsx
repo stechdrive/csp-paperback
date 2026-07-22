@@ -68,7 +68,7 @@ interface ExportSettingsProps {
 
 export function ExportSettings({ configTarget = 'current' }: ExportSettingsProps) {
   const outputConfig = useAppStore(s => (
-    configTarget === 'quick' ? s.quickExportConfig : s.outputConfig
+    configTarget === 'saved' ? s.savedOutputConfig : s.outputConfig
   ))
   const projectSettings = useAppStore(s => s.projectSettings)
   const layerTree = useAppStore(selectLayerTreeWithVisibility)

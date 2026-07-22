@@ -140,25 +140,19 @@ function ExportSettingsDrawer() {
   )
 }
 
-function StartupQuickExportSettings() {
+function StartupExportSettings() {
   return (
     <section
-      className={styles.startupQuickSettings}
-      aria-labelledby="startup-quick-settings-title"
-      data-testid="startup-quick-export-settings"
+      className={styles.startupSettings}
+      aria-labelledby="startup-settings-title"
+      data-testid="startup-export-settings"
     >
-      <div className={styles.startupQuickHeader}>
-        <div id="startup-quick-settings-title" className={styles.startupQuickTitle}>
-          ⚡ クイック書き出し設定
-        </div>
-        <div className={styles.startupQuickText}>
-          ここで変更した内容は自動保存され、次回のクイック書き出しに使われます。
+      <div className={styles.startupSettingsHeader}>
+        <div id="startup-settings-title" className={styles.startupSettingsTitle}>
+          書き出し設定
         </div>
       </div>
-      <ExportSettings configTarget="quick" />
-      <div className={styles.startupQuickHint}>
-        設定後はPSDとXDTSを同時にEXEまたはショートカットへドロップしてください。
-      </div>
+      <ExportSettings configTarget="saved" />
     </section>
   )
 }
@@ -216,13 +210,12 @@ export function PreviewPanel() {
   }, [navHeight])
 
   if (docWidth === 0) {
-    const desktop = isDesktopRuntime()
     return (
       <div className={styles.panel}>
         <div className={styles.header}>
           <span>プレビュー</span>
         </div>
-        {desktop && <StartupQuickExportSettings />}
+        <StartupExportSettings />
         <div className={styles.emptyWrapper} data-testid="startup-guide-scroll">
           <div className={styles.empty}>
             {/* XDTS 読み込み済みバナー */}

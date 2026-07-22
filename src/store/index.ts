@@ -45,19 +45,21 @@ export const useAppStore = create<AppStore>()(
       version: 1,
       partialize: (state) => ({
         projectSettings: state.projectSettings,
-        quickExportConfig: state.quickExportConfig,
+        savedOutputConfig: state.savedOutputConfig,
         mobileUiScale: state.mobileUiScale,
         activeTheme: state.activeTheme,
       }),
       merge: (persisted, current) => {
         const p = persisted as {
           projectSettings?: Partial<typeof DEFAULT_PROJECT_SETTINGS>
+          savedOutputConfig?: typeof DEFAULT_OUTPUT_CONFIG
           quickExportConfig?: typeof DEFAULT_OUTPUT_CONFIG
           mobileUiScale?: number
           activeTheme?: unknown
         } | undefined
         const persistedTheme = p?.activeTheme
         const persistedProjectSettings = p?.projectSettings
+        const persistedOutputConfig = p?.savedOutputConfig ?? p?.quickExportConfig
         const cellPrefixSeparator = resolveCellPrefixSeparator(persistedProjectSettings ?? {})
         return {
           ...current,
@@ -72,7 +74,7 @@ export const useAppStore = create<AppStore>()(
               persistedProjectSettings?.processTable ?? DEFAULT_PROJECT_SETTINGS.processTable,
             ),
           },
-          quickExportConfig: { ...DEFAULT_OUTPUT_CONFIG, ...p?.quickExportConfig },
+          savedOutputConfig: { ...DEFAULT_OUTPUT_CONFIG, ...persistedOutputConfig },
           mobileUiScale: clampMobileUiScale(p?.mobileUiScale ?? DEFAULT_MOBILE_UI_SCALE),
           activeTheme: isAppTheme(persistedTheme) ? persistedTheme : DEFAULT_APP_THEME,
         }

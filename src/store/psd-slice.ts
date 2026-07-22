@@ -1,6 +1,6 @@
 import type { StateCreator } from 'zustand'
 import type { Psd } from 'ag-psd'
-import { DEFAULT_OUTPUT_CONFIG, type BlendMode, type CspLayer } from '../types'
+import type { BlendMode, CspLayer } from '../types'
 import { readPsdFile } from '../utils/psd-io'
 import { buildLayerTree, detectAnimationFoldersByXdts } from '../engine/tree-builder'
 import { sanitizeManualAnimFolderIds } from '../utils/manual-animation-folder'
@@ -191,7 +191,7 @@ export const createPsdSlice: StateCreator<AppStore, [], [], PsdSlice> = (set, ge
       expandedFolders: new Set(),
       userCollapsedFolders: new Set(),
       currentFrame: 0,
-      outputConfig: DEFAULT_OUTPUT_CONFIG,
+      outputConfig: { ...get().savedOutputConfig },
       _past: [],
       _future: [],
       canUndo: false,
