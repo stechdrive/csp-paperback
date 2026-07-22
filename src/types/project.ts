@@ -1,6 +1,8 @@
 export interface ProcessFolderEntry {
   suffix: string           // 例: '_en'
   folderNames: string[]    // 例: ['EN', '演出修正', 'ens', '演修']
+  /** 修正工程フチに使う色。旧設定JSONとの互換のため省略を許可する */
+  revisionBorderColor?: string
 }
 
 /** セル画像名の命名モード */
@@ -33,11 +35,11 @@ export interface ProjectSettings {
 
 export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
   processTable: [
-    { suffix: '_e', folderNames: ['_e', '演出'] },
-    { suffix: '_k',  folderNames: ['_k',  '監督'] },
-    { suffix: '_s',  folderNames: ['_s',  '作監'] },
-    { suffix: '_y',  folderNames: ['_y',  '料理作監'] },
-    { suffix: '_ss', folderNames: ['_ss', '総作監'] },
+    { suffix: '_e', folderNames: ['_e', '演出'], revisionBorderColor: '#FBECE6' },
+    { suffix: '_k',  folderNames: ['_k',  '監督'], revisionBorderColor: '#DCE4F1' },
+    { suffix: '_s',  folderNames: ['_s',  '作監'], revisionBorderColor: '#FCF9CF' },
+    { suffix: '_y',  folderNames: ['_y',  '料理作監'], revisionBorderColor: '#FFDDAA' },
+    { suffix: '_ss', folderNames: ['_ss', '総作監'], revisionBorderColor: '#EAF6D5' },
   ],
   cellNamingMode: 'sequence',
   sequenceDigitMode: 'auto',

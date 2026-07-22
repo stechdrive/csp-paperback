@@ -8,6 +8,7 @@ import type {
 } from '../types'
 import { DEFAULT_PROJECT_SETTINGS } from '../types'
 import { buildDefaultVisibilityOverrides } from '../utils/default-visibility'
+import { normalizeProcessTableColors } from '../utils/process-color'
 import type { AppStore } from './index'
 
 export interface ProjectSlice {
@@ -28,7 +29,12 @@ export const createProjectSlice: StateCreator<AppStore, [], [], ProjectSlice> = 
 
   updateProcessTable: (table) => {
     get().pushHistory()
-    set({ projectSettings: { ...get().projectSettings, processTable: table } })
+    set({
+      projectSettings: {
+        ...get().projectSettings,
+        processTable: normalizeProcessTableColors(table),
+      },
+    })
   },
 
   setCellNamingMode: (mode) => {
@@ -79,6 +85,11 @@ export const createProjectSlice: StateCreator<AppStore, [], [], ProjectSlice> = 
         projectSettings: {
           ...DEFAULT_PROJECT_SETTINGS,
           ...parsed,
+          processTable: normalizeProcessTableColors(
+            Array.isArray(parsed.processTable)
+              ? parsed.processTable
+              : DEFAULT_PROJECT_SETTINGS.processTable,
+          ),
           autoMarkFolderNames: Array.isArray(parsed.autoMarkFolderNames)
             ? parsed.autoMarkFolderNames
             : DEFAULT_PROJECT_SETTINGS.autoMarkFolderNames,

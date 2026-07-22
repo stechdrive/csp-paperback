@@ -62,6 +62,7 @@ export function ExportSettings() {
   const toggleProcessSuffixExclusion = useAppStore(s => s.toggleProcessSuffixExclusion)
   const setAllProcessSuffixExclusions = useAppStore(s => s.setAllProcessSuffixExclusions)
   const setExcludeAutoMarked = useAppStore(s => s.setExcludeAutoMarked)
+  const setRevisionBorderEnabled = useAppStore(s => s.setRevisionBorderEnabled)
   const { t } = useLocale()
 
   const processSuffixes = projectSettings.processTable.map(e => e.suffix)
@@ -224,6 +225,24 @@ export function ExportSettings() {
               {outputConfig.processSuffixPosition === 'before-cell'
                 ? t.export.processSuffixBeforeCell
                 : t.export.processSuffixAfterCell}
+            </span>
+          </label>
+        </Tooltip>
+
+        <Tooltip content={t.export.revisionBorderHint} placement="bottom">
+          <label className={styles.switchLabel}>
+            <span className={styles.label}>{t.export.revisionBorder}</span>
+            <span
+              className={`${styles.switch} ${outputConfig.revisionBorderEnabled ? styles.switchOn : ''}`}
+              onClick={() => setRevisionBorderEnabled(!outputConfig.revisionBorderEnabled)}
+              role="switch"
+              aria-label={t.export.revisionBorder}
+              aria-checked={outputConfig.revisionBorderEnabled}
+            />
+            <span className={styles.switchValue}>
+              {outputConfig.revisionBorderEnabled
+                ? t.export.revisionBorderOn
+                : t.export.revisionBorderOff}
             </span>
           </label>
         </Tooltip>

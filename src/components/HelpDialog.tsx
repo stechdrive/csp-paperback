@@ -1229,6 +1229,12 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               </p>
 
               <div className={styles.calloutInfo}>
+                中央ペインの<span className={styles.strong}>修正工程</span>をONにすると、
+                工程別の出力画像へ工程ごとの色で内側70pxの確認フチを乗算・不透明度80%で合成します。
+                色は設定画面の色四角から、カラーパレット、RGB、HEXで指定できます。
+              </div>
+
+              <div className={styles.calloutInfo}>
                 工程フォルダリストは<span className={styles.strong}>2つのテンプレート形式</span>に対応しています。
                 カット担当と修正担当が別フォルダで作業する「トラック分離型」でも、
                 1つのセルフォルダ内に工程サブフォルダを置く「セル内蔵型」でも、

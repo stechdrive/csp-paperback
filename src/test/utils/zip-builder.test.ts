@@ -130,6 +130,7 @@ describe('buildZipStream', () => {
     processSuffixPosition: 'after-cell',
     excludeAutoMarked: false,
     excludedProcessSuffixes: [],
+    revisionBorderEnabled: false,
   }
 
   it('ReadableStream を返す', () => {

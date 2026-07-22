@@ -20,6 +20,7 @@ export interface OutputSlice {
   toggleProcessSuffixExclusion: (suffix: string) => void
   setAllProcessSuffixExclusions: (suffixes: string[]) => void
   setExcludeAutoMarked: (exclude: boolean) => void
+  setRevisionBorderEnabled: (enabled: boolean) => void
 }
 
 export const createOutputSlice: StateCreator<AppStore, [], [], OutputSlice> = (set, get) => ({
@@ -91,6 +92,12 @@ export const createOutputSlice: StateCreator<AppStore, [], [], OutputSlice> = (s
   setExcludeAutoMarked: (excludeAutoMarked) => {
     get().pushHistory()
     const outputConfig = { ...get().outputConfig, excludeAutoMarked }
+    set({ outputConfig, quickExportConfig: outputConfig })
+  },
+
+  setRevisionBorderEnabled: (revisionBorderEnabled) => {
+    get().pushHistory()
+    const outputConfig = { ...get().outputConfig, revisionBorderEnabled }
     set({ outputConfig, quickExportConfig: outputConfig })
   },
 })

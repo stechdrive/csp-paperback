@@ -46,6 +46,20 @@ describe('project-slice - auto mark folder names', () => {
     expect(useAppStore.getState().projectSettings.autoMarkFolderNames).toEqual(['撮影指示', '原図'])
   })
 
+  it('既定工程に指定されたRGB色を登録する', () => {
+    const colors = Object.fromEntries(
+      useAppStore.getState().projectSettings.processTable
+        .map(entry => [entry.folderNames[1], entry.revisionBorderColor]),
+    )
+    expect(colors).toMatchObject({
+      演出: '#FBECE6',
+      監督: '#DCE4F1',
+      作監: '#FCF9CF',
+      総作監: '#EAF6D5',
+      料理作監: '#FFDDAA',
+    })
+  })
+
   it('登録名の変更をUndo/Redoできる', () => {
     useAppStore.getState().updateAutoMarkFolderNames(['BOOK'])
     expect(useAppStore.getState().projectSettings.autoMarkFolderNames).toEqual(['BOOK'])
@@ -67,6 +81,17 @@ describe('project-slice - auto mark folder names', () => {
     expect(useAppStore.getState().projectSettings.autoMarkFolderNames).toEqual(['撮影指示', '原図'])
     expect(useAppStore.getState().projectSettings.sequenceDigitMode).toBe('auto')
     expect(useAppStore.getState().projectSettings.animationSequenceSeparator).toBe('underscore')
+  })
+
+  it('色を持たない旧形式の工程テーブルへ既定色を補う', () => {
+    useAppStore.getState().importSettings(JSON.stringify({
+      processTable: [{ suffix: '_sak', folderNames: ['作監'] }],
+      cellNamingMode: 'sequence',
+      archivePatterns: ['_old'],
+    }))
+
+    expect(useAppStore.getState().projectSettings.processTable[0].revisionBorderColor)
+      .toBe('#FCF9CF')
   })
 
   it('設定JSONへ登録名を含める', () => {

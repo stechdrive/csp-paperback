@@ -12,6 +12,7 @@ export interface OutputConfig {
   processSuffixPosition: ProcessSuffixPosition // 工程サフィックスの挿入位置
   excludedProcessSuffixes: string[]  // 出力から除外する工程サフィックス
   excludeAutoMarked: boolean         // _プレフィックス自動マークレイヤーを除外
+  revisionBorderEnabled: boolean     // 修正工程画像の外周に確認用フチを合成
 }
 
 export const DEFAULT_OUTPUT_CONFIG: OutputConfig = {
@@ -22,6 +23,7 @@ export const DEFAULT_OUTPUT_CONFIG: OutputConfig = {
   processSuffixPosition: 'after-cell',
   excludedProcessSuffixes: [],
   excludeAutoMarked: false,
+  revisionBorderEnabled: false,
 }
 
 export interface OutputEntry {

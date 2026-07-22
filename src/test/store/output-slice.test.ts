@@ -16,6 +16,7 @@ describe('output-slice', () => {
     expect(outputConfig.background).toBe('white')
     expect(outputConfig.structure).toBe('flat')
     expect(outputConfig.processSuffixPosition).toBe('after-cell')
+    expect(outputConfig.revisionBorderEnabled).toBe(false)
   })
 
   it('setFormatでjpgに変更すると背景が強制的にwhiteになる', () => {
@@ -63,6 +64,12 @@ describe('output-slice', () => {
   it('setProcessSuffixPositionで工程名の位置を変更する', () => {
     useAppStore.getState().setProcessSuffixPosition('before-cell')
     expect(useAppStore.getState().outputConfig.processSuffixPosition).toBe('before-cell')
+  })
+
+  it('修正工程フチの変更を通常・クイック書き出しへ反映する', () => {
+    useAppStore.getState().setRevisionBorderEnabled(true)
+    expect(useAppStore.getState().outputConfig.revisionBorderEnabled).toBe(true)
+    expect(useAppStore.getState().quickExportConfig.revisionBorderEnabled).toBe(true)
   })
 
 })

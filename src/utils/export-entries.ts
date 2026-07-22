@@ -2,6 +2,7 @@ import { extractAllEntries, extractVirtualSetEntries } from '../engine/cell-extr
 import { selectLayerTreeWithVisibility } from '../store/selectors'
 import type { AppStore } from '../store'
 import type { OutputConfig, OutputEntry } from '../types'
+import { applyRevisionBorders } from './revision-border'
 
 export function buildOutputEntriesFromState(
   state: AppStore,
@@ -26,6 +27,12 @@ export function buildOutputEntriesFromState(
       !entry.processSuffixes?.some(suffix => excluded.has(suffix))
     )
   }
+
+  entries = applyRevisionBorders(
+    entries,
+    state.projectSettings.processTable,
+    outputConfig.revisionBorderEnabled,
+  )
 
   const virtualSetEntries = extractVirtualSetEntries(
     tree,

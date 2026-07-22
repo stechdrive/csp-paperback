@@ -29,6 +29,19 @@ beforeEach(() => {
 afterEach(() => cleanup())
 
 describe('ExportSettings naming controls', () => {
+  it('修正工程フチを中央ペインでオンオフできる', () => {
+    render(<ExportSettings />)
+
+    const toggle = screen.getByRole('switch', { name: '修正工程' })
+    expect(toggle).toHaveAttribute('aria-checked', 'false')
+    expect(screen.getByText('フチなし')).toBeInTheDocument()
+
+    fireEvent.click(toggle)
+    expect(useAppStore.getState().outputConfig.revisionBorderEnabled).toBe(true)
+    expect(useAppStore.getState().quickExportConfig.revisionBorderEnabled).toBe(true)
+    expect(screen.getByText('フチあり')).toBeInTheDocument()
+  })
+
   it('中央ペインの頻用設定として自動桁数を初期選択し、サンプルへ反映する', () => {
     render(<ExportSettings />)
 

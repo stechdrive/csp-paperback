@@ -14,6 +14,8 @@ import {
   resolveAnimationSequenceSeparator,
   resolveSequenceDigits,
 } from '../utils/naming'
+import { normalizeProcessTableColors, resolveProcessBorderColor } from '../utils/process-color'
+import { ProcessColorPicker } from './ProcessColorPicker'
 
 interface SettingsDialogProps {
   onClose: () => void
@@ -50,7 +52,7 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
   const { t } = useLocale()
 
   const [tableRows, setTableRows] = useState<ProcessFolderEntry[]>(
-    projectSettings.processTable
+    normalizeProcessTableColors(projectSettings.processTable)
   )
   const [autoMarkRows, setAutoMarkRows] = useState<string[]>(
     projectSettings.autoMarkFolderNames ?? DEFAULT_PROJECT_SETTINGS.autoMarkFolderNames
@@ -101,8 +103,20 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
     updateProcessTable(next)
   }
 
+  const handleBorderColorChange = (i: number, revisionBorderColor: string) => {
+    const next = tableRows.map((row, idx) => idx === i
+      ? { ...row, revisionBorderColor }
+      : row)
+    setTableRows(next)
+    updateProcessTable(next)
+  }
+
   const addRow = () => {
-    const next = [...tableRows, { suffix: '', folderNames: [] }]
+    const next = [...tableRows, {
+      suffix: '',
+      folderNames: [],
+      revisionBorderColor: '#FBECE6',
+    }]
     setTableRows(next)
     updateProcessTable(next)
   }
@@ -167,7 +181,7 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
       const text = await file.text()
       importSettings(text)
       const s = useAppStore.getState().projectSettings
-      setTableRows(s.processTable)
+      setTableRows(normalizeProcessTableColors(s.processTable))
       setAutoMarkRows(s.autoMarkFolderNames ?? DEFAULT_PROJECT_SETTINGS.autoMarkFolderNames)
       setArchiveRows(s.archivePatterns ?? DEFAULT_PROJECT_SETTINGS.archivePatterns)
       return
@@ -182,7 +196,7 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
       const text = await file.text()
       importSettings(text)
       const s = useAppStore.getState().projectSettings
-      setTableRows(s.processTable)
+      setTableRows(normalizeProcessTableColors(s.processTable))
       setAutoMarkRows(s.autoMarkFolderNames ?? DEFAULT_PROJECT_SETTINGS.autoMarkFolderNames)
       setArchiveRows(s.archivePatterns ?? DEFAULT_PROJECT_SETTINGS.archivePatterns)
     }
@@ -251,6 +265,7 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
             <div className={styles.tableHeader}>
               <span>{t.settings.colSuffix}</span>
               <span>{t.settings.colFolderNames}</span>
+              <span>{t.settings.colBorderColor}</span>
               <span>出力サンプル</span>
               <span></span>
             </div>
@@ -268,6 +283,19 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
                   onChange={e => handleFolderNamesChange(i, e.target.value)}
                   placeholder="EN, 演出修正, ens"
                 />
+                <div className={styles.colorCell}>
+                  <ProcessColorPicker
+                    color={resolveProcessBorderColor(row)}
+                    label={
+                      row.folderNames.find(name => name.trim() && !name.trim().startsWith('_'))
+                      || row.folderNames.find(Boolean)
+                      || row.suffix
+                      || `工程${i + 1}`
+                    }
+                    onChange={color => handleBorderColorChange(i, color)}
+                  />
+                  <code>{resolveProcessBorderColor(row).slice(1)}</code>
+                </div>
                 <span className={styles.sampleLabel}>
                   {makeCellFileName({
                     trackName: 'A',

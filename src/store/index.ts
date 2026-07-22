@@ -11,6 +11,7 @@ import { createUiSlice, type UiSlice } from './ui-slice'
 import { createHistorySlice, type HistorySlice } from './history-slice'
 import { DEFAULT_MOBILE_UI_SCALE, clampMobileUiScale } from '../utils/mobile-ui-scale'
 import { DEFAULT_APP_THEME, isAppTheme } from '../theme'
+import { normalizeProcessTableColors } from '../utils/process-color'
 
 export type AppStore =
   PsdSlice &
@@ -53,7 +54,13 @@ export const useAppStore = create<AppStore>()(
         const persistedTheme = p?.activeTheme
         return {
           ...current,
-          projectSettings: { ...DEFAULT_PROJECT_SETTINGS, ...p?.projectSettings },
+          projectSettings: {
+            ...DEFAULT_PROJECT_SETTINGS,
+            ...p?.projectSettings,
+            processTable: normalizeProcessTableColors(
+              p?.projectSettings?.processTable ?? DEFAULT_PROJECT_SETTINGS.processTable,
+            ),
+          },
           quickExportConfig: { ...DEFAULT_OUTPUT_CONFIG, ...p?.quickExportConfig },
           mobileUiScale: clampMobileUiScale(p?.mobileUiScale ?? DEFAULT_MOBILE_UI_SCALE),
           activeTheme: isAppTheme(persistedTheme) ? persistedTheme : DEFAULT_APP_THEME,

@@ -12,7 +12,7 @@
   background: var(--color-surface-1);
   border: 1px solid var(--color-border-strong);
   border-radius: 8px;
-  width: 520px;
+  width: 780px;
   max-width: 95vw;
   max-height: 85vh;
   display: flex;
@@ -164,7 +164,7 @@
 /* processTable */
 .tableHeader {
   display: grid;
-  grid-template-columns: 90px 1fr auto auto;
+  grid-template-columns: 90px minmax(180px, 1fr) 110px auto auto;
   gap: 0.4rem;
   font-size: 0.75rem;
   color: var(--color-text-secondary);
@@ -173,7 +173,7 @@
 
 .tableRow {
   display: grid;
-  grid-template-columns: 90px 1fr auto auto;
+  grid-template-columns: 90px minmax(180px, 1fr) 110px auto auto;
   gap: 0.4rem;
   align-items: center;
 }
@@ -187,6 +187,193 @@
   background: rgba(var(--color-info-rgb), 0.08);
   border-radius: 3px;
   border: 1px solid rgba(var(--color-info-rgb), 0.2);
+}
+
+.colorCell {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.colorCell code {
+  color: var(--color-text-muted);
+  font-size: 0.7rem;
+}
+
+.colorSwatchButton {
+  width: 1.75rem;
+  height: 1.75rem;
+  flex: 0 0 auto;
+  border: 2px solid var(--color-text-primary);
+  border-radius: 0.25rem;
+  box-shadow: 0 0 0 1px var(--color-border-strong), inset 0 0 0 1px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+}
+
+.colorSwatchButton:hover {
+  transform: scale(1.06);
+}
+
+.colorPickerOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.58);
+}
+
+.colorPickerDialog {
+  width: min(27rem, calc(100vw - 2rem));
+  padding: 1rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 0.75rem;
+  background: var(--color-surface-2);
+  color: var(--color-text-primary);
+  box-shadow: 0 1.25rem 4rem rgba(0, 0, 0, 0.45);
+}
+
+.colorPickerHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.colorPickerTitle {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.colorPickerHint {
+  margin-top: 0.15rem;
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+}
+
+.colorPickerClose {
+  border: 0;
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.nativeColorRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 0.5rem;
+  background: var(--color-bg-app);
+  cursor: pointer;
+}
+
+.nativeColorRow strong,
+.nativeColorRow small {
+  display: block;
+}
+
+.nativeColorRow strong {
+  font-size: 0.82rem;
+}
+
+.nativeColorRow small {
+  margin-top: 0.15rem;
+  color: var(--color-text-muted);
+  font-size: 0.7rem;
+}
+
+.nativeColorInput {
+  width: 5.5rem;
+  height: 4rem;
+  padding: 0.2rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 0.4rem;
+  background: none;
+  cursor: pointer;
+}
+
+.rgbFields {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.6rem;
+  margin-top: 0.85rem;
+}
+
+.colorNumberField,
+.hexField {
+  display: grid;
+  gap: 0.25rem;
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+}
+
+.colorNumberField input,
+.hexInputWrapper {
+  width: 100%;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 0.35rem;
+  background: var(--color-bg-app);
+  color: var(--color-text-primary);
+}
+
+.colorNumberField input {
+  padding: 0.45rem 0.5rem;
+}
+
+.hexField {
+  margin-top: 0.75rem;
+}
+
+.hexInputWrapper {
+  display: flex;
+  align-items: center;
+  padding-left: 0.55rem;
+  font-family: monospace;
+}
+
+.hexInputWrapper input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.45rem 0.5rem 0.45rem 0.15rem;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  text-transform: uppercase;
+}
+
+.colorPickerPreview {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-top: 0.85rem;
+  color: var(--color-text-muted);
+  font-size: 0.74rem;
+}
+
+.colorPickerPreview > span:first-child {
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 0.3rem;
+}
+
+.colorPickerDone {
+  width: 100%;
+  margin-top: 1rem;
+  padding: 0.55rem;
+  border: 1px solid var(--color-accent);
+  border-radius: 0.4rem;
+  background: var(--color-accent);
+  color: white;
+  cursor: pointer;
+  font-weight: 700;
 }
 
 .tableInput {
@@ -344,12 +531,22 @@
   }
 
   .tableHeader {
-    grid-template-columns: 4.375rem 1fr auto auto;
+    display: none;
     font-size: 0.7rem;
   }
 
   .tableRow {
-    grid-template-columns: 4.375rem 1fr auto auto;
+    grid-template-columns: 4.375rem minmax(9rem, 1fr) auto;
+  }
+
+  .tableRow .colorCell,
+  .tableRow .sampleLabel {
+    grid-column: 2;
+  }
+
+  .tableRow .removeRowBtn {
+    grid-column: 3;
+    grid-row: 1;
   }
 
   .tableInput {

@@ -24,6 +24,7 @@ import { collectMembersInTreeOrder, buildMemberFlatsWithOverride } from '../util
 import { resolveSelectedAnimCell } from '../utils/anim-cell-selection'
 import { isAutoMarkedContainerOutputSuppressed } from '../utils/auto-marked-container'
 import type { CspLayer, OutputEntry, ProjectSettings, OutputConfig, OutputFormat, XdtsData } from '../types'
+import { applyRevisionBorders } from '../utils/revision-border'
 
 export interface OutputPreviewEntry {
   canvas: HTMLCanvasElement
@@ -35,8 +36,17 @@ function replacePreviewExtension(fileName: string, format: OutputFormat): string
   return fileName ? replaceExtension(fileName, format) : fileName
 }
 
-function mapPreviewEntries(entries: OutputEntry[], format: OutputFormat): OutputPreviewEntry[] {
-  return entries.map(e => ({
+function mapPreviewEntries(
+  entries: OutputEntry[],
+  format: OutputFormat,
+  projectSettings: ProjectSettings,
+  revisionBorderEnabled: boolean,
+): OutputPreviewEntry[] {
+  return applyRevisionBorders(
+    entries,
+    projectSettings.processTable,
+    revisionBorderEnabled,
+  ).map(e => ({
     canvas: e.canvas,
     flatName: replacePreviewExtension(e.flatName, format),
     path: replacePreviewExtension(e.path, format),
@@ -83,7 +93,12 @@ export function useOutputPreview(): OutputPreviewEntry[] {
         const entries = extractVirtualSetEntries(
           layerTree, [vs], docWidth, docHeight, outputConfig.background,
         )
-        return mapPreviewEntries(entries, outputConfig.format)
+        return mapPreviewEntries(
+          entries,
+          outputConfig.format,
+          projectSettings,
+          outputConfig.revisionBorderEnabled,
+        )
       }
 
       // 未配置: グローバルコンテキストで仮プレビュー（ZIP出力対象外）
@@ -243,7 +258,12 @@ function previewAnimFolder(
     // 一致なし（本体レイヤー等）の場合はセル全エントリをフォールバック表示
   }
 
-  return mapPreviewEntries(entries, outputConfig.format)
+  return mapPreviewEntries(
+    entries,
+    outputConfig.format,
+    projectSettings,
+    outputConfig.revisionBorderEnabled,
+  )
 }
 
 /**

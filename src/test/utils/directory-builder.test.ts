@@ -16,6 +16,7 @@ const BASE_CONFIG: OutputConfig = {
   processSuffixPosition: 'after-cell',
   excludedProcessSuffixes: [],
   excludeAutoMarked: false,
+  revisionBorderEnabled: false,
 }
 
 const originalShowDirectoryPicker = Object.getOwnPropertyDescriptor(window, 'showDirectoryPicker')
