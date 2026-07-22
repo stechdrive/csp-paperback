@@ -1,4 +1,14 @@
-import type { CspLayer, FlatLayer, OutputEntry, ProjectSettings, ProcessSuffixPosition, XdtsData, XdtsTrack } from '../types'
+import {
+  resolveCellPrefixSeparator,
+  resolveIncludeXdtsTrackPrefixInCellName,
+  type CspLayer,
+  type FlatLayer,
+  type OutputEntry,
+  type ProjectSettings,
+  type ProcessSuffixPosition,
+  type XdtsData,
+  type XdtsTrack,
+} from '../types'
 import type { VirtualSet } from '../types/marks'
 import { flattenTree } from './flatten'
 import { applyLayerMask, compositeGroup, compositeStack, createCanvas } from './compositor'
@@ -9,9 +19,10 @@ import { isAutoMarkedContainerOutputSuppressed } from '../utils/auto-marked-cont
 import {
   makeCellFileName,
   makeCellLabel,
-  resolveAnimationSequenceSeparator,
+  resolveCellPrefixSeparatorCharacter,
   resolveNameCollisions,
   resolveSequenceDigits,
+  resolveTrackPrefixMode,
 } from '../utils/naming'
 
 /**
@@ -62,12 +73,15 @@ export function extractCells(
     projectSettings.sequenceDigitMode ?? 'auto',
     visibleChildren.length,
   )
-  const trackCellSeparator = resolveAnimationSequenceSeparator(
-    isAutoProcessAnim ? 'cellname' : namingMode,
-    projectSettings.animationSequenceSeparator ?? 'underscore',
+  const trackCellSeparator = resolveCellPrefixSeparatorCharacter(
+    resolveCellPrefixSeparator(projectSettings),
   )
   const suppressDuplicateProcessSuffix = !isAutoProcessAnim && namingMode === 'cellname'
-  const suppressDuplicateTrackPrefix = !isAutoProcessAnim && namingMode === 'cellname'
+  const trackPrefixMode = resolveTrackPrefixMode(
+    namingMode,
+    animFolder.animationFolder?.detectedBy,
+    resolveIncludeXdtsTrackPrefixInCellName(projectSettings),
+  )
 
   for (let cellIdx = 0; cellIdx < visibleChildren.length; cellIdx++) {
     const cell = visibleChildren[cellIdx]
@@ -91,8 +105,8 @@ export function extractCells(
         parentSuffix,
         processSuffixPosition,
         trackCellSeparator,
+        trackPrefixMode,
         suppressDuplicateProcessSuffix,
-        suppressDuplicateTrackPrefix,
       })
       entries.push({
         path: `${folderName}/${fileName}`,
@@ -135,8 +149,8 @@ export function extractCells(
           parentSuffix,
           processSuffixPosition,
           trackCellSeparator,
+          trackPrefixMode,
           suppressDuplicateProcessSuffix,
-          suppressDuplicateTrackPrefix,
         })
         entries.push({
           path: `${folderName}/${fileName}`,
@@ -163,8 +177,8 @@ export function extractCells(
           processSuffix: suffix,
           processSuffixPosition,
           trackCellSeparator,
+          trackPrefixMode,
           suppressDuplicateProcessSuffix,
-          suppressDuplicateTrackPrefix,
         })
         entries.push({
           path: `${folderName}/${fileName}`,
@@ -404,19 +418,21 @@ export function buildEffectiveAnimationAssignment(tree: CspLayer[]): Map<string,
  * フラットファイル名の衝突を解決する（_2, _3 を拡張子前に挿入）
  * ZIP 展開時の衝突回避のため、大文字小文字は区別しない
  */
-function resolveFlatNameCollisions(entries: OutputEntry[]): void {
+function resolveFlatNameCollisions(entries: OutputEntry[], updatePath = true): void {
   const resolvedFlatNames = resolveNameCollisions(entries.map(e => e.flatName))
   for (let i = 0; i < entries.length; i++) {
     const e = entries[i]
     const newFlatName = resolvedFlatNames[i]
     if (newFlatName === e.flatName) continue
 
-    // pathのファイル名部分も更新
-    const slashIdx = e.path.lastIndexOf('/')
     e.flatName = newFlatName
-    e.path = slashIdx >= 0
-      ? `${e.path.slice(0, slashIdx + 1)}${newFlatName}`
-      : newFlatName
+    if (updatePath) {
+      // 同じ出力フォルダ内の衝突ではpath側も一意にする。
+      const slashIdx = e.path.lastIndexOf('/')
+      e.path = slashIdx >= 0
+        ? `${e.path.slice(0, slashIdx + 1)}${newFlatName}`
+        : newFlatName
+    }
   }
 }
 
@@ -903,7 +919,8 @@ export function extractAllEntries(
   }
 
   walk(tree, [], [])
-  resolveFlatNameCollisions(entries)
+  // 異なる階層フォルダ内では同じファイル名を許容し、フラット出力名だけを一意にする。
+  resolveFlatNameCollisions(entries, false)
   return entries
 }
 

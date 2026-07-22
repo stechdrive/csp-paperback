@@ -18,12 +18,22 @@ import { replaceExtension } from '../utils/image-export'
 import {
   makeCellFileName,
   makeCellLabel,
-  resolveAnimationSequenceSeparator,
+  resolveCellPrefixSeparatorCharacter,
+  resolveTrackPrefixMode,
 } from '../utils/naming'
 import { collectMembersInTreeOrder, buildMemberFlatsWithOverride } from '../utils/virtual-set-utils'
 import { resolveSelectedAnimCell } from '../utils/anim-cell-selection'
 import { isAutoMarkedContainerOutputSuppressed } from '../utils/auto-marked-container'
-import type { CspLayer, OutputEntry, ProjectSettings, OutputConfig, OutputFormat, XdtsData } from '../types'
+import {
+  resolveCellPrefixSeparator,
+  resolveIncludeXdtsTrackPrefixInCellName,
+  type CspLayer,
+  type OutputEntry,
+  type ProjectSettings,
+  type OutputConfig,
+  type OutputFormat,
+  type XdtsData,
+} from '../types'
 import { applyRevisionBorders } from '../utils/revision-border'
 
 export interface OutputPreviewEntry {
@@ -240,12 +250,15 @@ function previewAnimFolder(
     cellLabel,
     parentSuffix,
     processSuffixPosition: outputConfig.processSuffixPosition,
-    trackCellSeparator: resolveAnimationSequenceSeparator(
-      isAutoProcessAnim ? 'cellname' : namingMode,
-      projectSettings.animationSequenceSeparator ?? 'underscore',
+    trackCellSeparator: resolveCellPrefixSeparatorCharacter(
+      resolveCellPrefixSeparator(projectSettings),
+    ),
+    trackPrefixMode: resolveTrackPrefixMode(
+      namingMode,
+      animFolder.animationFolder?.detectedBy,
+      resolveIncludeXdtsTrackPrefixInCellName(projectSettings),
     ),
     suppressDuplicateProcessSuffix: !isAutoProcessAnim && namingMode === 'cellname',
-    suppressDuplicateTrackPrefix: !isAutoProcessAnim && namingMode === 'cellname',
   }).replace(/\.jpg$/i, '')
 
   let entries = allEntries.filter(e => e.sourceCellId === selectedCell.id)

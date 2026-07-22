@@ -15,16 +15,23 @@ export type CellNamingMode =
 /** 連番のゼロ埋め桁数 */
 export type SequenceDigitMode = 'auto' | 'fixed-4'
 
-/** アニメーションフォルダ名（工程名を前に置く場合は工程名）と連番の区切り */
-export type AnimationSequenceSeparator = 'underscore' | 'none'
+/** ファイル名のプレフィックス部分とセル部分の区切り */
+export type CellPrefixSeparator = 'underscore' | 'none'
+
+/** @deprecated 旧設定JSONとの互換用。新規コードでは CellPrefixSeparator を使う */
+export type AnimationSequenceSeparator = CellPrefixSeparator
 
 export interface ProjectSettings {
   processTable: ProcessFolderEntry[]
   cellNamingMode: CellNamingMode
   /** auto: 出力全体の最大連番に合わせる（最低1桁） / fixed-4: 常に4桁 */
   sequenceDigitMode: SequenceDigitMode
-  /** 連番の直前に _ を入れるか */
-  animationSequenceSeparator: AnimationSequenceSeparator
+  /** アニメーションフォルダ名を付ける場合、セル部分の直前に _ を入れるか */
+  cellPrefixSeparator?: CellPrefixSeparator
+  /** @deprecated 旧設定JSONとの互換用 */
+  animationSequenceSeparator?: AnimationSequenceSeparator
+  /** セル名モードのXDTS検出フォルダで、ファイル名へフォルダ名を付けるか */
+  includeXdtsTrackPrefixInCellName?: boolean
   /** 兼用カット: XDTS未使用セルを初期OFFにせず、XDTS検出アニメフォルダ自体を表示ONにする */
   sharedCutMode?: boolean
   /** _プレフィックス以外に単体出力として自動マークするフォルダ名（完全一致） */
@@ -43,8 +50,33 @@ export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
   ],
   cellNamingMode: 'sequence',
   sequenceDigitMode: 'auto',
+  cellPrefixSeparator: 'underscore',
   animationSequenceSeparator: 'underscore',
+  includeXdtsTrackPrefixInCellName: true,
   sharedCutMode: false,
   autoMarkFolderNames: ['撮影指示', '原図'],
   archivePatterns: ['_old', '_pool'],
+}
+
+/** 新旧どちらの設定形式からも、セル部分直前の区切り設定を解決する。 */
+export function resolveCellPrefixSeparator(
+  settings: Pick<ProjectSettings, 'cellPrefixSeparator' | 'animationSequenceSeparator'>,
+): CellPrefixSeparator {
+  if (settings.cellPrefixSeparator === 'underscore' || settings.cellPrefixSeparator === 'none') {
+    return settings.cellPrefixSeparator
+  }
+  if (
+    settings.animationSequenceSeparator === 'underscore'
+    || settings.animationSequenceSeparator === 'none'
+  ) {
+    return settings.animationSequenceSeparator
+  }
+  return 'underscore'
+}
+
+/** 未設定の旧データでは従来どおりXDTSフォルダ名を付ける。 */
+export function resolveIncludeXdtsTrackPrefixInCellName(
+  settings: Pick<ProjectSettings, 'includeXdtsTrackPrefixInCellName'>,
+): boolean {
+  return settings.includeXdtsTrackPrefixInCellName !== false
 }

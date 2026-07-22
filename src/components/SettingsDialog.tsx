@@ -2,17 +2,22 @@ import { useState } from 'react'
 import { useAppStore } from '../store'
 import { useLocale } from '../i18n/locale'
 import { selectLayerTreeWithVisibility, selectProcessTableErrors } from '../store/selectors'
-import type { ProcessFolderEntry } from '../types'
+import {
+  DEFAULT_PROJECT_SETTINGS,
+  resolveCellPrefixSeparator,
+  resolveIncludeXdtsTrackPrefixInCellName,
+  type ProcessFolderEntry,
+} from '../types'
 import { APP_THEME_SWATCHES, type AppTheme } from '../theme'
 import { pickSettingsJsonFile, saveTextFile, supportsNativeOpenDialog } from '../platform/files'
 import styles from './SettingsDialog.module.css'
-import { DEFAULT_PROJECT_SETTINGS } from '../types'
 import { getMaxSequenceNumberForAnimationFolders } from '../engine/cell-extractor'
 import {
   makeCellFileName,
   makeCellLabel,
-  resolveAnimationSequenceSeparator,
+  resolveCellPrefixSeparatorCharacter,
   resolveSequenceDigits,
+  resolveTrackPrefixMode,
 } from '../utils/naming'
 import { normalizeProcessTableColors, resolveProcessBorderColor } from '../utils/process-color'
 import { ProcessColorPicker } from './ProcessColorPicker'
@@ -68,7 +73,7 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
   )
   const sampleCellLabel = makeCellLabel(
     projectSettings.cellNamingMode,
-    projectSettings.cellNamingMode === 'cellname' ? 'A1' : 'ア',
+    projectSettings.cellNamingMode === 'cellname' ? '1' : 'ア',
     1,
     sampleDigits,
   )
@@ -304,12 +309,15 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
                       cellLabel: sampleCellLabel,
                       processSuffix: row.suffix,
                       processSuffixPosition: outputConfig.processSuffixPosition,
-                      trackCellSeparator: resolveAnimationSequenceSeparator(
+                      trackCellSeparator: resolveCellPrefixSeparatorCharacter(
+                        resolveCellPrefixSeparator(projectSettings),
+                      ),
+                      trackPrefixMode: resolveTrackPrefixMode(
                         projectSettings.cellNamingMode,
-                        projectSettings.animationSequenceSeparator ?? 'underscore',
+                        'xdts',
+                        resolveIncludeXdtsTrackPrefixInCellName(projectSettings),
                       ),
                       suppressDuplicateProcessSuffix: projectSettings.cellNamingMode === 'cellname',
-                      suppressDuplicateTrackPrefix: projectSettings.cellNamingMode === 'cellname',
                     }).replace(/\.jpg$/i, `.${outputConfig.format}`)}
                   </span>
                   <button className={styles.removeRowBtn} onClick={() => removeRow(i)}>✕</button>

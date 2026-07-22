@@ -1460,11 +1460,22 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                     </td>
                   </tr>
                   <tr>
-                    <td><span className={styles.strong}>連番の区切り</span></td>
+                    <td><span className={styles.strong}>フォルダ名との区切り</span></td>
                     <td>_ あり / なし</td>
                     <td>
-                      _ あり: <code className={styles.code}>A_1.jpg</code>{'\n'}
-                      なし: <code className={styles.code}>A01.jpg</code>
+                      フォルダA＋セル1の場合{': '}
+                      _ あり <code className={styles.code}>A_1.jpg</code>{' / '}
+                      なし <code className={styles.code}>A1.jpg</code>{'\n'}
+                      セル名がA1／A_1なら重ねて付けず、そのまま維持
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><span className={styles.strong}>XDTSフォルダ名</span></td>
+                    <td>付ける / 付けない</td>
+                    <td>
+                      セル名モードで、XDTS検出フォルダ名をファイル名へ付けるか選択。{'\n'}
+                      フォルダA＋セル1の場合: 付ける <code className={styles.code}>A_1.jpg</code>{' / '}
+                      付けない <code className={styles.code}>1.jpg</code>
                     </td>
                   </tr>
                   <tr>

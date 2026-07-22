@@ -1,6 +1,11 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { DEFAULT_OUTPUT_CONFIG, DEFAULT_PROJECT_SETTINGS } from '../types'
+import {
+  DEFAULT_OUTPUT_CONFIG,
+  DEFAULT_PROJECT_SETTINGS,
+  resolveCellPrefixSeparator,
+  resolveIncludeXdtsTrackPrefixInCellName,
+} from '../types'
 import { createPsdSlice, type PsdSlice } from './psd-slice'
 import { createXdtsSlice, type XdtsSlice } from './xdts-slice'
 import { createAnimationSlice, type AnimationSlice } from './animation-slice'
@@ -46,19 +51,25 @@ export const useAppStore = create<AppStore>()(
       }),
       merge: (persisted, current) => {
         const p = persisted as {
-          projectSettings?: typeof DEFAULT_PROJECT_SETTINGS
+          projectSettings?: Partial<typeof DEFAULT_PROJECT_SETTINGS>
           quickExportConfig?: typeof DEFAULT_OUTPUT_CONFIG
           mobileUiScale?: number
           activeTheme?: unknown
         } | undefined
         const persistedTheme = p?.activeTheme
+        const persistedProjectSettings = p?.projectSettings
+        const cellPrefixSeparator = resolveCellPrefixSeparator(persistedProjectSettings ?? {})
         return {
           ...current,
           projectSettings: {
             ...DEFAULT_PROJECT_SETTINGS,
-            ...p?.projectSettings,
+            ...persistedProjectSettings,
+            cellPrefixSeparator,
+            animationSequenceSeparator: cellPrefixSeparator,
+            includeXdtsTrackPrefixInCellName:
+              resolveIncludeXdtsTrackPrefixInCellName(persistedProjectSettings ?? {}),
             processTable: normalizeProcessTableColors(
-              p?.projectSettings?.processTable ?? DEFAULT_PROJECT_SETTINGS.processTable,
+              persistedProjectSettings?.processTable ?? DEFAULT_PROJECT_SETTINGS.processTable,
             ),
           },
           quickExportConfig: { ...DEFAULT_OUTPUT_CONFIG, ...p?.quickExportConfig },

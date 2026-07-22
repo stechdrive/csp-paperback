@@ -3,12 +3,17 @@ export type { AnimationFolderInfo, AnimationCell } from './animation'
 export type { SingleMark, VirtualSet, VirtualSetMember, VirtualSetLayerOverride } from './marks'
 export type {
   AnimationSequenceSeparator,
+  CellPrefixSeparator,
   CellNamingMode,
   ProcessFolderEntry,
   ProjectSettings,
   SequenceDigitMode,
 } from './project'
-export { DEFAULT_PROJECT_SETTINGS } from './project'
+export {
+  DEFAULT_PROJECT_SETTINGS,
+  resolveCellPrefixSeparator,
+  resolveIncludeXdtsTrackPrefixInCellName,
+} from './project'
 export type {
   OutputFormat,
   BackgroundMode,

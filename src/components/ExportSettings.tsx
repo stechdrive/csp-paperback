@@ -4,15 +4,22 @@ import { useLocale } from '../i18n/locale'
 import { selectLayerTreeWithVisibility } from '../store/selectors'
 import { Tooltip } from './Tooltip'
 import { UnmatchedTracksWarning } from './UnmatchedTracksWarning'
-import type { CellNamingMode, CspLayer } from '../types'
+import {
+  resolveCellPrefixSeparator,
+  resolveIncludeXdtsTrackPrefixInCellName,
+  type CellNamingMode,
+  type CellPrefixSeparator,
+  type CspLayer,
+} from '../types'
 import { isAutoMarkedOutputTarget } from '../utils/auto-marked-container'
 import { getMaxSequenceNumberForAnimationFolders } from '../engine/cell-extractor'
 import {
   isSequenceNamingMode,
   makeCellFileName,
   makeCellLabel,
-  resolveAnimationSequenceSeparator,
+  resolveCellPrefixSeparatorCharacter,
   resolveSequenceDigits,
+  resolveTrackPrefixMode,
 } from '../utils/naming'
 import styles from './ExportSettings.module.css'
 
@@ -31,10 +38,11 @@ function buildNameSample(
   processSuffixPosition: 'after-cell' | 'before-cell',
   format: 'jpg' | 'png',
   sequenceDigits: number,
-  animationSequenceSeparator: 'underscore' | 'none',
+  cellPrefixSeparator: CellPrefixSeparator,
+  includeXdtsTrackPrefixInCellName: boolean,
 ): string {
   const trackName = 'A'
-  const sampleCellName = mode === 'cellname' ? 'A1' : 'ア'
+  const sampleCellName = mode === 'cellname' ? '1' : 'ア'
   const cellLabel = makeCellLabel(mode, sampleCellName, 1, sequenceDigits)
   const fileName = makeCellFileName({
     trackName,
@@ -42,9 +50,13 @@ function buildNameSample(
     cellLabel,
     processSuffix: '_e',
     processSuffixPosition,
-    trackCellSeparator: resolveAnimationSequenceSeparator(mode, animationSequenceSeparator),
+    trackCellSeparator: resolveCellPrefixSeparatorCharacter(cellPrefixSeparator),
+    trackPrefixMode: resolveTrackPrefixMode(
+      mode,
+      'xdts',
+      includeXdtsTrackPrefixInCellName,
+    ),
     suppressDuplicateProcessSuffix: mode === 'cellname',
-    suppressDuplicateTrackPrefix: mode === 'cellname',
   }).replace(/\.jpg$/i, `.${format}`)
   return structure === 'hierarchy' ? `${trackName}/${fileName}` : fileName
 }
@@ -60,7 +72,10 @@ export function ExportSettings() {
   const setProcessSuffixPosition = useAppStore(s => s.setProcessSuffixPosition)
   const setCellNamingMode = useAppStore(s => s.setCellNamingMode)
   const setSequenceDigitMode = useAppStore(s => s.setSequenceDigitMode)
-  const setAnimationSequenceSeparator = useAppStore(s => s.setAnimationSequenceSeparator)
+  const setCellPrefixSeparator = useAppStore(s => s.setCellPrefixSeparator)
+  const setIncludeXdtsTrackPrefixInCellName = useAppStore(
+    s => s.setIncludeXdtsTrackPrefixInCellName,
+  )
   const setSharedCutMode = useAppStore(s => s.setSharedCutMode)
   const toggleProcessSuffixExclusion = useAppStore(s => s.toggleProcessSuffixExclusion)
   const setAllProcessSuffixExclusions = useAppStore(s => s.setAllProcessSuffixExclusions)
@@ -75,6 +90,10 @@ export function ExportSettings() {
   const allIncluded = processSuffixes.every(s => !excludedSet.has(s)) && !outputConfig.excludeAutoMarked
   const allExcluded = processSuffixes.every(s => excludedSet.has(s)) && outputConfig.excludeAutoMarked
   const isSequenceMode = isSequenceNamingMode(projectSettings.cellNamingMode)
+  const isCellNameMode = projectSettings.cellNamingMode === 'cellname'
+  const cellPrefixSeparator = resolveCellPrefixSeparator(projectSettings)
+  const includeXdtsTrackPrefixInCellName =
+    resolveIncludeXdtsTrackPrefixInCellName(projectSettings)
   const sequenceDigits = resolveSequenceDigits(
     projectSettings.sequenceDigitMode ?? 'auto',
     getMaxSequenceNumberForAnimationFolders(layerTree),
@@ -85,7 +104,8 @@ export function ExportSettings() {
     outputConfig.processSuffixPosition,
     outputConfig.format,
     sequenceDigits,
-    projectSettings.animationSequenceSeparator ?? 'underscore',
+    cellPrefixSeparator,
+    includeXdtsTrackPrefixInCellName,
   )
 
   const handleAllOn = () => {
@@ -209,38 +229,52 @@ export function ExportSettings() {
           </div>
 
           <div className={styles.inlineOption}>
-            <Tooltip
-              content={isSequenceMode ? t.settings.animationSequenceSeparatorHint : t.settings.sequenceOptionsUnavailableHint}
-              placement="bottom"
-            >
-              <span className={styles.label}>{t.settings.animationSequenceSeparator}</span>
+            <Tooltip content={t.settings.cellPrefixSeparatorHint} placement="bottom">
+              <span className={styles.label}>{t.settings.cellPrefixSeparator}</span>
             </Tooltip>
             <div className={styles.toggleGroup}>
-              <Tooltip
-                content={isSequenceMode ? t.settings.animationSequenceSeparatorUnderscoreHint : t.settings.sequenceOptionsUnavailableHint}
-                placement="bottom"
-              >
+              <Tooltip content={t.settings.cellPrefixSeparatorUnderscoreHint} placement="bottom">
                 <button
-                  className={`${styles.toggle} ${(projectSettings.animationSequenceSeparator ?? 'underscore') === 'underscore' ? styles.active : ''} ${!isSequenceMode ? styles.disabled : ''}`}
-                  onClick={() => {
-                    if (isSequenceMode) setAnimationSequenceSeparator('underscore')
-                  }}
-                  aria-disabled={!isSequenceMode}
-                >{t.settings.animationSequenceSeparatorUnderscore}</button>
+                  className={`${styles.toggle} ${cellPrefixSeparator === 'underscore' ? styles.active : ''}`}
+                  onClick={() => setCellPrefixSeparator('underscore')}
+                >{t.settings.cellPrefixSeparatorUnderscore}</button>
               </Tooltip>
-              <Tooltip
-                content={isSequenceMode ? t.settings.animationSequenceSeparatorNoneHint : t.settings.sequenceOptionsUnavailableHint}
-                placement="bottom"
-              >
+              <Tooltip content={t.settings.cellPrefixSeparatorNoneHint} placement="bottom">
                 <button
-                  className={`${styles.toggle} ${projectSettings.animationSequenceSeparator === 'none' ? styles.active : ''} ${!isSequenceMode ? styles.disabled : ''}`}
-                  onClick={() => {
-                    if (isSequenceMode) setAnimationSequenceSeparator('none')
-                  }}
-                  aria-disabled={!isSequenceMode}
-                >{t.settings.animationSequenceSeparatorNone}</button>
+                  className={`${styles.toggle} ${cellPrefixSeparator === 'none' ? styles.active : ''}`}
+                  onClick={() => setCellPrefixSeparator('none')}
+                >{t.settings.cellPrefixSeparatorNone}</button>
               </Tooltip>
             </div>
+          </div>
+
+          <div className={styles.inlineOption} data-testid="xdts-track-prefix-option">
+            <Tooltip content={t.settings.xdtsTrackPrefixHint} placement="bottom">
+              <span className={styles.label}>{t.settings.xdtsTrackPrefix}</span>
+            </Tooltip>
+            <Tooltip content={t.settings.xdtsTrackPrefixHint} placement="bottom">
+              <label
+                className={`${styles.inlineSwitchLabel} ${!isCellNameMode ? styles.disabledOption : ''}`}
+              >
+                <span
+                  className={`${styles.switch} ${includeXdtsTrackPrefixInCellName ? styles.switchOn : ''}`}
+                  onClick={() => {
+                    if (isCellNameMode) {
+                      setIncludeXdtsTrackPrefixInCellName(!includeXdtsTrackPrefixInCellName)
+                    }
+                  }}
+                  role="switch"
+                  aria-label={t.settings.xdtsTrackPrefix}
+                  aria-checked={includeXdtsTrackPrefixInCellName}
+                  aria-disabled={!isCellNameMode}
+                />
+                <span className={styles.switchValue}>
+                  {includeXdtsTrackPrefixInCellName
+                    ? t.settings.xdtsTrackPrefixOn
+                    : t.settings.xdtsTrackPrefixOff}
+                </span>
+              </label>
+            </Tooltip>
           </div>
         </div>
 

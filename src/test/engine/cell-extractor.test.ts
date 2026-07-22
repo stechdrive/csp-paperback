@@ -8,7 +8,7 @@ import type { CspLayer, ProjectSettings, XdtsData, FlatLayer } from '../../types
 // 自動桁数と区切りは専用テストで検証する。
 const FIXED_SEQUENCE_NAMING_SETTINGS = {
   sequenceDigitMode: 'fixed-4',
-  animationSequenceSeparator: 'underscore',
+  cellPrefixSeparator: 'underscore',
 } as const
 
 const DEFAULT_SETTINGS: ProjectSettings = {
@@ -29,7 +29,7 @@ const CELL_NAME_SETTINGS: ProjectSettings = {
 
 const SEQUENCE_CELL_NAME_SETTINGS: ProjectSettings = {
   sequenceDigitMode: 'auto',
-  animationSequenceSeparator: 'underscore',
+  cellPrefixSeparator: 'underscore',
   processTable: [],
   cellNamingMode: 'sequence-cellname',
   autoMarkFolderNames: [],
@@ -308,7 +308,7 @@ describe('extractAllEntries', () => {
     const settings: ProjectSettings = {
       ...DEFAULT_SETTINGS,
       sequenceDigitMode: 'auto',
-      animationSequenceSeparator: 'none',
+      cellPrefixSeparator: 'none',
     }
 
     expect(extractAllEntries(tree, settings, 100, 100)[0].flatName).toBe('A1.jpg')
@@ -322,11 +322,83 @@ describe('extractAllEntries', () => {
     const settings: ProjectSettings = {
       ...makeSettingsWithTable([{ suffix: '_e', folderNames: ['EN'] }]),
       sequenceDigitMode: 'auto',
-      animationSequenceSeparator: 'none',
+      cellPrefixSeparator: 'none',
     }
 
     expect(extractAllEntries(tree, settings, 100, 100, 'white', false, 'before-cell')[0].flatName)
       .toBe('A_e1.jpg')
+  })
+
+  it('セル名モードでもフォルダ名との区切りを選べる', () => {
+    const animFolder = makeAnimationFolder('A', [makeLayer({ name: '1' })])
+    const tree = buildLayerTree(makePsd({ children: [animFolder] }))
+    markManualAnimFolder(tree[0])
+
+    const withUnderscore = extractAllEntries(tree, {
+      ...CELL_NAME_SETTINGS,
+      cellPrefixSeparator: 'underscore',
+    }, 100, 100)
+    const withoutSeparator = extractAllEntries(tree, {
+      ...CELL_NAME_SETTINGS,
+      cellPrefixSeparator: 'none',
+    }, 100, 100)
+
+    expect(withUnderscore[0].flatName).toBe('A_1.jpg')
+    expect(withoutSeparator[0].flatName).toBe('A1.jpg')
+  })
+
+  it('セル名内のフォルダ名を重複回避するときは元の区切りを維持する', () => {
+    const animFolder = makeAnimationFolder('A', [
+      makeLayer({ name: 'A1' }),
+      makeLayer({ name: 'A_1' }),
+    ])
+    const tree = buildLayerTree(makePsd({ children: [animFolder] }))
+    markManualAnimFolder(tree[0])
+
+    for (const cellPrefixSeparator of ['underscore', 'none'] as const) {
+      const names = extractAllEntries(tree, {
+        ...CELL_NAME_SETTINGS,
+        cellPrefixSeparator,
+      }, 100, 100).map(entry => entry.flatName).sort()
+      expect(names).toEqual(['A1.jpg', 'A_1.jpg'])
+    }
+  })
+
+  it('セル名モードのXDTS検出フォルダだけフォルダ名を省略できる', () => {
+    const xdtsAnim = makeAnimationFolder('A', [makeLayer({ name: '1' })])
+    const xdtsTree = buildLayerTree(makePsd({ children: [xdtsAnim] }))
+    detectAnim(xdtsTree, 'A')
+    const settings: ProjectSettings = {
+      ...CELL_NAME_SETTINGS,
+      includeXdtsTrackPrefixInCellName: false,
+    }
+
+    const xdtsResult = extractAllEntries(xdtsTree, settings, 100, 100)
+    expect(xdtsResult[0].flatName).toBe('1.jpg')
+    expect(xdtsResult[0].path).toBe('A/1.jpg')
+
+    const manualAnim = makeAnimationFolder('A', [makeLayer({ name: '1' })])
+    const manualTree = buildLayerTree(makePsd({ children: [manualAnim] }))
+    markManualAnimFolder(manualTree[0])
+    expect(extractAllEntries(manualTree, settings, 100, 100)[0].flatName).toBe('A_1.jpg')
+  })
+
+  it('XDTSフォルダ名省略時も辞書の工程サフィックスを加工しない', () => {
+    const animFolder = makeAnimationFolder('A', [makeLayer({ name: '1' })])
+    const tree = buildLayerTree(makePsd({ children: [animFolder] }))
+    detectAnim(tree, 'A')
+    const settings: ProjectSettings = {
+      ...CELL_NAME_SETTINGS,
+      includeXdtsTrackPrefixInCellName: false,
+    }
+
+    expect(extractCells(
+      tree[0], settings, 100, 100, EMPTY_CONTEXT, '_e', 'A', 'white', [], 'before-cell',
+    )[0].flatName).toBe('_e_1.jpg')
+    expect(extractCells(
+      tree[0], { ...settings, cellPrefixSeparator: 'none' },
+      100, 100, EMPTY_CONTEXT, '_e', 'A', 'white', [], 'before-cell',
+    )[0].flatName).toBe('_e1.jpg')
   })
 
   it('セル名末尾に工程サフィックスが完全一致する場合は重複付加しない', () => {
@@ -494,6 +566,24 @@ describe('extractAllEntries', () => {
       .map(entry => entry.flatName)
       .sort()
     expect(flatNames).toEqual(['A_1.jpg', 'A_1_2.jpg'])
+  })
+
+  it('XDTSフォルダ名省略で別フォルダのセル名が重なっても階層名を保ちフラット名だけ解決する', () => {
+    const animA = makeAnimationFolder('A', [makeLayer({ name: '1' })])
+    const animB = makeAnimationFolder('B', [makeLayer({ name: '1' })])
+    const tree = buildLayerTree(makePsd({ children: [animA, animB] }))
+    tree[0].isAnimationFolder = true
+    tree[0].animationFolder = { detectedBy: 'xdts', trackName: tree[0].originalName, trackNo: 0 }
+    tree[1].isAnimationFolder = true
+    tree[1].animationFolder = { detectedBy: 'xdts', trackName: tree[1].originalName, trackNo: 1 }
+    const settings: ProjectSettings = {
+      ...CELL_NAME_SETTINGS,
+      includeXdtsTrackPrefixInCellName: false,
+    }
+
+    const entries = extractAllEntries(tree, settings, 100, 100)
+    expect(entries.map(entry => entry.path).sort()).toEqual(['A/1.jpg', 'B/1.jpg'])
+    expect(entries.map(entry => entry.flatName).sort()).toEqual(['1.jpg', '1_2.jpg'])
   })
 
   it('同名アニメフォルダは parentSuffix が異なれば別 namespace で両方 "A" (process variants)', () => {

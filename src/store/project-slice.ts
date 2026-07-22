@@ -1,12 +1,17 @@
 import type { StateCreator } from 'zustand'
 import type {
   AnimationSequenceSeparator,
+  CellPrefixSeparator,
   CellNamingMode,
   ProcessFolderEntry,
   ProjectSettings,
   SequenceDigitMode,
 } from '../types'
-import { DEFAULT_PROJECT_SETTINGS } from '../types'
+import {
+  DEFAULT_PROJECT_SETTINGS,
+  resolveCellPrefixSeparator,
+  resolveIncludeXdtsTrackPrefixInCellName,
+} from '../types'
 import { buildDefaultVisibilityOverrides } from '../utils/default-visibility'
 import { normalizeProcessTableColors } from '../utils/process-color'
 import type { AppStore } from './index'
@@ -16,7 +21,10 @@ export interface ProjectSlice {
   updateProcessTable: (table: ProcessFolderEntry[]) => void
   setCellNamingMode: (mode: CellNamingMode) => void
   setSequenceDigitMode: (mode: SequenceDigitMode) => void
+  setCellPrefixSeparator: (separator: CellPrefixSeparator) => void
+  /** @deprecated 旧UI・テスト互換用 */
   setAnimationSequenceSeparator: (separator: AnimationSequenceSeparator) => void
+  setIncludeXdtsTrackPrefixInCellName: (enabled: boolean) => void
   setSharedCutMode: (enabled: boolean) => void
   updateAutoMarkFolderNames: (names: string[]) => void
   updateArchivePatterns: (patterns: string[]) => void
@@ -47,9 +55,36 @@ export const createProjectSlice: StateCreator<AppStore, [], [], ProjectSlice> = 
     set({ projectSettings: { ...get().projectSettings, sequenceDigitMode } })
   },
 
+  setCellPrefixSeparator: (cellPrefixSeparator) => {
+    get().pushHistory()
+    set({
+      projectSettings: {
+        ...get().projectSettings,
+        cellPrefixSeparator,
+        animationSequenceSeparator: cellPrefixSeparator,
+      },
+    })
+  },
+
   setAnimationSequenceSeparator: (animationSequenceSeparator) => {
     get().pushHistory()
-    set({ projectSettings: { ...get().projectSettings, animationSequenceSeparator } })
+    set({
+      projectSettings: {
+        ...get().projectSettings,
+        cellPrefixSeparator: animationSequenceSeparator,
+        animationSequenceSeparator,
+      },
+    })
+  },
+
+  setIncludeXdtsTrackPrefixInCellName: (includeXdtsTrackPrefixInCellName) => {
+    get().pushHistory()
+    set({
+      projectSettings: {
+        ...get().projectSettings,
+        includeXdtsTrackPrefixInCellName,
+      },
+    })
   },
 
   setSharedCutMode: (enabled) => {
@@ -79,12 +114,17 @@ export const createProjectSlice: StateCreator<AppStore, [], [], ProjectSlice> = 
 
   importSettings: (json) => {
     try {
-      const parsed = JSON.parse(json) as ProjectSettings
+      const parsed = JSON.parse(json) as Partial<ProjectSettings>
+      const cellPrefixSeparator = resolveCellPrefixSeparator(parsed)
       get().pushHistory()
       set({
         projectSettings: {
           ...DEFAULT_PROJECT_SETTINGS,
           ...parsed,
+          cellPrefixSeparator,
+          animationSequenceSeparator: cellPrefixSeparator,
+          includeXdtsTrackPrefixInCellName:
+            resolveIncludeXdtsTrackPrefixInCellName(parsed),
           processTable: normalizeProcessTableColors(
             Array.isArray(parsed.processTable)
               ? parsed.processTable

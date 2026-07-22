@@ -2,7 +2,8 @@
  * 出力ファイル名生成・衝突解決ユーティリティ
  */
 import type {
-  AnimationSequenceSeparator,
+  AnimationFolderInfo,
+  CellPrefixSeparator,
   CellNamingMode,
   ProcessSuffixPosition,
   SequenceDigitMode,
@@ -83,13 +84,24 @@ export function isSequenceNamingMode(mode: CellNamingMode): boolean {
   return mode === 'sequence' || mode === 'sequence-cellname' || mode === 'sheet-sequence'
 }
 
-/** 命名モードと設定から、フォルダ名（または前置工程名）とセルラベル間の区切りを返す。 */
-export function resolveAnimationSequenceSeparator(
-  mode: CellNamingMode,
-  separator: AnimationSequenceSeparator,
+/** フォルダ名（または前置工程名）とセル部分の区切り文字を返す。 */
+export function resolveCellPrefixSeparatorCharacter(
+  separator: CellPrefixSeparator,
 ): '_' | '' {
-  if (!isSequenceNamingMode(mode)) return '_'
   return separator === 'underscore' ? '_' : ''
+}
+
+export type TrackPrefixMode = 'always' | 'dedupe-embedded' | 'omit'
+
+/** レイヤーの検出方法と設定から、ファイル名へ付けるトラック名の扱いを決める。 */
+export function resolveTrackPrefixMode(
+  namingMode: CellNamingMode,
+  detectedBy: AnimationFolderInfo['detectedBy'] | undefined,
+  includeXdtsTrackPrefixInCellName: boolean,
+): TrackPrefixMode {
+  if (namingMode !== 'cellname' || detectedBy === 'autoProcess') return 'always'
+  if (detectedBy === 'xdts' && !includeXdtsTrackPrefixInCellName) return 'omit'
+  return 'dedupe-embedded'
 }
 
 /**
@@ -123,10 +135,10 @@ export interface CellFileNameOptions {
   processSuffix?: string
   processSuffixPosition?: ProcessSuffixPosition
   trackCellSeparator?: '_' | ''
+  /** フォルダ名を常に付ける／セル名内の重複を避ける／付けない */
+  trackPrefixMode?: TrackPrefixMode
   /** セル名末尾が今回付ける工程サフィックスと完全一致する場合、重複付加を抑止する */
   suppressDuplicateProcessSuffix?: boolean
-  /** セル名が元フォルダ名 + 連番で始まる場合、フォルダ名の重複付加を抑止する */
-  suppressDuplicateTrackPrefix?: boolean
 }
 
 export interface EmbeddedTrackPrefix {
@@ -167,8 +179,8 @@ export function makeCellFileName({
   processSuffix = '',
   processSuffixPosition = 'after-cell',
   trackCellSeparator = '_',
+  trackPrefixMode = 'always',
   suppressDuplicateProcessSuffix = false,
-  suppressDuplicateTrackPrefix = false,
 }: CellFileNameOptions): string {
   const rawProcessPart = `${parentSuffix}${processSuffix}`
   const processPart = suppressDuplicateProcessSuffix
@@ -177,7 +189,14 @@ export function makeCellFileName({
     ? ''
     : rawProcessPart
 
-  const embeddedTrackPrefix = suppressDuplicateTrackPrefix && rawTrackName
+  if (trackPrefixMode === 'omit') {
+    if (processSuffixPosition === 'before-cell' && processPart) {
+      return `${processPart}${trackCellSeparator}${cellLabel}.jpg`
+    }
+    return `${cellLabel}${processPart}.jpg`
+  }
+
+  const embeddedTrackPrefix = trackPrefixMode === 'dedupe-embedded' && rawTrackName
     ? parseEmbeddedTrackPrefix(rawTrackName, cellLabel)
     : null
 

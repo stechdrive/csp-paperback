@@ -118,7 +118,7 @@ describe('useOutputPreview', () => {
       projectSettings: {
         ...DEFAULT_PROJECT_SETTINGS,
         sequenceDigitMode: 'fixed-4',
-        animationSequenceSeparator: 'none',
+        cellPrefixSeparator: 'none',
       },
       focusedAnimFolderId: tree[0].id,
     })
@@ -152,6 +152,53 @@ describe('useOutputPreview', () => {
     const { result } = renderHook(() => useOutputPreview())
     expect(result.current).toHaveLength(1)
     expect(result.current[0].flatName).toBe('B1_e.jpg')
+  })
+
+  it('セル名モードのXDTSフォルダ名省略をプレビューへ反映する', () => {
+    const animFolder = makeAnimationFolder('A', [makeLayer({ name: '1' })])
+    const tree = buildLayerTree(makePsd({ children: [animFolder] }))
+    detectAnim(tree, 'A')
+
+    useAppStore.setState({
+      layerTree: tree,
+      docWidth: 100,
+      docHeight: 100,
+      outputConfig: { ...DEFAULT_OUTPUT_CONFIG },
+      projectSettings: {
+        ...DEFAULT_PROJECT_SETTINGS,
+        cellNamingMode: 'cellname',
+        includeXdtsTrackPrefixInCellName: false,
+      },
+      focusedAnimFolderId: tree[0].id,
+    })
+
+    const { result } = renderHook(() => useOutputPreview())
+    expect(result.current).toHaveLength(1)
+    expect(result.current[0].flatName).toBe('1.jpg')
+    expect(result.current[0].path).toBe('A/1.jpg')
+  })
+
+  it('セル名モードのフォルダ名との区切りをプレビューへ反映する', () => {
+    const animFolder = makeAnimationFolder('A', [makeLayer({ name: '1' })])
+    const tree = buildLayerTree(makePsd({ children: [animFolder] }))
+    tree[0].isAnimationFolder = true
+    tree[0].animationFolder = { detectedBy: 'manual', trackName: 'A' }
+
+    useAppStore.setState({
+      layerTree: tree,
+      docWidth: 100,
+      docHeight: 100,
+      outputConfig: { ...DEFAULT_OUTPUT_CONFIG },
+      projectSettings: {
+        ...DEFAULT_PROJECT_SETTINGS,
+        cellNamingMode: 'cellname',
+        cellPrefixSeparator: 'none',
+      },
+      focusedAnimFolderId: tree[0].id,
+    })
+
+    const { result } = renderHook(() => useOutputPreview())
+    expect(result.current[0].flatName).toBe('A1.jpg')
   })
 
   it('PNG選択時はマーク済みレイヤーのプレビュー名も.pngで返す', () => {

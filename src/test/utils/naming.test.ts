@@ -7,8 +7,9 @@ import {
   makeCellLabel,
   parseEmbeddedTrackPrefix,
   getSequenceDigitsForCellCount,
-  resolveAnimationSequenceSeparator,
+  resolveCellPrefixSeparatorCharacter,
   resolveSequenceDigits,
+  resolveTrackPrefixMode,
   stripLeadingUnderscore,
   resolveEntryNames,
 } from '../../utils/naming'
@@ -125,16 +126,24 @@ describe('makeCellLabel', () => {
   })
 })
 
-describe('resolveAnimationSequenceSeparator', () => {
-  it('連番系モードでは区切り設定を反映する', () => {
-    expect(resolveAnimationSequenceSeparator('sequence', 'underscore')).toBe('_')
-    expect(resolveAnimationSequenceSeparator('sequence-cellname', 'none')).toBe('')
-    expect(resolveAnimationSequenceSeparator('sheet-sequence', 'none')).toBe('')
+describe('resolveCellPrefixSeparatorCharacter', () => {
+  it('すべての命名モードで共通利用できる区切り文字を返す', () => {
+    expect(resolveCellPrefixSeparatorCharacter('underscore')).toBe('_')
+    expect(resolveCellPrefixSeparatorCharacter('none')).toBe('')
+    expect(isSequenceNamingMode('cellname')).toBe(false)
+  })
+})
+
+describe('resolveTrackPrefixMode', () => {
+  it('セル名モードのXDTSだけ設定に応じて省略する', () => {
+    expect(resolveTrackPrefixMode('cellname', 'xdts', true)).toBe('dedupe-embedded')
+    expect(resolveTrackPrefixMode('cellname', 'xdts', false)).toBe('omit')
+    expect(resolveTrackPrefixMode('cellname', 'manual', false)).toBe('dedupe-embedded')
   })
 
-  it('セル名モードでは常にアンダースコアを使う', () => {
-    expect(isSequenceNamingMode('cellname')).toBe(false)
-    expect(resolveAnimationSequenceSeparator('cellname', 'none')).toBe('_')
+  it('連番系と自動工程は常にフォルダ名を付ける', () => {
+    expect(resolveTrackPrefixMode('sequence', 'xdts', false)).toBe('always')
+    expect(resolveTrackPrefixMode('cellname', 'autoProcess', false)).toBe('always')
   })
 })
 
@@ -184,41 +193,41 @@ describe('makeCellFileName', () => {
   it('セル名先頭に含まれるフォルダ名を重複させない', () => {
     expect(makeCellFileName({
       trackName: 'A', rawTrackName: 'A', cellLabel: 'A1',
-      suppressDuplicateTrackPrefix: true,
+      trackPrefixMode: 'dedupe-embedded',
     })).toBe('A1.jpg')
     expect(makeCellFileName({
       trackName: 'A', rawTrackName: 'A', cellLabel: 'A_1',
-      suppressDuplicateTrackPrefix: true,
+      trackPrefixMode: 'dedupe-embedded',
     })).toBe('A_1.jpg')
   })
 
   it('同名フォルダの表示番号へ元セル名の残りをつなぐ', () => {
     expect(makeCellFileName({
       trackName: 'A(2)', rawTrackName: 'A', cellLabel: 'A1',
-      suppressDuplicateTrackPrefix: true,
+      trackPrefixMode: 'dedupe-embedded',
     })).toBe('A(2)1.jpg')
     expect(makeCellFileName({
       trackName: 'A(2)', rawTrackName: 'A', cellLabel: 'A_1',
-      suppressDuplicateTrackPrefix: true,
+      trackPrefixMode: 'dedupe-embedded',
     })).toBe('A(2)_1.jpg')
   })
 
   it('工程名の前後位置とセル名に含まれる区切りを両立する', () => {
     expect(makeCellFileName({
       trackName: 'A', rawTrackName: 'A', cellLabel: 'A1', processSuffix: '_e',
-      suppressDuplicateTrackPrefix: true,
+      trackPrefixMode: 'dedupe-embedded',
     })).toBe('A1_e.jpg')
     expect(makeCellFileName({
       trackName: 'A', rawTrackName: 'A', cellLabel: 'A_1', processSuffix: '_e',
-      suppressDuplicateTrackPrefix: true,
+      trackPrefixMode: 'dedupe-embedded',
     })).toBe('A_1_e.jpg')
     expect(makeCellFileName({
       trackName: 'A', rawTrackName: 'A', cellLabel: 'A1', processSuffix: '_e',
-      processSuffixPosition: 'before-cell', suppressDuplicateTrackPrefix: true,
+      processSuffixPosition: 'before-cell', trackPrefixMode: 'dedupe-embedded',
     })).toBe('A_e1.jpg')
     expect(makeCellFileName({
       trackName: 'A', rawTrackName: 'A', cellLabel: 'A_1', processSuffix: '_e',
-      processSuffixPosition: 'before-cell', suppressDuplicateTrackPrefix: true,
+      processSuffixPosition: 'before-cell', trackPrefixMode: 'dedupe-embedded',
     })).toBe('A_e_1.jpg')
   })
 
@@ -228,8 +237,58 @@ describe('makeCellFileName', () => {
     })).toBe('A_A1.jpg')
     expect(makeCellFileName({
       trackName: 'A', rawTrackName: 'A', cellLabel: '原画',
-      suppressDuplicateTrackPrefix: true,
+      trackPrefixMode: 'dedupe-embedded',
     })).toBe('A_原画.jpg')
+  })
+
+  it('重複回避時は設定値で既存セル名の区切りを変更しない', () => {
+    expect(makeCellFileName({
+      trackName: 'A', rawTrackName: 'A', cellLabel: 'A1',
+      trackCellSeparator: '_', trackPrefixMode: 'dedupe-embedded',
+    })).toBe('A1.jpg')
+    expect(makeCellFileName({
+      trackName: 'A', rawTrackName: 'A', cellLabel: 'A1',
+      trackCellSeparator: '', trackPrefixMode: 'dedupe-embedded',
+    })).toBe('A1.jpg')
+    expect(makeCellFileName({
+      trackName: 'A', rawTrackName: 'A', cellLabel: 'A_1',
+      trackCellSeparator: '_', trackPrefixMode: 'dedupe-embedded',
+    })).toBe('A_1.jpg')
+    expect(makeCellFileName({
+      trackName: 'A', rawTrackName: 'A', cellLabel: 'A_1',
+      trackCellSeparator: '', trackPrefixMode: 'dedupe-embedded',
+    })).toBe('A_1.jpg')
+  })
+
+  it('フォルダ名を省略した場合はセル名を解析せずそのまま使う', () => {
+    expect(makeCellFileName({
+      trackName: 'A(2)', rawTrackName: 'A', cellLabel: 'A_1',
+      trackPrefixMode: 'omit',
+    })).toBe('A_1.jpg')
+    expect(makeCellFileName({
+      trackName: 'A', rawTrackName: 'A', cellLabel: '1',
+      trackPrefixMode: 'omit',
+    })).toBe('1.jpg')
+  })
+
+  it.each([
+    ['_e', '_e_1.jpg'],
+    ['e', 'e_1.jpg'],
+    ['-e', '-e_1.jpg'],
+  ])('フォルダ名省略かつ工程名が前でもサフィックス %s を加工しない', (suffix, expected) => {
+    expect(makeCellFileName({
+      trackName: 'A', cellLabel: '1', processSuffix: suffix,
+      processSuffixPosition: 'before-cell', trackCellSeparator: '_',
+      trackPrefixMode: 'omit',
+    })).toBe(expected)
+  })
+
+  it('フォルダ名省略かつ工程名が前の場合も区切りなしを反映する', () => {
+    expect(makeCellFileName({
+      trackName: 'A', cellLabel: '1', processSuffix: '_e',
+      processSuffixPosition: 'before-cell', trackCellSeparator: '',
+      trackPrefixMode: 'omit',
+    })).toBe('_e1.jpg')
   })
 })
 

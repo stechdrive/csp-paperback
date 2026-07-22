@@ -21,25 +21,36 @@ beforeEach(() => {
 })
 
 describe('project-slice - auto mark folder names', () => {
-  it('連番桁数は自動、連番区切りはアンダースコアをデフォルトにする', () => {
+  it('連番桁数は自動、フォルダ名との区切りはアンダースコアをデフォルトにする', () => {
     expect(useAppStore.getState().projectSettings.sequenceDigitMode).toBe('auto')
+    expect(useAppStore.getState().projectSettings.cellPrefixSeparator).toBe('underscore')
     expect(useAppStore.getState().projectSettings.animationSequenceSeparator).toBe('underscore')
+    expect(useAppStore.getState().projectSettings.includeXdtsTrackPrefixInCellName).toBe(true)
   })
 
-  it('連番設定の変更をUndo/Redoできる', () => {
+  it('命名設定の変更をUndo/Redoできる', () => {
     useAppStore.getState().setSequenceDigitMode('fixed-4')
-    useAppStore.getState().setAnimationSequenceSeparator('none')
+    useAppStore.getState().setCellPrefixSeparator('none')
+    useAppStore.getState().setIncludeXdtsTrackPrefixInCellName(false)
     expect(useAppStore.getState().projectSettings.sequenceDigitMode).toBe('fixed-4')
+    expect(useAppStore.getState().projectSettings.cellPrefixSeparator).toBe('none')
     expect(useAppStore.getState().projectSettings.animationSequenceSeparator).toBe('none')
+    expect(useAppStore.getState().projectSettings.includeXdtsTrackPrefixInCellName).toBe(false)
 
     useAppStore.getState().undo()
+    expect(useAppStore.getState().projectSettings.includeXdtsTrackPrefixInCellName).toBe(true)
+    useAppStore.getState().undo()
+    expect(useAppStore.getState().projectSettings.cellPrefixSeparator).toBe('underscore')
     expect(useAppStore.getState().projectSettings.animationSequenceSeparator).toBe('underscore')
     useAppStore.getState().undo()
     expect(useAppStore.getState().projectSettings.sequenceDigitMode).toBe('auto')
     useAppStore.getState().redo()
     useAppStore.getState().redo()
+    useAppStore.getState().redo()
     expect(useAppStore.getState().projectSettings.sequenceDigitMode).toBe('fixed-4')
+    expect(useAppStore.getState().projectSettings.cellPrefixSeparator).toBe('none')
     expect(useAppStore.getState().projectSettings.animationSequenceSeparator).toBe('none')
+    expect(useAppStore.getState().projectSettings.includeXdtsTrackPrefixInCellName).toBe(false)
   })
 
   it('撮影指示と原図をデフォルト登録する', () => {
@@ -80,7 +91,22 @@ describe('project-slice - auto mark folder names', () => {
 
     expect(useAppStore.getState().projectSettings.autoMarkFolderNames).toEqual(['撮影指示', '原図'])
     expect(useAppStore.getState().projectSettings.sequenceDigitMode).toBe('auto')
+    expect(useAppStore.getState().projectSettings.cellPrefixSeparator).toBe('underscore')
     expect(useAppStore.getState().projectSettings.animationSequenceSeparator).toBe('underscore')
+    expect(useAppStore.getState().projectSettings.includeXdtsTrackPrefixInCellName).toBe(true)
+  })
+
+  it('旧連番区切り設定をフォルダ名との区切りへ移行する', () => {
+    useAppStore.getState().importSettings(JSON.stringify({
+      processTable: [],
+      cellNamingMode: 'cellname',
+      animationSequenceSeparator: 'none',
+      archivePatterns: [],
+    }))
+
+    expect(useAppStore.getState().projectSettings.cellPrefixSeparator).toBe('none')
+    expect(useAppStore.getState().projectSettings.animationSequenceSeparator).toBe('none')
+    expect(useAppStore.getState().projectSettings.includeXdtsTrackPrefixInCellName).toBe(true)
   })
 
   it('色を持たない旧形式の工程テーブルへ既定色を補う', () => {
@@ -102,14 +128,19 @@ describe('project-slice - auto mark folder names', () => {
     expect(exported.autoMarkFolderNames).toEqual(['BOOK', 'BG'])
   })
 
-  it('設定JSONへ連番設定を含める', () => {
+  it('設定JSONへ命名設定と旧互換フィールドを含める', () => {
     useAppStore.getState().setSequenceDigitMode('fixed-4')
-    useAppStore.getState().setAnimationSequenceSeparator('none')
+    useAppStore.getState().setCellPrefixSeparator('none')
+    useAppStore.getState().setIncludeXdtsTrackPrefixInCellName(false)
     const exported = JSON.parse(useAppStore.getState().exportSettings()) as {
       sequenceDigitMode?: string
+      cellPrefixSeparator?: string
       animationSequenceSeparator?: string
+      includeXdtsTrackPrefixInCellName?: boolean
     }
     expect(exported.sequenceDigitMode).toBe('fixed-4')
+    expect(exported.cellPrefixSeparator).toBe('none')
     expect(exported.animationSequenceSeparator).toBe('none')
+    expect(exported.includeXdtsTrackPrefixInCellName).toBe(false)
   })
 })

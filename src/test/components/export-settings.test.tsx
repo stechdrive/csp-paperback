@@ -56,15 +56,16 @@ describe('ExportSettings naming controls', () => {
     expect(screen.getByText('A_0001_e.jpg')).toBeInTheDocument()
   })
 
-  it('アニメーションフォルダ名と連番の区切りを省略できる', () => {
+  it('アニメーションフォルダ名とセル部分の区切りを省略できる', () => {
     render(<ExportSettings />)
 
     fireEvent.click(screen.getByRole('button', { name: 'なし' }))
+    expect(useAppStore.getState().projectSettings.cellPrefixSeparator).toBe('none')
     expect(useAppStore.getState().projectSettings.animationSequenceSeparator).toBe('none')
     expect(screen.getByText('A1_e.jpg')).toBeInTheDocument()
   })
 
-  it('セル名出力でも連番専用オプションの位置を保ち、適用外として無効化する', () => {
+  it('セル名出力では連番桁数だけを無効化し、区切りを操作できる', () => {
     render(<ExportSettings />)
 
     fireEvent.click(screen.getByRole('button', { name: 'セル名' }))
@@ -72,15 +73,34 @@ describe('ExportSettings naming controls', () => {
     const fixedButton = screen.getByRole('button', { name: '4桁' })
     const underscoreButton = screen.getByRole('button', { name: '_ あり' })
     const noSeparatorButton = screen.getByRole('button', { name: 'なし' })
-    for (const button of [autoButton, fixedButton, underscoreButton, noSeparatorButton]) {
+    for (const button of [autoButton, fixedButton]) {
       expect(button).toHaveAttribute('aria-disabled', 'true')
     }
+    expect(underscoreButton).not.toHaveAttribute('aria-disabled')
+    expect(noSeparatorButton).not.toHaveAttribute('aria-disabled')
 
     fireEvent.click(fixedButton)
     fireEvent.click(noSeparatorButton)
     expect(useAppStore.getState().projectSettings.sequenceDigitMode).toBe('auto')
-    expect(useAppStore.getState().projectSettings.animationSequenceSeparator).toBe('underscore')
+    expect(useAppStore.getState().projectSettings.cellPrefixSeparator).toBe('none')
     expect(screen.getByText('A1_e.jpg')).toBeInTheDocument()
+  })
+
+  it('XDTSフォルダ名はセル名モードでだけ変更でき、出力例へ反映する', () => {
+    render(<ExportSettings />)
+
+    const toggle = screen.getByRole('switch', { name: 'XDTSフォルダ名' })
+    expect(toggle).toHaveAttribute('aria-disabled', 'true')
+    fireEvent.click(toggle)
+    expect(useAppStore.getState().projectSettings.includeXdtsTrackPrefixInCellName).toBe(true)
+
+    fireEvent.click(screen.getByRole('button', { name: 'セル名' }))
+    expect(toggle).toHaveAttribute('aria-disabled', 'false')
+    expect(screen.getByText('A_1_e.jpg')).toBeInTheDocument()
+
+    fireEvent.click(toggle)
+    expect(useAppStore.getState().projectSettings.includeXdtsTrackPrefixInCellName).toBe(false)
+    expect(screen.getByText('1_e.jpg')).toBeInTheDocument()
   })
 
   it('出力例とスイッチ群を独立した段に置き、切り替えてもスイッチ要素を移動しない', () => {
@@ -88,6 +108,7 @@ describe('ExportSettings naming controls', () => {
 
     const grid = screen.getByTestId('export-option-switch-grid')
     const sampleRow = screen.getByTestId('name-sample-row')
+    const xdtsPrefixOption = screen.getByTestId('xdts-track-prefix-option')
     const initialItems = Array.from(grid.children)
     expect(initialItems).toHaveLength(4)
     expect(initialItems.map(item => item.getAttribute('data-switch-option'))).toEqual([
@@ -103,9 +124,11 @@ describe('ExportSettings naming controls', () => {
     fireEvent.click(screen.getByRole('switch', { name: '工程名の位置' }))
     fireEvent.click(screen.getByRole('switch', { name: '修正工程' }))
     fireEvent.click(screen.getByRole('button', { name: 'セル名' }))
+    fireEvent.click(screen.getByRole('switch', { name: 'XDTSフォルダ名' }))
 
     expect(screen.getByTestId('export-option-switch-grid')).toBe(grid)
     expect(Array.from(grid.children)).toEqual(initialItems)
+    expect(screen.getByTestId('xdts-track-prefix-option')).toBe(xdtsPrefixOption)
   })
 
   it('中央ペインの各選択肢にユーザー向けツールチップを表示する', () => {
@@ -128,8 +151,8 @@ describe('ExportSettings naming controls', () => {
       ['シート連番', /XDTSのタイムライン順に番号を付け/],
       ['自動', '出力する最大番号に合わせて桁数を自動調整します。1〜9は1桁、10〜99は2桁になります。'],
       ['4桁', 'すべて0001、0002…の4桁で書き出します。'],
-      ['_ あり', 'A_1.jpgのように、フォルダ名と番号の間へ「_」を入れます。'],
-      ['なし', 'A01.jpgのように、フォルダ名と番号を区切らず続けます。'],
+      ['_ あり', /フォルダ A ＋ セル 1 → A_1\.jpg/],
+      ['なし', /フォルダ A ＋ セル 1 → A1\.jpg/],
       ['全ON', 'すべての修正工程と自動マーク素材を書き出し対象にします。'],
       ['全OFF', 'すべての修正工程と自動マーク素材を書き出し対象から外します。'],
     ] as const
@@ -143,6 +166,7 @@ describe('ExportSettings naming controls', () => {
     }
 
     const switchCases = [
+      ['XDTSフォルダ名', /「付けない」→ 1.jpg/],
       ['兼用カット', /OFF: このカットで使うセルだけを書き出します。/],
       ['フォルダ分け', /すべて出力先の直下へまとめます。/],
       ['工程名の位置', /工程名をセル番号の前に付けます/],
@@ -161,7 +185,7 @@ describe('ExportSettings naming controls', () => {
     const unavailableAuto = screen.getByRole('button', { name: '自動' })
     fireEvent.mouseEnter(unavailableAuto)
     act(() => vi.advanceTimersByTime(300))
-    expect(screen.getByText('セル名出力ではクリスタのセル名を使うため、この設定は適用されません。連番・連番セル名・シート連番で使えます。')).toBeInTheDocument()
+    expect(screen.getByText('セル名出力ではクリスタのセル名を使うため、連番桁数は適用されません。連番・連番セル名・シート連番で使えます。')).toBeInTheDocument()
     fireEvent.mouseLeave(unavailableAuto)
   })
 })
