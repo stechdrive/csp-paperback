@@ -72,4 +72,27 @@ describe('output-slice', () => {
     expect(useAppStore.getState().quickExportConfig.revisionBorderEnabled).toBe(false)
   })
 
+  it('起動画面からは保存済みクイック設定だけを変更する', () => {
+    useAppStore.setState({
+      outputConfig: { ...DEFAULT_OUTPUT_CONFIG, revisionBorderEnabled: true },
+      quickExportConfig: {
+        ...DEFAULT_OUTPUT_CONFIG,
+        format: 'png',
+        background: 'transparent',
+        structure: 'hierarchy',
+        revisionBorderEnabled: true,
+      },
+    })
+
+    useAppStore.getState().setRevisionBorderEnabled(false, 'quick')
+
+    expect(useAppStore.getState().outputConfig.revisionBorderEnabled).toBe(true)
+    expect(useAppStore.getState().quickExportConfig).toMatchObject({
+      format: 'png',
+      background: 'transparent',
+      structure: 'hierarchy',
+      revisionBorderEnabled: false,
+    })
+  })
+
 })

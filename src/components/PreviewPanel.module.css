@@ -154,12 +154,53 @@
 
 .emptyWrapper {
   flex: 1;
+  min-height: 0;
   display: flex;
   align-items: flex-start;
   justify-content: center;
   background: var(--color-bg-app);
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 1.5rem 1rem;
+}
+
+.startupQuickSettings {
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: min(52%, 20rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--color-surface-1);
+  border-bottom: 1px solid var(--color-border-strong);
+}
+
+.startupQuickHeader {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 0.55rem 0.75rem 0.4rem;
+  background: var(--color-surface-1);
+}
+
+.startupQuickTitle {
+  color: var(--color-text-primary);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.startupQuickText,
+.startupQuickHint {
+  color: var(--color-text-muted);
+  font-size: 0.68rem;
+  line-height: 1.5;
+}
+
+.startupQuickText {
+  margin-top: 0.15rem;
+}
+
+.startupQuickHint {
+  padding: 0.35rem 0.75rem 0.5rem;
 }
 
 .empty {

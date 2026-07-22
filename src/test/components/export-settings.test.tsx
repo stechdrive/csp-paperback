@@ -32,6 +32,29 @@ afterEach(() => {
 })
 
 describe('ExportSettings naming controls', () => {
+  it('クイック書き出し対象では保存済み設定を表示し、その設定だけを変更する', () => {
+    useAppStore.setState({
+      outputConfig: { ...DEFAULT_OUTPUT_CONFIG, revisionBorderEnabled: true },
+      quickExportConfig: {
+        ...DEFAULT_OUTPUT_CONFIG,
+        format: 'png',
+        background: 'transparent',
+        structure: 'hierarchy',
+        revisionBorderEnabled: true,
+      },
+    })
+
+    render(<ExportSettings configTarget="quick" />)
+
+    expect(screen.getByRole('button', { name: '透明（PNG のみ）' })).toHaveAttribute('aria-disabled', 'false')
+    expect(screen.getByRole('switch', { name: 'フォルダ分け' })).toHaveAttribute('aria-checked', 'true')
+
+    fireEvent.click(screen.getByRole('switch', { name: '修正工程' }))
+    expect(useAppStore.getState().quickExportConfig.revisionBorderEnabled).toBe(false)
+    expect(useAppStore.getState().quickExportConfig.format).toBe('png')
+    expect(useAppStore.getState().outputConfig.revisionBorderEnabled).toBe(true)
+  })
+
   it('修正工程フチを中央ペインでオンオフできる', () => {
     render(<ExportSettings />)
 

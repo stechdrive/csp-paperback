@@ -9,95 +9,98 @@ import type {
 import { DEFAULT_OUTPUT_CONFIG } from '../types'
 import type { AppStore } from './index'
 
+export type OutputConfigTarget = 'current' | 'quick'
+
 export interface OutputSlice {
   outputConfig: OutputConfig
   quickExportConfig: OutputConfig
-  setFormat: (format: OutputFormat) => void
-  setBackground: (bg: BackgroundMode) => void
-  setStructure: (mode: StructureMode) => void
-  setProcessSuffixPosition: (position: ProcessSuffixPosition) => void
-  setJpgQuality: (quality: number) => void
-  toggleProcessSuffixExclusion: (suffix: string) => void
-  setAllProcessSuffixExclusions: (suffixes: string[]) => void
-  setExcludeAutoMarked: (exclude: boolean) => void
-  setRevisionBorderEnabled: (enabled: boolean) => void
+  setFormat: (format: OutputFormat, target?: OutputConfigTarget) => void
+  setBackground: (bg: BackgroundMode, target?: OutputConfigTarget) => void
+  setStructure: (mode: StructureMode, target?: OutputConfigTarget) => void
+  setProcessSuffixPosition: (position: ProcessSuffixPosition, target?: OutputConfigTarget) => void
+  setJpgQuality: (quality: number, target?: OutputConfigTarget) => void
+  toggleProcessSuffixExclusion: (suffix: string, target?: OutputConfigTarget) => void
+  setAllProcessSuffixExclusions: (suffixes: string[], target?: OutputConfigTarget) => void
+  setExcludeAutoMarked: (exclude: boolean, target?: OutputConfigTarget) => void
+  setRevisionBorderEnabled: (enabled: boolean, target?: OutputConfigTarget) => void
 }
 
-export const createOutputSlice: StateCreator<AppStore, [], [], OutputSlice> = (set, get) => ({
-  outputConfig: DEFAULT_OUTPUT_CONFIG,
-  quickExportConfig: DEFAULT_OUTPUT_CONFIG,
+export const createOutputSlice: StateCreator<AppStore, [], [], OutputSlice> = (set, get) => {
+  const getTargetConfig = (target: OutputConfigTarget) => (
+    target === 'quick' ? get().quickExportConfig : get().outputConfig
+  )
 
-  setFormat: (format) => {
-    get().pushHistory()
-    const current = get().outputConfig
-    const background: BackgroundMode = format === 'jpg' ? 'white' : 'transparent'
-    const outputConfig: OutputConfig = {
-      ...current,
-      format,
-      // JPG選択時は白固定、PNG選択時は透明をデフォルトに
-      background,
+  const updateTargetConfig = (
+    target: OutputConfigTarget,
+    update: (current: OutputConfig) => OutputConfig,
+  ) => {
+    const outputConfig = update(getTargetConfig(target))
+    if (target === 'quick') {
+      set({ quickExportConfig: outputConfig })
+      return
     }
-    set({
-      outputConfig,
-      quickExportConfig: outputConfig,
-    })
-  },
 
-  setBackground: (background) => {
-    const current = get().outputConfig
-    // JPGのときは透明を選べない
-    if (current.format === 'jpg' && background === 'transparent') return
     get().pushHistory()
-    const outputConfig = { ...current, background }
     set({ outputConfig, quickExportConfig: outputConfig })
-  },
+  }
 
-  setStructure: (structure) => {
-    get().pushHistory()
-    const outputConfig = { ...get().outputConfig, structure }
-    set({ outputConfig, quickExportConfig: outputConfig })
-  },
+  return {
+    outputConfig: DEFAULT_OUTPUT_CONFIG,
+    quickExportConfig: DEFAULT_OUTPUT_CONFIG,
 
-  setProcessSuffixPosition: (processSuffixPosition) => {
-    get().pushHistory()
-    const outputConfig = { ...get().outputConfig, processSuffixPosition }
-    set({ outputConfig, quickExportConfig: outputConfig })
-  },
+    setFormat: (format, target = 'current') => {
+      updateTargetConfig(target, current => ({
+        ...current,
+        format,
+        // JPG選択時は白固定、PNG選択時は透明をデフォルトに
+        background: format === 'jpg' ? 'white' : 'transparent',
+      }))
+    },
 
-  setJpgQuality: (jpgQuality) => {
-    get().pushHistory()
-    const outputConfig = {
-      ...get().outputConfig,
-      jpgQuality: Math.max(0, Math.min(1, jpgQuality)),
-    }
-    set({ outputConfig, quickExportConfig: outputConfig })
-  },
+    setBackground: (background, target = 'current') => {
+      const current = getTargetConfig(target)
+      // JPGのときは透明を選べない
+      if (current.format === 'jpg' && background === 'transparent') return
+      updateTargetConfig(target, config => ({ ...config, background }))
+    },
 
-  toggleProcessSuffixExclusion: (suffix) => {
-    get().pushHistory()
-    const current = get().outputConfig.excludedProcessSuffixes
-    const next = current.includes(suffix)
-      ? current.filter(s => s !== suffix)
-      : [...current, suffix]
-    const outputConfig = { ...get().outputConfig, excludedProcessSuffixes: next }
-    set({ outputConfig, quickExportConfig: outputConfig })
-  },
+    setStructure: (structure, target = 'current') => {
+      updateTargetConfig(target, current => ({ ...current, structure }))
+    },
 
-  setAllProcessSuffixExclusions: (suffixes) => {
-    get().pushHistory()
-    const outputConfig = { ...get().outputConfig, excludedProcessSuffixes: suffixes }
-    set({ outputConfig, quickExportConfig: outputConfig })
-  },
+    setProcessSuffixPosition: (processSuffixPosition, target = 'current') => {
+      updateTargetConfig(target, current => ({ ...current, processSuffixPosition }))
+    },
 
-  setExcludeAutoMarked: (excludeAutoMarked) => {
-    get().pushHistory()
-    const outputConfig = { ...get().outputConfig, excludeAutoMarked }
-    set({ outputConfig, quickExportConfig: outputConfig })
-  },
+    setJpgQuality: (jpgQuality, target = 'current') => {
+      updateTargetConfig(target, current => ({
+        ...current,
+        jpgQuality: Math.max(0, Math.min(1, jpgQuality)),
+      }))
+    },
 
-  setRevisionBorderEnabled: (revisionBorderEnabled) => {
-    get().pushHistory()
-    const outputConfig = { ...get().outputConfig, revisionBorderEnabled }
-    set({ outputConfig, quickExportConfig: outputConfig })
-  },
-})
+    toggleProcessSuffixExclusion: (suffix, target = 'current') => {
+      updateTargetConfig(target, current => {
+        const excludedProcessSuffixes = current.excludedProcessSuffixes.includes(suffix)
+          ? current.excludedProcessSuffixes.filter(entry => entry !== suffix)
+          : [...current.excludedProcessSuffixes, suffix]
+        return { ...current, excludedProcessSuffixes }
+      })
+    },
+
+    setAllProcessSuffixExclusions: (suffixes, target = 'current') => {
+      updateTargetConfig(target, current => ({
+        ...current,
+        excludedProcessSuffixes: suffixes,
+      }))
+    },
+
+    setExcludeAutoMarked: (excludeAutoMarked, target = 'current') => {
+      updateTargetConfig(target, current => ({ ...current, excludeAutoMarked }))
+    },
+
+    setRevisionBorderEnabled: (revisionBorderEnabled, target = 'current') => {
+      updateTargetConfig(target, current => ({ ...current, revisionBorderEnabled }))
+    },
+  }
+}

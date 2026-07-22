@@ -13,6 +13,7 @@ import {
 } from '../types'
 import { isAutoMarkedOutputTarget } from '../utils/auto-marked-container'
 import { getMaxSequenceNumberForAnimationFolders } from '../engine/cell-extractor'
+import type { OutputConfigTarget } from '../store/output-slice'
 import {
   isSequenceNamingMode,
   makeCellFileName,
@@ -61,8 +62,14 @@ function buildNameSample(
   return structure === 'hierarchy' ? `${trackName}/${fileName}` : fileName
 }
 
-export function ExportSettings() {
-  const outputConfig = useAppStore(s => s.outputConfig)
+interface ExportSettingsProps {
+  configTarget?: OutputConfigTarget
+}
+
+export function ExportSettings({ configTarget = 'current' }: ExportSettingsProps) {
+  const outputConfig = useAppStore(s => (
+    configTarget === 'quick' ? s.quickExportConfig : s.outputConfig
+  ))
   const projectSettings = useAppStore(s => s.projectSettings)
   const layerTree = useAppStore(selectLayerTreeWithVisibility)
   const unmatchedTracks = useAppStore(s => s.unmatchedTracks)
@@ -109,13 +116,13 @@ export function ExportSettings() {
   )
 
   const handleAllOn = () => {
-    setAllProcessSuffixExclusions([])
-    setExcludeAutoMarked(false)
+    setAllProcessSuffixExclusions([], configTarget)
+    setExcludeAutoMarked(false, configTarget)
   }
 
   const handleAllOff = () => {
-    setAllProcessSuffixExclusions(processSuffixes)
-    setExcludeAutoMarked(true)
+    setAllProcessSuffixExclusions(processSuffixes, configTarget)
+    setExcludeAutoMarked(true, configTarget)
   }
 
   return (
@@ -128,13 +135,13 @@ export function ExportSettings() {
           <Tooltip content={t.export.formatJpgHint} placement="bottom">
             <button
               className={`${styles.toggle} ${outputConfig.format === 'jpg' ? styles.active : ''}`}
-              onClick={() => setFormat('jpg')}
+              onClick={() => setFormat('jpg', configTarget)}
             >JPG</button>
           </Tooltip>
           <Tooltip content={t.export.formatPngHint} placement="bottom">
             <button
               className={`${styles.toggle} ${outputConfig.format === 'png' ? styles.active : ''}`}
-              onClick={() => setFormat('png')}
+              onClick={() => setFormat('png', configTarget)}
             >PNG</button>
           </Tooltip>
         </div>
@@ -144,14 +151,14 @@ export function ExportSettings() {
           <Tooltip content={t.export.bgWhiteHint} placement="bottom">
             <button
               className={`${styles.toggle} ${outputConfig.background === 'white' ? styles.active : ''}`}
-              onClick={() => setBackground('white')}
+              onClick={() => setBackground('white', configTarget)}
             >{t.export.bgWhite}</button>
           </Tooltip>
           <Tooltip content={t.export.bgTransparentHint} placement="bottom">
             <button
               className={`${styles.toggle} ${outputConfig.background === 'transparent' ? styles.active : ''} ${outputConfig.format === 'jpg' ? styles.disabled : ''}`}
               onClick={() => {
-                if (outputConfig.format === 'png') setBackground('transparent')
+                if (outputConfig.format === 'png') setBackground('transparent', configTarget)
               }}
               aria-disabled={outputConfig.format === 'jpg'}
             >{t.export.bgTransparent}</button>
@@ -309,7 +316,7 @@ export function ExportSettings() {
               <span className={styles.label}>{t.export.structure}</span>
               <span
                 className={`${styles.switch} ${outputConfig.structure === 'hierarchy' ? styles.switchOn : ''}`}
-                onClick={() => setStructure(outputConfig.structure === 'hierarchy' ? 'flat' : 'hierarchy')}
+                onClick={() => setStructure(outputConfig.structure === 'hierarchy' ? 'flat' : 'hierarchy', configTarget)}
                 role="switch"
                 aria-label={t.export.structure}
                 aria-checked={outputConfig.structure === 'hierarchy'}
@@ -327,7 +334,7 @@ export function ExportSettings() {
               <span className={styles.label}>{t.export.processSuffixPosition}</span>
               <span
                 className={`${styles.switch} ${outputConfig.processSuffixPosition === 'before-cell' ? styles.switchOn : ''}`}
-                onClick={() => setProcessSuffixPosition(outputConfig.processSuffixPosition === 'before-cell' ? 'after-cell' : 'before-cell')}
+                onClick={() => setProcessSuffixPosition(outputConfig.processSuffixPosition === 'before-cell' ? 'after-cell' : 'before-cell', configTarget)}
                 role="switch"
                 aria-label={t.export.processSuffixPosition}
                 aria-checked={outputConfig.processSuffixPosition === 'before-cell'}
@@ -347,7 +354,7 @@ export function ExportSettings() {
               <span className={styles.label}>{t.export.revisionBorder}</span>
               <span
                 className={`${styles.switch} ${outputConfig.revisionBorderEnabled ? styles.switchOn : ''}`}
-                onClick={() => setRevisionBorderEnabled(!outputConfig.revisionBorderEnabled)}
+                onClick={() => setRevisionBorderEnabled(!outputConfig.revisionBorderEnabled, configTarget)}
                 role="switch"
                 aria-label={t.export.revisionBorder}
                 aria-checked={outputConfig.revisionBorderEnabled}
@@ -373,7 +380,7 @@ export function ExportSettings() {
               <Tooltip key={entry.suffix} content={tip} placement="bottom">
                 <button
                   className={`${styles.chip} ${!excludedSet.has(entry.suffix) ? styles.chipIncluded : ''}`}
-                  onClick={() => toggleProcessSuffixExclusion(entry.suffix)}
+                  onClick={() => toggleProcessSuffixExclusion(entry.suffix, configTarget)}
                 >{entry.suffix}</button>
               </Tooltip>
             )
@@ -384,7 +391,7 @@ export function ExportSettings() {
           >
             <button
               className={`${styles.chip} ${!outputConfig.excludeAutoMarked ? styles.chipIncluded : ''}`}
-              onClick={() => setExcludeAutoMarked(!outputConfig.excludeAutoMarked)}
+              onClick={() => setExcludeAutoMarked(!outputConfig.excludeAutoMarked, configTarget)}
             >{t.export.autoMark}</button>
           </Tooltip>
         </div>

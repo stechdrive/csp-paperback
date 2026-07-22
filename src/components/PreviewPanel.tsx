@@ -140,6 +140,29 @@ function ExportSettingsDrawer() {
   )
 }
 
+function StartupQuickExportSettings() {
+  return (
+    <section
+      className={styles.startupQuickSettings}
+      aria-labelledby="startup-quick-settings-title"
+      data-testid="startup-quick-export-settings"
+    >
+      <div className={styles.startupQuickHeader}>
+        <div id="startup-quick-settings-title" className={styles.startupQuickTitle}>
+          ⚡ クイック書き出し設定
+        </div>
+        <div className={styles.startupQuickText}>
+          ここで変更した内容は自動保存され、次回のクイック書き出しに使われます。
+        </div>
+      </div>
+      <ExportSettings configTarget="quick" />
+      <div className={styles.startupQuickHint}>
+        設定後はPSDとXDTSを同時にEXEまたはショートカットへドロップしてください。
+      </div>
+    </section>
+  )
+}
+
 export function PreviewPanel() {
   const docWidth = useAppStore(s => s.docWidth)
   const xdtsData = useAppStore(s => s.xdtsData)
@@ -193,13 +216,14 @@ export function PreviewPanel() {
   }, [navHeight])
 
   if (docWidth === 0) {
+    const desktop = isDesktopRuntime()
     return (
       <div className={styles.panel}>
         <div className={styles.header}>
           <span>プレビュー</span>
-          <span className={styles.headerSub}>書き出し設定</span>
         </div>
-        <div className={styles.emptyWrapper}>
+        {desktop && <StartupQuickExportSettings />}
+        <div className={styles.emptyWrapper} data-testid="startup-guide-scroll">
           <div className={styles.empty}>
             {/* XDTS 読み込み済みバナー */}
             {xdtsFileName && (
