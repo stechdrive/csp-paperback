@@ -102,27 +102,37 @@ export function ExportSettings() {
       <div className={styles.row}>
         <span className={styles.label}>{t.export.format}</span>
         <div className={styles.toggleGroup}>
-          <button
-            className={`${styles.toggle} ${outputConfig.format === 'jpg' ? styles.active : ''}`}
-            onClick={() => setFormat('jpg')}
-          >JPG</button>
-          <button
-            className={`${styles.toggle} ${outputConfig.format === 'png' ? styles.active : ''}`}
-            onClick={() => setFormat('png')}
-          >PNG</button>
+          <Tooltip content={t.export.formatJpgHint} placement="bottom">
+            <button
+              className={`${styles.toggle} ${outputConfig.format === 'jpg' ? styles.active : ''}`}
+              onClick={() => setFormat('jpg')}
+            >JPG</button>
+          </Tooltip>
+          <Tooltip content={t.export.formatPngHint} placement="bottom">
+            <button
+              className={`${styles.toggle} ${outputConfig.format === 'png' ? styles.active : ''}`}
+              onClick={() => setFormat('png')}
+            >PNG</button>
+          </Tooltip>
         </div>
 
         <span className={styles.label}>{t.export.background}</span>
         <div className={styles.toggleGroup}>
-          <button
-            className={`${styles.toggle} ${outputConfig.background === 'white' ? styles.active : ''}`}
-            onClick={() => setBackground('white')}
-          >{t.export.bgWhite}</button>
-          <button
-            className={`${styles.toggle} ${outputConfig.background === 'transparent' ? styles.active : ''} ${outputConfig.format === 'jpg' ? styles.disabled : ''}`}
-            onClick={() => setBackground('transparent')}
-            disabled={outputConfig.format === 'jpg'}
-          >{t.export.bgTransparent}</button>
+          <Tooltip content={t.export.bgWhiteHint} placement="bottom">
+            <button
+              className={`${styles.toggle} ${outputConfig.background === 'white' ? styles.active : ''}`}
+              onClick={() => setBackground('white')}
+            >{t.export.bgWhite}</button>
+          </Tooltip>
+          <Tooltip content={t.export.bgTransparentHint} placement="bottom">
+            <button
+              className={`${styles.toggle} ${outputConfig.background === 'transparent' ? styles.active : ''} ${outputConfig.format === 'jpg' ? styles.disabled : ''}`}
+              onClick={() => {
+                if (outputConfig.format === 'png') setBackground('transparent')
+              }}
+              aria-disabled={outputConfig.format === 'jpg'}
+            >{t.export.bgTransparent}</button>
+          </Tooltip>
         </div>
       </div>
 
@@ -131,18 +141,24 @@ export function ExportSettings() {
           <span className={styles.label}>{t.settings.cellNaming}</span>
         </Tooltip>
         <div className={styles.toggleGroup}>
-          <button
-            className={`${styles.toggle} ${projectSettings.cellNamingMode === 'sequence' ? styles.active : ''}`}
-            onClick={() => setCellNamingMode('sequence')}
-          >{t.settings.cellNamingSequence}</button>
-          <button
-            className={`${styles.toggle} ${projectSettings.cellNamingMode === 'sequence-cellname' ? styles.active : ''}`}
-            onClick={() => setCellNamingMode('sequence-cellname')}
-          >{t.settings.cellNamingSequenceCellname}</button>
-          <button
-            className={`${styles.toggle} ${projectSettings.cellNamingMode === 'cellname' ? styles.active : ''}`}
-            onClick={() => setCellNamingMode('cellname')}
-          >{t.settings.cellNamingCellname}</button>
+          <Tooltip content={t.settings.cellNamingSequenceHint} placement="bottom">
+            <button
+              className={`${styles.toggle} ${projectSettings.cellNamingMode === 'sequence' ? styles.active : ''}`}
+              onClick={() => setCellNamingMode('sequence')}
+            >{t.settings.cellNamingSequence}</button>
+          </Tooltip>
+          <Tooltip content={t.settings.cellNamingSequenceCellnameHint} placement="bottom">
+            <button
+              className={`${styles.toggle} ${projectSettings.cellNamingMode === 'sequence-cellname' ? styles.active : ''}`}
+              onClick={() => setCellNamingMode('sequence-cellname')}
+            >{t.settings.cellNamingSequenceCellname}</button>
+          </Tooltip>
+          <Tooltip content={t.settings.cellNamingCellnameHint} placement="bottom">
+            <button
+              className={`${styles.toggle} ${projectSettings.cellNamingMode === 'cellname' ? styles.active : ''}`}
+              onClick={() => setCellNamingMode('cellname')}
+            >{t.settings.cellNamingCellname}</button>
+          </Tooltip>
           <Tooltip content={t.settings.cellNamingSheetSequenceHint} placement="bottom">
             <button
               className={`${styles.toggle} ${projectSettings.cellNamingMode === 'sheet-sequence' ? styles.active : ''}`}
@@ -159,14 +175,18 @@ export function ExportSettings() {
                 <span className={styles.label}>{t.settings.sequenceDigits}</span>
               </Tooltip>
               <div className={styles.toggleGroup}>
-                <button
-                  className={`${styles.toggle} ${(projectSettings.sequenceDigitMode ?? 'auto') === 'auto' ? styles.active : ''}`}
-                  onClick={() => setSequenceDigitMode('auto')}
-                >{t.settings.sequenceDigitsAuto}</button>
-                <button
-                  className={`${styles.toggle} ${projectSettings.sequenceDigitMode === 'fixed-4' ? styles.active : ''}`}
-                  onClick={() => setSequenceDigitMode('fixed-4')}
-                >{t.settings.sequenceDigitsFixed4}</button>
+                <Tooltip content={t.settings.sequenceDigitsAutoHint} placement="bottom">
+                  <button
+                    className={`${styles.toggle} ${(projectSettings.sequenceDigitMode ?? 'auto') === 'auto' ? styles.active : ''}`}
+                    onClick={() => setSequenceDigitMode('auto')}
+                  >{t.settings.sequenceDigitsAuto}</button>
+                </Tooltip>
+                <Tooltip content={t.settings.sequenceDigitsFixed4Hint} placement="bottom">
+                  <button
+                    className={`${styles.toggle} ${projectSettings.sequenceDigitMode === 'fixed-4' ? styles.active : ''}`}
+                    onClick={() => setSequenceDigitMode('fixed-4')}
+                  >{t.settings.sequenceDigitsFixed4}</button>
+                </Tooltip>
               </div>
             </div>
 
@@ -175,14 +195,18 @@ export function ExportSettings() {
                 <span className={styles.label}>{t.settings.animationSequenceSeparator}</span>
               </Tooltip>
               <div className={styles.toggleGroup}>
-                <button
-                  className={`${styles.toggle} ${(projectSettings.animationSequenceSeparator ?? 'underscore') === 'underscore' ? styles.active : ''}`}
-                  onClick={() => setAnimationSequenceSeparator('underscore')}
-                >{t.settings.animationSequenceSeparatorUnderscore}</button>
-                <button
-                  className={`${styles.toggle} ${projectSettings.animationSequenceSeparator === 'none' ? styles.active : ''}`}
-                  onClick={() => setAnimationSequenceSeparator('none')}
-                >{t.settings.animationSequenceSeparatorNone}</button>
+                <Tooltip content={t.settings.animationSequenceSeparatorUnderscoreHint} placement="bottom">
+                  <button
+                    className={`${styles.toggle} ${(projectSettings.animationSequenceSeparator ?? 'underscore') === 'underscore' ? styles.active : ''}`}
+                    onClick={() => setAnimationSequenceSeparator('underscore')}
+                  >{t.settings.animationSequenceSeparatorUnderscore}</button>
+                </Tooltip>
+                <Tooltip content={t.settings.animationSequenceSeparatorNoneHint} placement="bottom">
+                  <button
+                    className={`${styles.toggle} ${projectSettings.animationSequenceSeparator === 'none' ? styles.active : ''}`}
+                    onClick={() => setAnimationSequenceSeparator('none')}
+                  >{t.settings.animationSequenceSeparatorNone}</button>
+                </Tooltip>
               </div>
             </div>
           </>
@@ -195,6 +219,7 @@ export function ExportSettings() {
               className={`${styles.switch} ${projectSettings.sharedCutMode ? styles.switchOn : ''}`}
               onClick={() => setSharedCutMode(!projectSettings.sharedCutMode)}
               role="switch"
+              aria-label={t.export.sharedCut}
               aria-checked={!!projectSettings.sharedCutMode}
             />
           </label>
@@ -207,6 +232,7 @@ export function ExportSettings() {
               className={`${styles.switch} ${outputConfig.structure === 'hierarchy' ? styles.switchOn : ''}`}
               onClick={() => setStructure(outputConfig.structure === 'hierarchy' ? 'flat' : 'hierarchy')}
               role="switch"
+              aria-label={t.export.structure}
               aria-checked={outputConfig.structure === 'hierarchy'}
             />
           </label>
@@ -219,6 +245,7 @@ export function ExportSettings() {
               className={`${styles.switch} ${outputConfig.processSuffixPosition === 'before-cell' ? styles.switchOn : ''}`}
               onClick={() => setProcessSuffixPosition(outputConfig.processSuffixPosition === 'before-cell' ? 'after-cell' : 'before-cell')}
               role="switch"
+              aria-label={t.export.processSuffixPosition}
               aria-checked={outputConfig.processSuffixPosition === 'before-cell'}
             />
             <span className={styles.switchValue}>
@@ -274,14 +301,18 @@ export function ExportSettings() {
             >{t.export.autoMark}</button>
           </Tooltip>
         </div>
-        <button
-          className={`${styles.batchBtn} ${allIncluded ? styles.batchActive : ''}`}
-          onClick={handleAllOn}
-        >{t.export.allOn}</button>
-        <button
-          className={`${styles.batchBtn} ${allExcluded ? styles.batchActive : ''}`}
-          onClick={handleAllOff}
-        >{t.export.allOff}</button>
+        <Tooltip content={t.export.allOnHint} placement="bottom">
+          <button
+            className={`${styles.batchBtn} ${allIncluded ? styles.batchActive : ''}`}
+            onClick={handleAllOn}
+          >{t.export.allOn}</button>
+        </Tooltip>
+        <Tooltip content={t.export.allOffHint} placement="bottom">
+          <button
+            className={`${styles.batchBtn} ${allExcluded ? styles.batchActive : ''}`}
+            onClick={handleAllOff}
+          >{t.export.allOff}</button>
+        </Tooltip>
       </div>
     </div>
   )

@@ -56,6 +56,11 @@
   border-left: 1px solid var(--color-border-strong);
 }
 
+/* Tooltip の display: contents ラッパー越しでも選択肢の境界線を保つ */
+.toggleGroup > span + span .toggle {
+  border-left: 1px solid var(--color-border-strong);
+}
+
 .toggle:hover:not(.disabled):not(.active) {
   background: var(--color-border-subtle);
   color: var(--color-text-primary);
