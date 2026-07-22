@@ -74,7 +74,16 @@ describe('_[フォルダ名] 配下アニメフォルダ認識 repro', () => {
 
     // 抽出結果: BG1 セルは _原図/_BG/BG1 から出る
     const entries = extractAllEntries(
-      tree, DEFAULT_PROJECT_SETTINGS, 100, 100, 'transparent', false,
+      tree,
+      {
+        ...DEFAULT_PROJECT_SETTINGS,
+        cellPrefixSeparator: 'underscore',
+        animationSequenceSeparator: 'underscore',
+      },
+      100,
+      100,
+      'transparent',
+      false,
     )
     const bg1Cells = entries.filter(e => e.flatName.startsWith('BG1_'))
     expect(bg1Cells).toHaveLength(1)

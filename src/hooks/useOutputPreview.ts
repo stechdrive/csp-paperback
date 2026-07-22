@@ -232,7 +232,7 @@ function previewAnimFolder(
   )
 
   // 選択セルのエントリに絞り込む
-  const namingMode = projectSettings.cellNamingMode ?? 'sequence'
+  const namingMode = projectSettings.cellNamingMode ?? 'sheet-sequence'
   const isAutoProcessAnim = animFolder.animationFolder?.detectedBy === 'autoProcess'
   const sequenceNumber = sequenceNamingPlan.sheetSequenceNumbers?.get(selectedCell.id)
     ?? visibleChildren.length - clampedIndex

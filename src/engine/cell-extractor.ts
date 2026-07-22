@@ -61,7 +61,7 @@ export function extractCells(
   const folderName = displayName
   const visibleChildren = animFolder.children.filter(c => !c.hidden && !c.uiHidden)
   const folderNameToSuffix = buildFolderNameToSuffixMap(projectSettings.processTable)
-  const namingMode = projectSettings.cellNamingMode ?? 'sequence'
+  const namingMode = projectSettings.cellNamingMode ?? 'sheet-sequence'
   const entries: OutputEntry[] = []
 
   // autoProcess 昇格フォルダでは、配下のセル名（`_BG`, `_BOOK1` 等）が

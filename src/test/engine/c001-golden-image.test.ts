@@ -30,6 +30,8 @@ import { DEFAULT_PROJECT_SETTINGS } from '../../types'
 const GOLDEN_PROJECT_SETTINGS = {
   ...DEFAULT_PROJECT_SETTINGS,
   sequenceDigitMode: 'fixed-4' as const,
+  cellPrefixSeparator: 'underscore' as const,
+  animationSequenceSeparator: 'underscore' as const,
 }
 import { buildC001VirtualSets } from '../../sample/c001-virtual-set'
 

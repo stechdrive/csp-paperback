@@ -36,28 +36,35 @@ describe('ExportSettings naming controls', () => {
     render(<ExportSettings />)
 
     const toggle = screen.getByRole('switch', { name: '修正工程' })
-    expect(toggle).toHaveAttribute('aria-checked', 'false')
-    expect(screen.getByText('フチなし')).toBeInTheDocument()
+    expect(toggle).toHaveAttribute('aria-checked', 'true')
+    expect(screen.getByText('フチあり')).toBeInTheDocument()
 
     fireEvent.click(toggle)
-    expect(useAppStore.getState().outputConfig.revisionBorderEnabled).toBe(true)
-    expect(useAppStore.getState().quickExportConfig.revisionBorderEnabled).toBe(true)
-    expect(screen.getByText('フチあり')).toBeInTheDocument()
+    expect(useAppStore.getState().outputConfig.revisionBorderEnabled).toBe(false)
+    expect(useAppStore.getState().quickExportConfig.revisionBorderEnabled).toBe(false)
+    expect(screen.getByText('フチなし')).toBeInTheDocument()
   })
 
-  it('中央ペインの頻用設定として自動桁数を初期選択し、サンプルへ反映する', () => {
+  it('シート連番・自動桁数・区切りなしを初期選択し、サンプルへ反映する', () => {
     render(<ExportSettings />)
 
+    expect(useAppStore.getState().projectSettings.cellNamingMode).toBe('sheet-sequence')
     expect(useAppStore.getState().projectSettings.sequenceDigitMode).toBe('auto')
-    expect(screen.getByText('A_1_e.jpg')).toBeInTheDocument()
+    expect(useAppStore.getState().projectSettings.cellPrefixSeparator).toBe('none')
+    expect(screen.getByText('A1_e.jpg')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: '4桁' }))
     expect(useAppStore.getState().projectSettings.sequenceDigitMode).toBe('fixed-4')
-    expect(screen.getByText('A_0001_e.jpg')).toBeInTheDocument()
+    expect(screen.getByText('A0001_e.jpg')).toBeInTheDocument()
   })
 
   it('アニメーションフォルダ名とセル部分の区切りを省略できる', () => {
     render(<ExportSettings />)
+
+    fireEvent.click(screen.getByRole('button', { name: '_ あり' }))
+    expect(useAppStore.getState().projectSettings.cellPrefixSeparator).toBe('underscore')
+    expect(useAppStore.getState().projectSettings.animationSequenceSeparator).toBe('underscore')
+    expect(screen.getByText('A_1_e.jpg')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'なし' }))
     expect(useAppStore.getState().projectSettings.cellPrefixSeparator).toBe('none')
@@ -96,7 +103,7 @@ describe('ExportSettings naming controls', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'セル名' }))
     expect(toggle).toHaveAttribute('aria-disabled', 'false')
-    expect(screen.getByText('A_1_e.jpg')).toBeInTheDocument()
+    expect(screen.getByText('A1_e.jpg')).toBeInTheDocument()
 
     fireEvent.click(toggle)
     expect(useAppStore.getState().projectSettings.includeXdtsTrackPrefixInCellName).toBe(false)
@@ -151,8 +158,8 @@ describe('ExportSettings naming controls', () => {
       ['シート連番', /XDTSのタイムライン順に番号を付け/],
       ['自動', '出力する最大番号に合わせて桁数を自動調整します。1〜9は1桁、10〜99は2桁になります。'],
       ['4桁', 'すべて0001、0002…の4桁で書き出します。'],
-      ['_ あり', /フォルダ A ＋ セル 1 → A_1\.jpg/],
-      ['なし', /フォルダ A ＋ セル 1 → A1\.jpg/],
+      ['_ あり', /セル名が「1」の場合 A_1\.jpgになります。/],
+      ['なし', /セル名が「1」の場合 A1\.jpgになります。/],
       ['全ON', 'すべての修正工程と自動マーク素材を書き出し対象にします。'],
       ['全OFF', 'すべての修正工程と自動マーク素材を書き出し対象から外します。'],
     ] as const
@@ -166,7 +173,7 @@ describe('ExportSettings naming controls', () => {
     }
 
     const switchCases = [
-      ['XDTSフォルダ名', /「付けない」→ 1.jpg/],
+      ['XDTSフォルダ名', /セル名が「A1」の場合.*「付けない」→ フォルダ名を付けず、A1.jpg/s],
       ['兼用カット', /OFF: このカットで使うセルだけを書き出します。/],
       ['フォルダ分け', /すべて出力先の直下へまとめます。/],
       ['工程名の位置', /工程名をセル番号の前に付けます/],

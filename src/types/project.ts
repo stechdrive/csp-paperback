@@ -48,10 +48,10 @@ export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
     { suffix: '_y',  folderNames: ['_y',  '料理作監'], revisionBorderColor: '#FFDDAA' },
     { suffix: '_ss', folderNames: ['_ss', '総作監'], revisionBorderColor: '#EAF6D5' },
   ],
-  cellNamingMode: 'sequence',
+  cellNamingMode: 'sheet-sequence',
   sequenceDigitMode: 'auto',
-  cellPrefixSeparator: 'underscore',
-  animationSequenceSeparator: 'underscore',
+  cellPrefixSeparator: 'none',
+  animationSequenceSeparator: 'none',
   includeXdtsTrackPrefixInCellName: true,
   sharedCutMode: false,
   autoMarkFolderNames: ['撮影指示', '原図'],
@@ -71,7 +71,7 @@ export function resolveCellPrefixSeparator(
   ) {
     return settings.animationSequenceSeparator
   }
-  return 'underscore'
+  return 'none'
 }
 
 /** 未設定の旧データでは従来どおりXDTSフォルダ名を付ける。 */

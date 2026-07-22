@@ -23,7 +23,7 @@ export const DEFAULT_OUTPUT_CONFIG: OutputConfig = {
   processSuffixPosition: 'after-cell',
   excludedProcessSuffixes: [],
   excludeAutoMarked: false,
-  revisionBorderEnabled: false,
+  revisionBorderEnabled: true,
 }
 
 export interface OutputEntry {

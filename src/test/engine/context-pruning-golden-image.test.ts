@@ -20,6 +20,8 @@ import { DEFAULT_PROJECT_SETTINGS, type CspLayer, type SingleMark } from '../../
 const GOLDEN_PROJECT_SETTINGS = {
   ...DEFAULT_PROJECT_SETTINGS,
   sequenceDigitMode: 'fixed-4' as const,
+  cellPrefixSeparator: 'underscore' as const,
+  animationSequenceSeparator: 'underscore' as const,
 }
 
 const REPO_ROOT = path.resolve(__dirname, '../../..')
