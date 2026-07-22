@@ -7,10 +7,10 @@ export interface ProcessFolderEntry {
 
 /** セル画像名の命名モード */
 export type CellNamingMode =
-  | 'sequence'   // アニメフォルダ名_連番4桁.jpg（例: A_0001.jpg）
-  | 'sequence-cellname' // アニメフォルダ名_連番_セル名.jpg（例: A_01_ア.jpg）
-  | 'cellname'   // アニメフォルダ名_セル名.jpg（例: A_A0001.jpg）
-  | 'sheet-sequence' // 同名セル系列をXDTS初出順で工程込み連番化（例: A_0001.jpg）
+  | 'sequence'   // アニメフォルダ名 + 連番（初期設定の区切りなし・自動桁数なら例: A1.jpg）
+  | 'sequence-cellname' // アニメフォルダ名 + 連番 + セル名（例: A1_ア.jpg）
+  | 'cellname'   // CSPのセル名を使用。必要に応じてアニメフォルダ名を付加（例: A1.jpg）
+  | 'sheet-sequence' // 同名セル系列をXDTS初出順で工程込み連番化（例: A1.jpg）
 
 /** 連番のゼロ埋め桁数 */
 export type SequenceDigitMode = 'auto' | 'fixed-4'

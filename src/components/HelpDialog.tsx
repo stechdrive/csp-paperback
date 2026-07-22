@@ -21,8 +21,8 @@ const TOC = [
   { id: 'manual-anim-folder', label: '手動アニメフォルダ 🎬' },
   { id: 'auto-anim-folder', label: '自動アニメフォルダ化 🎬' },
   { id: 'virtual-set', label: '仮想セル' },
-  { id: 'process-table', label: '工程フォルダリスト' },
-  { id: 'export-settings', label: '出力設定' },
+  { id: 'process-table', label: '工程フォルダとフチ色' },
+  { id: 'export-settings', label: '出力名・書き出し設定' },
   { id: 'shortcuts', label: '操作Tips' },
 ] as const
 
@@ -103,8 +103,8 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   <code className={styles.code}>B/1/_s/作監修正</code> のように
                   セルフォルダ内へ修正工程フォルダを入れて管理したい。
                   そのうえで書き出し時には、作画担当者の素材と修正工程を
-                  <code className={styles.code}>B_0001.jpg</code>、
-                  <code className={styles.code}>B_0001_s.jpg</code> のように別々の素材として出したい。
+                  <code className={styles.code}>B1.jpg</code>、
+                  <code className={styles.code}>B1_s.jpg</code> のように別々の素材として出したい。
                   作業中のクリップスタジオでの構造はそのままに、出力時だけ作画担当者の素材と修正工程を「別々の紙」として戻せます。
                 </li>
               </ul>
@@ -174,8 +174,12 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   <span className={styles.strong}>デスクトップ版クイック書き出し</span> — PSD/XDTS の2ファイルを同時に EXE へドロップして、確認操作なしで同じフォルダへ一括出力
                 </li>
                 <li>
-                  <span className={styles.strong}>工程フォルダリスト</span> — セル内のフォルダ名に応じて、演出、作監など
-                  自動でサフィックス付き分離出力
+                  <span className={styles.strong}>工程フォルダと修正工程フチ</span> — セル内のフォルダ名に応じて、演出、作監などを
+                  サフィックス付きで分離出力。工程ごとの色を使った修正工程フチも、プレビューと出力画像へ自動で付けられます
+                </li>
+                <li>
+                  <span className={styles.strong}>用途に合わせた出力名</span> — シート順の連番、セル名、フォルダ名との区切り、
+                  XDTSで検出したフォルダ名の付加を選び、制作ルールに合うファイル名で出力
                 </li>
                 <li>
                   <span className={styles.strong}>XDTSタイムシート</span> — CLIP STUDIO のタイムシートから
@@ -267,7 +271,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                     <div className={styles.stepTitle}>必要に応じてマーク設定 → 書き出し</div>
                     <div className={styles.stepDesc}>
                       単体出力と 🎬 手動アニメーションフォルダ指定を確認し、「出力」ボタンで ZIP またはフォルダへ書き出します。
-                      出力形式（JPG/PNG）、背景透過、出力時にセル名でフォルダを作るかをカスタマイズできます。
+                      出力形式、背景、フォルダ分け、出力名、修正工程フチを用途に合わせて選べます。
                     </div>
                   </div>
                 </div>
@@ -277,7 +281,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 <span className={styles.strong}>💡 Tips：</span>
                 PSD と XDTS は同時に選択して「ファイルを開く」で読み込めます。
                 PSDとXDTSを読み込み済みの状態で新しいPSDまたはXDTSを開くと、新規プロジェクトとして読み直します。
-                工程フォルダリスト、自動マークするフォルダ名、除外リストは設定ダイアログから保存・読み込みして共有できます。
+                工程フォルダリスト（フチ色を含む）、出力名、自動マークするフォルダ名、除外リストは設定ダイアログから保存・読み込みして共有できます。
                 各スタジオで使っているテンプレートや命名ルールに合わせて調整してください。
               </div>
             </section>
@@ -340,7 +344,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   <div className={styles.stepBody}>
                     <div className={styles.stepTitle}>先に出力設定を決める</div>
                     <div className={styles.stepDesc}>
-                      アプリを普通に起動して、JPG/PNG、背景、階層/フラット、工程名の位置、どの工程・単体出力を含めるかを設定します。
+                      アプリを普通に起動して、JPG/PNG、背景、階層/フラット、出力名、修正工程フチ、どの工程・単体出力を含めるかを設定します。
                       クイック書き出しでもこの設定が使われます。
                     </div>
                   </div>
@@ -591,6 +595,8 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               <h3 className={styles.h2}>出力結果と合成内訳</h3>
               <p className={styles.p}>
                 このサンプルで出力すると、以下のファイルが生成されます。
+                ここでは現在の初期設定（シート連番・自動桁数・フォルダ名との区切りなし）で表記しています。
+                内訳を見やすくするため、フォルダ分けだけONにした例です。
                 各ファイルは<span className={styles.strong}>対象レイヤー</span>と
                 <span className={styles.strong}>共通素材</span>（memo, Frame）を重ねた結果です。
                 合成式はレイヤーツリーの上（前面）→ 下（背面）の順で表記しています。
@@ -605,7 +611,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
 
               <div className={styles.compositeList}>
                 <div className={styles.compositeItem}>
-                  <div className={styles.compositeFilename}>A/A_0001_e.jpg</div>
+                  <div className={styles.compositeFilename}>A/A1_e.jpg</div>
                   <div className={styles.compositeFormula}>
                     <span className={styles.compositeCtx}>memo</span>
                     <span className={styles.compositeOp}>+</span>
@@ -618,7 +624,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   </div>
                 </div>
                 <div className={styles.compositeItem}>
-                  <div className={styles.compositeFilename}>B/B_0001.jpg</div>
+                  <div className={styles.compositeFilename}>B/B1.jpg</div>
                   <div className={styles.compositeFormula}>
                     <span className={styles.compositeCtx}>memo</span>
                     <span className={styles.compositeOp}>+</span>
@@ -631,7 +637,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   </div>
                 </div>
                 <div className={styles.compositeItem}>
-                  <div className={styles.compositeFilename}>B/B_0001_s.jpg</div>
+                  <div className={styles.compositeFilename}>B/B1_s.jpg</div>
                   <div className={styles.compositeFormula}>
                     <span className={styles.compositeCtx}>memo</span>
                     <span className={styles.compositeOp}>+</span>
@@ -644,7 +650,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   </div>
                 </div>
                 <div className={styles.compositeItem}>
-                  <div className={styles.compositeFilename}>A/A_0001.jpg</div>
+                  <div className={styles.compositeFilename}>A/A1.jpg</div>
                   <div className={styles.compositeFormula}>
                     <span className={styles.compositeCtx}>memo</span>
                     <span className={styles.compositeOp}>+</span>
@@ -956,7 +962,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   <span className={styles.layerNameAnim}>_BOOK1</span>
                   <span className={styles.labelAnim}>手動アニメーション</span>
                   <span style={{ color: 'var(--color-text-subtle)', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
-                    → _BOOK1_0001.jpg などをセルごとに出力
+                    → _BOOK11.jpg などをセルごとに出力（初期設定）
                   </span>
                 </div>
                 <div className={`${styles.layerRow} ${styles.indent2}`}>
@@ -1007,12 +1013,12 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   <tr>
                     <td><code className={styles.code}>作画/A</code></td>
                     <td>XDTSで検出</td>
-                    <td><code className={styles.code}>A/A_0001.jpg</code></td>
+                    <td><code className={styles.code}>A/A1.jpg</code></td>
                   </tr>
                   <tr>
                     <td><code className={styles.code}>素材/A</code></td>
                     <td>🎬で手動指定</td>
-                    <td><code className={styles.code}>A(2)/A(2)_0001.jpg</code></td>
+                    <td><code className={styles.code}>A(2)/A(2)1.jpg</code></td>
                   </tr>
                 </tbody>
               </table>
@@ -1028,7 +1034,10 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 <span className={styles.strong}>💡 単体出力との違い：</span>
                 <code className={styles.code}>_BOOK1</code> をそのままにすると1枚の単体画像として出力されます。
                 🎬 で手動アニメーションフォルダにすると、直下の子をセルとして
-                <code className={styles.code}>_BOOK1_0001.jpg</code> のように1枚ずつ出力します。
+                初期設定では <code className={styles.code}>_BOOK11.jpg</code> のように1枚ずつ出力します。
+                <code className={styles.code}>_BOOK1</code> のようにフォルダ名が数字で終わる場合は、
+                「フォルダ名との区切り」を <code className={styles.code}>_ あり</code> にすると、
+                <code className={styles.code}>_BOOK1_1.jpg</code> のようにフォルダ名と連番の境界が読みやすくなります。
               </div>
             </section>
 
@@ -1063,7 +1072,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   <span className={styles.iconLayer}>◆</span>
                   <span className={styles.layerName}>BG1</span>
                   <span style={{ color: 'var(--color-text-subtle)', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
-                    → <code className={styles.code}>_BG_BG1.jpg</code>（作画マンの原図）
+                    → <code className={styles.code}>_BGBG1.jpg</code>（作画マンの原図・初期設定）
                   </span>
                 </div>
                 <div className={`${styles.layerRow} ${styles.indent2}`}>
@@ -1110,10 +1119,12 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
 
               <h3 className={styles.h2}>セル名の扱い</h3>
               <p className={styles.p}>
-                自動アニメ化されたフォルダ配下のセル名は、出力名の設定（連番／連番セル名／セル名）に関わらず
+                自動アニメ化されたフォルダ配下のセル名は、出力名の設定（連番／連番セル名／セル名／シート連番）に関わらず
                 <span className={styles.strong}>直下のフォルダ／レイヤー名から <code className={styles.code}>_</code> を取り除いたもの</span>
                 を使用します。
                 <code className={styles.code}>_BG</code> のような親フォルダに対して、中身の <code className={styles.code}>BG1</code>、<code className={styles.code}>BOOK1</code> などは素材そのものの意味情報を持っているため、連番で上書きせず名前をそのまま残します。
+                「フォルダ名との区切り」を <code className={styles.code}>_ あり</code> にすると、
+                <code className={styles.code}>_BG_BG1.jpg</code> のように区切って出力できます。
               </p>
 
               <h3 className={styles.h2}>使う場面</h3>
@@ -1217,9 +1228,9 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               </div>
             </section>
 
-            {/* ===== 9. 工程フォルダリスト ===== */}
+            {/* ===== 9. 工程フォルダと修正工程フチ ===== */}
             <section className={styles.section} data-section="process-table">
-              <h2 className={styles.h1}>🏭 工程フォルダリスト</h2>
+              <h2 className={styles.h1}>🏭 工程フォルダと修正工程フチ</h2>
 
               <p className={styles.p}>
                 修正工程（演出、作監修正など）をセル出力時に自動でサフィックス付きの別ファイルとして分離出力できます。
@@ -1229,10 +1240,19 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               </p>
 
               <div className={styles.calloutInfo}>
-                中央ペインの<span className={styles.strong}>修正工程</span>をONにすると、
-                工程別の出力画像へ工程ごとの色で内側70pxの確認フチを乗算・不透明度80%で合成します。
-                色は設定画面の色四角から、カラーパレット、RGB、HEXで指定できます。
+                中央ペインの<span className={styles.strong}>修正工程</span>は初期状態で「フチあり」です。
+                演出・作監などの<span className={styles.strong}>修正工程として分離された画像だけ</span>へ、
+                工程ごとの色で内側70pxの確認フチを乗算・不透明度80%で合成します。
+                中央のプレビューにも書き出す画像にも同じフチが付き、本体画像には付きません。
+                フチが不要なカットでは「フチなし」に切り替えられます。
               </div>
+
+              <p className={styles.p}>
+                フチ色を変えるには、上部の「設定」を開き、工程フォルダリストの色の四角を押します。
+                表示されたカラーピッカーで色を選ぶほか、RGBの各数値や
+                <code className={styles.code}>FBECE6</code> のようなHEX値でも直接指定できます。
+                色は工程ごとに保存されます。
+              </p>
 
               <div className={styles.calloutInfo}>
                 工程フォルダリストは<span className={styles.strong}>2つのテンプレート形式</span>に対応しています。
@@ -1270,7 +1290,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   <span className={styles.iconFolder}>📁</span>
                   <span className={styles.layerName}>1</span>
                   <span style={{ color: 'var(--color-text-subtle)', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
-                    → A_0001_e.jpg
+                    → A1_e.jpg
                   </span>
                 </div>
                 <div className={`${styles.layerRow} ${styles.indent1}`}>
@@ -1286,14 +1306,14 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   <span className={styles.iconFolder}>📁</span>
                   <span className={styles.layerName}>1</span>
                   <span style={{ color: 'var(--color-text-subtle)', fontSize: '0.72rem', marginLeft: '0.5rem' }}>
-                    → A_0001.jpg（本体）
+                    → A1.jpg（本体）
                   </span>
                 </div>
               </div>
 
               <p className={styles.p}>
                 親フォルダ名「演出」が工程フォルダリストの <code className={styles.code}>_e</code> に一致するため、
-                その中のアニメーションフォルダ A のセルは <code className={styles.code}>A_0001_e.jpg</code> のように出力されます。
+                その中のアニメーションフォルダ A のセルは <code className={styles.code}>A1_e.jpg</code> のように出力されます。
                 一方、親フォルダ名「作画」はテーブル未登録なので本体（サフィックスなし）として出力されます。
                 セル名が同じ「1」でも、フォルダ構造から自動で区別されます。
               </p>
@@ -1343,11 +1363,11 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               <div className={styles.outputGrid}>
                 <div className={styles.outputCard}>
                   <div className={styles.outputThumb}>本体</div>
-                  <div className={styles.outputFilename}>B/B_0001.jpg</div>
+                  <div className={styles.outputFilename}>B/B1.jpg</div>
                 </div>
                 <div className={styles.outputCard}>
                   <div className={styles.outputThumb}>_s</div>
-                  <div className={styles.outputFilename}>B/B_0001_s.jpg</div>
+                  <div className={styles.outputFilename}>B/B1_s.jpg</div>
                 </div>
               </div>
 
@@ -1370,6 +1390,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   <tr>
                     <th>サフィックス</th>
                     <th>フォルダ名</th>
+                    <th>初期フチ色</th>
                     <th>出力例</th>
                   </tr>
                 </thead>
@@ -1377,20 +1398,42 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   <tr>
                     <td><code className={styles.code}>_e</code></td>
                     <td>_e, 演出</td>
-                    <td><code className={styles.code}>A_0001_e.jpg</code></td>
+                    <td>RGB 251, 236, 230<br /><code className={styles.code}>#FBECE6</code></td>
+                    <td><code className={styles.code}>A1_e.jpg</code></td>
                   </tr>
                   <tr>
                     <td><code className={styles.code}>_s</code></td>
                     <td>_s, 作監</td>
-                    <td><code className={styles.code}>B_0001_s.jpg</code></td>
+                    <td>RGB 252, 249, 207<br /><code className={styles.code}>#FCF9CF</code></td>
+                    <td><code className={styles.code}>B1_s.jpg</code></td>
                   </tr>
                   <tr>
                     <td><code className={styles.code}>_k</code></td>
                     <td>_k, 監督</td>
-                    <td><code className={styles.code}>A_0001_k.jpg</code></td>
+                    <td>RGB 220, 228, 241<br /><code className={styles.code}>#DCE4F1</code></td>
+                    <td><code className={styles.code}>A1_k.jpg</code></td>
+                  </tr>
+                  <tr>
+                    <td><code className={styles.code}>_ss</code></td>
+                    <td>_ss, 総作監</td>
+                    <td>RGB 234, 246, 213<br /><code className={styles.code}>#EAF6D5</code></td>
+                    <td><code className={styles.code}>A1_ss.jpg</code></td>
+                  </tr>
+                  <tr>
+                    <td><code className={styles.code}>_y</code></td>
+                    <td>_y, 料理作監</td>
+                    <td>RGB 255, 221, 170<br /><code className={styles.code}>#FFDDAA</code></td>
+                    <td><code className={styles.code}>A1_y.jpg</code></td>
                   </tr>
                 </tbody>
               </table>
+
+              <div className={styles.calloutInfo}>
+                <span className={styles.strong}>サフィックスは入力した文字をそのまま使います。</span>
+                <code className={styles.code}>_e</code>、<code className={styles.code}>e</code>、
+                <code className={styles.code}>-e</code> は別の指定です。
+                アンダースコアを自動で追加・削除しないため、スタジオの命名規則どおりに登録してください。
+              </div>
 
               <div className={styles.calloutTip}>
                 <span className={styles.strong}>💡 どちらの形式でも同じ工程フォルダリスト設定が使えます。</span>
@@ -1406,13 +1449,21 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               </div>
             </section>
 
-            {/* ===== 10. 出力設定 ===== */}
+            {/* ===== 10. 出力名・書き出し設定 ===== */}
             <section className={styles.section} data-section="export-settings">
-              <h2 className={styles.h1}>⚙ 出力設定</h2>
+              <h2 className={styles.h1}>⚙ 出力名・書き出し設定</h2>
 
               <p className={styles.p}>
-                プレビューパネルの出力設定で、出力形式をカスタマイズできます。
+                中央ペインと「出力」ボタンから開く設定で、画像形式、フォルダ構成、出力名を調整できます。
               </p>
+
+              <div className={styles.calloutInfo}>
+                <span className={styles.strong}>現在の初期設定：</span>
+                JPG、白ベタ、フォルダ分けなし、シート連番、自動桁数、フォルダ名との区切りなし、
+                工程名は後ろ、修正工程はフチありです。
+                セル名モードの「XDTSフォルダ名」は「付ける」から始まります。
+                すでに使っている端末では、保存済みの設定が引き継がれます。
+              </div>
 
               <table className={styles.comparisonTable}>
                 <thead>
@@ -1435,20 +1486,20 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                   </tr>
                   <tr>
                     <td><span className={styles.strong}>フォルダ分け</span></td>
-                    <td>階層 / フラット</td>
+                    <td>ON / OFF</td>
                     <td>
-                      階層: <code className={styles.code}>A/A_1.jpg</code> のようにセルフォルダ名で分け{'\n'}
-                      フラット: 全ファイルを同一階層に出力
+                      ON: <code className={styles.code}>A/A1.jpg</code> のようにアニメーションフォルダごとに分ける{'\n'}
+                      OFF: 全ファイルを出力先の直下へまとめる（初期設定）
                     </td>
                   </tr>
                   <tr>
                     <td><span className={styles.strong}>出力名</span></td>
                     <td>連番 / 連番セル名 / セル名 / シート連番</td>
                     <td>
-                      連番: <code className={styles.code}>A_1.jpg</code>{'\n'}
-                      連番セル名: <code className={styles.code}>A_1_ア.jpg</code>{'\n'}
-                      セル名: <code className={styles.code}>A1 → A1.jpg</code>（A_A1にはしない）{'\n'}
-                      シート連番: タイムシート上の順番で番号を合わせる
+                      連番: フォルダ内の並び順で <code className={styles.code}>A1.jpg</code>{'\n'}
+                      連番セル名: 連番とCSPのセル名を残して <code className={styles.code}>A1_ア.jpg</code>{'\n'}
+                      セル名: CSPのセル名を使う。セル名が <code className={styles.code}>A1</code> なら <code className={styles.code}>A1.jpg</code>{'\n'}
+                      シート連番: XDTSの順番で、本体と修正工程の番号を合わせる（初期設定）
                     </td>
                   </tr>
                   <tr>
@@ -1456,34 +1507,42 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                     <td>自動 / 4桁</td>
                     <td>
                       自動: 最大連番に合わせて1〜4桁（初期設定）{'\n'}
+                      最大番号が9なら <code className={styles.code}>1</code>、10なら <code className={styles.code}>01</code> のように調整{'\n'}
                       4桁: <code className={styles.code}>0001</code> 形式で固定
                     </td>
                   </tr>
                   <tr>
                     <td><span className={styles.strong}>フォルダ名との区切り</span></td>
-                    <td>_ あり / なし</td>
+                    <td>_ あり / なし（初期設定）</td>
                     <td>
-                      フォルダA＋セル1の場合{': '}
+                      アニメーションフォルダ名がA、セル名が1の場合{': '}
                       _ あり <code className={styles.code}>A_1.jpg</code>{' / '}
-                      なし <code className={styles.code}>A1.jpg</code>{'\n'}
-                      セル名がA1／A_1なら重ねて付けず、そのまま維持
+                      なし <code className={styles.code}>A1.jpg</code>
                     </td>
                   </tr>
                   <tr>
                     <td><span className={styles.strong}>XDTSフォルダ名</span></td>
-                    <td>付ける / 付けない</td>
+                    <td>付ける（初期設定） / 付けない</td>
                     <td>
-                      セル名モードで、XDTS検出フォルダ名をファイル名へ付けるか選択。{'\n'}
-                      フォルダA＋セル1の場合: 付ける <code className={styles.code}>A_1.jpg</code>{' / '}
-                      付けない <code className={styles.code}>1.jpg</code>
+                      セル名モードで、XDTSから検出したアニメーションフォルダにだけ使う設定。{'\n'}
+                      セル名が「1」のようにフォルダ名を含まない場合は「付ける」を選ぶ。{'\n'}
+                      セル名が「A1」のようにフォルダ名まで含む場合は、名前の重複を避けるため「付けない」を選ぶ
                     </td>
                   </tr>
                   <tr>
                     <td><span className={styles.strong}>工程名の位置</span></td>
-                    <td>後ろ / 前</td>
+                    <td>後ろ（初期設定） / 前</td>
                     <td>
-                      後ろ: <code className={styles.code}>A_1_e.jpg</code>（セルごとに本体と修正を並べて確認しやすい）{'\n'}
-                      前: <code className={styles.code}>A_e_1.jpg</code>（工程ごとにシーケンス読み込みしやすい）
+                      区切りなしの場合、後ろ: <code className={styles.code}>A1_e.jpg</code>（本体と修正を並べて確認しやすい）{'\n'}
+                      前: <code className={styles.code}>A_e1.jpg</code>（工程ごとにシーケンス読み込みしやすい）
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><span className={styles.strong}>修正工程</span></td>
+                    <td>フチあり（初期設定） / フチなし</td>
+                    <td>
+                      フチあり: 修正工程画像へ工程色の内側70pxフチを乗算・不透明度80%で合成{'\n'}
+                      フチなし: 修正工程は分離出力するが、確認フチは付けない
                     </td>
                   </tr>
                 </tbody>
@@ -1494,6 +1553,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                 たとえばアニメーションフォルダ <code className={styles.code}>A</code> に
                 セル <code className={styles.code}>1</code>、<code className={styles.code}>2</code>、<code className={styles.code}>3</code> があり、
                 2番だけ演出修正（<code className={styles.code}>_e</code>）がある場合です。
+                以下は初期設定どおり、自動桁数・フォルダ名との区切りなしで表記しています。
               </p>
 
               <table className={styles.comparisonTable}>
@@ -1509,48 +1569,56 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                     <td>連番</td>
                     <td>セル名より、出力順の番号でそろえたい</td>
                     <td>
-                      <code className={styles.code}>A_1.jpg</code><br />
-                      <code className={styles.code}>A_2.jpg</code><br />
-                      <code className={styles.code}>A_3.jpg</code>
+                      <code className={styles.code}>A1.jpg</code><br />
+                      <code className={styles.code}>A2.jpg</code><br />
+                      <code className={styles.code}>A3.jpg</code>
                     </td>
                   </tr>
                   <tr>
                     <td>連番セル名</td>
                     <td>番号もセル名も残したい</td>
                     <td>
-                      <code className={styles.code}>A_1_1.jpg</code><br />
-                      <code className={styles.code}>A_2_2.jpg</code><br />
-                      <code className={styles.code}>A_3_3.jpg</code>
+                      <code className={styles.code}>A1_1.jpg</code><br />
+                      <code className={styles.code}>A2_2.jpg</code><br />
+                      <code className={styles.code}>A3_3.jpg</code>
                     </td>
                   </tr>
                   <tr>
                     <td>セル名</td>
                     <td>CSPのセル名をそのままファイル名に使いたい</td>
                     <td>
-                      <code className={styles.code}>A_1.jpg</code><br />
-                      <code className={styles.code}>A_2.jpg</code><br />
-                      <code className={styles.code}>A_3.jpg</code>
+                      <code className={styles.code}>A1.jpg</code><br />
+                      <code className={styles.code}>A2.jpg</code><br />
+                      <code className={styles.code}>A3.jpg</code>
                     </td>
                   </tr>
                   <tr>
                     <td>シート連番</td>
                     <td>本体と修正工程を、タイムシート上の同じ位置の番号でそろえたい</td>
                     <td>
-                      <code className={styles.code}>A_1.jpg</code><br />
-                      <code className={styles.code}>A_2.jpg</code><br />
-                      <code className={styles.code}>A_2_e.jpg</code><br />
-                      <code className={styles.code}>A_3.jpg</code>
+                      <code className={styles.code}>A1.jpg</code><br />
+                      <code className={styles.code}>A2.jpg</code><br />
+                      <code className={styles.code}>A2_e.jpg</code><br />
+                      <code className={styles.code}>A3.jpg</code>
                     </td>
                   </tr>
                 </tbody>
               </table>
 
+              <div className={styles.calloutInfo}>
+                <span className={styles.strong}>セル名モードを選ぶとき：</span>
+                CSPのセル名が <code className={styles.code}>1</code> のようにフォルダ名を含まない運用なら、
+                「XDTSフォルダ名」は「付ける」を選びます。
+                CSPのセル名が <code className={styles.code}>A1</code> のようにフォルダ名まで含む運用なら、
+                名前の重複を避けるため「付けない」を選びます。
+              </div>
+
               <div className={styles.calloutTip}>
                 <span className={styles.strong}>💡 シート連番はこういう意味です：</span>
                 修正工程が2番にだけある場合、普通の連番だと修正工程側では最初の1枚なので
-                <code className={styles.code}>A_1_e.jpg</code> になりがちです。
+                <code className={styles.code}>A1_e.jpg</code> になりがちです。
                 シート連番にすると、タイムシート上で2番目の位置にある修正として
-                <code className={styles.code}>A_2_e.jpg</code> になります。
+                <code className={styles.code}>A2_e.jpg</code> になります。
               </div>
 
               <div className={styles.calloutInfo}>
@@ -1670,7 +1738,8 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               <ul className={styles.ul}>
                 <li>
                   <span className={styles.strong}>設定を書き出す / 読み込む</span> —
-                  工程フォルダリスト、自動マークするフォルダ名、除外リストを保存・読み込みできます。スタジオ内で同じ設定を共有したり、別端末へ移したりするときに使います
+                  出力名、連番、工程フォルダリスト（フチ色を含む）、自動マークするフォルダ名、除外リストを保存・読み込みできます。
+                  スタジオ内で同じ設定を共有したり、別端末へ移したりするときに使います
                 </li>
               </ul>
 
