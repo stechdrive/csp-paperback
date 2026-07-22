@@ -6,7 +6,13 @@ import { collectMembersInTreeOrder, buildMemberFlatsWithOverride } from '../util
 import { buildAssignmentFromDetectedFolders } from './anim-folder-assignment'
 import { computeDisplayNames } from './anim-folder-display-name'
 import { isAutoMarkedContainerOutputSuppressed } from '../utils/auto-marked-container'
-import { FIXED_SEQUENCE_DIGITS, formatSequenceNumber, getSequenceDigitsForCellCount, makeCellLabel, resolveNameCollisions } from '../utils/naming'
+import {
+  makeCellFileName,
+  makeCellLabel,
+  resolveAnimationSequenceSeparator,
+  resolveNameCollisions,
+  resolveSequenceDigits,
+} from '../utils/naming'
 
 /**
  * アニメーションフォルダからセルを抽出してOutputEntry[]を返す
@@ -34,7 +40,7 @@ export function extractCells(
   upperContextLayers: FlatLayer[] = [],
   processSuffixPosition: ProcessSuffixPosition = 'after-cell',
   sequenceDigits?: number,
-  sheetSequenceLabels?: Map<string, string>,
+  sheetSequenceNumbers?: Map<string, number>,
 ): OutputEntry[] {
   if (!animFolder.isAnimationFolder) return []
 
@@ -52,16 +58,24 @@ export function extractCells(
   // `_` 除去済みの name を cellLabel に使う（sequence/cellname の設定は
   // 通常アニメフォルダ用で、autoProcess には合わないため上書き）。
   const isAutoProcessAnim = animFolder.animationFolder?.detectedBy === 'autoProcess'
-  const cellSequenceDigits = sequenceDigits ?? getSequenceDigitsForCellCount(visibleChildren.length)
+  const cellSequenceDigits = sequenceDigits ?? resolveSequenceDigits(
+    projectSettings.sequenceDigitMode ?? 'auto',
+    visibleChildren.length,
+  )
+  const trackCellSeparator = resolveAnimationSequenceSeparator(
+    isAutoProcessAnim ? 'cellname' : namingMode,
+    projectSettings.animationSequenceSeparator ?? 'underscore',
+  )
+  const suppressDuplicateProcessSuffix = !isAutoProcessAnim && namingMode === 'cellname'
 
   for (let cellIdx = 0; cellIdx < visibleChildren.length; cellIdx++) {
     const cell = visibleChildren[cellIdx]
     // ファイル名プレフィックスはフォルダ名と同じ displayName を使う(Q3: 統一)
     const trackName = displayName
+    const sequenceNumber = sheetSequenceNumbers?.get(cell.id) ?? visibleChildren.length - cellIdx
     const cellLabel = isAutoProcessAnim
       ? (cell.name || cell.originalName)
-      : sheetSequenceLabels?.get(cell.id)
-        ?? makeCellLabel(namingMode, cell.originalName, visibleChildren.length - cellIdx, cellSequenceDigits)
+      : makeCellLabel(namingMode, cell.originalName, sequenceNumber, cellSequenceDigits)
 
     if (!cell.isFolder) {
       // 単体レイヤー: XDTSキーフレーム画像 → そのまま1セル出力
@@ -69,7 +83,14 @@ export function extractCells(
       const rawFlats = flattenCellContent([cell], docWidth, docHeight, new Set([cell.id]))
       const cellFlats = applyContainerMasks(rawFlats, cell, animFolder, docWidth, docHeight)
       const canvas = compositeWithContext(cellFlats, lowerContextLayers, upperContextLayers, docWidth, docHeight, background)
-      const fileName = buildCellFileName(trackName, cellLabel, parentSuffix, '', processSuffixPosition)
+      const fileName = makeCellFileName({
+        trackName,
+        cellLabel,
+        parentSuffix,
+        processSuffixPosition,
+        trackCellSeparator,
+        suppressDuplicateProcessSuffix,
+      })
       entries.push({
         path: `${folderName}/${fileName}`,
         flatName: fileName,
@@ -104,7 +125,14 @@ export function extractCells(
         const rawBodyFlats = flattenCellContent(bodyLayers, docWidth, docHeight)
         const bodyFlats = applyContainerMasks(rawBodyFlats, cell, animFolder, docWidth, docHeight)
         const canvas = compositeWithContext(bodyFlats, lowerContextLayers, upperContextLayers, docWidth, docHeight, background)
-        const fileName = buildCellFileName(trackName, cellLabel, parentSuffix, '', processSuffixPosition)
+        const fileName = makeCellFileName({
+          trackName,
+          cellLabel,
+          parentSuffix,
+          processSuffixPosition,
+          trackCellSeparator,
+          suppressDuplicateProcessSuffix,
+        })
         entries.push({
           path: `${folderName}/${fileName}`,
           flatName: fileName,
@@ -122,7 +150,15 @@ export function extractCells(
         const rawProcessFlats = flattenCellContent(processLayers, docWidth, docHeight, processIgnoreIds)
         const processFlats = applyContainerMasks(rawProcessFlats, cell, animFolder, docWidth, docHeight)
         const canvas = compositeWithContext(processFlats, lowerContextLayers, upperContextLayers, docWidth, docHeight, background)
-        const fileName = buildCellFileName(trackName, cellLabel, parentSuffix, suffix, processSuffixPosition)
+        const fileName = makeCellFileName({
+          trackName,
+          cellLabel,
+          parentSuffix,
+          processSuffix: suffix,
+          processSuffixPosition,
+          trackCellSeparator,
+          suppressDuplicateProcessSuffix,
+        })
         entries.push({
           path: `${folderName}/${fileName}`,
           flatName: fileName,
@@ -139,21 +175,7 @@ export function extractCells(
   return entries
 }
 
-export function buildCellFileName(
-  trackName: string,
-  cellLabel: string,
-  parentSuffix = '',
-  processSuffix = '',
-  processSuffixPosition: ProcessSuffixPosition = 'after-cell',
-): string {
-  const processPart = `${parentSuffix}${processSuffix}`
-  if (processSuffixPosition === 'before-cell' && processPart) {
-    return `${trackName}${processPart}_${cellLabel}.jpg`
-  }
-  return `${trackName}_${cellLabel}${processPart}.jpg`
-}
-
-export function getSequenceDigitsForAnimationFolders(tree: CspLayer[]): number {
+export function getMaxSequenceNumberForAnimationFolders(tree: CspLayer[]): number {
   let maxCellCount = 1
 
   function walk(layers: CspLayer[]): void {
@@ -173,7 +195,7 @@ export function getSequenceDigitsForAnimationFolders(tree: CspLayer[]): number {
   }
 
   walk(tree)
-  return getSequenceDigitsForCellCount(maxCellCount)
+  return maxCellCount
 }
 
 interface SheetSequenceCell {
@@ -182,13 +204,18 @@ interface SheetSequenceCell {
   order: number
 }
 
-export function buildSheetSequenceLabels(
+export interface SheetSequenceNumberPlan {
+  numbers: Map<string, number>
+  maxSequenceNumber: number
+}
+
+export function buildSheetSequenceNumbers(
   tree: CspLayer[],
   xdtsData: XdtsData | null | undefined,
   displayNameMap: Map<string, string>,
-): Map<string, string> {
-  const labels = new Map<string, string>()
-  if (!xdtsData) return labels
+): SheetSequenceNumberPlan {
+  const numbers = new Map<string, number>()
+  if (!xdtsData) return { numbers, maxSequenceNumber: 1 }
 
   const tracksByNo = new Map(xdtsData.tracks.map(track => [track.trackNo, track]))
   const groups = new Map<string, SheetSequenceCell[]>()
@@ -222,20 +249,51 @@ export function buildSheetSequenceLabels(
 
   walk(tree)
 
+  let maxSequenceNumber = 1
   for (const cells of groups.values()) {
     const frames = [...new Set(cells.map(cell => cell.firstFrame))].sort((a, b) => a - b)
-    const frameToLabel = new Map<number, string>()
+    maxSequenceNumber = Math.max(maxSequenceNumber, frames.length)
+    const frameToNumber = new Map<number, number>()
     for (let i = 0; i < frames.length; i++) {
-      frameToLabel.set(frames[i], formatSequenceNumber(i + 1, FIXED_SEQUENCE_DIGITS))
+      frameToNumber.set(frames[i], i + 1)
     }
 
     for (const cell of cells.sort((a, b) => a.order - b.order)) {
-      const label = frameToLabel.get(cell.firstFrame)
-      if (label) labels.set(cell.cellId, label)
+      const number = frameToNumber.get(cell.firstFrame)
+      if (number) numbers.set(cell.cellId, number)
     }
   }
 
-  return labels
+  return { numbers, maxSequenceNumber }
+}
+
+export interface SequenceNamingPlan {
+  digits: number
+  sheetSequenceNumbers?: Map<string, number>
+}
+
+export function buildSequenceNamingPlan(
+  tree: CspLayer[],
+  projectSettings: ProjectSettings,
+  xdtsData: XdtsData | null | undefined,
+  displayNameMap: Map<string, string>,
+): SequenceNamingPlan {
+  const maxFolderSequenceNumber = getMaxSequenceNumberForAnimationFolders(tree)
+  const sheetPlan = projectSettings.cellNamingMode === 'sheet-sequence'
+    ? buildSheetSequenceNumbers(tree, xdtsData, displayNameMap)
+    : undefined
+  const maxSequenceNumber = Math.max(
+    maxFolderSequenceNumber,
+    sheetPlan?.maxSequenceNumber ?? 1,
+  )
+
+  return {
+    digits: resolveSequenceDigits(
+      projectSettings.sequenceDigitMode ?? 'auto',
+      maxSequenceNumber,
+    ),
+    sheetSequenceNumbers: sheetPlan?.numbers,
+  }
 }
 
 function findFirstStartFrame(track: XdtsTrack, cellName: string): number | null {
@@ -731,12 +789,12 @@ export function extractAllEntries(
   // 手動指定分だけその後ろに疑似 trackNo を追加する。
   const assignmentMap = buildEffectiveAnimationAssignment(tree)
   const displayNameMap = computeDisplayNames(tree, assignmentMap, animParentSuffixMap)
-  const sheetSequenceLabels = projectSettings.cellNamingMode === 'sheet-sequence'
-    ? buildSheetSequenceLabels(tree, xdtsData, displayNameMap)
-    : undefined
-  const sequenceDigits = projectSettings.cellNamingMode === 'sequence-cellname'
-    ? getSequenceDigitsForAnimationFolders(tree)
-    : undefined
+  const sequenceNamingPlan = buildSequenceNamingPlan(
+    tree,
+    projectSettings,
+    xdtsData,
+    displayNameMap,
+  )
 
   /**
    * inheritedLower: 祖先フォルダから継承されたlowerコンテキスト（外→内の順）
@@ -765,7 +823,10 @@ export function extractAllEntries(
         const cellEntries = extractCells(
           layer, projectSettings, docWidth, docHeight, thisLower,
           parentSuffix, displayName, background,
-          thisUpper, processSuffixPosition, sequenceDigits, sheetSequenceLabels,
+          thisUpper,
+          processSuffixPosition,
+          sequenceNamingPlan.digits,
+          sequenceNamingPlan.sheetSequenceNumbers,
         )
         entries.push(...cellEntries)
         continue

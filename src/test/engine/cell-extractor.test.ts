@@ -4,7 +4,15 @@ import { buildLayerTree, detectAnimationFoldersByXdts, promoteAutoMarkedByProces
 import { makeLayer, makePsd, makeFolder, makeAnimationFolder } from '../helpers/psd-factory'
 import type { CspLayer, ProjectSettings, XdtsData, FlatLayer } from '../../types'
 
+// 既存の合成・工程テストは命名以外の差分を見やすくするため4桁固定にする。
+// 自動桁数と区切りは専用テストで検証する。
+const FIXED_SEQUENCE_NAMING_SETTINGS = {
+  sequenceDigitMode: 'fixed-4',
+  animationSequenceSeparator: 'underscore',
+} as const
+
 const DEFAULT_SETTINGS: ProjectSettings = {
+  ...FIXED_SEQUENCE_NAMING_SETTINGS,
   processTable: [],
   cellNamingMode: 'sequence',
   autoMarkFolderNames: [],
@@ -12,6 +20,7 @@ const DEFAULT_SETTINGS: ProjectSettings = {
 }
 
 const CELL_NAME_SETTINGS: ProjectSettings = {
+  ...FIXED_SEQUENCE_NAMING_SETTINGS,
   processTable: [],
   cellNamingMode: 'cellname',
   autoMarkFolderNames: [],
@@ -19,6 +28,8 @@ const CELL_NAME_SETTINGS: ProjectSettings = {
 }
 
 const SEQUENCE_CELL_NAME_SETTINGS: ProjectSettings = {
+  sequenceDigitMode: 'auto',
+  animationSequenceSeparator: 'underscore',
   processTable: [],
   cellNamingMode: 'sequence-cellname',
   autoMarkFolderNames: [],
@@ -26,6 +37,7 @@ const SEQUENCE_CELL_NAME_SETTINGS: ProjectSettings = {
 }
 
 const SHEET_SEQUENCE_SETTINGS: ProjectSettings = {
+  ...FIXED_SEQUENCE_NAMING_SETTINGS,
   processTable: [{ suffix: '_e', folderNames: ['EN'] }],
   cellNamingMode: 'sheet-sequence',
   autoMarkFolderNames: [],
@@ -35,7 +47,13 @@ const SHEET_SEQUENCE_SETTINGS: ProjectSettings = {
 const EMPTY_CONTEXT: FlatLayer[] = []
 
 function makeSettingsWithTable(entries: { suffix: string; folderNames: string[] }[]): ProjectSettings {
-  return { processTable: entries, cellNamingMode: 'sequence', autoMarkFolderNames: [], archivePatterns: [] }
+  return {
+    ...FIXED_SEQUENCE_NAMING_SETTINGS,
+    processTable: entries,
+    cellNamingMode: 'sequence',
+    autoMarkFolderNames: [],
+    archivePatterns: [],
+  }
 }
 
 function detectAnim(tree: ReturnType<typeof buildLayerTree>, trackName: string) {
@@ -257,6 +275,107 @@ describe('extractCells with parentSuffix', () => {
 })
 
 describe('extractAllEntries', () => {
+  it('連番モードの自動桁数を全アニメフォルダの最大連番に揃える', () => {
+    const shortAnim = makeAnimationFolder('A', makeNumberedCellFolders(2))
+    const longAnim = makeAnimationFolder('B', makeNumberedCellFolders(100))
+    const tree = buildLayerTree(makePsd({ children: [shortAnim, longAnim] }))
+    for (const layer of tree) markManualAnimFolder(layer)
+
+    const settings: ProjectSettings = {
+      ...DEFAULT_SETTINGS,
+      sequenceDigitMode: 'auto',
+    }
+    const result = extractAllEntries(tree, settings, 100, 100)
+    const flatNames = result.map(e => e.flatName)
+    expect(flatNames).toContain('A_001.jpg')
+    expect(flatNames).toContain('A_002.jpg')
+    expect(flatNames).toContain('B_100.jpg')
+  })
+
+  it('4桁固定を選ぶとセル数が少なくても4桁で出力する', () => {
+    const animFolder = makeAnimationFolder('A', [makeLayer({ name: '1' })])
+    const tree = buildLayerTree(makePsd({ children: [animFolder] }))
+    markManualAnimFolder(tree[0])
+
+    const result = extractAllEntries(tree, DEFAULT_SETTINGS, 100, 100)
+    expect(result[0].flatName).toBe('A_0001.jpg')
+  })
+
+  it('アニメーションフォルダ名と連番の区切りを省略できる', () => {
+    const animFolder = makeAnimationFolder('A', [makeLayer({ name: '1' })])
+    const tree = buildLayerTree(makePsd({ children: [animFolder] }))
+    markManualAnimFolder(tree[0])
+    const settings: ProjectSettings = {
+      ...DEFAULT_SETTINGS,
+      sequenceDigitMode: 'auto',
+      animationSequenceSeparator: 'none',
+    }
+
+    expect(extractAllEntries(tree, settings, 100, 100)[0].flatName).toBe('A01.jpg')
+  })
+
+  it('工程名を前に置く場合も工程名と連番の区切りを省略できる', () => {
+    const animFolder = makeAnimationFolder('A', [makeLayer({ name: '1' })])
+    const rootFolder = makeFolder('EN', [animFolder])
+    const tree = buildLayerTree(makePsd({ children: [rootFolder] }))
+    detectAnim(tree[0].children, 'A')
+    const settings: ProjectSettings = {
+      ...makeSettingsWithTable([{ suffix: '_e', folderNames: ['EN'] }]),
+      sequenceDigitMode: 'auto',
+      animationSequenceSeparator: 'none',
+    }
+
+    expect(extractAllEntries(tree, settings, 100, 100, 'white', false, 'before-cell')[0].flatName)
+      .toBe('A_e01.jpg')
+  })
+
+  it('セル名末尾に工程サフィックスが完全一致する場合は重複付加しない', () => {
+    const processFolder = makeFolder('_e', [makeLayer({ name: '修正' })])
+    const cellFolder = makeFolder('B1_e', [processFolder])
+    const animFolder = makeAnimationFolder('B', [cellFolder])
+    const tree = buildLayerTree(makePsd({ children: [animFolder] }))
+    markManualAnimFolder(tree[0])
+    const settings: ProjectSettings = {
+      ...CELL_NAME_SETTINGS,
+      processTable: [{ suffix: '_e', folderNames: ['_e'] }],
+    }
+
+    const result = extractAllEntries(tree, settings, 100, 100)
+    expect(result).toHaveLength(1)
+    expect(result[0].flatName).toBe('B_B1_e.jpg')
+    expect(result[0].processSuffixes).toEqual(['_e'])
+  })
+
+  it('別トラック工程のセル名末尾にparentSuffixがあれば重複付加しない', () => {
+    const animFolder = makeAnimationFolder('B', [makeLayer({ name: 'B1_e' })])
+    const processTrack = makeFolder('EN', [animFolder])
+    const tree = buildLayerTree(makePsd({ children: [processTrack] }))
+    detectAnim(tree[0].children, 'B')
+    const settings: ProjectSettings = {
+      ...CELL_NAME_SETTINGS,
+      processTable: [{ suffix: '_e', folderNames: ['EN'] }],
+    }
+
+    const result = extractAllEntries(tree, settings, 100, 100)
+    expect(result).toHaveLength(1)
+    expect(result[0].flatName).toBe('B_B1_e.jpg')
+    expect(result[0].processSuffixes).toEqual(['_e'])
+  })
+
+  it('セル名末尾が工程サフィックスと完全一致しなければ従来どおり付加する', () => {
+    const processFolder = makeFolder('_e', [makeLayer({ name: '修正' })])
+    const cellFolder = makeFolder('B1_e2', [processFolder])
+    const animFolder = makeAnimationFolder('B', [cellFolder])
+    const tree = buildLayerTree(makePsd({ children: [animFolder] }))
+    markManualAnimFolder(tree[0])
+    const settings: ProjectSettings = {
+      ...CELL_NAME_SETTINGS,
+      processTable: [{ suffix: '_e', folderNames: ['_e'] }],
+    }
+
+    expect(extractAllEntries(tree, settings, 100, 100)[0].flatName).toBe('B_B1_e2_e.jpg')
+  })
+
   it('最大可視セル数に合わせて全アニメフォルダの連番桁数を揃える', () => {
     const shortAnim = makeAnimationFolder('A', makeNumberedCellFolders(2))
     const longAnim = makeAnimationFolder('B', makeNumberedCellFolders(100))
@@ -791,6 +910,7 @@ describe('extractMarkedLayers', () => {
 
 describe('extractAllEntries with auto-process promotion', () => {
   const SETTINGS_WITH_E: ProjectSettings = {
+    ...FIXED_SEQUENCE_NAMING_SETTINGS,
     processTable: [{ suffix: '_e', folderNames: ['_e', '演出'] }],
     cellNamingMode: 'sequence',
     autoMarkFolderNames: [],
@@ -923,6 +1043,7 @@ describe('extractAllEntries with auto-process promotion', () => {
     const tree = buildLayerTree(psd)
     // _BG を processTable に追加して _原図 を昇格させる
     const settings: ProjectSettings = {
+      ...FIXED_SEQUENCE_NAMING_SETTINGS,
       processTable: [{ suffix: '_bg', folderNames: ['_BG'] }],
       cellNamingMode: 'sequence',
       autoMarkFolderNames: [],

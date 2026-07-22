@@ -10,9 +10,19 @@ export type CellNamingMode =
   | 'cellname'   // アニメフォルダ名_セル名.jpg（例: A_A0001.jpg）
   | 'sheet-sequence' // 同名セル系列をXDTS初出順で工程込み連番化（例: A_0001.jpg）
 
+/** 連番のゼロ埋め桁数 */
+export type SequenceDigitMode = 'auto' | 'fixed-4'
+
+/** アニメーションフォルダ名（工程名を前に置く場合は工程名）と連番の区切り */
+export type AnimationSequenceSeparator = 'underscore' | 'none'
+
 export interface ProjectSettings {
   processTable: ProcessFolderEntry[]
   cellNamingMode: CellNamingMode
+  /** auto: 出力全体の最大連番に合わせる（最低2桁） / fixed-4: 常に4桁 */
+  sequenceDigitMode: SequenceDigitMode
+  /** 連番の直前に _ を入れるか */
+  animationSequenceSeparator: AnimationSequenceSeparator
   /** 兼用カット: XDTS未使用セルを初期OFFにせず、XDTS検出アニメフォルダ自体を表示ONにする */
   sharedCutMode?: boolean
   /** _プレフィックス以外に単体出力として自動マークするフォルダ名（完全一致） */
@@ -30,6 +40,8 @@ export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
     { suffix: '_ss', folderNames: ['_ss', '総作監'] },
   ],
   cellNamingMode: 'sequence',
+  sequenceDigitMode: 'auto',
+  animationSequenceSeparator: 'underscore',
   sharedCutMode: false,
   autoMarkFolderNames: ['撮影指示', '原図'],
   archivePatterns: ['_old', '_pool'],

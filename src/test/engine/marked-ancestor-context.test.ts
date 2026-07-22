@@ -9,6 +9,8 @@ import type { ProjectSettings, XdtsData } from '../../types'
 const DEFAULT_SETTINGS: ProjectSettings = {
   processTable: [],
   cellNamingMode: 'sequence',
+  sequenceDigitMode: 'fixed-4',
+  animationSequenceSeparator: 'underscore',
   autoMarkFolderNames: [],
   archivePatterns: [],
 }
@@ -126,6 +128,8 @@ describe('extractAllEntries marked ancestor context regression', () => {
     const settings: ProjectSettings = {
       processTable: [{ suffix: '_en', folderNames: ['EN'] }],
       cellNamingMode: 'sequence',
+      sequenceDigitMode: 'fixed-4',
+      animationSequenceSeparator: 'underscore',
       autoMarkFolderNames: [],
       archivePatterns: [],
     }

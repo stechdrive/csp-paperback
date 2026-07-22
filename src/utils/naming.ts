@@ -1,7 +1,12 @@
 /**
  * 出力ファイル名生成・衝突解決ユーティリティ
  */
-import type { CellNamingMode } from '../types'
+import type {
+  AnimationSequenceSeparator,
+  CellNamingMode,
+  ProcessSuffixPosition,
+  SequenceDigitMode,
+} from '../types'
 
 export const MIN_SEQUENCE_DIGITS = 2
 export const MAX_SEQUENCE_DIGITS = 4
@@ -66,12 +71,25 @@ export function getSequenceDigitsForCellCount(cellCount: number): number {
   )
 }
 
-/**
- * アニメセル通常モードのファイル名を生成
- * 例: folderName='A', index=0, digits=4 → 'A_0001'
- */
-export function makeAnimCellName(folderName: string, index: number, digits: number): string {
-  return `${folderName}_${formatSequenceNumber(index + 1, digits)}`
+/** 連番設定と最大番号から、実際に使うゼロ埋め桁数を返す。 */
+export function resolveSequenceDigits(mode: SequenceDigitMode, maxSequenceNumber: number): number {
+  return mode === 'fixed-4'
+    ? FIXED_SEQUENCE_DIGITS
+    : getSequenceDigitsForCellCount(maxSequenceNumber)
+}
+
+/** 連番を含む命名モードか。 */
+export function isSequenceNamingMode(mode: CellNamingMode): boolean {
+  return mode === 'sequence' || mode === 'sequence-cellname' || mode === 'sheet-sequence'
+}
+
+/** 命名モードと設定から、フォルダ名（または前置工程名）とセルラベル間の区切りを返す。 */
+export function resolveAnimationSequenceSeparator(
+  mode: CellNamingMode,
+  separator: AnimationSequenceSeparator,
+): '_' | '' {
+  if (!isSequenceNamingMode(mode)) return '_'
+  return separator === 'underscore' ? '_' : ''
 }
 
 /**
@@ -82,18 +100,52 @@ export function makeCellLabel(
   mode: CellNamingMode,
   cellName: string,
   sequenceNumber: number,
-  digits = MIN_SEQUENCE_DIGITS,
+  digits: number,
 ): string {
   const sequence = formatSequenceNumber(sequenceNumber, digits)
   switch (mode) {
     case 'sequence':
     case 'sheet-sequence':
-      return formatSequenceNumber(sequenceNumber, FIXED_SEQUENCE_DIGITS)
+      return sequence
     case 'sequence-cellname':
       return `${sequence}_${cellName}`
     case 'cellname':
       return cellName
   }
+}
+
+export interface CellFileNameOptions {
+  trackName: string
+  cellLabel: string
+  parentSuffix?: string
+  processSuffix?: string
+  processSuffixPosition?: ProcessSuffixPosition
+  trackCellSeparator?: '_' | ''
+  /** セル名末尾が今回付ける工程サフィックスと完全一致する場合、重複付加を抑止する */
+  suppressDuplicateProcessSuffix?: boolean
+}
+
+/** アニメーションセルの最終ファイル名を一元的に組み立てる。 */
+export function makeCellFileName({
+  trackName,
+  cellLabel,
+  parentSuffix = '',
+  processSuffix = '',
+  processSuffixPosition = 'after-cell',
+  trackCellSeparator = '_',
+  suppressDuplicateProcessSuffix = false,
+}: CellFileNameOptions): string {
+  const rawProcessPart = `${parentSuffix}${processSuffix}`
+  const processPart = suppressDuplicateProcessSuffix
+    && rawProcessPart
+    && cellLabel.endsWith(rawProcessPart)
+    ? ''
+    : rawProcessPart
+
+  if (processSuffixPosition === 'before-cell' && processPart) {
+    return `${trackName}${processPart}${trackCellSeparator}${cellLabel}.jpg`
+  }
+  return `${trackName}${trackCellSeparator}${cellLabel}${processPart}.jpg`
 }
 
 /**

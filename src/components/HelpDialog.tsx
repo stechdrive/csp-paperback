@@ -1431,7 +1431,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                     <td><span className={styles.strong}>フォルダ分け</span></td>
                     <td>階層 / フラット</td>
                     <td>
-                      階層: <code className={styles.code}>A/A_0001.jpg</code> のようにセルフォルダ名で分け{'\n'}
+                      階層: <code className={styles.code}>A/A_01.jpg</code> のようにセルフォルダ名で分け{'\n'}
                       フラット: 全ファイルを同一階層に出力
                     </td>
                   </tr>
@@ -1439,18 +1439,34 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                     <td><span className={styles.strong}>出力名</span></td>
                     <td>連番 / 連番セル名 / セル名 / シート連番</td>
                     <td>
-                      連番: <code className={styles.code}>A_0001.jpg</code>{'\n'}
+                      連番: <code className={styles.code}>A_01.jpg</code>{'\n'}
                       連番セル名: <code className={styles.code}>A_01_ア.jpg</code>{'\n'}
                       セル名: <code className={styles.code}>A_ア.jpg</code>{'\n'}
                       シート連番: タイムシート上の順番で番号を合わせる
                     </td>
                   </tr>
                   <tr>
+                    <td><span className={styles.strong}>連番桁数</span></td>
+                    <td>自動 / 4桁</td>
+                    <td>
+                      自動: 最大連番に合わせて2〜4桁（初期設定）{'\n'}
+                      4桁: <code className={styles.code}>0001</code> 形式で固定
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><span className={styles.strong}>連番の区切り</span></td>
+                    <td>_ あり / なし</td>
+                    <td>
+                      _ あり: <code className={styles.code}>A_01.jpg</code>{'\n'}
+                      なし: <code className={styles.code}>A01.jpg</code>
+                    </td>
+                  </tr>
+                  <tr>
                     <td><span className={styles.strong}>工程名の位置</span></td>
                     <td>後ろ / 前</td>
                     <td>
-                      後ろ: <code className={styles.code}>A_0001_e.jpg</code>（セルごとに本体と修正を並べて確認しやすい）{'\n'}
-                      前: <code className={styles.code}>A_e_0001.jpg</code>（工程ごとにシーケンス読み込みしやすい）
+                      後ろ: <code className={styles.code}>A_01_e.jpg</code>（セルごとに本体と修正を並べて確認しやすい）{'\n'}
+                      前: <code className={styles.code}>A_e_01.jpg</code>（工程ごとにシーケンス読み込みしやすい）
                     </td>
                   </tr>
                 </tbody>
@@ -1476,9 +1492,9 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                     <td>連番</td>
                     <td>セル名より、出力順の番号でそろえたい</td>
                     <td>
-                      <code className={styles.code}>A_0001.jpg</code><br />
-                      <code className={styles.code}>A_0002.jpg</code><br />
-                      <code className={styles.code}>A_0003.jpg</code>
+                      <code className={styles.code}>A_01.jpg</code><br />
+                      <code className={styles.code}>A_02.jpg</code><br />
+                      <code className={styles.code}>A_03.jpg</code>
                     </td>
                   </tr>
                   <tr>
@@ -1503,10 +1519,10 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
                     <td>シート連番</td>
                     <td>本体と修正工程を、タイムシート上の同じ位置の番号でそろえたい</td>
                     <td>
-                      <code className={styles.code}>A_0001.jpg</code><br />
-                      <code className={styles.code}>A_0002.jpg</code><br />
-                      <code className={styles.code}>A_0002_e.jpg</code><br />
-                      <code className={styles.code}>A_0003.jpg</code>
+                      <code className={styles.code}>A_01.jpg</code><br />
+                      <code className={styles.code}>A_02.jpg</code><br />
+                      <code className={styles.code}>A_02_e.jpg</code><br />
+                      <code className={styles.code}>A_03.jpg</code>
                     </td>
                   </tr>
                 </tbody>
@@ -1515,9 +1531,9 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
               <div className={styles.calloutTip}>
                 <span className={styles.strong}>💡 シート連番はこういう意味です：</span>
                 修正工程が2番にだけある場合、普通の連番だと修正工程側では最初の1枚なので
-                <code className={styles.code}>A_0001_e.jpg</code> になりがちです。
+                <code className={styles.code}>A_01_e.jpg</code> になりがちです。
                 シート連番にすると、タイムシート上で2番目の位置にある修正として
-                <code className={styles.code}>A_0002_e.jpg</code> になります。
+                <code className={styles.code}>A_02_e.jpg</code> になります。
               </div>
 
               <div className={styles.calloutInfo}>

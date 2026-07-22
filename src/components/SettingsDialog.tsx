@@ -1,12 +1,19 @@
 import { useState } from 'react'
 import { useAppStore } from '../store'
 import { useLocale } from '../i18n/locale'
-import { selectProcessTableErrors } from '../store/selectors'
+import { selectLayerTreeWithVisibility, selectProcessTableErrors } from '../store/selectors'
 import type { ProcessFolderEntry } from '../types'
 import { APP_THEME_SWATCHES, type AppTheme } from '../theme'
 import { pickSettingsJsonFile, saveTextFile, supportsNativeOpenDialog } from '../platform/files'
 import styles from './SettingsDialog.module.css'
 import { DEFAULT_PROJECT_SETTINGS } from '../types'
+import { getMaxSequenceNumberForAnimationFolders } from '../engine/cell-extractor'
+import {
+  makeCellFileName,
+  makeCellLabel,
+  resolveAnimationSequenceSeparator,
+  resolveSequenceDigits,
+} from '../utils/naming'
 
 interface SettingsDialogProps {
   onClose: () => void
@@ -31,6 +38,8 @@ function cleanPatterns(rows: string[]): string[] {
 
 export function SettingsDialog({ onClose }: SettingsDialogProps) {
   const projectSettings = useAppStore(s => s.projectSettings)
+  const outputConfig = useAppStore(s => s.outputConfig)
+  const layerTree = useAppStore(selectLayerTreeWithVisibility)
   const activeTheme = useAppStore(s => s.activeTheme)
   const updateProcessTable = useAppStore(s => s.updateProcessTable)
   const updateAutoMarkFolderNames = useAppStore(s => s.updateAutoMarkFolderNames)
@@ -51,6 +60,16 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
   )
 
   const errors = selectProcessTableErrors(useAppStore.getState())
+  const sampleDigits = resolveSequenceDigits(
+    projectSettings.sequenceDigitMode ?? 'auto',
+    getMaxSequenceNumberForAnimationFolders(layerTree),
+  )
+  const sampleCellLabel = makeCellLabel(
+    projectSettings.cellNamingMode,
+    'ア',
+    1,
+    sampleDigits,
+  )
   const themeOptions: Array<{ value: AppTheme; label: string; description: string }> = [
     {
       value: 'midnight',
@@ -250,7 +269,17 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
                   placeholder="EN, 演出修正, ens"
                 />
                 <span className={styles.sampleLabel}>
-                  {`A_0001${row.suffix || ''}.jpg`}
+                  {makeCellFileName({
+                    trackName: 'A',
+                    cellLabel: sampleCellLabel,
+                    processSuffix: row.suffix,
+                    processSuffixPosition: outputConfig.processSuffixPosition,
+                    trackCellSeparator: resolveAnimationSequenceSeparator(
+                      projectSettings.cellNamingMode,
+                      projectSettings.animationSequenceSeparator ?? 'underscore',
+                    ),
+                    suppressDuplicateProcessSuffix: projectSettings.cellNamingMode === 'cellname',
+                  }).replace(/\.jpg$/i, `.${outputConfig.format}`)}
                 </span>
                 <button className={styles.removeRowBtn} onClick={() => removeRow(i)}>✕</button>
               </div>

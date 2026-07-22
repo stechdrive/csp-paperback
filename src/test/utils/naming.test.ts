@@ -2,9 +2,12 @@ import { describe, it, expect } from 'vitest'
 import {
   resolveNameCollisions,
   formatSequenceNumber,
-  makeAnimCellName,
+  isSequenceNamingMode,
+  makeCellFileName,
   makeCellLabel,
   getSequenceDigitsForCellCount,
+  resolveAnimationSequenceSeparator,
+  resolveSequenceDigits,
   stripLeadingUnderscore,
   resolveEntryNames,
 } from '../../utils/naming'
@@ -82,38 +85,95 @@ describe('getSequenceDigitsForCellCount', () => {
   })
 })
 
-describe('makeAnimCellName', () => {
-  it('フォルダ名_連番を生成する', () => {
-    expect(makeAnimCellName('A', 0, 4)).toBe('A_0001')
-    expect(makeAnimCellName('A', 1, 4)).toBe('A_0002')
-    expect(makeAnimCellName('B', 9, 4)).toBe('B_0010')
+describe('resolveSequenceDigits', () => {
+  it('自動では最大連番に合わせる', () => {
+    expect(resolveSequenceDigits('auto', 1)).toBe(2)
+    expect(resolveSequenceDigits('auto', 100)).toBe(3)
   })
 
-  it('桁数設定を反映する', () => {
-    expect(makeAnimCellName('A', 0, 3)).toBe('A_001')
+  it('4桁固定では最大連番にかかわらず4桁を返す', () => {
+    expect(resolveSequenceDigits('fixed-4', 1)).toBe(4)
+    expect(resolveSequenceDigits('fixed-4', 100)).toBe(4)
   })
 })
 
 describe('makeCellLabel', () => {
   it('連番モードではゼロ埋め連番を返す', () => {
-    expect(makeCellLabel('sequence', 'ア', 1)).toBe('0001')
+    expect(makeCellLabel('sequence', 'ア', 1, 2)).toBe('01')
   })
 
   it('連番セル名モードでは連番の後ろにセル名を付加する', () => {
-    expect(makeCellLabel('sequence-cellname', 'ア', 12)).toBe('12_ア')
+    expect(makeCellLabel('sequence-cellname', 'ア', 12, 2)).toBe('12_ア')
   })
 
   it('指定された桁数を反映する', () => {
     expect(makeCellLabel('sequence-cellname', 'ア', 12, 4)).toBe('0012_ア')
   })
 
-  it('連番モードは指定桁数に関係なく4桁固定', () => {
-    expect(makeCellLabel('sequence', 'ア', 1, 2)).toBe('0001')
-    expect(makeCellLabel('sequence', 'ア', 12, 3)).toBe('0012')
+  it('連番モードにも指定された桁数を反映する', () => {
+    expect(makeCellLabel('sequence', 'ア', 1, 2)).toBe('01')
+    expect(makeCellLabel('sequence', 'ア', 12, 3)).toBe('012')
   })
 
   it('セル名モードではセル名をそのまま返す', () => {
-    expect(makeCellLabel('cellname', 'ア', 1)).toBe('ア')
+    expect(makeCellLabel('cellname', 'ア', 1, 2)).toBe('ア')
+  })
+})
+
+describe('resolveAnimationSequenceSeparator', () => {
+  it('連番系モードでは区切り設定を反映する', () => {
+    expect(resolveAnimationSequenceSeparator('sequence', 'underscore')).toBe('_')
+    expect(resolveAnimationSequenceSeparator('sequence-cellname', 'none')).toBe('')
+    expect(resolveAnimationSequenceSeparator('sheet-sequence', 'none')).toBe('')
+  })
+
+  it('セル名モードでは常にアンダースコアを使う', () => {
+    expect(isSequenceNamingMode('cellname')).toBe(false)
+    expect(resolveAnimationSequenceSeparator('cellname', 'none')).toBe('_')
+  })
+})
+
+describe('makeCellFileName', () => {
+  it('工程名が後ろの場合に区切りの有無を反映する', () => {
+    expect(makeCellFileName({
+      trackName: 'A', cellLabel: '01', processSuffix: '_e', trackCellSeparator: '_',
+    })).toBe('A_01_e.jpg')
+    expect(makeCellFileName({
+      trackName: 'A', cellLabel: '01', processSuffix: '_e', trackCellSeparator: '',
+    })).toBe('A01_e.jpg')
+  })
+
+  it('工程名が前の場合に区切りの有無を反映する', () => {
+    expect(makeCellFileName({
+      trackName: 'A', cellLabel: '01', processSuffix: '_e',
+      processSuffixPosition: 'before-cell', trackCellSeparator: '_',
+    })).toBe('A_e_01.jpg')
+    expect(makeCellFileName({
+      trackName: 'A', cellLabel: '01', processSuffix: '_e',
+      processSuffixPosition: 'before-cell', trackCellSeparator: '',
+    })).toBe('A_e01.jpg')
+  })
+
+  it('セル名末尾と工程サフィックスが完全一致する場合だけ重複付加を抑止する', () => {
+    expect(makeCellFileName({
+      trackName: 'B', cellLabel: 'B1_e', processSuffix: '_e',
+      suppressDuplicateProcessSuffix: true,
+    })).toBe('B_B1_e.jpg')
+    expect(makeCellFileName({
+      trackName: 'B', cellLabel: 'B1_e2', processSuffix: '_e',
+      suppressDuplicateProcessSuffix: true,
+    })).toBe('B_B1_e2_e.jpg')
+    expect(makeCellFileName({
+      trackName: 'B', cellLabel: 'B1_E', processSuffix: '_e',
+      suppressDuplicateProcessSuffix: true,
+    })).toBe('B_B1_E_e.jpg')
+  })
+
+  it('工程名を前にしてもセル名に同一サフィックスがあれば重複させない', () => {
+    expect(makeCellFileName({
+      trackName: 'B', cellLabel: 'B1_e', processSuffix: '_e',
+      processSuffixPosition: 'before-cell', suppressDuplicateProcessSuffix: true,
+    })).toBe('B_B1_e.jpg')
   })
 })
 

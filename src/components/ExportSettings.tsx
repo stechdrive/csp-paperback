@@ -6,6 +6,14 @@ import { Tooltip } from './Tooltip'
 import { UnmatchedTracksWarning } from './UnmatchedTracksWarning'
 import type { CellNamingMode, CspLayer } from '../types'
 import { isAutoMarkedOutputTarget } from '../utils/auto-marked-container'
+import { getMaxSequenceNumberForAnimationFolders } from '../engine/cell-extractor'
+import {
+  isSequenceNamingMode,
+  makeCellFileName,
+  makeCellLabel,
+  resolveAnimationSequenceSeparator,
+  resolveSequenceDigits,
+} from '../utils/naming'
 import styles from './ExportSettings.module.css'
 
 function collectAutoMarkedNames(layers: CspLayer[]): string[] {
@@ -22,17 +30,19 @@ function buildNameSample(
   structure: 'hierarchy' | 'flat',
   processSuffixPosition: 'after-cell' | 'before-cell',
   format: 'jpg' | 'png',
+  sequenceDigits: number,
+  animationSequenceSeparator: 'underscore' | 'none',
 ): string {
   const trackName = 'A'
-  const cellLabel = mode === 'sequence' || mode === 'sheet-sequence'
-    ? '0001'
-    : mode === 'sequence-cellname'
-      ? '01_ア'
-      : 'ア'
-  const processSuffix = '_e'
-  const fileName = processSuffixPosition === 'before-cell'
-    ? `${trackName}${processSuffix}_${cellLabel}.${format}`
-    : `${trackName}_${cellLabel}${processSuffix}.${format}`
+  const cellLabel = makeCellLabel(mode, 'ア', 1, sequenceDigits)
+  const fileName = makeCellFileName({
+    trackName,
+    cellLabel,
+    processSuffix: '_e',
+    processSuffixPosition,
+    trackCellSeparator: resolveAnimationSequenceSeparator(mode, animationSequenceSeparator),
+    suppressDuplicateProcessSuffix: mode === 'cellname',
+  }).replace(/\.jpg$/i, `.${format}`)
   return structure === 'hierarchy' ? `${trackName}/${fileName}` : fileName
 }
 
@@ -46,6 +56,8 @@ export function ExportSettings() {
   const setStructure = useAppStore(s => s.setStructure)
   const setProcessSuffixPosition = useAppStore(s => s.setProcessSuffixPosition)
   const setCellNamingMode = useAppStore(s => s.setCellNamingMode)
+  const setSequenceDigitMode = useAppStore(s => s.setSequenceDigitMode)
+  const setAnimationSequenceSeparator = useAppStore(s => s.setAnimationSequenceSeparator)
   const setSharedCutMode = useAppStore(s => s.setSharedCutMode)
   const toggleProcessSuffixExclusion = useAppStore(s => s.toggleProcessSuffixExclusion)
   const setAllProcessSuffixExclusions = useAppStore(s => s.setAllProcessSuffixExclusions)
@@ -58,11 +70,18 @@ export function ExportSettings() {
   const excludedSet = new Set(outputConfig.excludedProcessSuffixes)
   const allIncluded = processSuffixes.every(s => !excludedSet.has(s)) && !outputConfig.excludeAutoMarked
   const allExcluded = processSuffixes.every(s => excludedSet.has(s)) && outputConfig.excludeAutoMarked
+  const isSequenceMode = isSequenceNamingMode(projectSettings.cellNamingMode)
+  const sequenceDigits = resolveSequenceDigits(
+    projectSettings.sequenceDigitMode ?? 'auto',
+    getMaxSequenceNumberForAnimationFolders(layerTree),
+  )
   const nameSample = buildNameSample(
     projectSettings.cellNamingMode,
     outputConfig.structure,
     outputConfig.processSuffixPosition,
     outputConfig.format,
+    sequenceDigits,
+    projectSettings.animationSequenceSeparator ?? 'underscore',
   )
 
   const handleAllOn = () => {
@@ -131,6 +150,42 @@ export function ExportSettings() {
           </Tooltip>
         </div>
         <span className={styles.nameSample}>{nameSample}</span>
+
+        {isSequenceMode && (
+          <>
+            <div className={styles.inlineOption}>
+              <Tooltip content={t.settings.sequenceDigitsHint} placement="bottom">
+                <span className={styles.label}>{t.settings.sequenceDigits}</span>
+              </Tooltip>
+              <div className={styles.toggleGroup}>
+                <button
+                  className={`${styles.toggle} ${(projectSettings.sequenceDigitMode ?? 'auto') === 'auto' ? styles.active : ''}`}
+                  onClick={() => setSequenceDigitMode('auto')}
+                >{t.settings.sequenceDigitsAuto}</button>
+                <button
+                  className={`${styles.toggle} ${projectSettings.sequenceDigitMode === 'fixed-4' ? styles.active : ''}`}
+                  onClick={() => setSequenceDigitMode('fixed-4')}
+                >{t.settings.sequenceDigitsFixed4}</button>
+              </div>
+            </div>
+
+            <div className={styles.inlineOption}>
+              <Tooltip content={t.settings.animationSequenceSeparatorHint} placement="bottom">
+                <span className={styles.label}>{t.settings.animationSequenceSeparator}</span>
+              </Tooltip>
+              <div className={styles.toggleGroup}>
+                <button
+                  className={`${styles.toggle} ${(projectSettings.animationSequenceSeparator ?? 'underscore') === 'underscore' ? styles.active : ''}`}
+                  onClick={() => setAnimationSequenceSeparator('underscore')}
+                >{t.settings.animationSequenceSeparatorUnderscore}</button>
+                <button
+                  className={`${styles.toggle} ${projectSettings.animationSequenceSeparator === 'none' ? styles.active : ''}`}
+                  onClick={() => setAnimationSequenceSeparator('none')}
+                >{t.settings.animationSequenceSeparatorNone}</button>
+              </div>
+            </div>
+          </>
+        )}
 
         <Tooltip content={t.export.sharedCutHint} placement="bottom">
           <label className={styles.switchLabel}>

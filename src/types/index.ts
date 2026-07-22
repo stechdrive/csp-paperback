@@ -1,7 +1,13 @@
 export type { CspLayer, FlatLayer, BlendMode } from './layer'
 export type { AnimationFolderInfo, AnimationCell } from './animation'
 export type { SingleMark, VirtualSet, VirtualSetMember, VirtualSetLayerOverride } from './marks'
-export type { ProcessFolderEntry, ProjectSettings, CellNamingMode } from './project'
+export type {
+  AnimationSequenceSeparator,
+  CellNamingMode,
+  ProcessFolderEntry,
+  ProjectSettings,
+  SequenceDigitMode,
+} from './project'
 export { DEFAULT_PROJECT_SETTINGS } from './project'
 export type {
   OutputFormat,

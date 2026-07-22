@@ -19,6 +19,11 @@ import { parseXdts } from '../../utils/xdts-parser'
 import { buildLayerTree, detectAnimationFoldersByXdts } from '../../engine/tree-builder'
 import { extractAllEntries } from '../../engine/cell-extractor'
 import { DEFAULT_PROJECT_SETTINGS } from '../../types'
+
+const GOLDEN_PROJECT_SETTINGS = {
+  ...DEFAULT_PROJECT_SETTINGS,
+  sequenceDigitMode: 'fixed-4' as const,
+}
 import { C001_VIRTUAL_SET_JPG } from '../../sample/c001-virtual-set'
 
 const REPO_ROOT = path.resolve(__dirname, '../../..')
@@ -46,7 +51,7 @@ describe('c001 golden (path identity)', () => {
 
     // 出力エントリ生成
     const entries = extractAllEntries(
-      tree, DEFAULT_PROJECT_SETTINGS, psd.width, psd.height, 'white', false,
+      tree, GOLDEN_PROJECT_SETTINGS, psd.width, psd.height, 'white', false,
     )
 
     const flatNames = new Set(entries.map(e => e.flatName))
@@ -91,7 +96,7 @@ describe('c001 golden (path identity)', () => {
     const tree = buildLayerTree(psd, xdts, DEFAULT_PROJECT_SETTINGS.archivePatterns, DEFAULT_PROJECT_SETTINGS.autoMarkFolderNames)
     detectAnimationFoldersByXdts(tree, xdts)
     const entries = extractAllEntries(
-      tree, DEFAULT_PROJECT_SETTINGS, psd.width, psd.height, 'white', false,
+      tree, GOLDEN_PROJECT_SETTINGS, psd.width, psd.height, 'white', false,
     )
     const dump = entries.map(e => ({ path: e.path, flatName: e.flatName }))
     console.log('c001 entries count:', dump.length)

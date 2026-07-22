@@ -26,6 +26,11 @@ import { buildLayerTree, detectAnimationFoldersByXdts } from '../../engine/tree-
 import { extractAllEntries, extractVirtualSetEntries } from '../../engine/cell-extractor'
 import { selectLayerTreeWithVisibility } from '../../store/selectors'
 import { DEFAULT_PROJECT_SETTINGS } from '../../types'
+
+const GOLDEN_PROJECT_SETTINGS = {
+  ...DEFAULT_PROJECT_SETTINGS,
+  sequenceDigitMode: 'fixed-4' as const,
+}
 import { buildC001VirtualSets } from '../../sample/c001-virtual-set'
 
 const REPO_ROOT = path.resolve(__dirname, '../../..')
@@ -91,7 +96,7 @@ describe('c001 golden (image pixel match)', () => {
     // 出力エントリ生成 (golden は透過背景で作られているため background='transparent')
     const entries = extractAllEntries(
       resolvedTree,
-      DEFAULT_PROJECT_SETTINGS,
+      GOLDEN_PROJECT_SETTINGS,
       psd.width,
       psd.height,
       'transparent',

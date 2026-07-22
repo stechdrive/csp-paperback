@@ -30,6 +30,17 @@
   margin-right: 0.5rem;
 }
 
+.inlineOption {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+}
+
+.inlineOption .toggleGroup {
+  margin-right: 0;
+}
+
 .toggle {
   padding: 0.2rem 0.5rem;
   font-size: 0.75rem;

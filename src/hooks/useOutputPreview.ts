@@ -3,7 +3,6 @@ import { useAppStore } from '../store'
 import { selectLayerTreeWithVisibility } from '../store/selectors'
 import {
   extractCells,
-  buildCellFileName,
   extractVirtualSetEntries,
   resolveParentSuffix,
   collectContextSourceLayers,
@@ -11,13 +10,16 @@ import {
   collectMarkedLayerContext,
   buildParentSuffixMap,
   buildEffectiveAnimationAssignment,
-  getSequenceDigitsForAnimationFolders,
-  buildSheetSequenceLabels,
+  buildSequenceNamingPlan,
 } from '../engine/cell-extractor'
 import { computeDisplayNames } from '../engine/anim-folder-display-name'
 import { flattenTree, compositeRoot } from '../engine/flatten'
 import { replaceExtension } from '../utils/image-export'
-import { makeCellLabel } from '../utils/naming'
+import {
+  makeCellFileName,
+  makeCellLabel,
+  resolveAnimationSequenceSeparator,
+} from '../utils/naming'
 import { collectMembersInTreeOrder, buildMemberFlatsWithOverride } from '../utils/virtual-set-utils'
 import { resolveSelectedAnimCell } from '../utils/anim-cell-selection'
 import { isAutoMarkedContainerOutputSuppressed } from '../utils/auto-marked-container'
@@ -189,28 +191,45 @@ function previewAnimFolder(
   const assignment = buildEffectiveAnimationAssignment(layerTree)
   const displayNames = computeDisplayNames(layerTree, assignment, parentSuffixMap)
   const displayName = displayNames.get(animFolderId) ?? animFolder.originalName.trim()
-  const sheetSequenceLabels = projectSettings.cellNamingMode === 'sheet-sequence'
-    ? buildSheetSequenceLabels(layerTree, xdtsData, displayNames)
-    : undefined
-  const sequenceDigits = projectSettings.cellNamingMode === 'sequence-cellname'
-    ? getSequenceDigitsForAnimationFolders(layerTree)
-    : undefined
+  const sequenceNamingPlan = buildSequenceNamingPlan(
+    layerTree,
+    projectSettings,
+    xdtsData,
+    displayNames,
+  )
 
   const allEntries: OutputEntry[] = extractCells(
     animFolder, projectSettings, docWidth, docHeight, lowerContextFlats,
     parentSuffix, displayName, outputConfig.background, localUpperFlats,
-    outputConfig.processSuffixPosition, sequenceDigits, sheetSequenceLabels,
+    outputConfig.processSuffixPosition,
+    sequenceNamingPlan.digits,
+    sequenceNamingPlan.sheetSequenceNumbers,
   )
 
   // 選択セルのエントリに絞り込む
   const namingMode = projectSettings.cellNamingMode ?? 'sequence'
-  const cellLabel = animFolder.animationFolder?.detectedBy === 'autoProcess'
+  const isAutoProcessAnim = animFolder.animationFolder?.detectedBy === 'autoProcess'
+  const sequenceNumber = sequenceNamingPlan.sheetSequenceNumbers?.get(selectedCell.id)
+    ?? visibleChildren.length - clampedIndex
+  const cellLabel = isAutoProcessAnim
     ? (selectedCell.name || selectedCell.originalName)
-    : sheetSequenceLabels?.get(selectedCell.id)
-      ?? makeCellLabel(namingMode, selectedCell.originalName, visibleChildren.length - clampedIndex, sequenceDigits)
-  const prefix = buildCellFileName(
-    displayName, cellLabel, parentSuffix, '', outputConfig.processSuffixPosition,
-  ).replace(/\.jpg$/i, '')
+    : makeCellLabel(
+        namingMode,
+        selectedCell.originalName,
+        sequenceNumber,
+        sequenceNamingPlan.digits,
+      )
+  const prefix = makeCellFileName({
+    trackName: displayName,
+    cellLabel,
+    parentSuffix,
+    processSuffixPosition: outputConfig.processSuffixPosition,
+    trackCellSeparator: resolveAnimationSequenceSeparator(
+      isAutoProcessAnim ? 'cellname' : namingMode,
+      projectSettings.animationSequenceSeparator ?? 'underscore',
+    ),
+    suppressDuplicateProcessSuffix: !isAutoProcessAnim && namingMode === 'cellname',
+  }).replace(/\.jpg$/i, '')
 
   let entries = allEntries.filter(e => e.sourceCellId === selectedCell.id)
   if (entries.length === 0) entries = allEntries.filter(e =>

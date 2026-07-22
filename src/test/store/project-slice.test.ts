@@ -21,6 +21,27 @@ beforeEach(() => {
 })
 
 describe('project-slice - auto mark folder names', () => {
+  it('連番桁数は自動、連番区切りはアンダースコアをデフォルトにする', () => {
+    expect(useAppStore.getState().projectSettings.sequenceDigitMode).toBe('auto')
+    expect(useAppStore.getState().projectSettings.animationSequenceSeparator).toBe('underscore')
+  })
+
+  it('連番設定の変更をUndo/Redoできる', () => {
+    useAppStore.getState().setSequenceDigitMode('fixed-4')
+    useAppStore.getState().setAnimationSequenceSeparator('none')
+    expect(useAppStore.getState().projectSettings.sequenceDigitMode).toBe('fixed-4')
+    expect(useAppStore.getState().projectSettings.animationSequenceSeparator).toBe('none')
+
+    useAppStore.getState().undo()
+    expect(useAppStore.getState().projectSettings.animationSequenceSeparator).toBe('underscore')
+    useAppStore.getState().undo()
+    expect(useAppStore.getState().projectSettings.sequenceDigitMode).toBe('auto')
+    useAppStore.getState().redo()
+    useAppStore.getState().redo()
+    expect(useAppStore.getState().projectSettings.sequenceDigitMode).toBe('fixed-4')
+    expect(useAppStore.getState().projectSettings.animationSequenceSeparator).toBe('none')
+  })
+
   it('撮影指示と原図をデフォルト登録する', () => {
     expect(useAppStore.getState().projectSettings.autoMarkFolderNames).toEqual(['撮影指示', '原図'])
   })
@@ -44,6 +65,8 @@ describe('project-slice - auto mark folder names', () => {
     }))
 
     expect(useAppStore.getState().projectSettings.autoMarkFolderNames).toEqual(['撮影指示', '原図'])
+    expect(useAppStore.getState().projectSettings.sequenceDigitMode).toBe('auto')
+    expect(useAppStore.getState().projectSettings.animationSequenceSeparator).toBe('underscore')
   })
 
   it('設定JSONへ登録名を含める', () => {
@@ -52,5 +75,16 @@ describe('project-slice - auto mark folder names', () => {
       autoMarkFolderNames?: string[]
     }
     expect(exported.autoMarkFolderNames).toEqual(['BOOK', 'BG'])
+  })
+
+  it('設定JSONへ連番設定を含める', () => {
+    useAppStore.getState().setSequenceDigitMode('fixed-4')
+    useAppStore.getState().setAnimationSequenceSeparator('none')
+    const exported = JSON.parse(useAppStore.getState().exportSettings()) as {
+      sequenceDigitMode?: string
+      animationSequenceSeparator?: string
+    }
+    expect(exported.sequenceDigitMode).toBe('fixed-4')
+    expect(exported.animationSequenceSeparator).toBe('none')
   })
 })

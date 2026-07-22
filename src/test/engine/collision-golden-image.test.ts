@@ -17,6 +17,11 @@ import { extractAllEntries } from '../../engine/cell-extractor'
 import { selectLayerTreeWithVisibility } from '../../store/selectors'
 import { DEFAULT_PROJECT_SETTINGS, type CspLayer } from '../../types'
 
+const GOLDEN_PROJECT_SETTINGS = {
+  ...DEFAULT_PROJECT_SETTINGS,
+  sequenceDigitMode: 'fixed-4' as const,
+}
+
 const REPO_ROOT = path.resolve(__dirname, '../../..')
 const FIXTURE_DIR = path.join(REPO_ROOT, 'testdata', 'collision')
 const MAX_CHANNEL_TOLERANCE = 1
@@ -85,7 +90,7 @@ function renderEntries(
 
   const entries = extractAllEntries(
     resolvedTree,
-    DEFAULT_PROJECT_SETTINGS,
+    GOLDEN_PROJECT_SETTINGS,
     docWidth,
     docHeight,
     'transparent',

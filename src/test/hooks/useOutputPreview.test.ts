@@ -55,8 +55,8 @@ describe('useOutputPreview', () => {
     const { result } = renderHook(() => useOutputPreview())
 
     expect(result.current).toHaveLength(1)
-    expect(result.current[0].flatName).toBe('A_0001.png')
-    expect(result.current[0].path).toBe('A/A_0001.png')
+    expect(result.current[0].flatName).toBe('A_01.png')
+    expect(result.current[0].path).toBe('A/A_01.png')
   })
 
   it('連番セル名モードではプレビュー名にもセル名を付加する', () => {
@@ -103,6 +103,55 @@ describe('useOutputPreview', () => {
     expect(result.current).toHaveLength(1)
     expect(result.current[0].flatName).toBe('A_001_1.png')
     expect(result.current[0].path).toBe('A/A_001_1.png')
+  })
+
+  it('4桁固定と連番区切りなしをプレビュー名にも反映する', () => {
+    const animFolder = makeAnimationFolder('A', [makeLayer({ name: '1' })])
+    const tree = buildLayerTree(makePsd({ children: [animFolder] }))
+    detectAnim(tree, 'A')
+
+    useAppStore.setState({
+      layerTree: tree,
+      docWidth: 100,
+      docHeight: 100,
+      outputConfig: { ...DEFAULT_OUTPUT_CONFIG, format: 'png', background: 'transparent' },
+      projectSettings: {
+        ...DEFAULT_PROJECT_SETTINGS,
+        sequenceDigitMode: 'fixed-4',
+        animationSequenceSeparator: 'none',
+      },
+      focusedAnimFolderId: tree[0].id,
+    })
+
+    const { result } = renderHook(() => useOutputPreview())
+    expect(result.current[0].flatName).toBe('A0001.png')
+    expect(result.current[0].path).toBe('A/A0001.png')
+  })
+
+  it('セル名末尾と工程サフィックスが一致するプレビュー名を重複させない', () => {
+    const processFolder = makeFolder('_e', [makeLayer({ name: '修正' })])
+    const cellFolder = makeFolder('B1_e', [processFolder])
+    const animFolder = makeAnimationFolder('B', [cellFolder])
+    const tree = buildLayerTree(makePsd({ children: [animFolder] }))
+    tree[0].isAnimationFolder = true
+    tree[0].animationFolder = { detectedBy: 'manual', trackName: 'B' }
+
+    useAppStore.setState({
+      layerTree: tree,
+      docWidth: 100,
+      docHeight: 100,
+      outputConfig: { ...DEFAULT_OUTPUT_CONFIG },
+      projectSettings: {
+        ...DEFAULT_PROJECT_SETTINGS,
+        processTable: [{ suffix: '_e', folderNames: ['_e'] }],
+        cellNamingMode: 'cellname',
+      },
+      focusedAnimFolderId: tree[0].id,
+    })
+
+    const { result } = renderHook(() => useOutputPreview())
+    expect(result.current).toHaveLength(1)
+    expect(result.current[0].flatName).toBe('B_B1_e.jpg')
   })
 
   it('PNG選択時はマーク済みレイヤーのプレビュー名も.pngで返す', () => {
