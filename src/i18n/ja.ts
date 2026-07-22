@@ -81,7 +81,7 @@ export const ja = {
     cellPrefixSeparatorNone: 'なし',
     cellPrefixSeparatorNoneHint: 'アニメーションフォルダ名が「A」、セル名が「1」の場合\nA1.jpgになります。',
     xdtsTrackPrefix: 'XDTSフォルダ名',
-    xdtsTrackPrefixHint: 'セル名モードで、XDTSから検出したアニメーションフォルダ名が「A」、セル名が「A1」の場合\n「付ける」→ 同じAを重ねず、A1.jpg\n「付けない」→ フォルダ名を付けず、A1.jpg',
+    xdtsTrackPrefixHint: 'セル名が「1」のようにアニメーションフォルダ名を含まない場合は「付ける」を選びます。\nセル名が「A1」のようにフォルダ名まで含む場合は、名前の重複を避けるため「付けない」を選びます。',
     xdtsTrackPrefixOn: '付ける',
     xdtsTrackPrefixOff: '付けない',
     defaultMode: 'デフォルト動作モード',
