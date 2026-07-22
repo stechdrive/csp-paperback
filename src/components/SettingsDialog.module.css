@@ -162,20 +162,22 @@
 }
 
 /* processTable */
-.tableHeader {
-  display: grid;
-  grid-template-columns: 90px minmax(180px, 1fr) 110px auto auto;
-  gap: 0.4rem;
-  font-size: 0.75rem;
-  color: var(--color-text-secondary);
-  padding: 0 0.25rem;
-}
-
-.tableRow {
+.processTableGrid {
   display: grid;
   grid-template-columns: 90px minmax(180px, 1fr) 110px auto auto;
   gap: 0.4rem;
   align-items: center;
+}
+
+.tableHeader,
+.tableRow {
+  display: contents;
+}
+
+.tableHeader > span {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  padding: 0 0.25rem;
 }
 
 .sampleLabel {
@@ -535,8 +537,17 @@
     font-size: 0.7rem;
   }
 
+  .processTableGrid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
   .tableRow {
+    display: grid;
     grid-template-columns: 4.375rem minmax(9rem, 1fr) auto;
+    gap: 0.4rem;
+    align-items: center;
   }
 
   .tableRow .colorCell,

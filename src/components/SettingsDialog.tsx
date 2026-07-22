@@ -262,56 +262,58 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
           {/* 工程フォルダリスト */}
           <div className={styles.section}>
             <div className={styles.sectionTitle}>{t.settings.processTable}</div>
-            <div className={styles.tableHeader}>
-              <span>{t.settings.colSuffix}</span>
-              <span>{t.settings.colFolderNames}</span>
-              <span>{t.settings.colBorderColor}</span>
-              <span>出力サンプル</span>
-              <span></span>
-            </div>
-            {tableRows.map((row, i) => (
-              <div key={i} className={styles.tableRow}>
-                <input
-                  className={styles.tableInput}
-                  value={row.suffix}
-                  onChange={e => handleSuffixChange(i, e.target.value)}
-                  placeholder="_en"
-                />
-                <input
-                  className={styles.tableInput}
-                  value={row.folderNames.join(', ')}
-                  onChange={e => handleFolderNamesChange(i, e.target.value)}
-                  placeholder="EN, 演出修正, ens"
-                />
-                <div className={styles.colorCell}>
-                  <ProcessColorPicker
-                    color={resolveProcessBorderColor(row)}
-                    label={
-                      row.folderNames.find(name => name.trim() && !name.trim().startsWith('_'))
-                      || row.folderNames.find(Boolean)
-                      || row.suffix
-                      || `工程${i + 1}`
-                    }
-                    onChange={color => handleBorderColorChange(i, color)}
-                  />
-                  <code>{resolveProcessBorderColor(row).slice(1)}</code>
-                </div>
-                <span className={styles.sampleLabel}>
-                  {makeCellFileName({
-                    trackName: 'A',
-                    cellLabel: sampleCellLabel,
-                    processSuffix: row.suffix,
-                    processSuffixPosition: outputConfig.processSuffixPosition,
-                    trackCellSeparator: resolveAnimationSequenceSeparator(
-                      projectSettings.cellNamingMode,
-                      projectSettings.animationSequenceSeparator ?? 'underscore',
-                    ),
-                    suppressDuplicateProcessSuffix: projectSettings.cellNamingMode === 'cellname',
-                  }).replace(/\.jpg$/i, `.${outputConfig.format}`)}
-                </span>
-                <button className={styles.removeRowBtn} onClick={() => removeRow(i)}>✕</button>
+            <div className={styles.processTableGrid} data-testid="process-table-grid">
+              <div className={styles.tableHeader}>
+                <span>{t.settings.colSuffix}</span>
+                <span>{t.settings.colFolderNames}</span>
+                <span>{t.settings.colBorderColor}</span>
+                <span>出力サンプル</span>
+                <span></span>
               </div>
-            ))}
+              {tableRows.map((row, i) => (
+                <div key={i} className={styles.tableRow} data-process-table-row>
+                  <input
+                    className={styles.tableInput}
+                    value={row.suffix}
+                    onChange={e => handleSuffixChange(i, e.target.value)}
+                    placeholder="_en"
+                  />
+                  <input
+                    className={styles.tableInput}
+                    value={row.folderNames.join(', ')}
+                    onChange={e => handleFolderNamesChange(i, e.target.value)}
+                    placeholder="EN, 演出修正, ens"
+                  />
+                  <div className={styles.colorCell}>
+                    <ProcessColorPicker
+                      color={resolveProcessBorderColor(row)}
+                      label={
+                        row.folderNames.find(name => name.trim() && !name.trim().startsWith('_'))
+                        || row.folderNames.find(Boolean)
+                        || row.suffix
+                        || `工程${i + 1}`
+                      }
+                      onChange={color => handleBorderColorChange(i, color)}
+                    />
+                    <code>{resolveProcessBorderColor(row).slice(1)}</code>
+                  </div>
+                  <span className={styles.sampleLabel}>
+                    {makeCellFileName({
+                      trackName: 'A',
+                      cellLabel: sampleCellLabel,
+                      processSuffix: row.suffix,
+                      processSuffixPosition: outputConfig.processSuffixPosition,
+                      trackCellSeparator: resolveAnimationSequenceSeparator(
+                        projectSettings.cellNamingMode,
+                        projectSettings.animationSequenceSeparator ?? 'underscore',
+                      ),
+                      suppressDuplicateProcessSuffix: projectSettings.cellNamingMode === 'cellname',
+                    }).replace(/\.jpg$/i, `.${outputConfig.format}`)}
+                  </span>
+                  <button className={styles.removeRowBtn} onClick={() => removeRow(i)}>✕</button>
+                </div>
+              ))}
+            </div>
             {errors.size > 0 && (
               <div className={styles.errorMsg}>
                 {t.settings.duplicateError}{[...errors].join(', ')}
