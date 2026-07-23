@@ -11,14 +11,13 @@ export const FEATURE_SECTIONS = [
   { id: 'virtual-cels', label: '仮想セル' },
   { id: 'detailed-settings', label: '詳細設定・共有' },
   { id: 'desktop-mobile', label: 'デスクトップ・モバイル' },
-  { id: 'troubleshooting', label: '困ったとき' },
 ] as const
 
 export const ABOUT_SECTIONS = [
-  { id: 'why', label: 'なぜ作ったか' },
-  { id: 'paper-model', label: '「紙に戻す」' },
-  { id: 'context', label: '重なる素材と別の紙' },
-  { id: 'opacity', label: '不透明度の考え方' },
+  { id: 'problem', label: 'CSP標準で困ること' },
+  { id: 'features', label: 'できること' },
+  { id: 'compositing', label: '画像に含まれるもの' },
+  { id: 'opacity', label: '不透明度の扱い' },
   { id: 'privacy', label: '通信とファイル' },
   { id: 'template', label: 'サンプルテンプレート' },
 ] as const

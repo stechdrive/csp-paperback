@@ -6,6 +6,7 @@ interface HelpHighlight {
   y: number
   width: number
   height: number
+  labelAlign?: 'left' | 'right'
 }
 
 interface HelpFigureProps {
@@ -45,7 +46,13 @@ export function HelpFigure({
             }}
             aria-hidden="true"
           >
-            <span className={styles.figureHighlightLabel}>{highlight.label}</span>
+            <span
+              className={`${styles.figureHighlightLabel} ${
+                highlight.labelAlign === 'right' ? styles.figureHighlightLabelRight : ''
+              }`}
+            >
+              {highlight.label}
+            </span>
           </span>
         ))}
       </div>

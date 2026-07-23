@@ -63,15 +63,17 @@ export function QuickStartGuide({
         </Step>
 
         <Step number={2} title="クリスタからPSDとXDTSを書き出す">
-          PSDは <span className={styles.menuPath}>ファイル ＞ 複製を保存 ＞ PSD</span>、
-          XDTSは <span className={styles.menuPath}>ファイル ＞ アニメーション書き出し ＞ タイムシート情報</span>
-          から書き出します。タイムシート形式はCSVではなくXDTSを選びます。
+          同じCLIPファイルから、PSDは
+          <span className={styles.menuPath}> ファイル ＞ 複製を保存 ＞ Photoshopドキュメント</span>、
+          XDTSは
+          <span className={styles.menuPath}> ファイル ＞ アニメーション書き出し ＞ タイムシート情報の書き出し</span>
+          でXDTS形式を選んで書き出します。
         </Step>
 
         <Step number={3} title={xdtsLoaded ? 'PSDを読み込む' : 'PSDとXDTSを読み込む'}>
           {xdtsLoaded
             ? 'XDTSは読み込み済みです。対応するPSDを画面へドロップしてください。'
-            : '2ファイルをまとめて画面へドロップします。「ファイルを開く」から同時選択しても構いません。'}
+            : '同じCLIPファイルから書き出した2ファイルを、まとめて画面へドロップします。「ファイルを開く」から同時選択しても構いません。'}
           XDTSのトラックからアニメーションフォルダが自動検出されます。
         </Step>
 
@@ -103,7 +105,14 @@ export function QuickStartGuide({
               caption="赤枠の「出力」からZIPまたはフォルダを選びます。環境によってはZIPのみ表示されます。"
               compact
               highlights={[
-                { label: '出力メニュー', x: 89.5, y: 1, width: 9.5, height: 17.5 },
+                {
+                  label: '出力メニュー',
+                  x: 89.5,
+                  y: 1,
+                  width: 9.5,
+                  height: 17.5,
+                  labelAlign: 'right',
+                },
               ]}
             />
           ) : undefined}
@@ -125,8 +134,9 @@ export function QuickStartGuide({
           <section className={styles.secondary} data-help-section="desktop-quick">
             <div className={styles.secondaryTitle}>デスクトップ版の自動書き出し</div>
             <p className={styles.secondaryText}>
-              通常起動で設定を保存したあと、PSDとXDTSを1つずつ同時にEXEまたはショートカットへ
-              まとめてドロップすると、確認画面を省いてXDTSと同じ場所へ自動出力できます。
+              通常起動で書き出し設定を決めたあと、同じカットのPSDとXDTSの2ファイルを同時に選び、
+              EXEまたはショートカットへまとめてドロップします。
+              2ファイルを同じ起動時に渡した場合だけ、確認画面を省いてXDTSと同じ場所へ自動出力します。
               ★や🎬をカットごとに調整したい場合は、通常画面から書き出してください。
             </p>
             {!desktop && (

@@ -19,116 +19,207 @@ function Section({
   )
 }
 
+function OutputExample({
+  filename,
+  formula,
+  note,
+}: {
+  filename: string
+  formula: React.ReactNode
+  note: React.ReactNode
+}) {
+  return (
+    <div className={styles.outputExample}>
+      <div className={styles.outputExampleFilename}>{filename}</div>
+      <div className={styles.outputExampleFormula}>{formula}</div>
+      <div className={styles.outputExampleNote}>{note}</div>
+    </div>
+  )
+}
+
 export function AboutGuide() {
   return (
     <article className={styles.article}>
       <div className={styles.pageHero}>
-        <div className={styles.eyebrow}>このツールの考え方</div>
-        <h1 className={styles.pageTitle}>CSPの作業構造を、必要な「紙」へ戻す</h1>
+        <div className={styles.eyebrow}>このツールについて</div>
+        <h1 className={styles.pageTitle}>CSPのセル出力で、素材ごとの出し分けをできるようにする</h1>
         <p className={styles.pageLead}>
-          ここは操作手順ではなく、CSP Paperbackが何を補い、どのような基準で合成しているかを説明する章です。
+          CLIP STUDIO PAINTの標準機能では難しい出力と、CSP Paperbackで画像がどう分かれるかを
+          実際のレイヤー名とファイル名で説明します。
         </p>
       </div>
 
-      <Section id="why" title="なぜ作ったか">
+      <Section id="problem" title="1. CSP標準のセル出力で困ること">
         <p className={styles.paragraph}>
-          CLIP STUDIO PAINTの「アニメーションセル出力」は、タイムライン上のセルをまとめて画像にできる便利な機能です。
-          一方、アニメーションフォルダ外の素材を含める指定は大きな単位になりやすく、
-          「フレームは重ねたいが撮影指示は別にしたい」「セル内の演出修正だけ別紙にしたい」といった
-          制作現場の細かな出し分けには手作業が残ります。
+          CLIP STUDIO PAINTの「アニメーションセル出力」には、
+          アニメーションフォルダ外のレイヤーを出力へ含める設定があります。
+          ただし選べるのはON／OFFだけなので、素材ごとに「セルへ重ねる」「別画像にする」を分けられません。
         </p>
 
-        <div className={styles.problemGrid}>
-          <div><strong>背景原図・BOOK</strong><span>セルとは別ファイルにしたい</span></div>
-          <div><strong>フレーム・メモ</strong><span>必要な出力へ共通で重ねたい</span></div>
-          <div><strong>演出・作監修正</strong><span>本体と同じセル番号の別紙にしたい</span></div>
-          <div><strong>任意の組み合わせ</strong><span>PSDを複製せず確認素材を作りたい</span></div>
+        <div className={styles.compareGrid}>
+          <div className={styles.compareCard}>
+            <h3>フレームと撮影指示</h3>
+            <p>
+              フレームはすべてのセルへ重ねたい一方で、PAN・SLなどの撮影指示は
+              セルへ混ぜず、確認用の静止画として別に出したい。
+            </p>
+          </div>
+          <div className={styles.compareCard}>
+            <h3>背景原図とBOOK</h3>
+            <p>
+              タイムラインへセルとして登録する必要はないが、BGやBOOKを
+              アニメーションセルとは別の静止画としてまとめて出したい。
+            </p>
+          </div>
+          <div className={styles.compareCard}>
+            <h3>演出・作監修正</h3>
+            <p>
+              セル内の修正工程を本体へ混ぜず、<code>B1.jpg</code>と
+              <code>B1_s.jpg</code>のように同じセル番号の別画像へ分けたい。
+            </p>
+          </div>
+          <div className={styles.compareCard}>
+            <h3>複数レイヤーの組み合わせ</h3>
+            <p>
+              元のPSDを複製せず、キャラ・BG・BOOKなどを選んだ確認用画像を追加したい。
+            </p>
+          </div>
         </div>
 
-        <p className={styles.paragraph}>
-          CSP Paperbackは、CSPのレイヤー構造とXDTSのタイムラインを読み取り、
-          作業中のPSDを組み替えずに、必要な完成画像へ一括で戻すための補助ツールです。
-        </p>
+        <div className={styles.tableWrap}>
+          <table className={styles.table}>
+            <thead>
+              <tr><th>やりたいこと</th><th>CSP Paperbackでの指定</th><th>出力結果</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>フレームはセルへ重ね、撮影指示は別にする</td>
+                <td>フレームは通常レイヤー、撮影指示は単体出力</td>
+                <td><code>A1.jpg</code>と<code>_PAN.jpg</code>を別々に生成</td>
+              </tr>
+              <tr>
+                <td>背景原図・BOOKを静止画として出す</td>
+                <td>フォルダ名を「_」で始める、登録名を使う、または★を付ける</td>
+                <td><code>_BG.jpg</code>、<code>_BOOK1.jpg</code></td>
+              </tr>
+              <tr>
+                <td>修正工程を本体から分ける</td>
+                <td>工程フォルダ名とサフィックスを設定</td>
+                <td><code>B1.jpg</code>、<code>B1_s.jpg</code></td>
+              </tr>
+              <tr>
+                <td>任意のレイヤーを組み合わせる</td>
+                <td>仮想セルへレイヤーと挿入位置を指定</td>
+                <td><code>仮想セルテスト.jpg</code>など指定名の画像</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </Section>
 
-      <Section id="paper-model" title="メンタルモデル：「紙に戻す」">
-        <div className={styles.paperFlow}>
-          <div>
-            <span className={styles.paperLabel}>CSPの作業ファイル</span>
-            <strong>1つのPSDに素材と工程をまとめる</strong>
-          </div>
-          <b>→</b>
-          <div>
-            <span className={styles.paperLabel}>CSP Paperback</span>
-            <strong>役割・位置・タイムラインを解釈する</strong>
-          </div>
-          <b>→</b>
-          <div>
-            <span className={styles.paperLabel}>書き出し</span>
-            <strong>セル本体・修正・原図を別々の紙へ戻す</strong>
-          </div>
-        </div>
-
-        <p className={styles.paragraph}>
-          アニメーション制作では、同じセル番号の中に作画担当者の線、演出修正、作監修正が同居することがあります。
-          画面上では重ねて作業していても、確認や受け渡しでは
-          <code>A2.png</code>、<code>A2_e.png</code>、<code>A2_s.png</code>のように
-          別々の紙として扱いたい。その変換を自動化するのが中心の考え方です。
-        </p>
+      <Section id="features" title="2. CSP Paperbackでできること">
+        <ul className={styles.list}>
+          <li>
+            <strong>単体出力</strong>：
+            アニメーションしないBG、BOOK、撮影指示をタイムラインへ登録せず、独立した静止画として出力します。
+          </li>
+          <li>
+            <strong>修正工程の分離</strong>：
+            セル内の<code>_s</code>や別トラックの「演出」を、本体と同じセル番号の
+            <code>B1_s.jpg</code>、<code>A1_e.jpg</code>として出力します。
+          </li>
+          <li>
+            <strong>仮想セル</strong>：
+            PSD内のレイヤーを選び、指定したレイヤー順へ挿入した1枚の合成画像を追加します。
+          </li>
+          <li>
+            <strong>タイムライン表示</strong>：
+            XDTSを使って、CSPのタイムラインで各フレームに表示されるセルの重なりを確認します。
+          </li>
+          <li>
+            <strong>ファイル名の調整</strong>：
+            連番、CSPのセル名、シート順、工程サフィックスを組み合わせて
+            <code>A2_e.jpg</code>などの出力名を作ります。
+          </li>
+        </ul>
       </Section>
 
-      <Section id="context" title="重なる素材と「別の紙」">
-        <div className={styles.contextDiagram}>
-          <div className={styles.contextLayerTop}>前面の共通素材：メモ・フレーム・指示線</div>
-          <div className={styles.contextTarget}>出力対象：Aセル／背景原図／仮想セル</div>
-          <div className={styles.contextLayerBottom}>背面の共通素材：用紙・背景・レイアウト</div>
-        </div>
-
+      <Section id="compositing" title="3. どのレイヤーがどの画像に含まれるか">
         <p className={styles.paragraph}>
-          出力対象の祖先や兄弟にある通常レイヤーは、PSD上の前後関係を保って重なります。
-          一方、★や「_」で単体出力にした素材、別のアニメーションフォルダ、別の工程素材は、
-          他の画像へ勝手に混ざらず「別の紙」として隔離されます。
+          次の例では、通常レイヤーの<code>memo</code>と<code>Frame</code>を表示したまま、
+          作画セル、単体出力、修正工程を書き出します。
         </p>
+
+        <div className={styles.outputExampleGrid}>
+          <OutputExample
+            filename="A1.jpg"
+            formula={<>memo ＋ Frame ＋ 作画/A/1</>}
+            note={<>通常の作画セル。単体出力の<code>_BG</code>や<code>_PAN</code>は入りません。</>}
+          />
+          <OutputExample
+            filename="_BG.jpg"
+            formula={<>memo ＋ Frame ＋ _原図/_BG</>}
+            note={<>背景原図を単体出力。別の単体出力素材や作画セルは入りません。</>}
+          />
+          <OutputExample
+            filename="B1.jpg"
+            formula={<>memo ＋ Frame ＋ B/1の線画 ＋ 影</>}
+            note={<>セル内の作監修正フォルダ<code>_s</code>は本体へ入りません。</>}
+          />
+          <OutputExample
+            filename="B1_s.jpg"
+            formula={<>memo ＋ Frame ＋ B/1/_s</>}
+            note={<>作監修正だけを、本体と同じセル番号の別画像として出力します。</>}
+          />
+        </div>
 
         <div className={styles.callout}>
-          仮想セルも同じ考え方です。メンバーだけを合成するのではなく、
-          指定した挿入位置にその仮想セルが存在した場合の前後関係を再現します。
+          目がOFFのレイヤーやフォルダは、どの画像にも含まれません。
+          単体出力や別工程にした素材は他の出力へ混ざらず、表示中の通常レイヤーだけが
+          PSDの前後関係を保って重なります。
         </div>
+
+        <h3 className={styles.subsectionTitle}>仮想セルの場合</h3>
+        <p className={styles.paragraph}>
+          仮想セルへ追加したレイヤーを合成し、右ペインで指定した挿入位置へ置いた場合の前後関係を使います。
+          たとえば仮想セルを<code>_撮影指示</code>の上へ挿入すると、その位置より前面・背面にある
+          通常レイヤーも含めて出力プレビューを作ります。
+        </p>
       </Section>
 
-      <Section id="opacity" title="不透明度の考え方">
+      <Section id="opacity" title="4. 不透明度が出力でどう扱われるか">
         <p className={styles.paragraph}>
-          CSPでは、前後のセルや修正工程を見比べるため、フォルダ全体を一時的に薄くすることがあります。
-          この「作業用の透かし」と、半透明エフェクトのような「絵として意図した不透明度」を区別します。
+          CSPで前後のセルや修正を見比べるために、アニメーションフォルダやセル全体を一時的に薄くしていても、
+          その作業用の透かしは完成画像へ持ち込みません。一方、半透明の影やエフェクトはPSDの値を使います。
         </p>
 
         <div className={styles.tableWrap}>
           <table className={styles.table}>
             <thead>
-              <tr><th>種類</th><th>出力時</th><th>理由</th></tr>
+              <tr><th>レイヤーの種類</th><th>出力時の不透明度</th><th>具体例</th></tr>
             </thead>
             <tbody>
               <tr>
-                <td>アニメフォルダ、セル、工程など構造上の入れ物</td>
+                <td>構造上の入れ物</td>
                 <td>100%として扱う</td>
-                <td>作業中の透かしを完成画像へ持ち込まないため</td>
+                <td>アニメーションフォルダ、セルフォルダ、工程フォルダ</td>
               </tr>
               <tr>
-                <td>線画、彩色、影、エフェクトなど実際のアートワーク</td>
-                <td>PSDの値を尊重</td>
-                <td>作画者が意図した半透明表現を保つため</td>
+                <td>実際に描かれたレイヤー</td>
+                <td>PSDの値を使う</td>
+                <td>線画、彩色、影、半透明エフェクト</td>
               </tr>
             </tbody>
           </table>
         </div>
 
         <p className={styles.paragraph}>
-          合成モード、表示状態、マスク、レイヤー順も可能な範囲でPSDの意図を保ち、
-          ナビゲーターと出力プレビューを分けることで「PSDの現在」と「保存される画像」の両方を確認できるようにしています。
+          合成モード、表示状態、マスク、レイヤー順も、出力対象の構成に合わせて反映します。
+          最終結果は出力プレビューで確認できます。
         </p>
       </Section>
 
-      <Section id="privacy" title="通信とファイルアクセス">
+      <Section id="privacy" title="5. 通信とファイルアクセス">
         <div className={styles.privacyStatement}>
           <strong>作品データは外部へ送信しません。</strong>
           <span>PSD、XDTS、設定内容、ファイル名、生成画像の処理はブラウザ内または端末内で完結します。</span>
@@ -144,12 +235,17 @@ export function AboutGuide() {
         <UpdateCheckPanel />
       </Section>
 
-      <Section id="template" title="サンプル作画テンプレート">
+      <Section id="template" title="6. サンプル作画テンプレート">
         <p className={styles.paragraph}>
-          サンプルテンプレートは、工程フォルダ、単体出力、セル内蔵型の修正工程などを試しやすいようにした
-          CLIP STUDIO PAINT用の作画テンプレートです。使用は必須ではありません。
-          普段のCLIPファイルから書き出したPSD／XDTSでも利用できます。
+          サンプルテンプレートには、作画セル、演出・作監修正、背景原図、BOOK、撮影指示が入っています。
+          機能ガイドの<code>A1.jpg</code>、<code>B1_s.jpg</code>、<code>_BG.jpg</code>などの
+          出力例を実際に確認できます。
         </p>
+
+        <div className={styles.callout}>
+          このテンプレートを使う必要はありません。
+          普段のCLIPファイルから同じカットのPSDとXDTSを書き出して利用できます。
+        </div>
 
         <div className={styles.templateAction}>
           <SampleTemplateDownloadButton
