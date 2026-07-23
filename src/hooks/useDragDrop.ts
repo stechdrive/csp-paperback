@@ -231,7 +231,7 @@ export function useDragAutoScroll<T extends HTMLElement>(
   onDropCapture: () => void
   onDragEndCapture: () => void
   onPointerMoveCapture: (e: React.PointerEvent<HTMLElement>) => void
-  onPointerLeaveCapture: () => void
+  onPointerLeave: () => void
   onPointerUpCapture: () => void
   onPointerCancelCapture: () => void
 } {
@@ -340,7 +340,7 @@ export function useDragAutoScroll<T extends HTMLElement>(
     onDropCapture: stopAutoScroll,
     onDragEndCapture: stopAutoScroll,
     onPointerMoveCapture: handlePointerMoveCapture,
-    onPointerLeaveCapture: stopAutoScroll,
+    onPointerLeave: stopAutoScroll,
     onPointerUpCapture: stopAutoScroll,
     onPointerCancelCapture: stopAutoScroll,
   }

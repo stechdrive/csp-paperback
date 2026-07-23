@@ -55,7 +55,10 @@ describe('PreviewPanel startup layout', () => {
     expect(within(settings).queryByText(/クイック書き出し/)).not.toBeInTheDocument()
     expect(within(settings).getByRole('switch', { name: 'フォルダ分け' }))
       .toHaveAttribute('aria-checked', 'true')
-    expect(within(guide).getByText('はじめに — ClipStudioPaint 側の準備')).toBeInTheDocument()
+    expect(within(guide).getByRole('heading', { name: '最短でセル画像を書き出す' })).toBeInTheDocument()
+    expect(within(guide).getByText('書き出し設定を決める')).toBeInTheDocument()
+    expect(within(guide).getByText('「出力」から保存方法を選ぶ')).toBeInTheDocument()
+    expect(within(guide).queryByText('サンプル作画テンプレート(.clip)')).not.toBeInTheDocument()
   })
 
   it('起動画面の操作は現在値ではなく保存済み書き出し設定へ反映する', () => {

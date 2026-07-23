@@ -1,6 +1,6 @@
 [package]
 name = "csp-paperback"
-version = "1.18.213"
+version = "1.19.214"
 description = "PSD-based animation cell export companion for Clip Studio Paint"
 authors = ["stechdrive"]
 edition = "2021"

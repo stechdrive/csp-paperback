@@ -5,6 +5,7 @@ import { useAppStore } from '../../store'
 import { buildLayerTree, detectAnimationFoldersByXdts } from '../../engine/tree-builder'
 import { DEFAULT_OUTPUT_CONFIG, DEFAULT_PROJECT_SETTINGS, type XdtsData } from '../../types'
 import { makeAnimationFolder, makeFolder, makeLayer, makePsd } from '../helpers/psd-factory'
+import { resetTestStore } from '../helpers/store-reset'
 
 function detectAnim(tree: ReturnType<typeof buildLayerTree>, trackName: string) {
   const xdts: XdtsData = {
@@ -30,12 +31,12 @@ function makeNumberedCellFolders(count: number) {
 }
 
 beforeEach(() => {
-  useAppStore.getState().resetProject()
+  resetTestStore()
 })
 
 afterEach(() => {
   cleanup()
-  useAppStore.getState().resetProject()
+  resetTestStore()
 })
 
 describe('useOutputPreview', () => {

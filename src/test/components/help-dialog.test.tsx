@@ -1,30 +1,52 @@
-import { cleanup, render } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { HelpDialog } from '../../components/HelpDialog'
 
-afterEach(() => cleanup())
+afterEach(cleanup)
 
-describe('HelpDialog current output guidance', () => {
-  it('現在の初期設定と出力名を選ぶ基準を案内する', () => {
-    const { container } = render(<HelpDialog onClose={vi.fn()} />)
-    const text = container.textContent ?? ''
+describe('HelpDialog information architecture', () => {
+  it('最短ガイドを初期表示し、出力までの5ステップを案内する', () => {
+    render(<HelpDialog onClose={vi.fn()} />)
 
-    expect(text).toContain('現在の初期設定：')
-    expect(text).toContain('シート連番、自動桁数、フォルダ名との区切りなし')
-    expect(text).toContain('最大連番に合わせて1〜4桁')
-    expect(text).toContain('セル名が「1」のようにフォルダ名を含まない場合は「付ける」を選ぶ')
-    expect(text).toContain('セル名が「A1」のようにフォルダ名まで含む場合は、名前の重複を避けるため「付けない」を選ぶ')
-    expect(text).not.toContain('最大連番に合わせた2〜4桁')
+    expect(screen.getByRole('tab', { name: /最短ガイド/ })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('heading', { name: '最短でセル画像を書き出す' })).toBeInTheDocument()
+
+    const route = [
+      '書き出し設定を決める',
+      'クリスタからPSDとXDTSを書き出す',
+      'PSDとXDTSを読み込む',
+      '出力プレビューを確認する',
+      '「出力」から保存方法を選ぶ',
+    ]
+    for (const title of route) expect(screen.getByText(title)).toBeInTheDocument()
+
+    expect(screen.queryByText('CSPアニメーションセル出力の課題')).not.toBeInTheDocument()
   })
 
-  it('修正工程フチの用途、指定方法、初期色を案内する', () => {
-    const { container } = render(<HelpDialog onClose={vi.fn()} />)
-    const text = container.textContent ?? ''
+  it('機能ガイドを章立てし、現行の全書き出し設定を含める', () => {
+    render(<HelpDialog onClose={vi.fn()} />)
+    fireEvent.click(screen.getByRole('tab', { name: /機能ガイド/ }))
 
-    expect(text).toContain('工程ごとの色で内側70pxの確認フチを乗算・不透明度80%で合成')
-    expect(text).toMatch(/RGBの各数値やFBECE6\s*のようなHEX値でも直接指定/)
-    expect(text).toContain('RGB 251, 236, 230#FBECE6')
-    expect(text).toContain('RGB 234, 246, 213#EAF6D5')
-    expect(text).toContain('サフィックスは入力した文字をそのまま使います')
+    const toc = screen.getByRole('navigation', { name: '章の目次' })
+    expect(within(toc).getByRole('button', { name: /画面全体/ })).toBeInTheDocument()
+    expect(within(toc).getByRole('button', { name: /困ったとき/ })).toBeInTheDocument()
+
+    const text = screen.getByRole('article').textContent ?? ''
+    expect(text).toContain('兼用カット')
+    expect(text).toContain('XDTSフォルダ名')
+    expect(text).toContain('出力する修正工程')
+    expect(text).toContain('仮想セル')
+    expect(text).toContain('デスクトップ版とモバイル')
+  })
+
+  it('背景説明とメンタルモデルを操作手順から分離する', () => {
+    render(<HelpDialog onClose={vi.fn()} />)
+    fireEvent.click(screen.getByRole('tab', { name: /考え方/ }))
+
+    expect(screen.getByRole('heading', { name: 'CSPの作業構造を、必要な「紙」へ戻す' }))
+      .toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'なぜ作ったか' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'メンタルモデル：「紙に戻す」' })).toBeInTheDocument()
+    expect(screen.getByText('作品データは外部へ送信しません。')).toBeInTheDocument()
   })
 })

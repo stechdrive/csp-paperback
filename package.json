@@ -1,7 +1,7 @@
 {
   "name": "csp-paperback",
   "private": true,
-  "version": "1.18.213",
+  "version": "1.19.214",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -21,7 +21,12 @@
     "version:check": "node scripts/sync-build-version.mjs --check",
     "version:sync": "node scripts/sync-build-version.mjs",
     "test": "vitest",
+    "test:run": "vitest run --sequence.shuffle --sequence.seed=2307",
+    "test:coverage": "vitest run --coverage --sequence.shuffle --sequence.seed=2307",
+    "test:e2e": "playwright test",
     "test:ui": "vitest --ui",
+    "check": "npm run lint && npm run test:run && npm run build",
+    "check:ci": "npm run lint && npm run test:coverage && npm run build && npm run test:e2e",
     "predeploy": "npm run build && npm run audit:artifacts -- dist",
     "deploy": "gh-pages -d dist"
   },
@@ -39,6 +44,7 @@
   "devDependencies": {
     "@eslint/js": "^9.39.4",
     "@napi-rs/canvas": "^0.1.97",
+    "@playwright/test": "^1.61.1",
     "@tauri-apps/cli": "^2.11.2",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
@@ -46,6 +52,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
+    "@vitest/coverage-v8": "^4.1.2",
     "@vitest/ui": "^4.1.2",
     "eslint": "^9.39.4",
     "eslint-plugin-react-hooks": "^7.0.1",

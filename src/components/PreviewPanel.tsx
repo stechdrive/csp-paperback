@@ -8,9 +8,7 @@ import { OutputPreview } from './OutputPreview'
 import { ExportSettings } from './ExportSettings'
 import { TimelineSeekBar } from './TimelineSeekBar'
 import { useSampleLoader } from '../hooks/useSampleLoader'
-import { SampleTemplateDownloadButton } from './SampleTemplateDownloadButton'
-import { isDesktopRuntime } from '../platform/runtime'
-import { DESKTOP_RELEASES_URL } from '../platform/external-links'
+import { QuickStartGuide } from './help/QuickStartGuide'
 import styles from './PreviewPanel.module.css'
 
 function NavigatorCanvas({ height }: { height: number }) {
@@ -49,67 +47,6 @@ function SampleLoadButton() {
       <button className={styles.sampleButton} onClick={loadSample} disabled={loading}>
         {loading ? '読み込み中…' : 'サンプルデータで試す'}
       </button>
-    </div>
-  )
-}
-
-function PrivacyNotice() {
-  const desktop = isDesktopRuntime()
-  return (
-    <div className={styles.privacyNotice}>
-      <div className={styles.privacyTitle}>作品データは外部送信しません</div>
-      <div className={styles.privacyText}>
-        {desktop
-          ? 'PSD/XDTSの処理と画像生成は端末内で完結します。更新確認ボタンを押した時のみ GitHub Releases の最新情報を確認します。'
-          : 'PSD/XDTSの処理と画像生成はブラウザ内で完結します。作品データをアップロードする処理ではありません。'}
-      </div>
-    </div>
-  )
-}
-
-function SampleTemplateGuide() {
-  return (
-    <div className={styles.templateGuide}>
-      <div className={styles.templateTitle}>サンプル作画テンプレート(.clip)</div>
-      <p className={styles.templateText}>
-        CSP Paperbackの動作を試しやすいように、推奨作画工程をあらかじめ分けたClip Studio Paint用のサンプルテンプレートです。
-      </p>
-      <p className={styles.templateText}>
-        <strong className={styles.templateStrong}>このテンプレートの使用は必須ではありません。</strong>
-        普段使っているクリスタの作画ファイルから書き出したPSDでも利用できます。
-      </p>
-      <p className={styles.templateText}>
-        工程名はスタジオや案件のルールに合わせて、設定から変更できます。
-      </p>
-      <div className={styles.templateAction}>
-        <SampleTemplateDownloadButton
-          className={styles.templateButton}
-          statusClassName={styles.templateStatus}
-          errorClassName={styles.templateError}
-          label="サンプル作画テンプレート(.clip)をダウンロード"
-        />
-      </div>
-    </div>
-  )
-}
-
-function DesktopReleaseGuide() {
-  if (isDesktopRuntime()) return null
-
-  return (
-    <div className={styles.desktopGuide}>
-      <div className={styles.desktopGuideTitle}>デスクトップ版（バイナリ版）もあります</div>
-      <p className={styles.desktopGuideText}>
-        Windows / macOS版では、PSDとXDTSの2ファイルを同時にアプリへドロップしてクイック書き出しできます。
-      </p>
-      <a
-        className={styles.desktopGuideLink}
-        href={DESKTOP_RELEASES_URL}
-        target="_blank"
-        rel="noreferrer"
-      >
-        デスクトップ版をダウンロード
-      </a>
     </div>
   )
 }
@@ -226,58 +163,11 @@ export function PreviewPanel() {
               </div>
             )}
 
-            <div className={styles.emptyTitle}>はじめに — ClipStudioPaint 側の準備</div>
-
-            <PrivacyNotice />
-            <SampleTemplateGuide />
-            <DesktopReleaseGuide />
-
-            <div className={styles.emptyStep}>
-              <div className={styles.emptyStepNum}>1</div>
-              <div className={styles.emptyStepBody}>
-                <div className={styles.emptyStepTitle}>PSD ファイルを書き出す</div>
-                <span className={styles.emptyMenuPath}>ファイル &gt; 複製を保存 &gt; PSD 書き出し</span>
-              </div>
-            </div>
-
-            <div className={styles.emptyStep}>
-              <div className={styles.emptyStepNum}>2</div>
-              <div className={styles.emptyStepBody}>
-                <div className={styles.emptyStepTitle}>タイムシート情報（XDTS）を書き出す</div>
-                <span className={styles.emptyMenuPath}>ファイル &gt; アニメーション書き出し &gt; タイムシート情報</span>
-                <div className={styles.emptyNote}>形式選択では CSV ではなく XDTS を選んでください。</div>
-              </div>
-            </div>
-
-            <div className={styles.emptyWarning}>
-              <span className={styles.emptyWarningIcon}>⚠</span>
-              <span>書き出し前の確認：書き出したい素材が入っているアニメーションフォルダは、親フォルダも含めて表示状態にしてください。</span>
-            </div>
-
-            <div className={styles.emptyTips}>
-              <div className={styles.emptyTipsTitle}>PSDとXDTSを読み込むと、タイムライン上のアニメーションフォルダは自動検出されます。</div>
-              <div className={styles.emptyTip}>
-                <span className={styles.emptyTipMark}>★</span>
-                <span>背景原図・撮影指示・BOOKなどを、CSPのアニメーションセル出力で自動出力させるためだけにアニメーションフォルダ化せず、別ファイルで出力。</span>
-              </div>
-              <div className={styles.emptyTip}>
-                <span className={styles.emptyTipMark}>指定方法</span>
-                <span>便利に使うならCSP側でレイヤーフォルダ名の先頭に _（アンダースコア）を付けておく。名前を変えたくない時は右ペインの★で後から指定。</span>
-              </div>
-              <div className={styles.emptyTip}>
-                <span className={styles.emptyTipMark}>🎬</span>
-                <span>XDTSにないフォルダを手動でアニメーションフォルダとして扱い、直下の子をセルとして1枚ずつ出力。</span>
-              </div>
-            </div>
-
-            <hr className={styles.emptyDivider} />
-            <div className={styles.emptyLoad}>
-              {xdtsFileName
-                ? <>PSD をドロップすると自動でアニメーションセルを検出します</>
-                : <><div>PSD をドロップ、またはツールバーの「ファイルを開く」</div><div>XDTS を一緒にドロップするとセルを自動検出</div></>
-              }
-            </div>
-            <SampleLoadButton />
+            <QuickStartGuide
+              variant="startup"
+              xdtsLoaded={!!xdtsFileName}
+              sampleAction={<SampleLoadButton />}
+            />
           </div>
         </div>
       </div>
