@@ -1,3 +1,8 @@
+export const QUICK_SECTIONS = [
+  { id: 'quick-export', label: '1カットを書き出す' },
+  { id: 'studio-templates', label: '各社テンプレートに対応するには' },
+] as const
+
 export const FEATURE_SECTIONS = [
   { id: 'screen', label: '画面全体' },
   { id: 'files', label: 'ファイルを読み込む' },
@@ -16,7 +21,7 @@ export const FEATURE_SECTIONS = [
 export const ABOUT_SECTIONS = [
   { id: 'problem', label: 'CSP標準で困ること' },
   { id: 'features', label: 'できること' },
-  { id: 'compositing', label: '画像に含まれるもの' },
+  { id: 'compositing', label: 'レイヤー構成と出力結果' },
   { id: 'opacity', label: '不透明度の扱い' },
   { id: 'privacy', label: '通信とファイル' },
   { id: 'template', label: 'サンプルテンプレート' },

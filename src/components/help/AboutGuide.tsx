@@ -37,6 +37,85 @@ function OutputExample({
   )
 }
 
+type SampleLayerKind = 'normal' | 'animation' | 'process' | 'single' | 'hidden'
+
+const sampleLayerRows: Array<{
+  depth: 0 | 1 | 2 | 3 | 4
+  kind: SampleLayerKind
+  name: string
+  note: string
+}> = [
+  { depth: 0, kind: 'normal', name: 'memo', note: '目ON・通常レイヤー：各画像へ重なる' },
+  { depth: 0, kind: 'normal', name: 'Frame', note: '目ON・通常フォルダ：各画像へ重なる' },
+  { depth: 0, kind: 'normal', name: '_撮影指示', note: '整理用フォルダ' },
+  { depth: 1, kind: 'single', name: '_PAN', note: '単体出力' },
+  { depth: 1, kind: 'single', name: '_SL', note: '単体出力' },
+  { depth: 0, kind: 'normal', name: 'LO', note: '整理用フォルダ' },
+  { depth: 1, kind: 'process', name: '演出', note: '工程フォルダ：_e' },
+  { depth: 2, kind: 'animation', name: 'A', note: 'XDTSトラックA' },
+  { depth: 3, kind: 'normal', name: '1', note: '演出修正' },
+  { depth: 1, kind: 'normal', name: '作画', note: '本体の作画フォルダ' },
+  { depth: 2, kind: 'animation', name: 'B', note: 'XDTSトラックB' },
+  { depth: 3, kind: 'normal', name: '1', note: 'セルフォルダ' },
+  { depth: 4, kind: 'process', name: '_s', note: '作監修正：本体から分離' },
+  { depth: 4, kind: 'normal', name: '線画1', note: 'B1本体へ入る' },
+  { depth: 4, kind: 'normal', name: '影', note: 'B1本体へ入る' },
+  { depth: 2, kind: 'animation', name: 'A', note: 'XDTSトラックA' },
+  { depth: 3, kind: 'normal', name: '1', note: 'A1本体' },
+  { depth: 0, kind: 'normal', name: '_原図', note: '整理用フォルダ' },
+  { depth: 1, kind: 'single', name: '_BOOK1', note: '単体出力' },
+  { depth: 1, kind: 'single', name: '_BG', note: '単体出力' },
+  { depth: 0, kind: 'hidden', name: '_pool', note: '目OFF：どの画像にも入らない' },
+  { depth: 0, kind: 'hidden', name: '用紙', note: '目OFF：どの画像にも入らない' },
+]
+
+const sampleLayerKindLabels: Record<SampleLayerKind, string> = {
+  normal: '通常',
+  animation: 'アニメ',
+  process: '工程',
+  single: '単体',
+  hidden: '非表示',
+}
+
+const sampleLayerDepthClasses = [
+  styles.sampleLayerDepth0,
+  styles.sampleLayerDepth1,
+  styles.sampleLayerDepth2,
+  styles.sampleLayerDepth3,
+  styles.sampleLayerDepth4,
+]
+
+function SampleLayerStructure() {
+  return (
+    <div
+      className={styles.sampleLayerStructure}
+      data-help-example="sample-csp-layer-tree"
+      aria-label="この説明で使うCSPのレイヤー構成"
+    >
+      <div className={styles.sampleLayerHeader}>
+        <strong>この説明で使うCSPのレイヤー構成</strong>
+        <span>上が前面、下が背面です</span>
+      </div>
+      <div className={styles.sampleLayerRows}>
+        {sampleLayerRows.map((row, index) => (
+          <div
+            className={`${styles.sampleLayerRow} ${sampleLayerDepthClasses[row.depth]}`}
+            key={`${row.depth}-${row.name}-${index}`}
+          >
+            <span
+              className={`${styles.sampleLayerKind} ${styles[`sampleLayerKind${row.kind}`]}`}
+            >
+              {sampleLayerKindLabels[row.kind]}
+            </span>
+            <code>{row.name}</code>
+            <span className={styles.sampleLayerNote}>{row.note}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export function AboutGuide() {
   return (
     <article className={styles.article}>
@@ -144,39 +223,69 @@ export function AboutGuide() {
         </ul>
       </Section>
 
-      <Section id="compositing" title="3. どのレイヤーがどの画像に含まれるか">
+      <Section id="compositing" title="3. CSPのレイヤー構成と出力結果">
         <p className={styles.paragraph}>
-          次の例では、通常レイヤーの<code>memo</code>と<code>Frame</code>を表示したまま、
-          作画セル、単体出力、修正工程を書き出します。
+          下の構成を持つ1つのCLIPファイルからPSDとXDTSを書き出し、2ファイルを一緒に読み込んだ場合を説明します。
+          XDTSのA・B・Aトラックに対応するアニメーションフォルダが、PSD側では
+          <code>LO/演出/A</code>、<code>LO/作画/B</code>、<code>LO/作画/A</code>にあります。
+          設定では「演出」を<code>_e</code>、「_s」を<code>_s</code>の工程として登録しています。
+          出力名はシート連番、区切りなし、フォルダ分けOFFです。
+        </p>
+
+        <SampleLayerStructure />
+
+        <h3 className={styles.subsectionTitle}>このレイヤー構成から生成される画像</h3>
+        <p className={styles.paragraph}>
+          目がONの通常レイヤー<code>memo</code>と<code>Frame</code>は各画像へ重なります。
+          「単体」の素材と「工程」の素材は、それぞれ別画像になり、作画本体へは混ざりません。
         </p>
 
         <div className={styles.outputExampleGrid}>
           <OutputExample
+            filename="A1_e.jpg"
+            formula={<>memo ＋ Frame ＋ LO/演出/A/1</>}
+            note={<>「演出」を<code>_e</code>工程に登録しているため、演出修正を別画像にします。</>}
+          />
+          <OutputExample
             filename="A1.jpg"
-            formula={<>memo ＋ Frame ＋ 作画/A/1</>}
+            formula={<>memo ＋ Frame ＋ LO/作画/A/1</>}
             note={<>通常の作画セル。単体出力の<code>_BG</code>や<code>_PAN</code>は入りません。</>}
           />
           <OutputExample
-            filename="_BG.jpg"
-            formula={<>memo ＋ Frame ＋ _原図/_BG</>}
-            note={<>背景原図を単体出力。別の単体出力素材や作画セルは入りません。</>}
-          />
-          <OutputExample
             filename="B1.jpg"
-            formula={<>memo ＋ Frame ＋ B/1の線画 ＋ 影</>}
+            formula={<>memo ＋ Frame ＋ LO/作画/B/1の線画1 ＋ 影</>}
             note={<>セル内の作監修正フォルダ<code>_s</code>は本体へ入りません。</>}
           />
           <OutputExample
             filename="B1_s.jpg"
-            formula={<>memo ＋ Frame ＋ B/1/_s</>}
+            formula={<>memo ＋ Frame ＋ LO/作画/B/1/_s</>}
             note={<>作監修正だけを、本体と同じセル番号の別画像として出力します。</>}
+          />
+          <OutputExample
+            filename="_PAN.jpg"
+            formula={<>memo ＋ Frame ＋ _撮影指示/_PAN</>}
+            note={<>タイムラインへ登録していないPAN指示を、単体の静止画にします。</>}
+          />
+          <OutputExample
+            filename="_SL.jpg"
+            formula={<>memo ＋ Frame ＋ _撮影指示/_SL</>}
+            note={<>タイムラインへ登録していないSL指示を、単体の静止画にします。</>}
+          />
+          <OutputExample
+            filename="_BOOK1.jpg"
+            formula={<>memo ＋ Frame ＋ _原図/_BOOK1</>}
+            note={<>BOOKをアニメーションセルにせず、単体の静止画にします。</>}
+          />
+          <OutputExample
+            filename="_BG.jpg"
+            formula={<>memo ＋ Frame ＋ _原図/_BG</>}
+            note={<>背景原図をアニメーションセルにせず、単体の静止画にします。</>}
           />
         </div>
 
         <div className={styles.callout}>
-          目がOFFのレイヤーやフォルダは、どの画像にも含まれません。
-          単体出力や別工程にした素材は他の出力へ混ざらず、表示中の通常レイヤーだけが
-          PSDの前後関係を保って重なります。
+          この構成では、目がOFFの<code>_pool</code>と<code>用紙</code>は、どの画像にも含まれません。
+          ほかのレイヤー構成でも、目がOFFなら出力されないというルールは同じです。
         </div>
 
         <h3 className={styles.subsectionTitle}>仮想セルの場合</h3>

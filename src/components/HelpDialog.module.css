@@ -565,6 +565,123 @@
   line-height: 1.65;
 }
 
+.sampleLayerStructure {
+  overflow: hidden;
+  margin: 1rem 0 1.25rem;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 8px;
+  background: var(--color-surface-1);
+}
+
+.sampleLayerHeader {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.8rem;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 0.72rem 0.85rem;
+  border-bottom: 1px solid var(--color-border-subtle);
+  background: var(--color-surface-2);
+}
+
+.sampleLayerHeader strong {
+  color: var(--color-text-primary);
+  font-size: 0.84rem;
+}
+
+.sampleLayerHeader span {
+  color: var(--color-text-subtle);
+  font-size: 0.7rem;
+}
+
+.sampleLayerRows {
+  padding: 0.45rem 0;
+}
+
+.sampleLayerRow {
+  display: grid;
+  grid-template-columns: 3.2rem minmax(5rem, 0.7fr) minmax(9rem, 1.3fr);
+  gap: 0.55rem;
+  align-items: center;
+  min-height: 2rem;
+  padding-top: 0.25rem;
+  padding-right: 0.8rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.sampleLayerRow:last-child {
+  border-bottom: 0;
+}
+
+.sampleLayerDepth0 {
+  padding-left: 0.8rem;
+}
+
+.sampleLayerDepth1 {
+  padding-left: 2rem;
+}
+
+.sampleLayerDepth2 {
+  padding-left: 3.2rem;
+}
+
+.sampleLayerDepth3 {
+  padding-left: 4.4rem;
+}
+
+.sampleLayerDepth4 {
+  padding-left: 5.6rem;
+}
+
+.sampleLayerKind {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.25rem;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 999px;
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+  font-size: 0.62rem;
+  font-weight: 750;
+}
+
+.sampleLayerKindanimation {
+  border-color: rgba(var(--color-accent-rgb), 0.35);
+  background: rgba(var(--color-accent-rgb), 0.12);
+  color: var(--color-accent-strong);
+}
+
+.sampleLayerKindprocess {
+  border-color: rgba(var(--color-warning-rgb), 0.35);
+  background: rgba(var(--color-warning-rgb), 0.12);
+  color: var(--color-warning);
+}
+
+.sampleLayerKindsingle {
+  border-color: rgba(var(--color-info-rgb), 0.35);
+  background: rgba(var(--color-info-rgb), 0.12);
+  color: var(--color-info);
+}
+
+.sampleLayerKindhidden {
+  opacity: 0.68;
+}
+
+.sampleLayerRow code {
+  color: var(--color-text-primary);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.sampleLayerNote {
+  color: var(--color-text-muted);
+  font-size: 0.7rem;
+  line-height: 1.45;
+}
+
 .iconList {
   display: grid;
   gap: 0.55rem;
@@ -955,6 +1072,32 @@
   .problemGrid,
   .outputExampleGrid {
     grid-template-columns: 1fr;
+  }
+
+  .sampleLayerRow {
+    grid-template-columns: 2.8rem minmax(4rem, 0.65fr) minmax(7rem, 1.35fr);
+    gap: 0.4rem;
+    padding-right: 0.55rem;
+  }
+
+  .sampleLayerDepth0 {
+    padding-left: 0.55rem;
+  }
+
+  .sampleLayerDepth1 {
+    padding-left: 1.15rem;
+  }
+
+  .sampleLayerDepth2 {
+    padding-left: 1.75rem;
+  }
+
+  .sampleLayerDepth3 {
+    padding-left: 2.35rem;
+  }
+
+  .sampleLayerDepth4 {
+    padding-left: 2.95rem;
   }
 
   .fileGrid {
