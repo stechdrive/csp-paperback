@@ -35,6 +35,11 @@ export function FeatureGuide() {
           src="loaded-overview.png"
           alt="CSP Paperbackのツールバーと3ペイン"
           caption="左が仮想セル、中央がプレビューと書き出し設定、右がPSDのレイヤーツリーです。"
+          highlights={[
+            { label: '仮想セル', x: 0.6, y: 20.8, width: 19, height: 32.5 },
+            { label: 'プレビュー', x: 20.5, y: 6.7, width: 56, height: 92.5 },
+            { label: 'レイヤー', x: 76.6, y: 6.7, width: 23.1, height: 92.5 },
+          ]}
         />
 
         <div className={styles.cardGrid}>
@@ -96,6 +101,10 @@ export function FeatureGuide() {
           src="loaded-overview.png"
           alt="中央ペインのナビゲーターと出力プレビュー"
           caption="上はPSD全体の確認、下は選択中の出力画像です。同じ拡大・移動操作で細部を確認できます。"
+          highlights={[
+            { label: '全体（ナビゲーター）', x: 20.5, y: 6.7, width: 56, height: 42.4 },
+            { label: '出力プレビュー', x: 20.5, y: 73.7, width: 56, height: 25.8 },
+          ]}
         />
 
         <ul className={styles.list}>
@@ -117,6 +126,9 @@ export function FeatureGuide() {
           src="loaded-overview.png"
           alt="中央ペインの書き出し設定"
           caption="頻繁に使う設定は中央ペインへ集約されています。変更すると出力例とプレビューへすぐ反映されます。"
+          highlights={[
+            { label: '書き出し設定', x: 20.5, y: 49, width: 56, height: 24.8 },
+          ]}
         />
 
         <div className={styles.tableWrap}>
@@ -152,6 +164,9 @@ export function FeatureGuide() {
           alt="出力メニューのZIPとフォルダ"
           caption="出力先を選ぶと、現在の書き出し設定ですべての対象画像を生成します。"
           compact
+          highlights={[
+            { label: '出力メニュー', x: 89.5, y: 1, width: 9.5, height: 17.5 },
+          ]}
         />
 
         <div className={styles.compareGrid}>
@@ -179,6 +194,9 @@ export function FeatureGuide() {
           alt="右ペインのレイヤーツリー"
           caption="目、フォルダ展開、★、🎬をレイヤーごとに操作できます。選択した対象は中央の出力プレビューへ連動します。"
           compact
+          highlights={[
+            { label: 'レイヤー', x: 76.6, y: 6.7, width: 23.1, height: 92.5 },
+          ]}
         />
 
         <div className={styles.iconList}>
@@ -289,6 +307,9 @@ export function FeatureGuide() {
           alt="左ペインの仮想セル"
           caption="メンバー、挿入位置、仮想セル内だけの表示・合成設定を左ペインで管理します。"
           compact
+          highlights={[
+            { label: '仮想セル', x: 0.6, y: 20.8, width: 19, height: 32.5 },
+          ]}
         />
 
         <ol className={styles.numberedList}>
@@ -311,6 +332,9 @@ export function FeatureGuide() {
           src="settings-dialog.png"
           alt="書き出し詳細設定ダイアログ"
           caption="テーマ、工程フォルダ、自動マーク、除外リスト、設定共有を1か所で管理します。"
+          highlights={[
+            { label: '詳細設定', x: 19.5, y: 7.5, width: 61.1, height: 85 },
+          ]}
         />
 
         <div className={styles.cardGrid}>

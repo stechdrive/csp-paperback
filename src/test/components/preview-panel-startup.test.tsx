@@ -55,9 +55,10 @@ describe('PreviewPanel startup layout', () => {
     expect(within(settings).queryByText(/クイック書き出し/)).not.toBeInTheDocument()
     expect(within(settings).getByRole('switch', { name: 'フォルダ分け' }))
       .toHaveAttribute('aria-checked', 'true')
-    expect(within(guide).getByRole('heading', { name: '最短でセル画像を書き出す' })).toBeInTheDocument()
     expect(within(guide).getByText('書き出し設定を決める')).toBeInTheDocument()
     expect(within(guide).getByText('「出力」から保存方法を選ぶ')).toBeInTheDocument()
+    expect(within(guide).queryByText('最初の1回はここだけ')).not.toBeInTheDocument()
+    expect(within(guide).queryByText('起動時に見えている設定')).not.toBeInTheDocument()
     expect(within(guide).queryByText('サンプル作画テンプレート(.clip)')).not.toBeInTheDocument()
   })
 

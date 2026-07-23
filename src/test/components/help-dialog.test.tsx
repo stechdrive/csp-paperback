@@ -9,7 +9,8 @@ describe('HelpDialog information architecture', () => {
     render(<HelpDialog onClose={vi.fn()} />)
 
     expect(screen.getByRole('tab', { name: /最短ガイド/ })).toHaveAttribute('aria-selected', 'true')
-    expect(screen.getByRole('heading', { name: '最短でセル画像を書き出す' })).toBeInTheDocument()
+    expect(screen.queryByText('最初の1回はここだけ')).not.toBeInTheDocument()
+    expect(screen.queryByText('起動時に見えている設定')).not.toBeInTheDocument()
 
     const route = [
       '書き出し設定を決める',
@@ -19,6 +20,9 @@ describe('HelpDialog information architecture', () => {
       '「出力」から保存方法を選ぶ',
     ]
     for (const title of route) expect(screen.getByText(title)).toBeInTheDocument()
+    expect(document.querySelector('[data-help-highlight="書き出し設定"]')).toBeInTheDocument()
+    expect(document.querySelector('[data-help-highlight="出力プレビュー"]')).toBeInTheDocument()
+    expect(document.querySelector('[data-help-highlight="出力メニュー"]')).toBeInTheDocument()
 
     expect(screen.queryByText('CSPアニメーションセル出力の課題')).not.toBeInTheDocument()
   })
@@ -37,6 +41,7 @@ describe('HelpDialog information architecture', () => {
     expect(text).toContain('出力する修正工程')
     expect(text).toContain('仮想セル')
     expect(text).toContain('デスクトップ版とモバイル')
+    expect(document.querySelectorAll('[data-help-highlight]').length).toBeGreaterThanOrEqual(10)
   })
 
   it('背景説明とメンタルモデルを操作手順から分離する', () => {

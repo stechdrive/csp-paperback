@@ -12,7 +12,7 @@ interface HelpDialogProps {
 type HelpTab = 'quick' | 'features' | 'about'
 
 const TABS: Array<{ id: HelpTab; label: string; description: string }> = [
-  { id: 'quick', label: '最短ガイド', description: '最初の1回を出力する' },
+  { id: 'quick', label: '最短ガイド', description: '出力までの5ステップ' },
   { id: 'features', label: '機能ガイド', description: 'すべての画面と機能' },
   { id: 'about', label: '考え方', description: 'なぜ作ったか・合成思想' },
 ]

@@ -43,15 +43,6 @@ export function QuickStartGuide({
 
   return (
     <div className={`${styles.guide} ${styles[variant]}`}>
-      <div className={styles.hero}>
-        <div className={styles.eyebrow}>最初の1回はここだけ</div>
-        <h1 className={styles.title}>最短でセル画像を書き出す</h1>
-        <p className={styles.lead}>
-          起動時に見えている設定を決め、CLIP STUDIO PAINTからPSDとXDTSを書き出して、
-          2ファイルを読み込みます。あとはプレビューを確認して「出力」を押すだけです。
-        </p>
-      </div>
-
       <div className={styles.route}>
         <Step
           number={1}
@@ -60,12 +51,15 @@ export function QuickStartGuide({
             <HelpFigure
               src="startup-guide.png"
               alt="起動直後の中央ペイン上部にある書き出し設定"
-              caption="起動直後の中央ペイン上部。ここで選んだ設定は次回起動とデスクトップ版の自動書き出しにも引き継がれます。"
+              caption="赤枠が中央ペイン上部の書き出し設定です。ここで選んだ内容は次回起動とデスクトップ版の自動書き出しにも引き継がれます。"
+              highlights={[
+                { label: '書き出し設定', x: 20.7, y: 10.8, width: 55.5, height: 30.3 },
+              ]}
             />
           ) : undefined}
         >
           JPG／PNG、背景、出力名、フォルダ分け、修正工程などを選びます。
-          迷ったら現在の設定のままで構いません。
+          迷ったら初期設定のままで構いません。
         </Step>
 
         <Step number={2} title="クリスタからPSDとXDTSを書き出す">
@@ -88,7 +82,10 @@ export function QuickStartGuide({
             <HelpFigure
               src="loaded-overview.png"
               alt="サンプルPSDとXDTSを読み込んだCSP Paperbackの3ペイン画面"
-              caption="読込後の画面。中央下の出力プレビューで、出力名と合成結果を確認できます。"
+              caption="読込後の画面。赤枠の出力プレビューで、出力名と合成結果を確認できます。"
+              highlights={[
+                { label: '出力プレビュー', x: 20.5, y: 73.7, width: 56, height: 25.8 },
+              ]}
             />
           ) : undefined}
         >
@@ -103,8 +100,11 @@ export function QuickStartGuide({
             <HelpFigure
               src="output-menu.png"
               alt="ツールバーの出力メニューでZIPとフォルダを選べる状態"
-              caption="右上の「出力」からZIPまたはフォルダを選びます。環境によってはZIPのみ表示されます。"
+              caption="赤枠の「出力」からZIPまたはフォルダを選びます。環境によってはZIPのみ表示されます。"
               compact
+              highlights={[
+                { label: '出力メニュー', x: 89.5, y: 1, width: 9.5, height: 17.5 },
+              ]}
             />
           ) : undefined}
         >
