@@ -9,6 +9,8 @@ import { ExportSettings } from './ExportSettings'
 import { TimelineSeekBar } from './TimelineSeekBar'
 import { useSampleLoader } from '../hooks/useSampleLoader'
 import { QuickStartGuide } from './help/QuickStartGuide'
+import { DESKTOP_RELEASES_URL } from '../platform/external-links'
+import { isDesktopRuntime } from '../platform/runtime'
 import styles from './PreviewPanel.module.css'
 
 function NavigatorCanvas({ height }: { height: number }) {
@@ -42,11 +44,23 @@ const NAV_HEIGHT_MAX = 600
 
 function SampleLoadButton() {
   const { loadSample, loading } = useSampleLoader()
+  const desktop = isDesktopRuntime()
+
   return (
     <div className={styles.sampleSection}>
       <button className={styles.sampleButton} onClick={loadSample} disabled={loading}>
         {loading ? '読み込み中…' : 'サンプルデータで試す'}
       </button>
+      {!desktop && (
+        <a
+          className={`${styles.sampleButton} ${styles.desktopDownloadButton}`}
+          href={DESKTOP_RELEASES_URL}
+          target="_blank"
+          rel="noreferrer"
+        >
+          デスクトップ版をダウンロード
+        </a>
+      )}
     </div>
   )
 }

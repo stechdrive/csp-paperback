@@ -62,6 +62,19 @@ describe('PreviewPanel startup layout', () => {
     expect(within(guide).queryByText('最初の1回はここだけ')).not.toBeInTheDocument()
     expect(within(guide).queryByText('起動時に見えている設定')).not.toBeInTheDocument()
     expect(within(guide).queryByText('サンプル作画テンプレート(.clip)')).not.toBeInTheDocument()
+
+    const desktopDownload = within(guide).queryByRole('link', {
+      name: 'デスクトップ版をダウンロード',
+    })
+    if (desktop) {
+      expect(desktopDownload).not.toBeInTheDocument()
+    } else {
+      expect(desktopDownload).toHaveAttribute(
+        'href',
+        'https://github.com/stechdrive/csp-paperback/releases',
+      )
+      expect(desktopDownload).toHaveAttribute('target', '_blank')
+    }
   })
 
   it('起動画面の操作は現在値ではなく保存済み書き出し設定へ反映する', () => {

@@ -197,11 +197,19 @@
 }
 
 .sampleSection {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  align-items: center;
+  justify-content: center;
   margin-top: 1rem;
   text-align: center;
 }
 
 .sampleButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-size: 0.78rem;
   color: var(--color-text-primary);
   background: rgba(var(--color-info-rgb), 0.12);
@@ -209,6 +217,8 @@
   border-radius: 5px;
   padding: 0.45rem 1rem;
   cursor: pointer;
+  line-height: 1.4;
+  text-decoration: none;
   transition: background 0.15s, border-color 0.15s;
 }
 
@@ -220,6 +230,16 @@
 .sampleButton:disabled {
   opacity: 0.5;
   cursor: default;
+}
+
+.desktopDownloadButton {
+  border-color: rgba(var(--color-accent-rgb), 0.38);
+  background: rgba(var(--color-accent-rgb), 0.12);
+}
+
+.desktopDownloadButton:hover {
+  border-color: rgba(var(--color-accent-rgb), 0.58);
+  background: rgba(var(--color-accent-rgb), 0.2);
 }
 
 /* XDTS 読み込み済みバナー（エンプティステート上部） */
