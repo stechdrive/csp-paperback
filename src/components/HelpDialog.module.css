@@ -84,7 +84,7 @@
 .tabs {
   display: grid;
   flex: 0 0 auto;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.45rem;
   padding: 0.6rem 0.8rem;
   border-bottom: 1px solid var(--color-border-subtle);
@@ -1021,6 +1021,7 @@
   }
 
   .tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.3rem;
     padding: 0.45rem 0.55rem;
   }
@@ -1029,6 +1030,10 @@
     justify-content: center;
     padding: 0.55rem 0.45rem;
     text-align: center;
+  }
+
+  .tabLabel {
+    white-space: normal;
   }
 
   .layout {

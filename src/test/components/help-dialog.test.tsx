@@ -5,14 +5,18 @@ import { HelpDialog } from '../../components/HelpDialog'
 afterEach(cleanup)
 
 describe('HelpDialog information architecture', () => {
-  it('最短ガイドを初期表示し、出力までの5ステップを案内する', () => {
+  it('クイックガイドを初期表示し、出力までの5ステップを案内する', () => {
     render(<HelpDialog onClose={vi.fn()} />)
 
-    expect(screen.getByRole('tab', { name: /最短ガイド/ })).toHaveAttribute('aria-selected', 'true')
-    const toc = screen.getByRole('navigation', { name: '章の目次' })
-    expect(within(toc).getByRole('button', { name: /1カットを書き出す/ })).toBeInTheDocument()
-    expect(within(toc).getByRole('button', { name: /各社テンプレートに対応するには/ }))
+    expect(screen.getByRole('tab', { name: /クイックガイド/ }))
+      .toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('tab', { name: /機能ガイド/ })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: /各社テンプレートへの対応/ }))
       .toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: /このツールについて/ })).toBeInTheDocument()
+    expect(screen.queryByRole('navigation', { name: '章の目次' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: '各社テンプレートに対応するには' }))
+      .not.toBeInTheDocument()
     expect(screen.queryByText('最初の1回はここだけ')).not.toBeInTheDocument()
     expect(screen.queryByText('起動時に見えている設定')).not.toBeInTheDocument()
 
@@ -37,6 +41,7 @@ describe('HelpDialog information architecture', () => {
 
   it('各社テンプレート向けに工程名・サフィックス・自動マーク・設定共有を案内する', () => {
     render(<HelpDialog onClose={vi.fn()} />)
+    fireEvent.click(screen.getByRole('tab', { name: /各社テンプレートへの対応/ }))
 
     const text = screen.getByRole('dialog').textContent ?? ''
     expect(screen.getByRole('heading', { name: '各社テンプレートに対応するには' }))

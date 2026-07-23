@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { AboutGuide } from './help/AboutGuide'
 import { FeatureGuide } from './help/FeatureGuide'
-import { ABOUT_SECTIONS, FEATURE_SECTIONS, QUICK_SECTIONS } from './help/helpSections'
+import { ABOUT_SECTIONS, FEATURE_SECTIONS } from './help/helpSections'
 import { QuickStartGuide } from './help/QuickStartGuide'
 import { StudioTemplateGuide } from './help/StudioTemplateGuide'
 import styles from './HelpDialog.module.css'
@@ -10,7 +10,7 @@ interface HelpDialogProps {
   onClose: () => void
 }
 
-type HelpTab = 'quick' | 'features' | 'about'
+type HelpTab = 'quick' | 'features' | 'templates' | 'about'
 
 interface HelpSection {
   id: string
@@ -18,20 +18,21 @@ interface HelpSection {
 }
 
 const TABS: Array<{ id: HelpTab; label: string; description: string }> = [
-  { id: 'quick', label: '最短ガイド', description: '出力とテンプレート設定' },
+  { id: 'quick', label: 'クイックガイド', description: '1カットを書き出す' },
   { id: 'features', label: '機能ガイド', description: 'すべての画面と機能' },
+  { id: 'templates', label: '各社テンプレートへの対応', description: '名称と出力規則を設定' },
   { id: 'about', label: 'このツールについて', description: '何を補い、どう出力するか' },
 ]
 
 function getSections(tab: HelpTab): readonly HelpSection[] {
-  if (tab === 'quick') return QUICK_SECTIONS
   if (tab === 'features') return FEATURE_SECTIONS
-  return ABOUT_SECTIONS
+  if (tab === 'about') return ABOUT_SECTIONS
+  return []
 }
 
 export function HelpDialog({ onClose }: HelpDialogProps) {
   const [activeTab, setActiveTab] = useState<HelpTab>('quick')
-  const [activeSection, setActiveSection] = useState<string>(QUICK_SECTIONS[0]?.id ?? '')
+  const [activeSection, setActiveSection] = useState('')
   const contentRef = useRef<HTMLDivElement>(null)
   const sections = getSections(activeTab)
 
@@ -140,15 +141,9 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
             ref={contentRef}
             onScroll={handleContentScroll}
           >
-            {activeTab === 'quick' && (
-              <>
-                <section data-help-section="quick-export">
-                  <QuickStartGuide variant="help" />
-                </section>
-                <StudioTemplateGuide />
-              </>
-            )}
+            {activeTab === 'quick' && <QuickStartGuide variant="help" />}
             {activeTab === 'features' && <FeatureGuide />}
+            {activeTab === 'templates' && <StudioTemplateGuide />}
             {activeTab === 'about' && <AboutGuide />}
           </div>
         </div>

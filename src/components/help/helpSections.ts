@@ -1,8 +1,3 @@
-export const QUICK_SECTIONS = [
-  { id: 'quick-export', label: '1カットを書き出す' },
-  { id: 'studio-templates', label: '各社テンプレートに対応するには' },
-] as const
-
 export const FEATURE_SECTIONS = [
   { id: 'screen', label: '画面全体' },
   { id: 'files', label: 'ファイルを読み込む' },
