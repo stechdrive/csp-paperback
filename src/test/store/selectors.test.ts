@@ -170,6 +170,34 @@ describe('selectAnimationFolders', () => {
 })
 
 describe('selectProcessTableErrors', () => {
+  it('半角・全角の前後空白だけが異なる工程名も重複として検出する', () => {
+    useAppStore.setState({
+      projectSettings: {
+        ...DEFAULT_PROJECT_SETTINGS,
+        processTable: [
+          { suffix: '_s', folderNames: ['作監', ' _S '] },
+          { suffix: '_other', folderNames: ['\t作監\u3000', '_s\u3000'] },
+        ],
+      },
+    })
+
+    expect(selectProcessTableErrors(useAppStore.getState())).toEqual(new Set(['\t作監\u3000', '_s\u3000']))
+  })
+
+  it('照合対象にならない空の工程名は重複として扱わない', () => {
+    useAppStore.setState({
+      projectSettings: {
+        ...DEFAULT_PROJECT_SETTINGS,
+        processTable: [
+          { suffix: '_s', folderNames: ['', ' '] },
+          { suffix: '_other', folderNames: ['', '\u3000'] },
+        ],
+      },
+    })
+
+    expect(selectProcessTableErrors(useAppStore.getState()).size).toBe(0)
+  })
+
   it('重複なしは空Setを返す', () => {
     useAppStore.setState({
       projectSettings: {

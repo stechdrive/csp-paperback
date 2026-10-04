@@ -1,4 +1,5 @@
 import type { ProcessFolderEntry } from '../types'
+import { normalizeProcessFolderName } from './process-folder'
 
 export const DEFAULT_REVISION_BORDER_COLOR = '#FBECE6'
 
@@ -29,7 +30,7 @@ export function resolveProcessBorderColor(entry: ProcessFolderEntry): string {
   return normalizeHexColor(entry.revisionBorderColor)
     ?? DEFAULT_COLOR_BY_SUFFIX.get(entry.suffix.trim().toLowerCase())
     ?? entry.folderNames
-      .map(name => DEFAULT_COLOR_BY_FOLDER_NAME.get(name.trim().toLowerCase()))
+      .map(name => DEFAULT_COLOR_BY_FOLDER_NAME.get(normalizeProcessFolderName(name)))
       .find((color): color is string => !!color)
     ?? DEFAULT_REVISION_BORDER_COLOR
 }

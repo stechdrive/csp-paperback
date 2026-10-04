@@ -40,6 +40,26 @@ afterEach(() => {
 })
 
 describe('useOutputPreview', () => {
+  it('親工程名の末尾空白を無視してプレビューにも工程サフィックスを付ける', () => {
+    const tree = buildLayerTree(makePsd({
+      children: [makeFolder('作監 \u3000', [makeAnimationFolder('A', [makeLayer({ name: '1' })])])],
+    }))
+    detectAnim(tree, 'A')
+    useAppStore.setState({
+      layerTree: tree,
+      docWidth: 100,
+      docHeight: 100,
+      outputConfig: { ...DEFAULT_OUTPUT_CONFIG, format: 'png' },
+      focusedAnimFolderId: tree[0].children[0].id,
+    })
+
+    const { result } = renderHook(() => useOutputPreview())
+
+    expect(result.current).toHaveLength(1)
+    expect(result.current[0].flatName).toBe('A1_s.png')
+    expect(result.current[0].path).toBe('A/A1_s.png')
+  })
+
   it('PNG選択時はアニメセルのプレビュー名を.pngで返す', () => {
     const animFolder = makeAnimationFolder('A', [makeLayer({ name: '1' })])
     const tree = buildLayerTree(makePsd({ children: [animFolder] }))

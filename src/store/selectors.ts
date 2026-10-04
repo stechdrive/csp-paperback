@@ -3,6 +3,7 @@ import type { SingleMark } from '../types/marks'
 import type { ProcessFolderEntry } from '../types/project'
 import { promoteAutoMarkedByProcessMatch } from '../engine/tree-builder'
 import { isAutoMarkedOutputTarget } from '../utils/auto-marked-container'
+import { normalizeProcessFolderName } from '../utils/process-folder'
 import type { AppStore } from './index'
 
 /**
@@ -222,11 +223,12 @@ export function selectProcessTableErrors(state: AppStore): Set<string> {
 
   for (const entry of processTable) {
     for (const name of entry.folderNames) {
-      const lower = name.toLowerCase()
-      if (seen.has(lower)) {
+      const normalized = normalizeProcessFolderName(name)
+      if (!normalized) continue
+      if (seen.has(normalized)) {
         duplicates.add(name)
       } else {
-        seen.set(lower, entry.suffix)
+        seen.set(normalized, entry.suffix)
       }
     }
   }

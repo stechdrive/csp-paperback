@@ -2,6 +2,7 @@ import type { Psd, Layer } from 'ag-psd'
 import type { CspLayer, BlendMode, XdtsData } from '../types'
 import type { ProcessFolderEntry } from '../types/project'
 import { assignTracksToFolders, type AssignResult } from './anim-folder-assignment'
+import { normalizeProcessFolderName } from '../utils/process-folder'
 
 /**
  * ag-psdのレイヤーがフォルダかどうか判定
@@ -245,7 +246,7 @@ export function promoteAutoMarkedByProcessMatch(
   const processNames = new Set<string>()
   for (const entry of processTable) {
     for (const name of entry.folderNames) {
-      const normalized = name.trim().toLowerCase()
+      const normalized = normalizeProcessFolderName(name)
       if (normalized.length > 0) processNames.add(normalized)
     }
   }
@@ -253,7 +254,7 @@ export function promoteAutoMarkedByProcessMatch(
 
   function hasDirectProcessChild(children: CspLayer[]): boolean {
     return children.some(c =>
-      c.isFolder && processNames.has(c.originalName.trim().toLowerCase())
+      c.isFolder && processNames.has(normalizeProcessFolderName(c.originalName))
     )
   }
 

@@ -16,6 +16,7 @@ import { collectMembersInTreeOrder, buildMemberFlatsWithOverride } from '../util
 import { buildAssignmentFromDetectedFolders } from './anim-folder-assignment'
 import { computeDisplayNames } from './anim-folder-display-name'
 import { isAutoMarkedContainerOutputSuppressed } from '../utils/auto-marked-container'
+import { normalizeProcessFolderName } from '../utils/process-folder'
 import {
   makeCellFileName,
   makeCellLabel,
@@ -125,7 +126,7 @@ export function extractCells(
 
       for (const sub of visibleSubs) {
         const suffix = sub.isFolder
-          ? folderNameToSuffix.get(sub.originalName.toLowerCase())
+          ? folderNameToSuffix.get(normalizeProcessFolderName(sub.originalName))
           : undefined
         if (suffix !== undefined) {
           const group = processGroups.get(suffix) ?? []
@@ -330,7 +331,7 @@ function collectProcessSuffixes(...suffixes: string[]): string[] | undefined {
 }
 
 /**
- * フォルダ名→サフィックスのルックアップマップを構築（小文字化済み）
+ * フォルダ名→サフィックスのルックアップマップを構築（前後空白除去・小文字化済み）
  */
 function buildFolderNameToSuffixMap(
   processTable: ProjectSettings['processTable']
@@ -338,7 +339,8 @@ function buildFolderNameToSuffixMap(
   const map = new Map<string, string>()
   for (const entry of processTable) {
     for (const folderName of entry.folderNames) {
-      map.set(folderName.toLowerCase(), entry.suffix)
+      const normalized = normalizeProcessFolderName(folderName)
+      if (normalized) map.set(normalized, entry.suffix)
     }
   }
   return map
@@ -363,7 +365,7 @@ function buildAnimParentSuffixMap(
     for (const layer of layers) {
       if (!layer.isFolder) continue
       // このフォルダ直下のアニメフォルダに、このフォルダ名に対応するsuffixを付与
-      const suffix = folderNameToSuffix.get(layer.originalName.toLowerCase())
+      const suffix = folderNameToSuffix.get(normalizeProcessFolderName(layer.originalName))
       if (suffix !== undefined) {
         for (const child of layer.children) {
           if (child.isAnimationFolder) {
