@@ -190,7 +190,7 @@ for each visibleCell in animFolder.children:
 
   [A] 単体レイヤーセル（cell.isFolder === false）
       flattenCellContent([cell], ignoreOpacity={cell.id})
-      → applyContainerMasks（セルフォルダマスク + アニメフォルダマスク）
+      → applyContainerEffects（セルフォルダ・アニメフォルダの効果とマスク）
       → compositeWithContext(lowerContext, upperContext)
       → OutputEntry 1件
 
@@ -201,26 +201,34 @@ for each visibleCell in animFolder.children:
 
       本体出力（bodyLayersがある or processGroupsが空）:
         flattenCellContent(bodyLayers)  ← opacityをそのまま尊重
-        → applyContainerMasks
+        → applyContainerEffects
         → compositeWithContext
         → OutputEntry 1件
 
       工程別出力（processGroupsの各suffix）:
         flattenCellContent(processLayers, ignoreOpacity={processFolder.id})
-        → applyContainerMasks
+        → applyContainerEffects
         → compositeWithContext
         → OutputEntry 1件（suffix付きファイル名）
 ```
 
-### applyContainerMasks の役割
+### applyContainerEffects の役割
 
 `extractCells` はアニメフォルダをレイヤーとして `flattenLayer` に通さないため、
 アニメフォルダ本体のマスクとセルフォルダ（非 pass through）のマスクが
-自動的に適用されない。`applyContainerMasks` がこれを補う。
+自動的に適用されない。`applyContainerEffects` がこれを補う。
 
 適用順序（グローバルプレビューの flattenLayer 処理順に一致させる）：
-1. セルフォルダのマスク（非 pass through のみ）
-2. アニメフォルダのマスク
+1. セルフォルダの内容を合成し、CLIPのレイヤーカラー・境界線を適用
+2. セルフォルダのマスク（非 pass through、または描画効果のあるフォルダ）
+3. アニメフォルダのレイヤーカラー・境界線とマスク
+
+CLIPの効果がある場合は選択素材だけを隔離合成し、コンテナの合成モードを保持する。
+構造コンテナの不透明度は引き続き100%。単体セルの効果は`flattenTree`で一度だけ適用する。
+描画用レイヤーカラーを持つ祖先がある場合、`collectMaterialOutputContext`で内側から外側へ
+兄弟コンテキストを収集し、各フォルダの範囲で色とマスクを適用する。
+その外部にある用紙やコンテキストは親フォルダの色変換に含めない。
+PSD入力・CLIP＋PSDではネイティブ効果を持たないため、従来の合成経路を使う。
 
 ### extractAllEntries — 全出力エントリの生成
 

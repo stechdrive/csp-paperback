@@ -9,7 +9,26 @@ import { readAdjustment } from './adjustment'
 import { cropPixels } from './pixels'
 
 /** Decode only drawing effects; palette label colors are deliberately unrelated. */
-export function readMaterialEffects(row: ClipRow): MaterialEffects | undefined {
+export function readMaterialEffects(row: ClipRow, report?: (message: string) => void): MaterialEffects | undefined {
+  const effects: MaterialEffects = {}
+  // Paper stores its fill color in the same columns, without a recoloring effect.
+  if (num(row, 'DrawColorEnable') && !isPaper(row)) {
+    const rgb = (prefix: string, fallback: number) => ['Red', 'Green', 'Blue'].map(c => num(row, prefix + c, fallback) >>> 24) as [number, number, number]
+    effects.layerColor = { main: rgb('DrawColorMain', 0), sub: rgb('DrawColorSub', 0xffffffff) }
+  }
+  try {
+    const edge = readEdgeEffect(row)
+    if (edge) effects.edge = edge
+  } catch (e) {
+    if (!report) throw e
+    report(errorMessage(e))
+  }
+  return Object.keys(effects).length ? effects : undefined
+}
+
+function isPaper(row: ClipRow): boolean { return (num(row, 'LayerType') & ~2) === 1584 }
+
+function readEdgeEffect(row: ClipRow): MaterialEffects['edge'] {
   const bytes = row.LayerEffectInfo
   if (!(bytes instanceof Uint8Array) || !num(row, 'LayerEffectAttached')) return
   const needle = [0, 0, 0, 10, ...Array.from('EffectEdge').flatMap(c => [0, c.charCodeAt(0)])]
@@ -19,7 +38,7 @@ export function readMaterialEffects(row: ClipRow): MaterialEffects | undefined {
   if (!r.u32()) return
   const radius = r.number('f64')
   check(radius >= 0 && radius <= 256, '境界の太さが範囲外です')
-  return { edge: { radius, color: [r.u32() >>> 24, r.u32() >>> 24, r.u32() >>> 24] } }
+  return { radius, color: [r.u32() >>> 24, r.u32() >>> 24, r.u32() >>> 24] }
 }
 
 /** ResizableImageInfo describes static artwork placement, not animation/camera transforms. */
@@ -70,7 +89,7 @@ export function createMaterialDecoder(t: MaterialTables, width: number, height: 
     const failures: string[] = []
     const report = (message: string) => diagnostics.push({ scope: 'raster', layerId: layer.id, message: `「${layer.name}」: ${message}` })
     try {
-      layer.effects = readMaterialEffects(row)
+      layer.effects = readMaterialEffects(row, report)
       if (layer.effects?.edge?.radius) report('境界線を近似描画します（輪郭の丸めはクリスタと差が生じます）')
     } catch (e) { report(errorMessage(e)) }
     if (row.FilterLayerInfo instanceof Uint8Array) {
@@ -133,7 +152,7 @@ export function createMaterialDecoder(t: MaterialTables, width: number, height: 
           layer.materialSource = 'gradient'
         } catch (e) { failures.push(errorMessage(e)) }
       }
-      if (!layer.pixels && !layer.fragments?.length && !layer.text?.length && num(row, 'DrawColorEnable')) {
+      if (!layer.pixels && !layer.fragments?.length && !layer.text?.length && isPaper(row) && num(row, 'DrawColorEnable')) {
         check(decodedBytes + width * height * 4 <= 512 * 1024 * 1024, '画像展開の合計が512 MiBを超えました')
         const rgba = new Uint8ClampedArray(width * height * 4)
         const rgb = ['Red', 'Green', 'Blue'].map(c => num(row, `DrawColorMain${c}`) >>> 24)

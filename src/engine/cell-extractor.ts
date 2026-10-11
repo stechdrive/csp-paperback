@@ -12,6 +12,7 @@ import {
 } from '../types'
 import type { VirtualSet } from '../types/marks'
 import { flattenTree } from './flatten'
+import { collectAnimFolderAncestorIds } from './tree-builder'
 import { applyLayerMask, compositeGroup, compositeStack, createCanvas } from './compositor'
 import { collectMembersInTreeOrder, buildMemberFlatsWithOverride } from '../utils/virtual-set-utils'
 import { buildAssignmentFromDetectedFolders } from './anim-folder-assignment'
@@ -54,6 +55,7 @@ export function extractCells(
   processSuffixPosition: ProcessSuffixPosition = 'after-cell',
   sequenceDigits?: number,
   sheetSequenceNumbers?: Map<string, number>,
+  materialContext?: MaterialOutputContext[],
 ): OutputEntry[] {
   if (!animFolder.isAnimationFolder) return []
 
@@ -98,8 +100,8 @@ export function extractCells(
       // 単体レイヤー: XDTSキーフレーム画像 → そのまま1セル出力
       // 単体セルレイヤーはアニメフォルダの直接の子として構造的コンテナ扱い（100%）
       const rawFlats = flattenCellContent([cell], docWidth, docHeight, new Set([cell.id]))
-      const cellFlats = applyContainerMasks(rawFlats, cell, animFolder, docWidth, docHeight)
-      const canvas = compositeWithContext(cellFlats, lowerContextLayers, upperContextLayers, docWidth, docHeight, background)
+      const cellFlats = applyContainerEffects(rawFlats, cell, animFolder, docWidth, docHeight)
+      const canvas = compositeWithContext(cellFlats, lowerContextLayers, upperContextLayers, docWidth, docHeight, background, materialContext)
       const fileName = makeCellFileName({
         trackName,
         rawTrackName: animFolder.originalName,
@@ -142,8 +144,8 @@ export function extractCells(
       // bodyLayersはアートワークコンテンツ → オパシティを尊重（ignoreOpacityIds不要）
       if (bodyLayers.length > 0 || processGroups.size === 0) {
         const rawBodyFlats = flattenCellContent(bodyLayers, docWidth, docHeight)
-        const bodyFlats = applyContainerMasks(rawBodyFlats, cell, animFolder, docWidth, docHeight)
-        const canvas = compositeWithContext(bodyFlats, lowerContextLayers, upperContextLayers, docWidth, docHeight, background)
+        const bodyFlats = applyContainerEffects(rawBodyFlats, cell, animFolder, docWidth, docHeight)
+        const canvas = compositeWithContext(bodyFlats, lowerContextLayers, upperContextLayers, docWidth, docHeight, background, materialContext)
         const fileName = makeCellFileName({
           trackName,
           rawTrackName: animFolder.originalName,
@@ -169,8 +171,8 @@ export function extractCells(
       for (const [suffix, processLayers] of processGroups) {
         const processIgnoreIds = new Set(processLayers.map(p => p.id))
         const rawProcessFlats = flattenCellContent(processLayers, docWidth, docHeight, processIgnoreIds)
-        const processFlats = applyContainerMasks(rawProcessFlats, cell, animFolder, docWidth, docHeight)
-        const canvas = compositeWithContext(processFlats, lowerContextLayers, upperContextLayers, docWidth, docHeight, background)
+        const processFlats = applyContainerEffects(rawProcessFlats, cell, animFolder, docWidth, docHeight)
+        const canvas = compositeWithContext(processFlats, lowerContextLayers, upperContextLayers, docWidth, docHeight, background, materialContext)
         const fileName = makeCellFileName({
           trackName,
           rawTrackName: animFolder.originalName,
@@ -613,7 +615,8 @@ export function extractVirtualSetEntries(
       sourceId: vs.id,
       clipping: false,
     }]
-    const canvas = compositeWithContext(vsAsFolder, lower, upper, docWidth, docHeight, background)
+    const canvas = compositeWithContext(vsAsFolder, lower, upper, docWidth, docHeight, background,
+      collectMaterialOutputContext(vs.insertionLayerId, tree, docWidth, docHeight, vs.insertionPosition))
     const fileName = `${vs.name}.jpg`
     entries.push({
       path: fileName,
@@ -628,15 +631,15 @@ export function extractVirtualSetEntries(
 }
 
 /**
- * セルフラットにセルフォルダ・アニメフォルダのマスクを適用する。
+ * セルフラットにセルフォルダ・アニメフォルダの効果とマスクを適用する。
  *
  * global preview（flattenLayer経由）と一致させるため:
  * - 非Pass Throughセルフォルダのマスクを先に適用（対象はフォルダセルのみ）
  * - アニメフォルダのマスクをその外側に適用
  *
- * Pass Throughセルフォルダのマスクは flattenLayer と同様にスキップ（v1制限）。
+ * 描画効果のないPass Throughセルフォルダのマスクは flattenLayer と同様にスキップ（v1制限）。
  */
-function applyContainerMasks(
+function applyContainerEffects(
   flats: FlatLayer[],
   cell: CspLayer,
   animFolder: CspLayer,
@@ -646,24 +649,28 @@ function applyContainerMasks(
   let result = flats
   if (result.length === 0) return result
 
-  if (cell.isFolder && cell.materialEffects) {
-    const canvas = applyMaterialEffects(compositeGroup(result, docWidth, docHeight), 0, 0, cell.materialEffects, docWidth, docHeight)
-    result = [{ canvas, blendMode: 'normal', opacity: 100, top: 0, left: 0, sourceId: cell.id, clipping: false }]
+  // Native effects require isolated selected-material groups, including their
+  // blend modes. Keep the legacy PSD context path when no native effect exists.
+  if (cell.materialEffects || animFolder.materialEffects) {
+    const wrap = (flats: FlatLayer[], container: CspLayer): FlatLayer[] => {
+      let canvas = applyMaterialEffects(compositeGroup(flats, docWidth, docHeight), 0, 0, container.materialEffects, docWidth, docHeight)
+      const mask = container.agPsdRef.mask
+      if (mask?.canvas && !mask.disabled) canvas = applyLayerMask(canvas, 0, 0, mask, docWidth, docHeight)
+      return [{ canvas, blendMode: container.blendMode, nativeBlendMode: container.nativeBlendMode,
+        opacity: 100, top: 0, left: 0, sourceId: container.id, clipping: container.clipping }]
+    }
+    // A single-layer cel was already colored/masked by flattenCellContent.
+    if (cell.isFolder && (cell.blendMode !== 'pass through' || cell.materialEffects)) result = wrap(result, cell)
+    return wrap(result, animFolder)
   }
 
-  // 効果のために隔離したフォルダも、通常の隔離フォルダと同じ位置でマスクする。
-  if (cell.isFolder && (cell.blendMode !== 'pass through' || cell.materialEffects)) {
+  if (cell.isFolder && cell.blendMode !== 'pass through') {
     const cellMask = cell.agPsdRef.mask
     if (cellMask?.canvas && !cellMask.disabled) {
       const composited = compositeGroup(result, docWidth, docHeight)
       const masked = applyLayerMask(composited, 0, 0, cellMask, docWidth, docHeight)
       result = [{ canvas: masked, blendMode: 'normal', opacity: 100, top: 0, left: 0, sourceId: cell.id, clipping: false }]
     }
-  }
-
-  if (animFolder.materialEffects) {
-    const canvas = applyMaterialEffects(compositeGroup(result, docWidth, docHeight), 0, 0, animFolder.materialEffects, docWidth, docHeight)
-    result = [{ canvas, blendMode: 'normal', opacity: 100, top: 0, left: 0, sourceId: animFolder.id, clipping: false }]
   }
 
   // アニメフォルダのマスク
@@ -699,14 +706,31 @@ function flattenCellContent(
  * lowerContext: レイアウト用紙・背景・アニメフォルダより下にある兄弟レイヤー
  * upperContext: アニメフォルダより上にある兄弟レイヤー（セルの上に重なる）
  */
-function compositeWithContext(
+export function compositeWithContext(
   cellFlats: FlatLayer[],
   lowerContext: FlatLayer[],
   upperContext: FlatLayer[],
   docWidth: number,
   docHeight: number,
   background: 'white' | 'transparent' = 'white',
+  materialContext?: MaterialOutputContext[],
 ): HTMLCanvasElement {
+  if (materialContext) {
+    // Preserve ancestor boundaries: a folder color must not recolor the paper,
+    // unrelated siblings, or another animation folder's saved composite.
+    let flats = cellFlats
+    for (const { lower, upper, container, isAnimationAncestor } of materialContext) {
+      flats = [...lower, ...flats, ...upper]
+      if (!container || !flats.length) continue
+      const mask = container.agPsdRef.mask
+      if (!container.materialEffects && (isAnimationAncestor || container.blendMode === 'pass through')) continue
+      let canvas = applyMaterialEffects(compositeGroup(flats, docWidth, docHeight), 0, 0, container.materialEffects, docWidth, docHeight)
+      if (mask?.canvas && !mask.disabled) canvas = applyLayerMask(canvas, 0, 0, mask, docWidth, docHeight)
+      flats = [{ canvas, left: 0, top: 0, opacity: isAnimationAncestor ? 100 : container.opacity, blendMode: container.blendMode,
+        nativeBlendMode: container.nativeBlendMode, sourceId: container.id, clipping: container.clipping }]
+    }
+    return compositeStack(flats, docWidth, docHeight, background)
+  }
   if (cellFlats.length === 0 && lowerContext.length === 0 && upperContext.length === 0) {
     const empty = createCanvas(docWidth, docHeight)
     if (background === 'white') {
@@ -720,6 +744,47 @@ function compositeWithContext(
   }
   const allFlats = [...lowerContext, ...cellFlats, ...upperContext]
   return compositeStack(allFlats, docWidth, docHeight, background)
+}
+
+export interface MaterialOutputContext {
+  lower: FlatLayer[]
+  upper: FlatLayer[]
+  container?: CspLayer
+  isAnimationAncestor: boolean
+}
+
+/** Inner-to-outer output context, needed when a native folder colors its contents. */
+export function collectMaterialOutputContext(
+  targetId: string, tree: CspLayer[], width: number, height: number,
+  insertionPosition?: 'above' | 'below',
+): MaterialOutputContext[] | undefined {
+  const path: { siblings: CspLayer[]; index: number; container?: CspLayer }[] = []
+  function find(siblings: CspLayer[], container?: CspLayer): boolean {
+    for (let index = 0; index < siblings.length; index++) {
+      const layer = siblings[index]
+      if (layer.id === targetId || (layer.isFolder && find(layer.children, layer))) {
+        path.push({ siblings, index, container })
+        return true
+      }
+    }
+    return false
+  }
+  find(tree)
+  // Leave PSD and existing exports on their original context path.
+  if (!path.some(level => level.container?.materialEffects?.layerColor)) return
+  const animationAncestors = collectAnimFolderAncestorIds(tree)
+  return path.map(({ siblings, index, container }, depth) => {
+    const lower: CspLayer[] = [], upper: CspLayer[] = []
+    for (let i = 0; i < siblings.length; i++) {
+      if (i === index && !(depth === 0 && insertionPosition)) continue
+      const context = toContextLayer(siblings[i])
+      if (!context) continue
+      const isUpper = i < index || (i === index && insertionPosition === 'below')
+      ;(isUpper ? upper : lower).push(context)
+    }
+    return { container, isAnimationAncestor: !!container && animationAncestors.has(container.id),
+      lower: flattenTree(lower, width, height), upper: flattenTree(upper, width, height) }
+  })
 }
 
 /**
@@ -772,7 +837,8 @@ export function extractMarkedLayers(
         !isAutoMarkedContainerOutputSuppressed(layer)
       ) {
         const layerFlats = flattenTree([layer], docWidth, docHeight)
-        const canvas = compositeWithContext(layerFlats, contextFlats, [], docWidth, docHeight)
+        const canvas = compositeWithContext(layerFlats, contextFlats, [], docWidth, docHeight, 'white',
+          collectMaterialOutputContext(layer.id, tree, docWidth, docHeight))
         const fileName = `${layer.originalName}.jpg`
         entries.push({
           path: fileName,
@@ -868,6 +934,7 @@ export function extractAllEntries(
           processSuffixPosition,
           sequenceNamingPlan.digits,
           sequenceNamingPlan.sheetSequenceNumbers,
+          collectMaterialOutputContext(layer.id, tree, docWidth, docHeight),
         )
         entries.push(...cellEntries)
         continue
@@ -893,7 +960,8 @@ export function extractAllEntries(
         // ネストされていても必ず一致した結果になる。
         const { lower, upper } = collectMarkedLayerContext(layer.id, tree, docWidth, docHeight)
         const layerFlats = flattenTree([layer], docWidth, docHeight)
-        const canvas = compositeWithContext(layerFlats, lower, upper, docWidth, docHeight, background)
+        const canvas = compositeWithContext(layerFlats, lower, upper, docWidth, docHeight, background,
+          collectMaterialOutputContext(layer.id, tree, docWidth, docHeight))
         const fileName = `${layer.originalName}.jpg`
         entries.push({ path: fileName, flatName: fileName, canvas, sourceLayerId: layer.id })
 

@@ -1,5 +1,6 @@
 export interface EdgeEffect { radius: number; color: [number, number, number] }
 export interface MaterialEffects {
+  layerColor?: { main: [number, number, number]; sub: [number, number, number] }
   edge?: EdgeEffect
 }
 

@@ -65,8 +65,8 @@ export function flattenTree(
     }
 
     // アニメーションフォルダの祖先フォルダ（例外ルール）
-    // → 子を個別にフラット化して合成せずに返す
-    if (layer.isFolder && animAncestorIds.has(layer.id)) {
+    // → 描画効果がなければ、子を個別にフラット化して合成せずに返す
+    if (layer.isFolder && animAncestorIds.has(layer.id) && !layer.materialEffects) {
       const childFlats: FlatLayer[] = []
       // ツリーはトップファーストなので合成はボトムから（逆順）処理する
       for (const child of [...layer.children].reverse()) {
@@ -98,7 +98,7 @@ export function flattenTree(
         return [{
           canvas: finalCanvas,
           blendMode: layer.blendMode,
-          opacity: effectiveOpacity,
+          opacity: animAncestorIds.has(layer.id) ? 100 : effectiveOpacity,
           top: 0,
           left: 0,
           sourceId: layer.id,

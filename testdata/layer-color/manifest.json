@@ -1,0 +1,784 @@
+[
+  {
+    "name": "01-off",
+    "width": 256,
+    "height": 128,
+    "dpi": 72,
+    "layers": [
+      {
+        "id": "chart",
+        "name": "chart",
+        "isFolder": false,
+        "isAnimationFolder": false,
+        "expanded": true,
+        "hidden": false,
+        "opacity": 1,
+        "blendMode": "normal",
+        "clipping": false,
+        "nativeBlendMode": 0,
+        "pixels": {
+          "width": 256,
+          "height": 128,
+          "left": 0,
+          "top": 0,
+          "defaultColor": 0,
+          "file": "feec61ea6326b444.rgba.gz"
+        },
+        "children": [],
+        "fields": {
+          "LayerType": 1
+        }
+      }
+    ],
+    "reference": "01-off.png"
+  },
+  {
+    "name": "02-default",
+    "width": 256,
+    "height": 128,
+    "dpi": 72,
+    "layers": [
+      {
+        "id": "chart",
+        "name": "chart",
+        "isFolder": false,
+        "isAnimationFolder": false,
+        "expanded": true,
+        "hidden": false,
+        "opacity": 1,
+        "blendMode": "normal",
+        "clipping": false,
+        "nativeBlendMode": 0,
+        "pixels": {
+          "width": 256,
+          "height": 128,
+          "left": 0,
+          "top": 0,
+          "defaultColor": 0,
+          "file": "feec61ea6326b444.rgba.gz"
+        },
+        "children": [],
+        "fields": {
+          "LayerType": 1,
+          "DrawColorMainRed": 1044266558,
+          "DrawColorMainGreen": 2358021260,
+          "DrawColorMainBlue": 3974950124,
+          "DrawColorSubRed": 4294967295,
+          "DrawColorSubGreen": 4294967295,
+          "DrawColorSubBlue": 4294967295,
+          "DrawColorEnable": 1
+        }
+      }
+    ],
+    "reference": "02-default.png"
+  },
+  {
+    "name": "03-main",
+    "width": 256,
+    "height": 128,
+    "dpi": 72,
+    "layers": [
+      {
+        "id": "chart",
+        "name": "chart",
+        "isFolder": false,
+        "isAnimationFolder": false,
+        "expanded": true,
+        "hidden": false,
+        "opacity": 1,
+        "blendMode": "normal",
+        "clipping": false,
+        "nativeBlendMode": 0,
+        "pixels": {
+          "width": 256,
+          "height": 128,
+          "left": 0,
+          "top": 0,
+          "defaultColor": 0,
+          "file": "feec61ea6326b444.rgba.gz"
+        },
+        "children": [],
+        "fields": {
+          "LayerType": 1,
+          "DrawColorMainRed": 3368601800,
+          "DrawColorMainGreen": 538976288,
+          "DrawColorMainBlue": 1077952576,
+          "DrawColorSubRed": 4294967295,
+          "DrawColorSubGreen": 4294967295,
+          "DrawColorSubBlue": 4294967295,
+          "DrawColorEnable": 1
+        }
+      }
+    ],
+    "reference": "03-main.png"
+  },
+  {
+    "name": "04-sub",
+    "width": 256,
+    "height": 128,
+    "dpi": 72,
+    "layers": [
+      {
+        "id": "chart",
+        "name": "chart",
+        "isFolder": false,
+        "isAnimationFolder": false,
+        "expanded": true,
+        "hidden": false,
+        "opacity": 1,
+        "blendMode": "normal",
+        "clipping": false,
+        "nativeBlendMode": 0,
+        "pixels": {
+          "width": 256,
+          "height": 128,
+          "left": 0,
+          "top": 0,
+          "defaultColor": 0,
+          "file": "feec61ea6326b444.rgba.gz"
+        },
+        "children": [],
+        "fields": {
+          "LayerType": 1,
+          "DrawColorMainRed": 3368601800,
+          "DrawColorMainGreen": 538976288,
+          "DrawColorMainBlue": 1077952576,
+          "DrawColorSubRed": 538976288,
+          "DrawColorSubGreen": 3705461980,
+          "DrawColorSubBlue": 2694881440,
+          "DrawColorEnable": 1
+        }
+      }
+    ],
+    "reference": "04-sub.png"
+  },
+  {
+    "name": "05-off-again",
+    "width": 256,
+    "height": 128,
+    "dpi": 72,
+    "layers": [
+      {
+        "id": "chart",
+        "name": "chart",
+        "isFolder": false,
+        "isAnimationFolder": false,
+        "expanded": true,
+        "hidden": false,
+        "opacity": 1,
+        "blendMode": "normal",
+        "clipping": false,
+        "nativeBlendMode": 0,
+        "pixels": {
+          "width": 256,
+          "height": 128,
+          "left": 0,
+          "top": 0,
+          "defaultColor": 0,
+          "file": "feec61ea6326b444.rgba.gz"
+        },
+        "children": [],
+        "fields": {
+          "LayerType": 1,
+          "DrawColorMainRed": 3368601800,
+          "DrawColorMainGreen": 538976288,
+          "DrawColorMainBlue": 1077952576,
+          "DrawColorSubRed": 538976288,
+          "DrawColorSubGreen": 3705461980,
+          "DrawColorSubBlue": 2694881440
+        }
+      }
+    ],
+    "reference": "05-off-again.png"
+  },
+  {
+    "name": "06-color-edge",
+    "width": 256,
+    "height": 128,
+    "dpi": 72,
+    "layers": [
+      {
+        "id": "chart",
+        "name": "chart",
+        "isFolder": false,
+        "isAnimationFolder": false,
+        "expanded": true,
+        "hidden": false,
+        "opacity": 1,
+        "blendMode": "normal",
+        "clipping": false,
+        "nativeBlendMode": 0,
+        "pixels": {
+          "width": 256,
+          "height": 128,
+          "left": 0,
+          "top": 0,
+          "defaultColor": 0,
+          "file": "feec61ea6326b444.rgba.gz"
+        },
+        "children": [],
+        "fields": {
+          "LayerType": 1,
+          "DrawColorMainRed": 3368601800,
+          "DrawColorMainGreen": 538976288,
+          "DrawColorMainBlue": 1077952576,
+          "DrawColorSubRed": 538976288,
+          "DrawColorSubGreen": 3705461980,
+          "DrawColorSubBlue": 2694881440,
+          "DrawColorEnable": 1,
+          "LayerEffectAttached": 1
+        },
+        "edge": "AAACYgAAAAIAAAAKAEUAZgBmAGUAYwB0AEUAZABnAGUAAAABQAgAAAAAAAD///////////////8AAAAKAEUAZgBmAGUAYwB0AFQAbwBuAGUAAAAAQHLAAAAAAAAAAAABAAAAAAAAABRATgAAAAAAAAAAAAAAAAAAAAAALQAAAB4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEABFAGYAZgBlAGMAdABUAGUAeAB0AHUAcgBlAE0AYQBwAAAAEAAAAAAAAAAegICAgAAAABIARQBmAGYAZQBjAHQAQQBwAHAAbAB5AE8AcABhAGMAaQB0AHkAAAAIAAAAAQAAABMARQBmAGYAZQBjAHQAVABvAG4AZQBBAHIAZQBhAEMAbwBsAG8AcgAAABAAAABvAAAA1wAAAPEAAAATAEUAZgBmAGUAYwB0AFQAbwBuAGUAUABvAHMAdABlAHIAaQB6AGUAAAAcAAAAAAAAAAIAAAA8AAAAMgAAAHgAAAAeAAAADwBFAGYAZgBlAGMAdABXAGEAdABlAHIARQBkAGcAZQAAACgAAAAAQBQAAAAAAABASQAAAAAAAEA0AAAAAAAAQCQAAAAAAAAAAAAKAEUAZgBmAGUAYwB0AEwAaQBuAGUAAAB0AAAAAAAAAAHw8PDwAAAAAAAAAAAAAAAAAAAAAAAAAA9AFAAAAAAAAEAUAAAAAAAAAAAABAAAAAAAAAABAAAAAQAAAAEAAAACAAAAAQAAAAMAAAABAAAAAwAAAEAAAABLAAAAgAAAADIAAADAAAAAGQAAAAEAAAABAAAAyA=="
+      }
+    ],
+    "reference": "06-color-edge.png"
+  },
+  {
+    "name": "07-folder-off",
+    "width": 256,
+    "height": 128,
+    "dpi": 72,
+    "layers": [
+      {
+        "id": "Folder",
+        "name": "Folder",
+        "isFolder": true,
+        "isAnimationFolder": false,
+        "expanded": true,
+        "hidden": false,
+        "opacity": 1,
+        "blendMode": "normal",
+        "clipping": false,
+        "nativeBlendMode": 0,
+        "mask": {
+          "width": 256,
+          "height": 96,
+          "left": 0,
+          "top": 0,
+          "defaultColor": 0,
+          "disabled": false,
+          "file": "fa9ac5a97475719b.rgba.gz"
+        },
+        "children": [
+          {
+            "id": "overlay",
+            "name": "overlay",
+            "isFolder": false,
+            "isAnimationFolder": false,
+            "expanded": true,
+            "hidden": false,
+            "opacity": 1,
+            "blendMode": "multiply",
+            "clipping": false,
+            "nativeBlendMode": 2,
+            "pixels": {
+              "width": 96,
+              "height": 64,
+              "left": 80,
+              "top": 16,
+              "defaultColor": 0,
+              "file": "8d9d09160e865849.rgba.gz"
+            },
+            "children": [],
+            "fields": {
+              "LayerType": 1
+            }
+          },
+          {
+            "id": "chart",
+            "name": "chart",
+            "isFolder": false,
+            "isAnimationFolder": false,
+            "expanded": true,
+            "hidden": false,
+            "opacity": 1,
+            "blendMode": "normal",
+            "clipping": false,
+            "nativeBlendMode": 0,
+            "pixels": {
+              "width": 256,
+              "height": 128,
+              "left": 0,
+              "top": 0,
+              "defaultColor": 0,
+              "file": "8d185d42305edf40.rgba.gz"
+            },
+            "mask": {
+              "width": 192,
+              "height": 128,
+              "left": 64,
+              "top": 0,
+              "defaultColor": 0,
+              "disabled": false,
+              "file": "e0b96090a15f51de.rgba.gz"
+            },
+            "children": [],
+            "fields": {
+              "LayerType": 3
+            }
+          }
+        ],
+        "fields": {
+          "LayerType": 2
+        }
+      }
+    ],
+    "reference": "07-folder-off.png"
+  },
+  {
+    "name": "08-folder-color",
+    "width": 256,
+    "height": 128,
+    "dpi": 72,
+    "layers": [
+      {
+        "id": "Folder",
+        "name": "Folder",
+        "isFolder": true,
+        "isAnimationFolder": false,
+        "expanded": true,
+        "hidden": false,
+        "opacity": 1,
+        "blendMode": "normal",
+        "clipping": false,
+        "nativeBlendMode": 0,
+        "mask": {
+          "width": 256,
+          "height": 96,
+          "left": 0,
+          "top": 0,
+          "defaultColor": 0,
+          "disabled": false,
+          "file": "fa9ac5a97475719b.rgba.gz"
+        },
+        "children": [
+          {
+            "id": "overlay",
+            "name": "overlay",
+            "isFolder": false,
+            "isAnimationFolder": false,
+            "expanded": true,
+            "hidden": false,
+            "opacity": 1,
+            "blendMode": "multiply",
+            "clipping": false,
+            "nativeBlendMode": 2,
+            "pixels": {
+              "width": 96,
+              "height": 64,
+              "left": 80,
+              "top": 16,
+              "defaultColor": 0,
+              "file": "8d9d09160e865849.rgba.gz"
+            },
+            "children": [],
+            "fields": {
+              "LayerType": 1,
+              "DrawColorMainRed": null,
+              "DrawColorMainGreen": null,
+              "DrawColorMainBlue": null,
+              "DrawColorSubRed": null,
+              "DrawColorSubGreen": null,
+              "DrawColorSubBlue": null,
+              "DrawColorEnable": null
+            }
+          },
+          {
+            "id": "chart",
+            "name": "chart",
+            "isFolder": false,
+            "isAnimationFolder": false,
+            "expanded": true,
+            "hidden": false,
+            "opacity": 1,
+            "blendMode": "normal",
+            "clipping": false,
+            "nativeBlendMode": 0,
+            "pixels": {
+              "width": 256,
+              "height": 128,
+              "left": 0,
+              "top": 0,
+              "defaultColor": 0,
+              "file": "8d185d42305edf40.rgba.gz"
+            },
+            "mask": {
+              "width": 192,
+              "height": 128,
+              "left": 64,
+              "top": 0,
+              "defaultColor": 0,
+              "disabled": false,
+              "file": "e0b96090a15f51de.rgba.gz"
+            },
+            "children": [],
+            "fields": {
+              "LayerType": 3,
+              "DrawColorMainRed": null,
+              "DrawColorMainGreen": null,
+              "DrawColorMainBlue": null,
+              "DrawColorSubRed": null,
+              "DrawColorSubGreen": null,
+              "DrawColorSubBlue": null,
+              "DrawColorEnable": null
+            }
+          }
+        ],
+        "fields": {
+          "LayerType": 2,
+          "DrawColorMainRed": 1044266558,
+          "DrawColorMainGreen": 2358021260,
+          "DrawColorMainBlue": 3974950124,
+          "DrawColorSubRed": 4294967295,
+          "DrawColorSubGreen": 4294967295,
+          "DrawColorSubBlue": 4294967295,
+          "DrawColorEnable": 1
+        }
+      }
+    ],
+    "reference": "08-folder-color.png"
+  },
+  {
+    "name": "09-folder-mask-disabled",
+    "width": 256,
+    "height": 128,
+    "dpi": 72,
+    "layers": [
+      {
+        "id": "Folder",
+        "name": "Folder",
+        "isFolder": true,
+        "isAnimationFolder": false,
+        "expanded": true,
+        "hidden": false,
+        "opacity": 1,
+        "blendMode": "normal",
+        "clipping": false,
+        "nativeBlendMode": 0,
+        "mask": {
+          "width": 256,
+          "height": 96,
+          "left": 0,
+          "top": 0,
+          "defaultColor": 0,
+          "disabled": true,
+          "file": "fa9ac5a97475719b.rgba.gz"
+        },
+        "children": [
+          {
+            "id": "overlay",
+            "name": "overlay",
+            "isFolder": false,
+            "isAnimationFolder": false,
+            "expanded": true,
+            "hidden": false,
+            "opacity": 1,
+            "blendMode": "multiply",
+            "clipping": false,
+            "nativeBlendMode": 2,
+            "pixels": {
+              "width": 96,
+              "height": 64,
+              "left": 80,
+              "top": 16,
+              "defaultColor": 0,
+              "file": "8d9d09160e865849.rgba.gz"
+            },
+            "children": [],
+            "fields": {
+              "LayerType": 1,
+              "DrawColorMainRed": null,
+              "DrawColorMainGreen": null,
+              "DrawColorMainBlue": null,
+              "DrawColorSubRed": null,
+              "DrawColorSubGreen": null,
+              "DrawColorSubBlue": null,
+              "DrawColorEnable": null
+            }
+          },
+          {
+            "id": "chart",
+            "name": "chart",
+            "isFolder": false,
+            "isAnimationFolder": false,
+            "expanded": true,
+            "hidden": false,
+            "opacity": 1,
+            "blendMode": "normal",
+            "clipping": false,
+            "nativeBlendMode": 0,
+            "pixels": {
+              "width": 256,
+              "height": 128,
+              "left": 0,
+              "top": 0,
+              "defaultColor": 0,
+              "file": "8d185d42305edf40.rgba.gz"
+            },
+            "mask": {
+              "width": 192,
+              "height": 128,
+              "left": 64,
+              "top": 0,
+              "defaultColor": 0,
+              "disabled": false,
+              "file": "e0b96090a15f51de.rgba.gz"
+            },
+            "children": [],
+            "fields": {
+              "LayerType": 3,
+              "DrawColorMainRed": null,
+              "DrawColorMainGreen": null,
+              "DrawColorMainBlue": null,
+              "DrawColorSubRed": null,
+              "DrawColorSubGreen": null,
+              "DrawColorSubBlue": null,
+              "DrawColorEnable": null
+            }
+          }
+        ],
+        "fields": {
+          "LayerType": 2,
+          "DrawColorMainRed": 1044266558,
+          "DrawColorMainGreen": 2358021260,
+          "DrawColorMainBlue": 3974950124,
+          "DrawColorSubRed": 4294967295,
+          "DrawColorSubGreen": 4294967295,
+          "DrawColorSubBlue": 4294967295,
+          "DrawColorEnable": 1
+        }
+      }
+    ],
+    "reference": "09-folder-mask-disabled.png"
+  },
+  {
+    "name": "10-nested-color",
+    "width": 256,
+    "height": 128,
+    "dpi": 72,
+    "layers": [
+      {
+        "id": "Folder",
+        "name": "Folder",
+        "isFolder": true,
+        "isAnimationFolder": false,
+        "expanded": true,
+        "hidden": false,
+        "opacity": 1,
+        "blendMode": "normal",
+        "clipping": false,
+        "nativeBlendMode": 0,
+        "mask": {
+          "width": 256,
+          "height": 96,
+          "left": 0,
+          "top": 0,
+          "defaultColor": 0,
+          "disabled": false,
+          "file": "fa9ac5a97475719b.rgba.gz"
+        },
+        "children": [
+          {
+            "id": "overlay",
+            "name": "overlay",
+            "isFolder": false,
+            "isAnimationFolder": false,
+            "expanded": true,
+            "hidden": false,
+            "opacity": 1,
+            "blendMode": "multiply",
+            "clipping": false,
+            "nativeBlendMode": 2,
+            "pixels": {
+              "width": 96,
+              "height": 64,
+              "left": 80,
+              "top": 16,
+              "defaultColor": 0,
+              "file": "8d9d09160e865849.rgba.gz"
+            },
+            "children": [],
+            "fields": {
+              "LayerType": 1,
+              "DrawColorMainRed": null,
+              "DrawColorMainGreen": null,
+              "DrawColorMainBlue": null,
+              "DrawColorSubRed": null,
+              "DrawColorSubGreen": null,
+              "DrawColorSubBlue": null,
+              "DrawColorEnable": null
+            }
+          },
+          {
+            "id": "chart",
+            "name": "chart",
+            "isFolder": false,
+            "isAnimationFolder": false,
+            "expanded": true,
+            "hidden": false,
+            "opacity": 1,
+            "blendMode": "normal",
+            "clipping": false,
+            "nativeBlendMode": 0,
+            "pixels": {
+              "width": 256,
+              "height": 128,
+              "left": 0,
+              "top": 0,
+              "defaultColor": 0,
+              "file": "8d185d42305edf40.rgba.gz"
+            },
+            "mask": {
+              "width": 192,
+              "height": 128,
+              "left": 64,
+              "top": 0,
+              "defaultColor": 0,
+              "disabled": false,
+              "file": "e0b96090a15f51de.rgba.gz"
+            },
+            "children": [],
+            "fields": {
+              "LayerType": 3,
+              "DrawColorMainRed": 1044266558,
+              "DrawColorMainGreen": 2358021260,
+              "DrawColorMainBlue": 3974950124,
+              "DrawColorSubRed": 4294967295,
+              "DrawColorSubGreen": 4294967295,
+              "DrawColorSubBlue": 4294967295,
+              "DrawColorEnable": 1
+            }
+          }
+        ],
+        "fields": {
+          "LayerType": 2,
+          "DrawColorMainRed": 1044266558,
+          "DrawColorMainGreen": 2358021260,
+          "DrawColorMainBlue": 3974950124,
+          "DrawColorSubRed": 4294967295,
+          "DrawColorSubGreen": 4294967295,
+          "DrawColorSubBlue": 4294967295,
+          "DrawColorEnable": 1
+        }
+      }
+    ],
+    "reference": "10-nested-color.png"
+  },
+  {
+    "name": "11-nested-color-edge",
+    "width": 256,
+    "height": 128,
+    "dpi": 72,
+    "layers": [
+      {
+        "id": "Folder",
+        "name": "Folder",
+        "isFolder": true,
+        "isAnimationFolder": false,
+        "expanded": true,
+        "hidden": false,
+        "opacity": 1,
+        "blendMode": "normal",
+        "clipping": false,
+        "nativeBlendMode": 0,
+        "mask": {
+          "width": 256,
+          "height": 96,
+          "left": 0,
+          "top": 0,
+          "defaultColor": 0,
+          "disabled": false,
+          "file": "fa9ac5a97475719b.rgba.gz"
+        },
+        "children": [
+          {
+            "id": "overlay",
+            "name": "overlay",
+            "isFolder": false,
+            "isAnimationFolder": false,
+            "expanded": true,
+            "hidden": false,
+            "opacity": 1,
+            "blendMode": "multiply",
+            "clipping": false,
+            "nativeBlendMode": 2,
+            "pixels": {
+              "width": 96,
+              "height": 64,
+              "left": 80,
+              "top": 16,
+              "defaultColor": 0,
+              "file": "8d9d09160e865849.rgba.gz"
+            },
+            "children": [],
+            "fields": {
+              "LayerType": 1,
+              "DrawColorMainRed": null,
+              "DrawColorMainGreen": null,
+              "DrawColorMainBlue": null,
+              "DrawColorSubRed": null,
+              "DrawColorSubGreen": null,
+              "DrawColorSubBlue": null,
+              "DrawColorEnable": null,
+              "LayerEffectAttached": null
+            }
+          },
+          {
+            "id": "chart",
+            "name": "chart",
+            "isFolder": false,
+            "isAnimationFolder": false,
+            "expanded": true,
+            "hidden": false,
+            "opacity": 1,
+            "blendMode": "normal",
+            "clipping": false,
+            "nativeBlendMode": 0,
+            "pixels": {
+              "width": 256,
+              "height": 128,
+              "left": 0,
+              "top": 0,
+              "defaultColor": 0,
+              "file": "8d185d42305edf40.rgba.gz"
+            },
+            "mask": {
+              "width": 192,
+              "height": 128,
+              "left": 64,
+              "top": 0,
+              "defaultColor": 0,
+              "disabled": false,
+              "file": "e0b96090a15f51de.rgba.gz"
+            },
+            "children": [],
+            "fields": {
+              "LayerType": 3,
+              "DrawColorMainRed": 1044266558,
+              "DrawColorMainGreen": 2358021260,
+              "DrawColorMainBlue": 3974950124,
+              "DrawColorSubRed": 4294967295,
+              "DrawColorSubGreen": 4294967295,
+              "DrawColorSubBlue": 4294967295,
+              "DrawColorEnable": 1,
+              "LayerEffectAttached": 1
+            },
+            "edge": "AAACYgAAAAIAAAAKAEUAZgBmAGUAYwB0AEUAZABnAGUAAAABQAgAAAAAAAD///////////////8AAAAKAEUAZgBmAGUAYwB0AFQAbwBuAGUAAAAAQHLAAAAAAAAAAAABAAAAAAAAABRATgAAAAAAAAAAAAAAAAAAAAAALQAAAB4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEABFAGYAZgBlAGMAdABUAGUAeAB0AHUAcgBlAE0AYQBwAAAAEAAAAAAAAAAegICAgAAAABIARQBmAGYAZQBjAHQAQQBwAHAAbAB5AE8AcABhAGMAaQB0AHkAAAAIAAAAAQAAABMARQBmAGYAZQBjAHQAVABvAG4AZQBBAHIAZQBhAEMAbwBsAG8AcgAAABAAAABvAAAA1wAAAPEAAAATAEUAZgBmAGUAYwB0AFQAbwBuAGUAUABvAHMAdABlAHIAaQB6AGUAAAAcAAAAAAAAAAIAAAA8AAAAMgAAAHgAAAAeAAAADwBFAGYAZgBlAGMAdABXAGEAdABlAHIARQBkAGcAZQAAACgAAAAAQBQAAAAAAABASQAAAAAAAEA0AAAAAAAAQCQAAAAAAAAAAAAKAEUAZgBmAGUAYwB0AEwAaQBuAGUAAAB0AAAAAAAAAAHw8PDwAAAAAAAAAAAAAAAAAAAAAAAAAA9AFAAAAAAAAEAUAAAAAAAAAAAABAAAAAAAAAABAAAAAQAAAAEAAAACAAAAAQAAAAMAAAABAAAAAwAAAEAAAABLAAAAgAAAADIAAADAAAAAGQAAAAEAAAABAAAAyA=="
+          }
+        ],
+        "fields": {
+          "LayerType": 2,
+          "DrawColorMainRed": 1044266558,
+          "DrawColorMainGreen": 2358021260,
+          "DrawColorMainBlue": 3974950124,
+          "DrawColorSubRed": 4294967295,
+          "DrawColorSubGreen": 4294967295,
+          "DrawColorSubBlue": 4294967295,
+          "DrawColorEnable": 1,
+          "LayerEffectAttached": null
+        }
+      }
+    ],
+    "reference": "11-nested-color-edge.png"
+  }
+]

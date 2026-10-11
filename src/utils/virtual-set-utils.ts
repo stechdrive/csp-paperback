@@ -113,7 +113,7 @@ function flattenTreeWithCompositeOverrides(
       }]
     }
 
-    if (layer.isFolder && animAncestorIds.has(layer.id) && !hasOverride) {
+    if (layer.isFolder && animAncestorIds.has(layer.id) && !hasOverride && !layer.materialEffects) {
       const childFlats: FlatLayer[] = []
       for (const child of [...layer.children].reverse()) {
         childFlats.push(...flattenLayer(child))
@@ -140,7 +140,7 @@ function flattenTreeWithCompositeOverrides(
       return [{
         canvas: finalCanvas,
         blendMode: effectiveBlendMode,
-        opacity: effectiveOpacity,
+        opacity: animAncestorIds.has(layer.id) && !hasOverride ? 100 : effectiveOpacity,
         top: 0,
         left: 0,
         sourceId: layer.id,

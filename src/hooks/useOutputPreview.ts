@@ -8,6 +8,8 @@ import {
   collectContextSourceLayers,
   collectLocalSiblingContext,
   collectMarkedLayerContext,
+  collectMaterialOutputContext,
+  compositeWithContext,
   buildParentSuffixMap,
   buildEffectiveAnimationAssignment,
   buildSequenceNamingPlan,
@@ -161,8 +163,9 @@ export function useOutputPreview(): OutputPreviewEntry[] {
     ) {
       const { lower, upper } = collectMarkedLayerContext(selectedLayerId, layerTree, docWidth, docHeight)
       const layerFlats = flattenTree([markedLayer], docWidth, docHeight)
-      const canvas = compositeRoot(
-        [...lower, ...layerFlats, ...upper], docWidth, docHeight, outputConfig.background,
+      const canvas = compositeWithContext(
+        layerFlats, lower, upper, docWidth, docHeight, outputConfig.background,
+        collectMaterialOutputContext(selectedLayerId, layerTree, docWidth, docHeight),
       )
       const fileName = replacePreviewExtension(`${markedLayer.originalName}.jpg`, outputConfig.format)
       return [{ canvas, flatName: fileName, path: fileName }]
@@ -229,6 +232,7 @@ function previewAnimFolder(
     outputConfig.processSuffixPosition,
     sequenceNamingPlan.digits,
     sequenceNamingPlan.sheetSequenceNumbers,
+    collectMaterialOutputContext(animFolderId, layerTree, docWidth, docHeight),
   )
 
   // 選択セルのエントリに絞り込む
