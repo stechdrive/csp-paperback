@@ -16,7 +16,7 @@ function resetStore() {
     docHeight: 0,
     docDpiX: 0,
     docDpiY: 0,
-    xdtsData: null,
+    timelineData: null,
     xdtsFileName: null,
     xdtsSourceDirectory: null,
     unmatchedTracks: [],

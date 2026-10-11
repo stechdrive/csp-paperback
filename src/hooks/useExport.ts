@@ -23,14 +23,14 @@ export function useExport(): UseExportResult {
       docWidth,
       docDpiX,
       docDpiY,
-      psdFileName,
       psdSourceDirectory,
       xdtsSourceDirectory,
       outputConfig,
     } = state
 
-    if (!psdFileName || docWidth === 0) {
-      setError('PSD ファイルが読み込まれていません')
+    const sourceFileName = state.clipFileName ?? state.psdFileName
+    if (!sourceFileName || docWidth === 0) {
+      setError('CLIP / PSD ファイルが読み込まれていません')
       return
     }
 
@@ -39,7 +39,7 @@ export function useExport(): UseExportResult {
     setError(null)
 
     try {
-      const defaultExportDirectory = psdSourceDirectory ?? xdtsSourceDirectory ?? undefined
+      const defaultExportDirectory = state.clipSourceDirectory ?? psdSourceDirectory ?? xdtsSourceDirectory ?? undefined
 
       setProgress(0.1)
 
@@ -64,7 +64,7 @@ export function useExport(): UseExportResult {
         await saveEntriesToDirectory(
           entries,
           outputConfig,
-          psdFileName,
+          sourceFileName,
           docDpiX,
           docDpiY,
           handleEntryProgress,
@@ -84,7 +84,7 @@ export function useExport(): UseExportResult {
 
         // 保存: File System Access API が使えればネイティブ保存ダイアログから直接書き込み、
         // それ以外は Blob 化してから downloadBlob でフォールバック
-        await saveZipStream(stream, makeZipFileName(psdFileName), defaultExportDirectory)
+        await saveZipStream(stream, makeZipFileName(sourceFileName), defaultExportDirectory)
       }
       setProgress(1)
     } catch (e) {

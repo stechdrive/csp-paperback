@@ -1,5 +1,5 @@
 import type { Psd, Layer } from 'ag-psd'
-import type { CspLayer, BlendMode, XdtsData } from '../types'
+import type { CspLayer, BlendMode, TimelineData } from '../types'
 import type { ProcessFolderEntry } from '../types/project'
 import { assignTracksToFolders, type AssignResult } from './anim-folder-assignment'
 import { normalizeProcessFolderName } from '../utils/process-folder'
@@ -149,7 +149,7 @@ function convertLayer(
  */
 export function detectAnimationFoldersByXdts(
   tree: CspLayer[],
-  xdts: XdtsData
+  xdts: TimelineData
 ): AssignResult {
   // トラック ↔ フォルダ の対応付けを計算
   const result = assignTracksToFolders(tree, xdts.tracks)
@@ -319,7 +319,7 @@ export function promoteAutoMarkedByProcessMatch(
  */
 export function buildLayerTree(
   psd: Psd,
-  _xdts?: XdtsData,
+  _xdts?: TimelineData,
   archivePatterns: string[] = [],
   autoMarkFolderNames: string[] = [],
 ): CspLayer[] {

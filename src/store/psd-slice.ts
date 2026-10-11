@@ -7,6 +7,7 @@ import { sanitizeManualAnimFolderIds } from '../utils/manual-animation-folder'
 import { buildDefaultVisibilityOverrides } from '../utils/default-visibility'
 import type { AppStore } from './index'
 import type { HistoryOptions } from './history-slice'
+import { nativeBlendOverride } from '../utils/clip/blend'
 
 export interface PsdSlice {
   rawPsd: Psd | null
@@ -44,7 +45,7 @@ function updateLayerBlendMode(
       if (layer.blendMode === blendMode) return layer
       layer.agPsdRef.blendMode = blendMode
       changed = true
-      return { ...layer, blendMode }
+      return { ...layer, blendMode, nativeBlendMode: nativeBlendOverride(layer.nativeBlendMode, blendMode) }
     }
 
     if (layer.children.length === 0) return layer
@@ -94,7 +95,11 @@ export const createPsdSlice: StateCreator<AppStore, [], [], PsdSlice> = (set, ge
 
   loadPsd: (buffer, fileName, sourceDirectory) => {
     const psd = readPsdFile(buffer)
-    const xdts = get().xdtsData ?? undefined
+    if (get().clipDocument) {
+      get().attachClipPsd({ psd, name: fileName, sourceDirectory })
+      return
+    }
+    const xdts = get().timelineData ?? undefined
     const { archivePatterns, autoMarkFolderNames } = get().projectSettings
     const tree = buildLayerTree(psd, xdts, archivePatterns, autoMarkFolderNames)
 
@@ -141,6 +146,7 @@ export const createPsdSlice: StateCreator<AppStore, [], [], PsdSlice> = (set, ge
       selectedCells: new Map(),
       focusedAnimFolderId: null,
       visibilityOverrides: initialVisibility,
+      manualVisibilityIds: new Set(),
       expandedFolders: initialExpanded,
       userCollapsedFolders: new Set(),
       manualAnimFolderIds,
@@ -166,6 +172,11 @@ export const createPsdSlice: StateCreator<AppStore, [], [], PsdSlice> = (set, ge
 
   resetProject: () => {
     set({
+      clipDocument: null,
+      clipFileName: null,
+      clipSourceDirectory: null,
+      clipTimelineId: null,
+      clipDiagnostics: [],
       rawPsd: null,
       psdFileName: null,
       psdSourceDirectory: null,
@@ -174,7 +185,7 @@ export const createPsdSlice: StateCreator<AppStore, [], [], PsdSlice> = (set, ge
       docHeight: 0,
       docDpiX: 0,
       docDpiY: 0,
-      xdtsData: null,
+      timelineData: null,
       xdtsFileName: null,
       xdtsSourceDirectory: null,
       unmatchedTracks: [],
@@ -188,6 +199,7 @@ export const createPsdSlice: StateCreator<AppStore, [], [], PsdSlice> = (set, ge
       selectedVsMemberSetId: null,
       selectedVsMemberId: null,
       visibilityOverrides: new Map(),
+      manualVisibilityIds: new Set(),
       expandedFolders: new Set(),
       userCollapsedFolders: new Set(),
       currentFrame: 0,

@@ -7,6 +7,7 @@ import { useIsMobile } from '../hooks/useIsMobile'
 import { OutputPreview } from './OutputPreview'
 import { ExportSettings } from './ExportSettings'
 import { TimelineSeekBar } from './TimelineSeekBar'
+import { ClipSourceStatus } from './ClipSourceStatus'
 import { useSampleLoader } from '../hooks/useSampleLoader'
 import { QuickStartGuide } from './help/QuickStartGuide'
 import { DESKTOP_RELEASES_URL } from '../platform/external-links'
@@ -16,7 +17,7 @@ import styles from './PreviewPanel.module.css'
 function NavigatorCanvas({ height }: { height: number }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const { containerRef, contentStyle, containerStyle, onMouseDown, zoom } = useZoomPan()
-  const xdtsData = useAppStore(s => s.xdtsData)
+  const timelineData = useAppStore(s => s.timelineData)
   usePreview(canvasRef)
 
   return (
@@ -33,7 +34,7 @@ function NavigatorCanvas({ height }: { height: number }) {
       >
         <canvas ref={canvasRef} className={styles.navigatorCanvas} style={contentStyle} />
       </div>
-      {xdtsData && xdtsData.duration > 0 && <TimelineSeekBar />}
+      {timelineData && timelineData.duration > 0 && <TimelineSeekBar />}
     </div>
   )
 }
@@ -109,8 +110,9 @@ function StartupExportSettings() {
 }
 
 export function PreviewPanel() {
+  const clipFileName = useAppStore(s => s.clipFileName)
   const docWidth = useAppStore(s => s.docWidth)
-  const xdtsData = useAppStore(s => s.xdtsData)
+  const timelineData = useAppStore(s => s.timelineData)
   const xdtsFileName = useAppStore(s => s.xdtsFileName)
   const focusedAnimFolderId = useAppStore(s => s.focusedAnimFolderId)
   const structure = useAppStore(s => s.outputConfig.structure)
@@ -193,10 +195,11 @@ export function PreviewPanel() {
       <div className={styles.header}>
         <span>プレビュー</span>
       </div>
+      <ClipSourceStatus />
       {/* PSD のみ読み込み済み（XDTS なし）バナー */}
-      {!xdtsData && (
+      {!timelineData && !clipFileName && (
         <div className={styles.noXdtsBanner}>
-          XDTS 未読込 — ドロップするとアニメーションセルを自動検出
+          対応するCLIPを追加すると、アニメーションフォルダとタイムラインを読み込めます。XDTSも使用できます。
         </div>
       )}
       <NavigatorCanvas height={navHeight} />

@@ -116,10 +116,10 @@ describe('ExportSettings naming controls', () => {
     expect(screen.getByText('A1_e.jpg')).toBeInTheDocument()
   })
 
-  it('XDTSフォルダ名はセル名モードでだけ変更でき、出力例へ反映する', () => {
+  it('アニメーションフォルダ名はセル名モードでだけ変更でき、出力例へ反映する', () => {
     render(<ExportSettings />)
 
-    const toggle = screen.getByRole('switch', { name: 'XDTSフォルダ名' })
+    const toggle = screen.getByRole('switch', { name: 'アニメーションフォルダ名' })
     expect(toggle).toHaveAttribute('aria-disabled', 'true')
     fireEvent.click(toggle)
     expect(useAppStore.getState().projectSettings.includeXdtsTrackPrefixInCellName).toBe(true)
@@ -154,7 +154,7 @@ describe('ExportSettings naming controls', () => {
     fireEvent.click(screen.getByRole('switch', { name: '工程名の位置' }))
     fireEvent.click(screen.getByRole('switch', { name: '修正工程' }))
     fireEvent.click(screen.getByRole('button', { name: 'セル名' }))
-    fireEvent.click(screen.getByRole('switch', { name: 'XDTSフォルダ名' }))
+    fireEvent.click(screen.getByRole('switch', { name: 'アニメーションフォルダ名' }))
 
     expect(screen.getByTestId('export-option-switch-grid')).toBe(grid)
     expect(Array.from(grid.children)).toEqual(initialItems)
@@ -178,7 +178,7 @@ describe('ExportSettings naming controls', () => {
       ['連番', 'フォルダ内のセルへ1、2…の順番で番号を付けます。桁数は出力する最大番号に合わせます。'],
       ['連番セル名', /A1_ア\.jpgのように、連番とクリスタのセル名を両方付けます/],
       ['セル名', 'クリスタのセル名を使います。A1 / A_1のようにアニメーションフォルダ名から始まるセルは、同じフォルダ名を重ねて付けません。'],
-      ['シート連番', /XDTSのタイムライン順に番号を付け/],
+      ['シート連番', /タイムライン順に番号を付け/],
       ['自動', '出力する最大番号に合わせて桁数を自動調整します。1〜9は1桁、10〜99は2桁になります。'],
       ['4桁', 'すべて0001、0002…の4桁で書き出します。'],
       ['_ あり', /セル名が「1」の場合 A_1\.jpgになります。/],
@@ -196,8 +196,8 @@ describe('ExportSettings naming controls', () => {
     }
 
     const switchCases = [
-      ['XDTSフォルダ名', /セル名が「1」のように.*セル名が「A1」のように.*「付けない」を選びます。/s],
-      ['兼用カット', /OFF: このカットで使うセルだけを書き出します。/],
+      ['アニメーションフォルダ名', /セル名が「1」のように.*セル名が「A1」のように.*「付けない」を選びます。/s],
+      ['兼用カット', /OFF: 選択中のタイムラインで未使用のセルは初期OFFになります。/],
       ['フォルダ分け', /すべて出力先の直下へまとめます。/],
       ['工程名の位置', /工程名をセル番号の前に付けます/],
       ['修正工程', /OFF: 修正工程は出力しますが、フチは付けません。/],

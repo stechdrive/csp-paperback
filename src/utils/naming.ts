@@ -100,7 +100,7 @@ export function resolveTrackPrefixMode(
   includeXdtsTrackPrefixInCellName: boolean,
 ): TrackPrefixMode {
   if (namingMode !== 'cellname' || detectedBy === 'autoProcess') return 'always'
-  if (detectedBy === 'xdts' && !includeXdtsTrackPrefixInCellName) return 'omit'
+  if ((detectedBy === 'xdts' || detectedBy === 'clip') && !includeXdtsTrackPrefixInCellName) return 'omit'
   return 'dedupe-embedded'
 }
 

@@ -1,4 +1,4 @@
-import type { CspLayer, XdtsData, XdtsTrack } from '../types'
+import type { CspLayer, TimelineData, TimelineTrack } from '../types'
 
 /**
  * PSD 読み込み時・表示状態リセット時に使うアプリ側の初期 visibility override。
@@ -13,7 +13,7 @@ import type { CspLayer, XdtsData, XdtsTrack } from '../types'
  */
 export function buildDefaultVisibilityOverrides(
   layers: CspLayer[],
-  xdts?: XdtsData | null,
+  xdts?: TimelineData | null,
   sharedCutMode = false,
 ): Map<string, boolean> {
   const overrides = new Map<string, boolean>()
@@ -34,7 +34,7 @@ export function buildDefaultVisibilityOverrides(
  */
 export function addXdtsUnusedCellHiddenOverrides(
   layers: CspLayer[],
-  xdts: XdtsData,
+  xdts: TimelineData,
   overrides: Map<string, boolean>,
   overwrite = false,
 ): Map<string, boolean> {
@@ -42,7 +42,7 @@ export function addXdtsUnusedCellHiddenOverrides(
 
   function walk(nodes: CspLayer[]): void {
     for (const layer of nodes) {
-      if (layer.isAnimationFolder && layer.animationFolder?.detectedBy === 'xdts') {
+      if (layer.isAnimationFolder && (layer.animationFolder?.detectedBy === 'xdts' || layer.animationFolder?.detectedBy === 'clip')) {
         const trackNo = layer.animationFolder.trackNo
         const track = typeof trackNo === 'number' ? tracksByNo.get(trackNo) : undefined
         if (track) {
@@ -85,7 +85,7 @@ export function addXdtsAnimationFolderShowOverrides(
   overrides: Map<string, boolean>,
 ): Map<string, boolean> {
   for (const layer of layers) {
-    if (layer.isAnimationFolder && layer.animationFolder?.detectedBy === 'xdts') {
+    if (layer.isAnimationFolder && (layer.animationFolder?.detectedBy === 'xdts' || layer.animationFolder?.detectedBy === 'clip')) {
       if (layer.hidden) overrides.set(layer.id, false)
       continue
     }
@@ -96,7 +96,7 @@ export function addXdtsAnimationFolderShowOverrides(
 
 function collectTimelineReachableCellIds(
   animFolder: CspLayer,
-  track: XdtsTrack,
+  track: TimelineTrack,
 ): Set<string> {
   const usedNames = new Set(track.cellNames)
   for (const frame of track.frames) {
@@ -116,4 +116,10 @@ function findBottomFirstCellIndex(animFolder: CspLayer, cellName: string): numbe
     if (animFolder.children[i].originalName === cellName) return i
   }
   return -1
+}
+
+/** Recompute timeline defaults without discarding deliberate eye-button choices. */
+export function retainManualVisibility(defaults: Map<string, boolean>, previous: Map<string, boolean>, manualIds: Set<string>): Map<string, boolean> {
+  for (const id of manualIds) if (previous.has(id)) defaults.set(id, previous.get(id)!)
+  return defaults
 }

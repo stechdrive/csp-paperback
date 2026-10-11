@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import type { XdtsTrack } from '../types'
+import type { TimelineTrack } from '../types'
 import styles from './UnmatchedTracksWarning.module.css'
 
 interface UnmatchedTracksWarningProps {
-  unmatchedTracks: XdtsTrack[]
+  unmatchedTracks: TimelineTrack[]
 }
 
 /**

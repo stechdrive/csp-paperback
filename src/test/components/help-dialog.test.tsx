@@ -22,8 +22,8 @@ describe('HelpDialog information architecture', () => {
 
     const route = [
       '書き出し設定を決める',
-      'クリスタからPSDとXDTSを書き出す',
-      'PSDとXDTSを読み込む',
+      'CLIPを保存する',
+      'CLIPを読み込む',
       '出力プレビューを確認する',
       '「出力」から保存方法を選ぶ',
     ]
@@ -33,8 +33,8 @@ describe('HelpDialog information architecture', () => {
     expect(document.querySelector('[data-help-highlight="出力メニュー"]')).toBeInTheDocument()
 
     const text = screen.getByRole('dialog').textContent ?? ''
-    expect(text).toContain('同じCLIPファイルから')
-    expect(text).toContain('PSDとXDTSの2ファイルを同時に選び')
+    expect(text).toContain('PSDやXDTSの書き出しは不要です')
+    expect(text).toContain('CLIPをEXEまたはショートカットへドロップ')
     expect(text).not.toContain('1つずつ同時に')
     expect(screen.queryByText('CSPアニメーションセル出力の課題')).not.toBeInTheDocument()
   })
@@ -73,11 +73,12 @@ describe('HelpDialog information architecture', () => {
     expect(within(toc).queryByRole('button', { name: /困ったとき/ })).not.toBeInTheDocument()
 
     const text = screen.getByRole('article').textContent ?? ''
-    expect(text).toContain('同じCLIPファイルから書き出したPSDとXDTS')
-    expect(text).toContain('以前「設定を書き出す」で保存した')
+    expect(text).toContain('CLIPを開くと、アニメーションフォルダ・セル・タイムラインを直接読み取り')
+    expect(text).toContain('従来のPSD＋XDTS')
+    expect(text).toContain('設定JSON（任意）')
     expect(text).toContain('CSPのタイムラインで、そのフレームに表示されるセルの重なり')
     expect(text).toContain('兼用カット')
-    expect(text).toContain('XDTSフォルダ名')
+    expect(text).toContain('アニメーションフォルダ名')
     expect(text).toContain('出力する修正工程')
     expect(text).toContain('A2_e.jpg')
     expect(text).toContain('目がOFFのレイヤーやフォルダは、プレビューにも出力にも含まれません')

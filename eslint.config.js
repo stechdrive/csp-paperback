@@ -7,6 +7,7 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
   globalIgnores([
+    '.tmp',
     'coverage',
     'dist',
     'playwright-report',

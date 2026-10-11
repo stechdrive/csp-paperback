@@ -23,4 +23,5 @@ export type {
   OutputEntry,
 } from './output'
 export { DEFAULT_OUTPUT_CONFIG } from './output'
+export type { TimelineFrame, TimelineTrack, TimelineData } from './timeline'
 export type { XdtsFrame, XdtsTrack, XdtsData } from './xdts'

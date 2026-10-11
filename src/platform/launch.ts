@@ -1,6 +1,6 @@
 import { isDesktopRuntime } from './runtime'
 
-const QUICK_EXPORT_EXTENSIONS = new Set(['psd', 'xdts'])
+const QUICK_EXPORT_EXTENSIONS = new Set(['clip', 'psd', 'xdts'])
 
 function ext(path: string): string {
   return path.toLowerCase().split('.').pop() ?? ''

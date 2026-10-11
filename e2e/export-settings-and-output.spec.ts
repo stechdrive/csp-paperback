@@ -40,8 +40,8 @@ test('保存設定を再読込とサンプル読込へ引き継ぎ、実ZIPを�
     .toHaveAttribute('aria-checked', 'true')
 
   await page.getByRole('button', { name: 'サンプルデータで試す', exact: true }).click()
-  await expect(page.getByText('c001.psd', { exact: true })).toBeVisible()
-  await expect(page.getByText('c001.xdts', { exact: true })).toBeVisible()
+  await expect(page.getByText('c001.clip', { exact: true })).toBeVisible()
+  await expect(page.getByTestId('clip-source-status')).toContainText('CLIPから読み込み')
   await expect(page.getByTitle('A/A1_e.png')).toBeVisible()
 
   const downloadPromise = page.waitForEvent('download')

@@ -8,6 +8,7 @@ import {
 } from '../types'
 import { createPsdSlice, type PsdSlice } from './psd-slice'
 import { createXdtsSlice, type XdtsSlice } from './xdts-slice'
+import { createClipSlice, type ClipSlice } from './clip-slice'
 import { createAnimationSlice, type AnimationSlice } from './animation-slice'
 import { createMarksSlice, type MarksSlice } from './marks-slice'
 import { createProjectSlice, type ProjectSlice } from './project-slice'
@@ -21,6 +22,7 @@ import { normalizeProcessTableColors } from '../utils/process-color'
 export type AppStore =
   PsdSlice &
   XdtsSlice &
+  ClipSlice &
   AnimationSlice &
   MarksSlice &
   ProjectSlice &
@@ -33,6 +35,7 @@ export const useAppStore = create<AppStore>()(
     (...a) => ({
       ...createPsdSlice(...a),
       ...createXdtsSlice(...a),
+      ...createClipSlice(...a),
       ...createAnimationSlice(...a),
       ...createMarksSlice(...a),
       ...createProjectSlice(...a),

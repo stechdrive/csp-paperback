@@ -24,7 +24,7 @@ let _cache: {
 let _navigatorCache: {
   layerTree: CspLayer[]
   visibilityOverrides: Map<string, boolean>
-  xdtsData: AppStore['xdtsData']
+  timelineData: AppStore['timelineData']
   processTable: ProcessFolderEntry[]
   result: CspLayer[]
 } | null = null
@@ -74,17 +74,17 @@ export function selectLayerTreeWithVisibility(state: AppStore): CspLayer[] {
  * XDTS がない場合は従来どおり手動指定も含めたツリーを返す。
  */
 export function selectLayerTreeForNavigator(state: AppStore): CspLayer[] {
-  if (!state.xdtsData) {
+  if (!state.timelineData) {
     return selectLayerTreeWithVisibility(state)
   }
 
-  const { layerTree, visibilityOverrides, xdtsData } = state
+  const { layerTree, visibilityOverrides, timelineData } = state
   const processTable = state.projectSettings?.processTable ?? []
   if (
     _navigatorCache !== null &&
     _navigatorCache.layerTree === layerTree &&
     _navigatorCache.visibilityOverrides === visibilityOverrides &&
-    _navigatorCache.xdtsData === xdtsData &&
+    _navigatorCache.timelineData === timelineData &&
     _navigatorCache.processTable === processTable
   ) {
     return _navigatorCache.result
@@ -95,7 +95,7 @@ export function selectLayerTreeForNavigator(state: AppStore): CspLayer[] {
     : layerTree
   const result = promoteAutoMarkedByProcessMatch(overridden, processTable)
 
-  _navigatorCache = { layerTree, visibilityOverrides, xdtsData, processTable, result }
+  _navigatorCache = { layerTree, visibilityOverrides, timelineData, processTable, result }
   return result
 }
 

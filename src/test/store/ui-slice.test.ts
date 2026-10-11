@@ -20,7 +20,7 @@ beforeEach(() => {
     projectSettings: DEFAULT_PROJECT_SETTINGS,
     outputConfig: DEFAULT_OUTPUT_CONFIG,
     savedOutputConfig: DEFAULT_OUTPUT_CONFIG,
-    xdtsData: null,
+    timelineData: null,
     xdtsFileName: null,
     unmatchedTracks: [],
     selectedCells: new Map(),
@@ -60,7 +60,7 @@ describe('ui-slice XDTS timeline sync', () => {
     expect(treeBottomA.animationFolder?.trackNo).toBe(0)
     expect(treeTopA.animationFolder?.trackNo).toBe(1)
 
-    useAppStore.setState({ layerTree: tree, xdtsData: xdts })
+    useAppStore.setState({ layerTree: tree, timelineData: xdts })
     useAppStore.getState().seekToFrame(0)
 
     const selected = useAppStore.getState().selectedCells
@@ -91,7 +91,7 @@ describe('ui-slice XDTS timeline sync', () => {
     expect(treeAnimA.children[0].originalName).toBe('1')
     expect(treeAnimA.children[1].originalName).toBe('1')
 
-    useAppStore.setState({ layerTree: tree, xdtsData: xdts })
+    useAppStore.setState({ layerTree: tree, timelineData: xdts })
     useAppStore.getState().seekToFrame(0)
 
     const selected = useAppStore.getState().selectedCells
@@ -118,7 +118,7 @@ describe('ui-slice XDTS timeline sync', () => {
     }
     detectAnimationFoldersByXdts(tree, xdts)
 
-    useAppStore.setState({ layerTree: tree, xdtsData: xdts })
+    useAppStore.setState({ layerTree: tree, timelineData: xdts })
     useAppStore.getState().seekToFrame(0)
 
     const hiddenAIndex = tree[0].children.findIndex(
@@ -151,7 +151,7 @@ describe('ui-slice XDTS timeline sync', () => {
     expect(xdtsA).toBeDefined()
     markManualAnimFolder(manualA!)
 
-    useAppStore.setState({ layerTree: tree, xdtsData: xdts, currentFrame: 0 })
+    useAppStore.setState({ layerTree: tree, timelineData: xdts, currentFrame: 0 })
     const cellIndex = manualA!.children.findIndex(cell => cell.originalName === '2')
     useAppStore.getState().selectAnimCell(manualA!.id, cellIndex)
 

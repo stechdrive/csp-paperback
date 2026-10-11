@@ -21,6 +21,7 @@ export default defineConfig({
       '**/dist/**',
       '**/.{idea,git,cache,output,temp}/**',
       '**/.claude/**',
+      '**/.tmp/**',
       '**/e2e/**',
     ],
     coverage: {

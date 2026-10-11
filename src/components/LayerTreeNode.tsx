@@ -266,7 +266,7 @@ export function LayerTreeNode({
   const isOutputAutoMarked = layer.autoMarked && !isAutoMarkedContainerSuppressed
   const isMarked = isOutputAutoMarked || singleMarks.has(layer.id)
   const isManualAnimFolder = manualAnimFolderIds.has(layer.id)
-  const isXdtsAnimFolder = layer.animationFolder?.detectedBy === 'xdts'
+  const isXdtsAnimFolder = layer.animationFolder?.detectedBy === 'xdts' || layer.animationFolder?.detectedBy === 'clip'
   const isAutoProcessAnimFolder = layer.animationFolder?.detectedBy === 'autoProcess'
   const isAnimFolder = layer.isAnimationFolder || (layer.isFolder && isManualAnimFolder)
   const canToggleManualAnimFolder = layer.isFolder &&

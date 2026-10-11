@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+vi.mock('../../utils/clip-io', () => ({ readClipFile: vi.fn() }))
+
 vi.mock('../../store', () => ({
   useAppStore: { getState: vi.fn() },
 }))
@@ -27,6 +29,7 @@ import { allowTauriLaunchFilePaths, loadableFilesFromPaths } from '../../platfor
 import { buildOutputEntriesFromState } from '../../utils/export-entries'
 import { saveEntriesToDirectoryPath } from '../../utils/directory-builder'
 import { resolveQuickExportFilePair, runQuickExport } from '../../utils/quick-export'
+import { readClipFile } from '../../utils/clip-io'
 import { DEFAULT_OUTPUT_CONFIG, type OutputEntry } from '../../types'
 
 const mockedGetState = vi.mocked(useAppStore.getState)
@@ -41,6 +44,11 @@ beforeEach(() => {
 })
 
 describe('resolveQuickExportFilePair', () => {
+  it('CLIP単独とCLIP＋PSDを解決し、XDTSを要求しない', () => {
+    expect(resolveQuickExportFilePair(['cut.clip'])).toEqual({ clipPath: 'cut.clip' })
+    expect(resolveQuickExportFilePair(['cut.psd', 'cut.clip', 'cut.xdts'])).toEqual({ clipPath: 'cut.clip', psdPath: 'cut.psd' })
+    expect(() => resolveQuickExportFilePair(['one.clip', 'two.clip'])).toThrow('1ファイルずつ')
+  })
   it('PSDとXDTSを1つずつ同じ起動引数から解決する', () => {
     expect(resolveQuickExportFilePair([
       String.raw`C:\work\cut001\cut001.psd`,
@@ -71,6 +79,20 @@ describe('resolveQuickExportFilePair', () => {
 })
 
 describe('runQuickExport', () => {
+  it('CLIP単独を共通ローダーで読み、CLIPと同じ場所へ書き出す', async () => {
+    const source = { width: 8, height: 8, dpi: 72, layers: [], timelines: [], defaultTimelineId: null, diagnostics: [] }
+    const state = { loadClip: vi.fn(), clipFileName: 'cut.clip', docWidth: 8, docDpiX: 72, docDpiY: 72, savedOutputConfig: DEFAULT_OUTPUT_CONFIG }
+    vi.mocked(readClipFile).mockResolvedValue(source)
+    mockedGetState.mockReturnValue(state as never)
+    mockedDirname.mockResolvedValue('C:/cut')
+    mockedLoadableFilesFromPaths.mockResolvedValue([{ name: 'cut.clip', sourceDirectory: 'C:/cut', arrayBuffer: async () => new ArrayBuffer(0), text: async () => '' }])
+    mockedBuildOutputEntries.mockReturnValue([{} as OutputEntry])
+    mockedSaveEntries.mockResolvedValue('C:/cut/cut')
+    await expect(runQuickExport(['C:/cut/cut.clip'], vi.fn())).resolves.toEqual({ outputDirectory: 'C:/cut/cut', entryCount: 1 })
+    expect(readClipFile).toHaveBeenCalledWith(expect.any(ArrayBuffer), true)
+    expect(state.loadClip).toHaveBeenCalledWith(source, 'cut.clip', 'C:/cut', undefined)
+    expect(mockedSaveEntries).toHaveBeenCalledWith(expect.any(Array), DEFAULT_OUTPUT_CONFIG, 'cut.clip', 'C:/cut', 72, 72, expect.any(Function))
+  })
   it('保存済み設定でPSD/XDTSを読み込み、同じ設定を合成と保存へ渡す', async () => {
     const resetProject = vi.fn()
     const loadXdts = vi.fn()
@@ -90,7 +112,7 @@ describe('runQuickExport', () => {
       docWidth: 1920,
       docDpiX: 144,
       docDpiY: 144,
-      xdtsData: { tracks: [] },
+      timelineData: { tracks: [] },
       outputConfig: { ...DEFAULT_OUTPUT_CONFIG },
       savedOutputConfig,
     }
@@ -152,7 +174,7 @@ describe('runQuickExport', () => {
       loadPsd: vi.fn(),
       psdFileName: 'cut001.psd',
       docWidth: 1920,
-      xdtsData: { tracks: [] },
+      timelineData: { tracks: [] },
       savedOutputConfig: { ...DEFAULT_OUTPUT_CONFIG },
     }
     mockedGetState.mockReturnValue(state as never)

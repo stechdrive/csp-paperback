@@ -2,6 +2,7 @@ import { defineConfig, devices } from '@playwright/test'
 
 const PORT = 4173
 const BASE_URL = `http://127.0.0.1:${PORT}/csp-paperback/`
+const preview = process.env.CSP_PAPERBACK_E2E_PREVIEW === '1'
 
 export default defineConfig({
   testDir: './e2e',
@@ -16,7 +17,7 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   webServer: {
-    command: `npm run dev -- --host 127.0.0.1 --port ${PORT} --strictPort`,
+    command: `npm run ${preview ? 'preview' : 'dev'} -- --host 127.0.0.1 --port ${PORT} --strictPort`,
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

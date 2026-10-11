@@ -1,5 +1,7 @@
 import type { LayerMaskData } from 'ag-psd'
 import type { BlendMode, FlatLayer } from '../types'
+import { drawNativeBlend } from './native-blend'
+import { drawAdjustment } from './material-adjustment'
 
 /**
  * ag-psdのBlendModeをCanvasのglobalCompositeOperationにマッピング
@@ -81,7 +83,7 @@ export function compositeStack(
     if (!layer.clipping) {
       // 通常レイヤー: そのまま合成してベースとして記録
       drawLayer(ctx, layer)
-      baseLayer = layer
+      if (!layer.adjustment) baseLayer = layer
     } else {
       // クリッピングレイヤー: ベースのアルファで切り抜いてから合成
       if (baseLayer === null) {
@@ -104,10 +106,13 @@ export function drawLayer(
   ctx: CanvasRenderingContext2D,
   layer: FlatLayer
 ): void {
+  if (layer.adjustment) { drawAdjustment(ctx, layer); return }
   const compositeOp = blendModeToCompositeOp(layer.blendMode)
 
   const alpha = layer.opacity / 100
-  if (compositeOp !== null) {
+  if (layer.nativeBlendMode !== undefined && (compositeOp === null || layer.nativeBlendMode === 10 || layer.nativeBlendMode === 12)) {
+    drawNativeBlend(ctx, layer)
+  } else if (compositeOp !== null) {
     ctx.save()
     ctx.globalCompositeOperation = compositeOp
     ctx.globalAlpha = alpha

@@ -1,3 +1,4 @@
+import { applyMaterialEffects } from './material-effects'
 import type { CspLayer, FlatLayer } from '../types'
 import { collectAnimFolderAncestorIds } from './tree-builder'
 import { applyLayerMask, compositeGroup, compositeStack, createCanvas } from './compositor'
@@ -46,7 +47,7 @@ export function flattenTree(
       const selectedCell = selection.cell
       const cellFlats = flattenLayer(selectedCell)
       if (cellFlats.length === 0) return []
-      const rawCanvas = compositeGroup(cellFlats, docWidth, docHeight)
+      const rawCanvas = applyMaterialEffects(compositeGroup(cellFlats, docWidth, docHeight), 0, 0, layer.materialEffects, docWidth, docHeight)
       const maskData = layer.agPsdRef.mask
       const finalCanvas = (maskData?.canvas && !maskData.disabled)
         ? applyLayerMask(rawCanvas, 0, 0, maskData, docWidth, docHeight)
@@ -59,6 +60,7 @@ export function flattenTree(
         left: 0,
         sourceId: layer.id,
         clipping: layer.clipping,
+        nativeBlendMode: layer.nativeBlendMode,
       }]
     }
 
@@ -82,13 +84,13 @@ export function flattenTree(
       }
       if (childFlats.length === 0) return []
 
-      if (layer.blendMode === 'pass through') {
+      if (layer.blendMode === 'pass through' && !layer.materialEffects) {
         // Pass Through: 子をそのまま親のスタックに展開（中間キャンバスなし）
         // フォルダマスクはPass Throughでは子ごとに適用できないためスキップ（v1制限）
         return childFlats
       } else {
         // 非Pass Through: 子を合成して1枚のFlatLayerに
-        const rawCanvas = compositeGroup(childFlats, docWidth, docHeight)
+        const rawCanvas = applyMaterialEffects(compositeGroup(childFlats, docWidth, docHeight), 0, 0, layer.materialEffects, docWidth, docHeight)
         const maskData = layer.agPsdRef.mask
         const finalCanvas = (maskData?.canvas && !maskData.disabled)
           ? applyLayerMask(rawCanvas, 0, 0, maskData, docWidth, docHeight)
@@ -101,28 +103,33 @@ export function flattenTree(
           left: 0,
           sourceId: layer.id,
           clipping: layer.clipping,
+          nativeBlendMode: layer.nativeBlendMode,
         }]
       }
     }
 
     // 通常レイヤー
-    const canvas = layer.agPsdRef.canvas
-    if (!canvas) return []
+    const sourceCanvas = layer.agPsdRef.canvas
+    if (!sourceCanvas) return []
+    const canvas = applyMaterialEffects(sourceCanvas, layer.left, layer.top, layer.materialEffects, docWidth, docHeight)
+    const fullSize = !!layer.materialEffects
 
     const maskData = layer.agPsdRef.mask
     const hasMask = !!(maskData?.canvas && !maskData.disabled)
     const finalCanvas = hasMask
-      ? applyLayerMask(canvas, layer.top, layer.left, maskData!, docWidth, docHeight)
+      ? applyLayerMask(canvas, fullSize ? 0 : layer.top, fullSize ? 0 : layer.left, maskData!, docWidth, docHeight)
       : canvas
 
     return [{
       canvas: finalCanvas,
       blendMode: layer.blendMode,
       opacity: effectiveOpacity,
-      top: hasMask ? 0 : layer.top,
-      left: hasMask ? 0 : layer.left,
+      top: hasMask || fullSize ? 0 : layer.top,
+      left: hasMask || fullSize ? 0 : layer.left,
       sourceId: layer.id,
       clipping: layer.clipping,
+      nativeBlendMode: layer.nativeBlendMode,
+      adjustment: layer.adjustment,
     }]
   }
 

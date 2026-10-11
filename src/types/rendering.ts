@@ -1,0 +1,22 @@
+export interface EdgeEffect { radius: number; color: [number, number, number] }
+export interface MaterialEffects {
+  edge?: EdgeEffect
+}
+
+export type MaterialAdjustment = { kind: 'invert' } | { kind: 'threshold'; threshold: number }
+
+/** Corners in document space: top left, top right, bottom right, bottom left. */
+export type MaterialQuad = [number, number, number, number, number, number, number, number]
+
+export interface TextObject {
+  text: string
+  left: number
+  top: number
+  width: number
+  height: number
+  font: string
+  size: number
+  color: [number, number, number]
+  align: 'left' | 'center' | 'right'
+  runs: { start: number; length: number; font: string; size: number; color: [number, number, number] }[]
+}

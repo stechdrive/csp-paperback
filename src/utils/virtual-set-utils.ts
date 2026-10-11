@@ -1,3 +1,5 @@
+import { applyMaterialEffects } from '../engine/material-effects'
+import { nativeBlendOverride } from './clip/blend'
 import { compositeGroup, applyLayerMask } from '../engine/compositor'
 import { collectAnimFolderAncestorIds } from '../engine/tree-builder'
 import { resolveSelectedAnimCell } from './anim-cell-selection'
@@ -94,7 +96,7 @@ function flattenTreeWithCompositeOverrides(
       if (!selection) return []
       const cellFlats = flattenLayer(selection.cell)
       if (cellFlats.length === 0) return []
-      const rawCanvas = compositeGroup(cellFlats, docWidth, docHeight)
+      const rawCanvas = applyMaterialEffects(compositeGroup(cellFlats, docWidth, docHeight), 0, 0, layer.materialEffects, docWidth, docHeight)
       const maskData = layer.agPsdRef.mask
       const finalCanvas = (maskData?.canvas && !maskData.disabled)
         ? applyLayerMask(rawCanvas, 0, 0, maskData, docWidth, docHeight)
@@ -107,6 +109,7 @@ function flattenTreeWithCompositeOverrides(
         left: 0,
         sourceId: layer.id,
         clipping: layer.clipping,
+        nativeBlendMode: nativeBlendOverride(layer.nativeBlendMode, override?.blendMode),
       }]
     }
 
@@ -125,11 +128,11 @@ function flattenTreeWithCompositeOverrides(
       }
       if (childFlats.length === 0) return []
 
-      if (!shouldIsolateFolderForComposite(effectiveBlendMode, effectiveOpacity, hasOverride)) {
+      if (!layer.materialEffects && !shouldIsolateFolderForComposite(effectiveBlendMode, effectiveOpacity, hasOverride)) {
         return childFlats
       }
 
-      const rawCanvas = compositeGroup(childFlats, docWidth, docHeight)
+      const rawCanvas = applyMaterialEffects(compositeGroup(childFlats, docWidth, docHeight), 0, 0, layer.materialEffects, docWidth, docHeight)
       const maskData = layer.agPsdRef.mask
       const finalCanvas = (maskData?.canvas && !maskData.disabled)
         ? applyLayerMask(rawCanvas, 0, 0, maskData, docWidth, docHeight)
@@ -142,26 +145,31 @@ function flattenTreeWithCompositeOverrides(
         left: 0,
         sourceId: layer.id,
         clipping: layer.clipping,
+        nativeBlendMode: nativeBlendOverride(layer.nativeBlendMode, override?.blendMode),
       }]
     }
 
-    const canvas = layer.agPsdRef.canvas
-    if (!canvas) return []
+    const sourceCanvas = layer.agPsdRef.canvas
+    if (!sourceCanvas) return []
+    const canvas = applyMaterialEffects(sourceCanvas, layer.left, layer.top, layer.materialEffects, docWidth, docHeight)
+    const fullSize = !!layer.materialEffects
 
     const maskData = layer.agPsdRef.mask
     const hasMask = !!(maskData?.canvas && !maskData.disabled)
     const finalCanvas = hasMask
-      ? applyLayerMask(canvas, layer.top, layer.left, maskData!, docWidth, docHeight)
+      ? applyLayerMask(canvas, fullSize ? 0 : layer.top, fullSize ? 0 : layer.left, maskData!, docWidth, docHeight)
       : canvas
 
     return [{
       canvas: finalCanvas,
       blendMode: effectiveBlendMode,
       opacity: effectiveOpacity,
-      top: hasMask ? 0 : layer.top,
-      left: hasMask ? 0 : layer.left,
+      top: hasMask || fullSize ? 0 : layer.top,
+      left: hasMask || fullSize ? 0 : layer.left,
       sourceId: layer.id,
       clipping: layer.clipping,
+      nativeBlendMode: nativeBlendOverride(layer.nativeBlendMode, override?.blendMode),
+      adjustment: layer.adjustment,
     }]
   }
 

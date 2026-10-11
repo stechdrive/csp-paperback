@@ -44,10 +44,10 @@ export async function pickProjectFiles(): Promise<LoadableFile[]> {
 
   const { open } = await import('@tauri-apps/plugin-dialog')
   const selected = await open({
-    title: 'PSD / XDTS / 工程設定JSON を開く',
+    title: 'CLIP / PSD / XDTS / 工程設定JSON を開く',
     multiple: true,
     filters: [
-      { name: 'CSP Paperback files', extensions: ['psd', 'xdts', 'json'] },
+      { name: 'CSP Paperback files', extensions: ['clip', 'psd', 'xdts', 'json'] },
       { name: 'All files', extensions: ['*'] },
     ],
   })

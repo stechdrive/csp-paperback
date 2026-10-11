@@ -52,15 +52,15 @@ const sampleLayerRows: Array<{
   { depth: 1, kind: 'single', name: '_SL', note: '単体出力' },
   { depth: 0, kind: 'normal', name: 'LO', note: '整理用フォルダ' },
   { depth: 1, kind: 'process', name: '演出', note: '工程フォルダ：_e' },
-  { depth: 2, kind: 'animation', name: 'A', note: 'XDTSトラックA' },
+  { depth: 2, kind: 'animation', name: 'A', note: 'タイムライントラックA' },
   { depth: 3, kind: 'normal', name: '1', note: '演出修正' },
   { depth: 1, kind: 'normal', name: '作画', note: '本体の作画フォルダ' },
-  { depth: 2, kind: 'animation', name: 'B', note: 'XDTSトラックB' },
+  { depth: 2, kind: 'animation', name: 'B', note: 'タイムライントラックB' },
   { depth: 3, kind: 'normal', name: '1', note: 'セルフォルダ' },
   { depth: 4, kind: 'process', name: '_s', note: '作監修正：本体から分離' },
   { depth: 4, kind: 'normal', name: '線画1', note: 'B1本体へ入る' },
   { depth: 4, kind: 'normal', name: '影', note: 'B1本体へ入る' },
-  { depth: 2, kind: 'animation', name: 'A', note: 'XDTSトラックA' },
+  { depth: 2, kind: 'animation', name: 'A', note: 'タイムライントラックA' },
   { depth: 3, kind: 'normal', name: '1', note: 'A1本体' },
   { depth: 0, kind: 'normal', name: '_原図', note: '整理用フォルダ' },
   { depth: 1, kind: 'single', name: '_BOOK1', note: '単体出力' },
@@ -160,7 +160,7 @@ export function AboutGuide() {
           <div className={styles.compareCard}>
             <h3>複数レイヤーの組み合わせ</h3>
             <p>
-              元のPSDを複製せず、キャラ・BG・BOOKなどを選んだ確認用画像を追加したい。
+              元の素材を複製せず、キャラ・BG・BOOKなどを選んだ確認用画像を追加したい。
             </p>
           </div>
         </div>
@@ -209,11 +209,11 @@ export function AboutGuide() {
           </li>
           <li>
             <strong>仮想セル</strong>：
-            PSD内のレイヤーを選び、指定したレイヤー順へ挿入した1枚の合成画像を追加します。
+            読み込んだレイヤーを選び、指定したレイヤー順へ挿入した1枚の合成画像を追加します。
           </li>
           <li>
             <strong>タイムライン表示</strong>：
-            XDTSを使って、CSPのタイムラインで各フレームに表示されるセルの重なりを確認します。
+            CLIPのタイムラインを使って、CSPのタイムラインで各フレームに表示されるセルの重なりを確認します。
           </li>
           <li>
             <strong>ファイル名の調整</strong>：
@@ -225,8 +225,8 @@ export function AboutGuide() {
 
       <Section id="compositing" title="3. CSPのレイヤー構成と出力結果">
         <p className={styles.paragraph}>
-          下の構成を持つ1つのCLIPファイルからPSDとXDTSを書き出し、2ファイルを一緒に読み込んだ場合を説明します。
-          XDTSのA・B・Aトラックに対応するアニメーションフォルダが、PSD側では
+          下の構成を持つ1つのCLIPファイルを読み込んだ場合を説明します。
+          A・B・Aの各トラックに対応するアニメーションフォルダが、レイヤー側では
           <code>LO/演出/A</code>、<code>LO/作画/B</code>、<code>LO/作画/A</code>にあります。
           設定では「演出」を<code>_e</code>、「_s」を<code>_s</code>の工程として登録しています。
           出力名はシート連番、区切りなし、フォルダ分けOFFです。
@@ -299,7 +299,7 @@ export function AboutGuide() {
       <Section id="opacity" title="4. 不透明度が出力でどう扱われるか">
         <p className={styles.paragraph}>
           CSPで前後のセルや修正を見比べるために、アニメーションフォルダやセル全体を一時的に薄くしていても、
-          その作業用の透かしは完成画像へ持ち込みません。一方、半透明の影やエフェクトはPSDの値を使います。
+          その作業用の透かしは完成画像へ持ち込みません。一方、半透明の影やエフェクトは素材の値を使います。
         </p>
 
         <div className={styles.tableWrap}>
@@ -315,7 +315,7 @@ export function AboutGuide() {
               </tr>
               <tr>
                 <td>実際に描かれたレイヤー</td>
-                <td>PSDの値を使う</td>
+                <td>素材の値を使う</td>
                 <td>線画、彩色、影、半透明エフェクト</td>
               </tr>
             </tbody>
@@ -331,7 +331,7 @@ export function AboutGuide() {
       <Section id="privacy" title="5. 通信とファイルアクセス">
         <div className={styles.privacyStatement}>
           <strong>作品データは外部へ送信しません。</strong>
-          <span>PSD、XDTS、設定内容、ファイル名、生成画像の処理はブラウザ内または端末内で完結します。</span>
+          <span>CLIP、PSD、XDTS、設定内容、ファイル名、生成画像の処理はブラウザ内または端末内で完結します。</span>
         </div>
 
         <ul className={styles.list}>
@@ -353,7 +353,7 @@ export function AboutGuide() {
 
         <div className={styles.callout}>
           このテンプレートを使う必要はありません。
-          普段のCLIPファイルから同じカットのPSDとXDTSを書き出して利用できます。
+          普段のCLIPだけで利用できます。必要に応じて対応PSDを追加でき、従来のPSD＋XDTSも使用できます。
         </div>
 
         <div className={styles.templateAction}>

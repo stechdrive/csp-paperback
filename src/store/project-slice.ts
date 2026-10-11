@@ -12,7 +12,7 @@ import {
   resolveCellPrefixSeparator,
   resolveIncludeXdtsTrackPrefixInCellName,
 } from '../types'
-import { buildDefaultVisibilityOverrides } from '../utils/default-visibility'
+import { buildDefaultVisibilityOverrides, retainManualVisibility } from '../utils/default-visibility'
 import { normalizeProcessTableColors } from '../utils/process-color'
 import type { AppStore } from './index'
 
@@ -88,7 +88,7 @@ export const createProjectSlice: StateCreator<AppStore, [], [], ProjectSlice> = 
   },
 
   setSharedCutMode: (enabled) => {
-    const { projectSettings, layerTree, xdtsData } = get()
+    const { projectSettings, layerTree, timelineData } = get()
     if (!!projectSettings.sharedCutMode === enabled) return
 
     get().pushHistory()
@@ -96,7 +96,7 @@ export const createProjectSlice: StateCreator<AppStore, [], [], ProjectSlice> = 
     const nextState: Partial<AppStore> = { projectSettings: nextSettings }
 
     if (layerTree.length > 0) {
-      nextState.visibilityOverrides = buildDefaultVisibilityOverrides(layerTree, xdtsData, enabled)
+      nextState.visibilityOverrides = retainManualVisibility(buildDefaultVisibilityOverrides(layerTree, timelineData, enabled), get().visibilityOverrides, get().manualVisibilityIds)
     }
 
     set(nextState as AppStore)

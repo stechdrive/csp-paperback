@@ -26,6 +26,11 @@ import { buildLayerTree, detectAnimationFoldersByXdts } from '../../engine/tree-
 import { extractAllEntries, extractVirtualSetEntries } from '../../engine/cell-extractor'
 import { selectLayerTreeWithVisibility } from '../../store/selectors'
 import { DEFAULT_PROJECT_SETTINGS } from '../../types'
+import { Blob as NodeBlob } from 'node:buffer'
+import initSqlJs from 'sql.js'
+import { parseClipDocument } from '../../utils/clip/parser'
+import { buildClipLayerTree, clipRenderingSource } from '../../engine/clip-tree'
+import { vi } from 'vitest'
 
 const GOLDEN_PROJECT_SETTINGS = {
   ...DEFAULT_PROJECT_SETTINGS,
@@ -67,11 +72,11 @@ function restoreDocumentCreateElement(): void {
   origCreateElement = null
 }
 
-describe('c001 golden (image pixel match)', () => {
-  beforeAll(() => { patchDocumentCreateElement() })
-  afterAll(() => { restoreDocumentCreateElement() })
+describe.each(['PSD + XDTS', 'CLIP + PSD', 'CLIP standalone'])('c001 golden (image pixel match): %s', mode => {
+  beforeAll(() => { patchDocumentCreateElement(); vi.stubGlobal('Blob', NodeBlob) })
+  afterAll(() => { restoreDocumentCreateElement(); vi.unstubAllGlobals() })
 
-  it('rendered PNG set and pixels match golden (with 1-ch tolerance)', async () => {
+  it('matches PNG names and pixels within 1 channel for all input paths', async () => {
     // 実データ読み込み
     const psdBuf = fs.readFileSync(path.join(TESTDATA, 'c001.psd'))
     const xdtsText = fs.readFileSync(path.join(TESTDATA, 'c001.xdts'), 'utf-8')
@@ -82,8 +87,15 @@ describe('c001 golden (image pixel match)', () => {
     const xdts = parseXdts(xdtsText)
 
     // ツリー構築 + XDTS 検出
-    const baseTree = buildLayerTree(psd, xdts, DEFAULT_PROJECT_SETTINGS.archivePatterns, DEFAULT_PROJECT_SETTINGS.autoMarkFolderNames)
-    detectAnimationFoldersByXdts(baseTree, xdts)
+    let baseTree
+    if (mode !== 'PSD + XDTS') {
+      const SQL = await initSqlJs({ wasmBinary: new Uint8Array(fs.readFileSync(path.join(REPO_ROOT, 'node_modules/sql.js/dist/sql-wasm.wasm'))).buffer })
+      const clip = await parseClipDocument(fs.readFileSync(path.join(REPO_ROOT, 'public/sample/c001.clip')), SQL, mode === 'CLIP standalone')
+      baseTree = buildClipLayerTree(clip, mode === 'CLIP standalone' ? clipRenderingSource(clip) : psd, clip.timelines[0], DEFAULT_PROJECT_SETTINGS, mode !== 'CLIP standalone')
+    } else {
+      baseTree = buildLayerTree(psd, xdts, DEFAULT_PROJECT_SETTINGS.archivePatterns, DEFAULT_PROJECT_SETTINGS.autoMarkFolderNames)
+      detectAnimationFoldersByXdts(baseTree, xdts)
+    }
 
     const virtualSets = buildC001VirtualSets(baseTree)
 

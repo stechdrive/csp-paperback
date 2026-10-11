@@ -18,7 +18,7 @@ fn has_quick_export_args() -> bool {
 
 fn is_quick_export_file(path: &str) -> bool {
     let lower = path.to_ascii_lowercase();
-    lower.ends_with(".psd") || lower.ends_with(".xdts")
+    lower.ends_with(".clip") || lower.ends_with(".psd") || lower.ends_with(".xdts")
 }
 
 #[tauri::command]
@@ -34,11 +34,12 @@ fn allow_launch_file_paths(app: tauri::AppHandle) -> Result<(), String> {
         .into_iter()
         .filter(|path| is_quick_export_file(path))
     {
-        let is_xdts = arg.to_ascii_lowercase().ends_with(".xdts");
+        let lower = arg.to_ascii_lowercase();
+        let is_output_source = lower.ends_with(".clip") || lower.ends_with(".xdts");
         let path = PathBuf::from(arg);
         scope.allow_file(&path).map_err(|error| error.to_string())?;
 
-        if is_xdts {
+        if is_output_source {
             if let Some(parent) = path.parent() {
                 scope
                     .allow_directory(parent, true)

@@ -62,19 +62,16 @@ export function QuickStartGuide({
           迷ったら初期設定のままで構いません。
         </Step>
 
-        <Step number={2} title="クリスタからPSDとXDTSを書き出す">
-          同じCLIPファイルから、PSDは
-          <span className={styles.menuPath}> ファイル ＞ 複製を保存 ＞ Photoshopドキュメント</span>、
-          XDTSは
-          <span className={styles.menuPath}> ファイル ＞ アニメーション書き出し ＞ タイムシート情報の書き出し</span>
-          でXDTS形式を選んで書き出します。
+        <Step number={2} title="CLIPを保存する">
+          クリスタで作業中のCLIPを保存します。PSDやXDTSの書き出しは不要です。
         </Step>
 
-        <Step number={3} title={xdtsLoaded ? 'PSDを読み込む' : 'PSDとXDTSを読み込む'}>
+        <Step number={3} title={xdtsLoaded ? 'PSDを読み込む' : 'CLIPを読み込む'}>
           {xdtsLoaded
             ? 'XDTSは読み込み済みです。対応するPSDを画面へドロップしてください。'
-            : '同じCLIPファイルから書き出した2ファイルを、まとめて画面へドロップします。「ファイルを開く」から同時選択しても構いません。'}
-          XDTSのトラックからアニメーションフォルダが自動検出されます。
+            : 'CLIPを画面へドロップします。「ファイルを開く」から選択しても構いません。'}
+          アニメーションフォルダとタイムラインを読み取り、対応する素材を描画します。
+          クリスタの描画結果を使用する場合は、同じ保存状態から書き出したレイヤー付きPSDを追加できます。
         </Step>
 
         <Step
@@ -83,7 +80,7 @@ export function QuickStartGuide({
           figure={full ? (
             <HelpFigure
               src="loaded-overview.png"
-              alt="サンプルPSDとXDTSを読み込んだCSP Paperbackの3ペイン画面"
+              alt="サンプルを読み込んだCSP Paperbackの3ペイン画面"
               caption="読込後の画面。赤枠の出力プレビューで、出力名と合成結果を確認できます。"
               highlights={[
                 { label: '出力プレビュー', x: 20.5, y: 73.7, width: 56, height: 25.8 },
@@ -134,9 +131,10 @@ export function QuickStartGuide({
           <section className={styles.secondary} data-help-section="desktop-quick">
             <div className={styles.secondaryTitle}>デスクトップ版の自動書き出し</div>
             <p className={styles.secondaryText}>
-              通常起動で書き出し設定を決めたあと、同じカットのPSDとXDTSの2ファイルを同時に選び、
-              EXEまたはショートカットへまとめてドロップします。
-              2ファイルを同じ起動時に渡した場合だけ、確認画面を省いてXDTSと同じ場所へ自動出力します。
+              通常起動で書き出し設定を決めたあと、CLIPをEXEまたはショートカットへドロップします。
+              対応PSDを一緒に渡すこともできます。CLIPと同じ場所へ自動出力します。
+              複数タイムラインがある場合は、保存時に選択されていたものを使用します。
+              従来のPSD＋XDTSの2ファイルでも利用できます。
               ★や🎬をカットごとに調整したい場合は、通常画面から書き出してください。
             </p>
             {!desktop && (
@@ -147,7 +145,7 @@ export function QuickStartGuide({
           </section>
 
           <div className={styles.privacy}>
-            PSD／XDTSの解析と画像生成はブラウザ内または端末内で完結し、作品データを外部へ送信しません。
+            CLIP・PSD・XDTSの解析と画像生成はブラウザ内または端末内で完結し、作品データを外部へ送信しません。
           </div>
         </>
       )}

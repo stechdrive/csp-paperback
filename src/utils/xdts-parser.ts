@@ -1,4 +1,4 @@
-import type { XdtsData, XdtsFrame, XdtsTrack } from '../types'
+import type { TimelineData, TimelineFrame, TimelineTrack } from '../types'
 
 /**
  * XDTS の特殊シンボル（公式仕様書 *4）
@@ -50,7 +50,7 @@ const SYMBOL_TICK_2 = 'SYMBOL_TICK_2'
  * - frameRate は公式スキーマに存在しない CSP 独自拡張。UI の秒数表示にしか使わないので
  *   読めれば使い、無ければデフォルト 24
  */
-export function parseXdts(text: string): XdtsData {
+export function parseXdts(text: string): TimelineData {
   // 1行目のテキストヘッダーを除去してJSONを取り出す
   const newlineIndex = text.indexOf('\n')
   const jsonText = newlineIndex !== -1 ? text.slice(newlineIndex + 1) : text
@@ -80,7 +80,7 @@ export function parseXdts(text: string): XdtsData {
   // frameRate は公式スキーマ外の CSP 独自拡張フィールド。UI 表示（秒数変換）のみで使用
   const fps: number = firstTable?.frameRate ?? 24
 
-  const tracks: XdtsTrack[] = []
+  const tracks: TimelineTrack[] = []
 
   for (const timeTable of data.timeTables ?? []) {
     // fieldId → トラック名配列のマップを構築
@@ -99,7 +99,7 @@ export function parseXdts(text: string): XdtsData {
         const name: string = names[trackNo] ?? `Track${trackNo}`
 
         // フレーム処理
-        const rawFrames: XdtsFrame[] = []
+        const rawFrames: TimelineFrame[] = []
         for (const frame of track.frames ?? []) {
           const frameIndex: number = frame.frame ?? 0
           const rawValue: string | undefined = frame.data?.[0]?.values?.[0]
@@ -153,7 +153,7 @@ export function parseXdts(text: string): XdtsData {
  * @returns Map<trackName, cellName | null>  null = 表示なし
  */
 export function resolveCellsAtFrame(
-  tracks: XdtsTrack[],
+  tracks: TimelineTrack[],
   frameIndex: number,
 ): Map<string, string | null> {
   const result = new Map<string, string | null>()
@@ -182,7 +182,7 @@ export function resolveCellsAtFrame(
  * タイムライン同期の内部処理ではこちらを使う。
  */
 export function resolveCellsAtFrameByTrackNo(
-  tracks: XdtsTrack[],
+  tracks: TimelineTrack[],
   frameIndex: number,
 ): Map<number, string | null> {
   const result = new Map<number, string | null>()
@@ -206,7 +206,7 @@ export function resolveCellsAtFrameByTrackNo(
  * 指定セルがそのトラックで最初に登場するフレームインデックスを返す
  * 見つからない場合は -1
  */
-export function findFirstFrameOfCell(track: XdtsTrack, cellName: string): number {
+export function findFirstFrameOfCell(track: TimelineTrack, cellName: string): number {
   for (const f of track.frames) {
     if (f.cellName === cellName) return f.frameIndex
   }

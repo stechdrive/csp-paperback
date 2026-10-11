@@ -1,6 +1,6 @@
 import type { StateCreator } from 'zustand'
 import type { CspLayer } from '../types'
-import type { XdtsTrack } from '../types/xdts'
+import type { TimelineTrack } from '../types/timeline'
 import { findFirstFrameOfCell, resolveCellsAtFrameByTrackNo } from '../utils/xdts-parser'
 import { buildDefaultVisibilityOverrides } from '../utils/default-visibility'
 import { DEFAULT_MOBILE_UI_SCALE, clampMobileUiScale } from '../utils/mobile-ui-scale'
@@ -23,6 +23,7 @@ export interface UiSlice {
   /** 仮想セットパネルでコントロール対象のメンバー */
   selectedVsMemberSetId: string | null
   selectedVsMemberId: string | null
+  manualVisibilityIds: Set<string>
   visibilityOverrides: Map<string, boolean>  // layerId → uiHidden
   expandedFolders: Set<string>
   /**
@@ -78,7 +79,7 @@ function findAnimFolderByTrackNo(
   for (const l of layers) {
     if (
       l.isAnimationFolder &&
-      l.animationFolder?.detectedBy === 'xdts' &&
+      (l.animationFolder?.detectedBy === 'xdts' || l.animationFolder?.detectedBy === 'clip') &&
       l.animationFolder.trackNo === trackNo
     ) {
       return l
@@ -101,6 +102,7 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
   selectedVsMemberSetId: null,
   selectedVsMemberId: null,
   visibilityOverrides: new Map(),
+  manualVisibilityIds: new Set(),
   expandedFolders: new Set(),
   userCollapsedFolders: new Set(),
   currentFrame: 0,
@@ -126,12 +128,12 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
   },
 
   selectAnimCell: (animFolderId, cellIndex) => {
-    const { xdtsData, layerTree, selectedCells } = get()
+    const { timelineData, layerTree, selectedCells } = get()
     const newSelectedCells = new Map(selectedCells)
     newSelectedCells.set(animFolderId, cellIndex)
     let resolvedFrame = -1
 
-    if (xdtsData && xdtsData.tracks.length > 0) {
+    if (timelineData && timelineData.tracks.length > 0) {
       // 選択されたセルの名前を取得
       const animFolder = findLayerById(layerTree, animFolderId)
       const selectedCell = animFolder?.children[cellIndex]
@@ -140,15 +142,15 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
         const cellName = selectedCell.originalName
         // XDTS同期は読み込み時に trackNo が確定したフォルダだけが対象。
         // 手動指定フォルダは XDTS トラックと対応しないため、名前フォールバックはしない。
-        const track: XdtsTrack | undefined = typeof animFolder.animationFolder?.trackNo === 'number'
-          ? xdtsData.tracks.find(t => t.trackNo === animFolder.animationFolder!.trackNo)
+        const track: TimelineTrack | undefined = typeof animFolder.animationFolder?.trackNo === 'number'
+          ? timelineData.tracks.find(t => t.trackNo === animFolder.animationFolder!.trackNo)
           : undefined
         if (track) {
           const frameIndex = findFirstFrameOfCell(track, cellName)
           if (frameIndex >= 0) {
             resolvedFrame = frameIndex
             // そのフレームでの全トラックのセルをホールドルールで解決
-            const resolved = resolveCellsAtFrameByTrackNo(xdtsData.tracks, frameIndex)
+            const resolved = resolveCellsAtFrameByTrackNo(timelineData.tracks, frameIndex)
             for (const [trackNo, resolvedCellName] of resolved) {
               const otherFolder = findAnimFolderByTrackNo(layerTree, trackNo)
               if (!otherFolder) continue
@@ -171,10 +173,10 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
   },
 
   seekToFrame: (frameIndex) => {
-    const { xdtsData, layerTree } = get()
-    if (!xdtsData || xdtsData.duration <= 0) return
-    const clamped = Math.max(0, Math.min(xdtsData.duration - 1, frameIndex))
-    const resolved = resolveCellsAtFrameByTrackNo(xdtsData.tracks, clamped)
+    const { timelineData, layerTree } = get()
+    if (!timelineData || timelineData.duration <= 0) return
+    const clamped = Math.max(0, Math.min(timelineData.duration - 1, frameIndex))
+    const resolved = resolveCellsAtFrameByTrackNo(timelineData.tracks, clamped)
     const newSelectedCells = new Map<string, number>()
     for (const [trackNo, cellName] of resolved) {
       const folder = findAnimFolderByTrackNo(layerTree, trackNo)
@@ -207,7 +209,7 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
       ? current.get(layerId)!
       : (layer ? (layer.hidden || layer.uiHidden) : false)
     current.set(layerId, !effectivelyHidden)
-    set({ visibilityOverrides: current })
+    set({ visibilityOverrides: current, manualVisibilityIds: new Set([...get().manualVisibilityIds, layerId]) })
   },
 
   toggleFolderExpanded: (layerId) => {
@@ -294,7 +296,7 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
 
   resetVisibility: () => {
     get().pushHistory()
-    const { layerTree, xdtsData, projectSettings } = get()
-    set({ visibilityOverrides: buildDefaultVisibilityOverrides(layerTree, xdtsData, !!projectSettings.sharedCutMode) })
+    const { layerTree, timelineData, projectSettings } = get()
+    set({ visibilityOverrides: buildDefaultVisibilityOverrides(layerTree, timelineData, !!projectSettings.sharedCutMode), manualVisibilityIds: new Set() })
   },
 })

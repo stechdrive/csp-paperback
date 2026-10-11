@@ -1,5 +1,5 @@
 import type { StateCreator } from 'zustand'
-import type { CspLayer, XdtsData, XdtsTrack } from '../types'
+import type { CspLayer, TimelineData, TimelineTrack } from '../types'
 import { parseXdts } from '../utils/xdts-parser'
 import { detectAnimationFoldersByXdts, clearXdtsAnimFolders } from '../engine/tree-builder'
 import { sanitizeManualAnimFolderIds } from '../utils/manual-animation-folder'
@@ -7,21 +7,21 @@ import { addXdtsAnimationFolderShowOverrides, addXdtsUnusedCellHiddenOverrides }
 import type { AppStore } from './index'
 
 export interface XdtsSlice {
-  xdtsData: XdtsData | null
+  timelineData: TimelineData | null
   xdtsFileName: string | null
   xdtsSourceDirectory: string | null
   /**
    * XDTS にあるが PSD 側に対応する anim folder 候補が見つからなかったトラック。
    * 不一致警告 UI (ExportDialog) で表示する。
    */
-  unmatchedTracks: XdtsTrack[]
+  unmatchedTracks: TimelineTrack[]
   loadXdts: (text: string, fileName: string, sourceDirectory?: string) => void
   clearXdts: () => void
-  setUnmatchedTracks: (tracks: XdtsTrack[]) => void
+  setUnmatchedTracks: (tracks: TimelineTrack[]) => void
 }
 
 export const createXdtsSlice: StateCreator<AppStore, [], [], XdtsSlice> = (set, get) => ({
-  xdtsData: null,
+  timelineData: null,
   xdtsFileName: null,
   xdtsSourceDirectory: null,
   unmatchedTracks: [],
@@ -31,9 +31,10 @@ export const createXdtsSlice: StateCreator<AppStore, [], [], XdtsSlice> = (set, 
   },
 
   loadXdts: (text, fileName, sourceDirectory) => {
+    if (get().clipDocument) throw new Error('CLIPのタイムラインを使用中です。PSD＋XDTSへ切り替える場合は2ファイルを一緒に開いてください')
     const xdts = parseXdts(text)
     set({
-      xdtsData: xdts,
+      timelineData: xdts,
       xdtsFileName: fileName,
       xdtsSourceDirectory: sourceDirectory ?? null,
       currentFrame: 0,
@@ -68,8 +69,9 @@ export const createXdtsSlice: StateCreator<AppStore, [], [], XdtsSlice> = (set, 
   },
 
   clearXdts: () => {
+    if (get().clipDocument) return
     const { layerTree } = get()
-    set({ xdtsData: null, xdtsFileName: null, xdtsSourceDirectory: null, currentFrame: 0 })
+    set({ timelineData: null, xdtsFileName: null, xdtsSourceDirectory: null, currentFrame: 0 })
     if (layerTree.length > 0) {
       clearXdtsAnimFolders(layerTree)
       set({ layerTree: [...layerTree] })

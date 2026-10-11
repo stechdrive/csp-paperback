@@ -1,3 +1,4 @@
+import { applyMaterialEffects } from './material-effects'
 import {
   resolveCellPrefixSeparator,
   resolveIncludeXdtsTrackPrefixInCellName,
@@ -6,8 +7,8 @@ import {
   type OutputEntry,
   type ProjectSettings,
   type ProcessSuffixPosition,
-  type XdtsData,
-  type XdtsTrack,
+  type TimelineData,
+  type TimelineTrack,
 } from '../types'
 import type { VirtualSet } from '../types/marks'
 import { flattenTree } from './flatten'
@@ -233,13 +234,13 @@ export interface SheetSequenceNumberPlan {
 
 export function buildSheetSequenceNumbers(
   tree: CspLayer[],
-  xdtsData: XdtsData | null | undefined,
+  timelineData: TimelineData | null | undefined,
   displayNameMap: Map<string, string>,
 ): SheetSequenceNumberPlan {
   const numbers = new Map<string, number>()
-  if (!xdtsData) return { numbers, maxSequenceNumber: 1 }
+  if (!timelineData) return { numbers, maxSequenceNumber: 1 }
 
-  const tracksByNo = new Map(xdtsData.tracks.map(track => [track.trackNo, track]))
+  const tracksByNo = new Map(timelineData.tracks.map(track => [track.trackNo, track]))
   const groups = new Map<string, SheetSequenceCell[]>()
   let order = 0
 
@@ -247,7 +248,7 @@ export function buildSheetSequenceNumbers(
     for (const layer of layers) {
       if (
         layer.isAnimationFolder &&
-        layer.animationFolder?.detectedBy === 'xdts' &&
+        (layer.animationFolder?.detectedBy === 'xdts' || layer.animationFolder?.detectedBy === 'clip') &&
         typeof layer.animationFolder.trackNo === 'number'
       ) {
         const track = tracksByNo.get(layer.animationFolder.trackNo)
@@ -297,12 +298,12 @@ export interface SequenceNamingPlan {
 export function buildSequenceNamingPlan(
   tree: CspLayer[],
   projectSettings: ProjectSettings,
-  xdtsData: XdtsData | null | undefined,
+  timelineData: TimelineData | null | undefined,
   displayNameMap: Map<string, string>,
 ): SequenceNamingPlan {
   const maxFolderSequenceNumber = getMaxSequenceNumberForAnimationFolders(tree)
   const sheetPlan = projectSettings.cellNamingMode === 'sheet-sequence'
-    ? buildSheetSequenceNumbers(tree, xdtsData, displayNameMap)
+    ? buildSheetSequenceNumbers(tree, timelineData, displayNameMap)
     : undefined
   const maxSequenceNumber = Math.max(
     maxFolderSequenceNumber,
@@ -318,7 +319,7 @@ export function buildSequenceNamingPlan(
   }
 }
 
-function findFirstStartFrame(track: XdtsTrack, cellName: string): number | null {
+function findFirstStartFrame(track: TimelineTrack, cellName: string): number | null {
   for (const frame of track.frames) {
     if (frame.cellName === cellName) return frame.frameIndex
   }
@@ -385,34 +386,39 @@ function buildAnimParentSuffixMap(
  * displayName 計算用の anim folder 対応を構築する。
  *
  * XDTS 検出済みフォルダは読み込み時に確定した trackNo をそのまま使う。
- * 手動指定など trackNo を持たない anim folder は、XDTS の最大 trackNo の後ろに
- * ボトム優先の疑似 trackNo を振る。
+ * CLIP の trackNo は並び順ではなく内部IDなので、出力名には可視フォルダを先に
+ * ボトム優先の順序を振る。非表示の工程が可視セルの名前を押し出さないようにする。
+ * 手動指定などの anim folder は、検出済みフォルダの後ろにボトム優先で振る。
  *
- * これにより、手動指定のオン/オフで XDTS 側の同名解決順は変わらない。
+ * タイムラインとの対応付け自体は変更せず、XDTS の従来の同名解決順も保持する。
  */
 export function buildEffectiveAnimationAssignment(tree: CspLayer[]): Map<string, number> {
   const result = buildAssignmentFromDetectedFolders(tree)
-  let counter = result.size > 0
-    ? Math.max(...result.values()) + 1
-    : 0
+  const visibleNative: string[] = [], hiddenNative: string[] = [], unassigned: string[] = []
 
-  function walk(layers: CspLayer[]): void {
+  function walk(layers: CspLayer[], ancestorsVisible: boolean): void {
     // 兄弟はボトム優先(CspLayer の children はトップファーストなので逆順に)
     for (let i = layers.length - 1; i >= 0; i--) {
       const layer = layers[i]
+      const visible = ancestorsVisible && !layer.hidden && !layer.uiHidden
 
       if (layer.isFolder) {
         // post-order: 子を先に訪問
-        walk(layer.children)
-        // 自身が trackNo 未割当の anim folder なら疑似 trackNo を割当
-        if (layer.isAnimationFolder && !result.has(layer.id)) {
-          result.set(layer.id, counter++)
+        walk(layer.children, visible)
+        if (layer.isAnimationFolder && layer.animationFolder?.detectedBy === 'clip') {
+          result.delete(layer.id)
+          const nativeOrder = visible ? visibleNative : hiddenNative
+          nativeOrder.push(layer.id)
+        } else if (layer.isAnimationFolder && !result.has(layer.id)) {
+          unassigned.push(layer.id)
         }
       }
     }
   }
 
-  walk(tree)
+  walk(tree, true)
+  let counter = result.size > 0 ? Math.max(...result.values()) + 1 : 0
+  for (const id of [...visibleNative, ...hiddenNative, ...unassigned]) result.set(id, counter++)
   return result
 }
 
@@ -640,14 +646,24 @@ function applyContainerMasks(
   let result = flats
   if (result.length === 0) return result
 
-  // セルフォルダのマスク（非pass-throughフォルダセルのみ）
-  if (cell.isFolder && cell.blendMode !== 'pass through') {
+  if (cell.isFolder && cell.materialEffects) {
+    const canvas = applyMaterialEffects(compositeGroup(result, docWidth, docHeight), 0, 0, cell.materialEffects, docWidth, docHeight)
+    result = [{ canvas, blendMode: 'normal', opacity: 100, top: 0, left: 0, sourceId: cell.id, clipping: false }]
+  }
+
+  // 効果のために隔離したフォルダも、通常の隔離フォルダと同じ位置でマスクする。
+  if (cell.isFolder && (cell.blendMode !== 'pass through' || cell.materialEffects)) {
     const cellMask = cell.agPsdRef.mask
     if (cellMask?.canvas && !cellMask.disabled) {
       const composited = compositeGroup(result, docWidth, docHeight)
       const masked = applyLayerMask(composited, 0, 0, cellMask, docWidth, docHeight)
       result = [{ canvas: masked, blendMode: 'normal', opacity: 100, top: 0, left: 0, sourceId: cell.id, clipping: false }]
     }
+  }
+
+  if (animFolder.materialEffects) {
+    const canvas = applyMaterialEffects(compositeGroup(result, docWidth, docHeight), 0, 0, animFolder.materialEffects, docWidth, docHeight)
+    result = [{ canvas, blendMode: 'normal', opacity: 100, top: 0, left: 0, sourceId: animFolder.id, clipping: false }]
   }
 
   // アニメフォルダのマスク
@@ -796,7 +812,7 @@ export function extractAllEntries(
   background: 'white' | 'transparent' = 'white',
   excludeAutoMarked = false,
   processSuffixPosition: ProcessSuffixPosition = 'after-cell',
-  xdtsData?: XdtsData | null,
+  timelineData?: TimelineData | null,
 ): OutputEntry[] {
   const entries: OutputEntry[] = []
 
@@ -817,7 +833,7 @@ export function extractAllEntries(
   const sequenceNamingPlan = buildSequenceNamingPlan(
     tree,
     projectSettings,
-    xdtsData,
+    timelineData,
     displayNameMap,
   )
 

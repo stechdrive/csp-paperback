@@ -4,8 +4,8 @@ import styles from './PreviewPanel.module.css'
 
 export function TimelineSeekBar() {
   const currentFrame = useAppStore(s => s.currentFrame)
-  const duration = useAppStore(s => s.xdtsData?.duration ?? 0)
-  const fps = useAppStore(s => s.xdtsData?.fps ?? 24)
+  const duration = useAppStore(s => s.timelineData?.duration ?? 0)
+  const fps = useAppStore(s => s.timelineData?.fps ?? 24)
   const seekToFrame = useAppStore(s => s.seekToFrame)
   const trackRef = useRef<HTMLDivElement>(null)
 

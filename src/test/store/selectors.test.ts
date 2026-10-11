@@ -56,7 +56,7 @@ describe('selectLayerTreeForNavigator', () => {
     const tree = buildLayerTree(psd)
     useAppStore.setState({
       layerTree: tree,
-      xdtsData: null,
+      timelineData: null,
       manualAnimFolderIds: new Set([tree[0].id]),
     })
 
@@ -71,7 +71,7 @@ describe('selectLayerTreeForNavigator', () => {
     const tree = buildLayerTree(psd)
     useAppStore.setState({
       layerTree: tree,
-      xdtsData: {
+      timelineData: {
         tracks: [],
         version: 5,
         header: { cut: '1', scene: '1' },

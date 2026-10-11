@@ -1,6 +1,6 @@
-import { useState, useCallback, useEffect } from 'react'
-import { useAppStore } from '../store'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import type { LoadableFile } from '../platform/files'
+import { loadProjectFiles } from '../utils/project-loader'
 
 export interface UseFileLoaderResult {
   isLoading: boolean
@@ -12,18 +12,11 @@ export interface UseFileLoaderResult {
   clearError: () => void
 }
 
-function ext(file: LoadableFile): string {
-  return file.name.toLowerCase().split('.').pop() ?? ''
-}
-
 export function useFileLoader(): UseFileLoaderResult {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [notification, setNotification] = useState<string | null>(null)
-  const loadPsd = useAppStore(s => s.loadPsd)
-  const loadXdts = useAppStore(s => s.loadXdts)
-  const resetProject = useAppStore(s => s.resetProject)
-  const importSettings = useAppStore(s => s.importSettings)
+  const queue = useRef<Promise<void>>(Promise.resolve())
 
   useEffect(() => {
     if (!notification) return
@@ -31,41 +24,25 @@ export function useFileLoader(): UseFileLoaderResult {
     return () => clearTimeout(timer)
   }, [notification])
 
-  const loadFiles = useCallback(async (files: LoadableFile[]) => {
-    if (files.length === 0) return
+  const loadFiles = useCallback((files: LoadableFile[]) => {
+    const job = queue.current.then(async () => {
+      if (files.length === 0) return
 
-    setIsLoading(true)
-    setError(null)
-    setNotification(null)
-    try {
-      const jsonFiles = files.filter(f => ext(f) === 'json')
-      const psdFile = files.filter(f => ext(f) === 'psd').at(-1)
-      const xdtsFile = files.filter(f => ext(f) === 'xdts').at(-1)
-      const hasProjectFile = Boolean(psdFile || xdtsFile)
-      const state = useAppStore.getState()
-      const shouldResetProject = hasProjectFile && (
-        Boolean(psdFile && xdtsFile) ||
-        Boolean(psdFile && state.rawPsd) ||
-        Boolean(xdtsFile && state.xdtsData) ||
-        Boolean((psdFile || xdtsFile) && state.rawPsd && state.xdtsData)
-      )
-
-      if (shouldResetProject) resetProject()
-
-      for (const file of jsonFiles) {
-        importSettings(await file.text())
-        setNotification('工程設定を読み込みました')
+      setIsLoading(true)
+      setError(null)
+      setNotification(null)
+      try {
+        const message = await loadProjectFiles(files)
+        setNotification(message)
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'ファイルの読み込みに失敗しました')
+      } finally {
+        setIsLoading(false)
       }
-
-      // XDTS を先に保持してから PSD を解析する。PSD 側の XDTS 検出を一度で確定させるため。
-      if (xdtsFile) loadXdts(await xdtsFile.text(), xdtsFile.name, xdtsFile.sourceDirectory)
-      if (psdFile) loadPsd(await psdFile.arrayBuffer(), psdFile.name, psdFile.sourceDirectory)
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'ファイルの読み込みに失敗しました')
-    } finally {
-      setIsLoading(false)
-    }
-  }, [importSettings, loadPsd, loadXdts, resetProject])
+    })
+    queue.current = job
+    return job
+  }, [])
 
   const loadPsdFile = useCallback((file: LoadableFile) => loadFiles([file]), [loadFiles])
   const loadXdtsFile = useCallback((file: LoadableFile) => loadFiles([file]), [loadFiles])

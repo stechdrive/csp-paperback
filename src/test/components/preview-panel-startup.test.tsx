@@ -4,6 +4,8 @@ import { PreviewPanel } from '../../components/PreviewPanel'
 import { useAppStore } from '../../store'
 import { DEFAULT_OUTPUT_CONFIG, DEFAULT_PROJECT_SETTINGS } from '../../types'
 
+vi.mock('../../utils/clip-io', () => ({ readClipFile: vi.fn() }))
+
 const runtime = vi.hoisted(() => ({ desktop: false }))
 
 vi.mock('../../platform/runtime', () => ({
@@ -15,7 +17,7 @@ beforeEach(() => {
   useAppStore.setState({
     docWidth: 0,
     docHeight: 0,
-    xdtsData: null,
+    timelineData: null,
     xdtsFileName: null,
     layerTree: [],
     unmatchedTracks: [],
@@ -57,8 +59,8 @@ describe('PreviewPanel startup layout', () => {
       .toHaveAttribute('aria-checked', 'true')
     expect(within(guide).getByText('書き出し設定を決める')).toBeInTheDocument()
     expect(within(guide).getByText('「出力」から保存方法を選ぶ')).toBeInTheDocument()
-    expect(guide.textContent).toContain('同じCLIPファイルから')
-    expect(guide.textContent).toContain('2ファイルを、まとめて画面へドロップ')
+    expect(guide.textContent).toContain('PSDやXDTSの書き出しは不要です')
+    expect(guide.textContent).toContain('CLIPを画面へドロップ')
     expect(within(guide).queryByText('最初の1回はここだけ')).not.toBeInTheDocument()
     expect(within(guide).queryByText('起動時に見えている設定')).not.toBeInTheDocument()
     expect(within(guide).queryByText('サンプル作画テンプレート(.clip)')).not.toBeInTheDocument()

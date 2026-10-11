@@ -10,6 +10,7 @@ export interface HistoryOptions {
 
 interface LayerAppearance {
   blendMode: BlendMode
+  nativeBlendMode?: number
   opacity: number
 }
 
@@ -20,6 +21,7 @@ export interface UndoableState {
   manualAnimFolderIds: Set<string>
   projectSettings: ProjectSettings
   visibilityOverrides: Map<string, boolean>
+  manualVisibilityIds: Set<string>
   outputConfig: OutputConfig
   layerAppearances: Map<string, LayerAppearance>
 }
@@ -61,6 +63,7 @@ function snapshot(s: AppStore): UndoableState {
       archivePatterns: [...s.projectSettings.archivePatterns],
     },
     visibilityOverrides: new Map(s.visibilityOverrides),
+    manualVisibilityIds: new Set(s.manualVisibilityIds),
     outputConfig: { ...s.outputConfig },
     layerAppearances: collectLayerAppearances(s.layerTree),
   }
@@ -72,6 +75,7 @@ function collectLayerAppearances(layers: CspLayer[]): Map<string, LayerAppearanc
     for (const layer of items) {
       result.set(layer.id, {
         blendMode: layer.blendMode,
+        nativeBlendMode: layer.nativeBlendMode,
         opacity: layer.opacity,
       })
       walk(layer.children)
@@ -94,13 +98,14 @@ function restoreLayerAppearances(
 
     if (
       appearance &&
-      (layer.blendMode !== appearance.blendMode || layer.opacity !== appearance.opacity)
+      (layer.blendMode !== appearance.blendMode || layer.nativeBlendMode !== appearance.nativeBlendMode || layer.opacity !== appearance.opacity)
     ) {
       restoredLayer.agPsdRef.blendMode = appearance.blendMode
       restoredLayer.agPsdRef.opacity = appearance.opacity / 100
       restoredLayer = {
         ...restoredLayer,
         blendMode: appearance.blendMode,
+        nativeBlendMode: appearance.nativeBlendMode,
         opacity: appearance.opacity,
       }
       changed = true
@@ -132,6 +137,7 @@ function restoreSnapshot(
     manualAnimFolderIds: state.manualAnimFolderIds,
     projectSettings: state.projectSettings,
     visibilityOverrides: state.visibilityOverrides,
+    manualVisibilityIds: state.manualVisibilityIds,
     outputConfig: state.outputConfig,
     savedOutputConfig: state.outputConfig,
     layerTree: restoreLayerAppearances(current.layerTree, state.layerAppearances),

@@ -1,4 +1,4 @@
-import type { CspLayer, XdtsTrack } from '../types'
+import type { CspLayer, TimelineTrack } from '../types'
 
 /**
  * XDTS トラックと PSD ツリー内のアニメフォルダ候補の対応付けを計算する。
@@ -54,7 +54,7 @@ export interface AssignResult {
   /** layerId → trackNo (割当成功した対応のみ) */
   assignment: Map<string, number>
   /** 対応フォルダが見つからなかったトラック(警告表示用) */
-  unmatchedTracks: XdtsTrack[]
+  unmatchedTracks: TimelineTrack[]
 }
 
 interface Candidate {
@@ -103,7 +103,7 @@ function collectCandidates(
   return candidates
 }
 
-function countDirectChildCellNameMatches(candidate: Candidate, track: XdtsTrack): number {
+function countDirectChildCellNameMatches(candidate: Candidate, track: TimelineTrack): number {
   const trackCellNames = new Set(track.cellNames)
   if (trackCellNames.size === 0) return 0
 
@@ -114,7 +114,7 @@ function countDirectChildCellNameMatches(candidate: Candidate, track: XdtsTrack)
   return matches
 }
 
-function countReferencedFrameMatches(candidate: Candidate, track: XdtsTrack): number {
+function countReferencedFrameMatches(candidate: Candidate, track: TimelineTrack): number {
   let matches = 0
   for (const frame of track.frames) {
     if (frame.cellName === null) continue
@@ -125,7 +125,7 @@ function countReferencedFrameMatches(candidate: Candidate, track: XdtsTrack): nu
   return matches
 }
 
-function pickBestCandidateIndex(pool: Candidate[], track: XdtsTrack): number {
+function pickBestCandidateIndex(pool: Candidate[], track: TimelineTrack): number {
   let bestIndex = 0
   let bestDistinctMatches = countDirectChildCellNameMatches(pool[0], track)
   let bestFrameMatches = countReferencedFrameMatches(pool[0], track)
@@ -156,7 +156,7 @@ function pickBestCandidateIndex(pool: Candidate[], track: XdtsTrack): number {
   return bestIndex
 }
 
-function pickCandidate(pool: Candidate[], track: XdtsTrack): Candidate | undefined {
+function pickCandidate(pool: Candidate[], track: TimelineTrack): Candidate | undefined {
   if (pool.length === 0) return undefined
 
   const visiblePool = pool.filter(candidate => candidate.effectivelyVisible)
@@ -166,10 +166,10 @@ function pickCandidate(pool: Candidate[], track: XdtsTrack): Candidate | undefin
 
 export function assignTracksToFolders(
   tree: CspLayer[],
-  tracks: XdtsTrack[],
+  tracks: TimelineTrack[],
 ): AssignResult {
   const assignment = new Map<string, number>()
-  const unmatchedTracks: XdtsTrack[] = []
+  const unmatchedTracks: TimelineTrack[] = []
 
   if (tracks.length === 0) return { assignment, unmatchedTracks }
 
@@ -222,7 +222,7 @@ export function buildAssignmentFromDetectedFolders(tree: CspLayer[]): Map<string
     for (const layer of layers) {
       if (
         layer.isAnimationFolder &&
-        layer.animationFolder?.detectedBy === 'xdts' &&
+        (layer.animationFolder?.detectedBy === 'xdts' || layer.animationFolder?.detectedBy === 'clip') &&
         typeof layer.animationFolder.trackNo === 'number'
       ) {
         assignment.set(layer.id, layer.animationFolder.trackNo)

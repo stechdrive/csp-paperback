@@ -22,7 +22,7 @@ function resetStore() {
     projectSettings: DEFAULT_PROJECT_SETTINGS,
     outputConfig: DEFAULT_OUTPUT_CONFIG,
     savedOutputConfig: DEFAULT_OUTPUT_CONFIG,
-    xdtsData: null,
+    timelineData: null,
     xdtsFileName: null,
     unmatchedTracks: [],
     selectedCells: new Map(),
@@ -99,7 +99,7 @@ describe('toggleManualAnimFolder', () => {
     detectAnimationFoldersByXdts(tree, xdts)
     const single = findByOriginalName(tree, 'single')
     const detected = findByOriginalName(tree, 'A')
-    useAppStore.setState({ layerTree: tree, xdtsData: xdts })
+    useAppStore.setState({ layerTree: tree, timelineData: xdts })
 
     useAppStore.getState().toggleManualAnimFolder(single.id)
     useAppStore.getState().toggleManualAnimFolder(detected.id)
@@ -121,7 +121,7 @@ describe('toggleManualAnimFolder', () => {
     detectAnimationFoldersByXdts(tree, xdts)
     const parent = findByOriginalName(tree, 'Parent')
     const nested = findByOriginalName(tree, 'Nested')
-    useAppStore.setState({ layerTree: tree, xdtsData: xdts })
+    useAppStore.setState({ layerTree: tree, timelineData: xdts })
 
     useAppStore.getState().toggleManualAnimFolder(parent.id)
     useAppStore.getState().toggleManualAnimFolder(nested.id)

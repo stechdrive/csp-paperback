@@ -105,7 +105,7 @@ export function OutputSettingsGuide() {
             <tr>
               <td>シート連番</td>
               <td>
-                XDTSのタイムライン順に番号を付け、本体と修正工程の番号を同じセル位置へそろえます。
+                タイムライン順に番号を付け、本体と修正工程の番号を同じセル位置へそろえます。
               </td>
               <td>
                 <code>A1.jpg</code><br />
@@ -141,7 +141,7 @@ export function OutputSettingsGuide() {
               <td><HintText text={ja.settings.cellPrefixSeparatorHint} /></td>
             </tr>
             <tr>
-              <td>XDTSフォルダ名</td>
+              <td>アニメーションフォルダ名</td>
               <td>付ける／付けない</td>
               <td><HintText text={ja.settings.xdtsTrackPrefixHint} /></td>
             </tr>

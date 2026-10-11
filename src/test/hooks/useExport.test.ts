@@ -135,7 +135,7 @@ describe('useExport', () => {
       await result.current.startExport('zip')
     })
 
-    expect(result.current.error).toBe('PSD ファイルが読み込まれていません')
+    expect(result.current.error).toBe('CLIP / PSD ファイルが読み込まれていません')
     expect(mockedBuildEntries).not.toHaveBeenCalled()
   })
 

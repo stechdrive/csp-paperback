@@ -32,7 +32,7 @@ import {
   type ProjectSettings,
   type OutputConfig,
   type OutputFormat,
-  type XdtsData,
+  type TimelineData,
 } from '../types'
 import { applyRevisionBorders } from '../utils/revision-border'
 
@@ -86,7 +86,7 @@ export function useOutputPreview(): OutputPreviewEntry[] {
   const selectedCells = useAppStore(s => s.selectedCells)
   const projectSettings = useAppStore(s => s.projectSettings)
   const outputConfig = useAppStore(s => s.outputConfig)
-  const xdtsData = useAppStore(s => s.xdtsData)
+  const timelineData = useAppStore(s => s.timelineData)
   const docWidth = useAppStore(s => s.docWidth)
   const docHeight = useAppStore(s => s.docHeight)
 
@@ -131,7 +131,7 @@ export function useOutputPreview(): OutputPreviewEntry[] {
         focusedAnimFolderId,
         selectedCells.get(focusedAnimFolderId),
         null,
-        layerTree, projectSettings, outputConfig, xdtsData, docWidth, docHeight,
+        layerTree, projectSettings, outputConfig, timelineData, docWidth, docHeight,
       )
     }
 
@@ -146,7 +146,7 @@ export function useOutputPreview(): OutputPreviewEntry[] {
         animCellCtx.animFolderId,
         animCellCtx.cellChildIndex,
         selectedLayerId,
-        layerTree, projectSettings, outputConfig, xdtsData, docWidth, docHeight,
+        layerTree, projectSettings, outputConfig, timelineData, docWidth, docHeight,
       )
     }
 
@@ -171,7 +171,7 @@ export function useOutputPreview(): OutputPreviewEntry[] {
     return []
   }, [
     focusedAnimFolderId, selectedVirtualSetId, selectedLayerId,
-    virtualSets, selectedCells, layerTree, projectSettings, outputConfig, xdtsData,
+    virtualSets, selectedCells, layerTree, projectSettings, outputConfig, timelineData,
     docWidth, docHeight,
   ])
 }
@@ -190,7 +190,7 @@ function previewAnimFolder(
   layerTree: CspLayer[],
   projectSettings: ProjectSettings,
   outputConfig: OutputConfig,
-  xdtsData: XdtsData | null,
+  timelineData: TimelineData | null,
   docWidth: number,
   docHeight: number,
 ): OutputPreviewEntry[] {
@@ -219,7 +219,7 @@ function previewAnimFolder(
   const sequenceNamingPlan = buildSequenceNamingPlan(
     layerTree,
     projectSettings,
-    xdtsData,
+    timelineData,
     displayNames,
   )
 

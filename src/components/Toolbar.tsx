@@ -149,6 +149,7 @@ interface ToolbarProps {
 
 export function Toolbar({ onFiles, isLoading, error, notification, canUndo, canRedo, onUndo, onRedo }: ToolbarProps) {
   const psdFileName = useAppStore(s => s.psdFileName)
+  const clipFileName = useAppStore(s => s.clipFileName)
   const xdtsFileName = useAppStore(s => s.xdtsFileName)
   const openInputRef = useRef<HTMLInputElement>(null)
   const exportMenuRef = useRef<HTMLDivElement>(null)
@@ -195,7 +196,7 @@ export function Toolbar({ onFiles, isLoading, error, notification, canUndo, canR
 
   const openFileBtn = (
     <Tooltip
-      content={"PSD / XDTS / 工程設定JSON を開く\n複数ファイルを同時に選択できます"}
+      content={"CLIP / PSD / XDTS / 工程設定JSON を開く\nCLIPだけで開始できます。必要に応じて純正PSDを追加できます"}
       placement="bottom"
     >
       <button
@@ -212,7 +213,7 @@ export function Toolbar({ onFiles, isLoading, error, notification, canUndo, canR
     <input
       ref={openInputRef}
       type="file"
-      accept=".psd,.xdts,.json,*/*"
+      accept=".clip,.psd,.xdts,.json,*/*"
       multiple
       style={{ display: 'none' }}
       onChange={handleOpenFiles}
@@ -243,6 +244,9 @@ export function Toolbar({ onFiles, isLoading, error, notification, canUndo, canR
       )}
       {psdFileName && !isLoading && !error && (
         <span className={styles.fileInfo}>{psdFileName}</span>
+      )}
+      {clipFileName && !isLoading && !error && (
+        <span className={styles.fileInfo}>{clipFileName}</span>
       )}
       {xdtsFileName && !isLoading && !error && (
         <span className={styles.fileInfo}>{xdtsFileName}</span>
@@ -300,7 +304,7 @@ export function Toolbar({ onFiles, isLoading, error, notification, canUndo, canR
             }
             setShowExportMenu(v => !v)
           }}
-          disabled={!psdFileName || isExporting}
+          disabled={(!psdFileName && !clipFileName) || isExporting || isLoading}
           aria-haspopup={canExportToDirectory ? 'menu' : undefined}
           aria-expanded={canExportToDirectory ? showExportMenu : undefined}
         >

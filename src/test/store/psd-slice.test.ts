@@ -12,7 +12,7 @@ beforeEach(() => {
     layerTree: [],
     docWidth: 0,
     docHeight: 0,
-    xdtsData: null,
+    timelineData: null,
     xdtsFileName: null,
     xdtsSourceDirectory: null,
     singleMarks: new Map(),

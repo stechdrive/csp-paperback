@@ -53,7 +53,7 @@ export function FeatureGuide() {
         <HelpFigure
           src="loaded-overview.png"
           alt="CSP Paperbackのツールバーと3ペイン"
-          caption="左は仮想セル、中央はタイムラインと書き出し設定・出力プレビュー、右はPSDのレイヤーです。"
+          caption="左は仮想セル、中央はタイムラインと書き出し設定・出力プレビュー、右は素材のレイヤーです。"
           highlights={[
             { label: '仮想セル', x: 0.6, y: 20.8, width: 19, height: 32.5 },
             { label: 'プレビュー', x: 20.5, y: 6.7, width: 56, height: 92.5 },
@@ -71,11 +71,11 @@ export function FeatureGuide() {
         <div className={styles.cardGrid}>
           <div className={styles.infoCard}>
             <h3>上部ツールバー</h3>
-            <p>PSDとXDTSを開く、操作を戻す、設定を開く、画像を書き出す操作を行います。</p>
+            <p>CLIPなどの素材を開く、操作を戻す、設定を開く、画像を書き出す操作を行います。</p>
           </div>
           <div className={styles.infoCard}>
             <h3>左：仮想セル</h3>
-            <p>PSD内のレイヤーを選んで組み合わせ、独立した1枚の画像として書き出します。</p>
+            <p>読み込んだレイヤーを選んで組み合わせ、独立した1枚の画像として書き出します。</p>
           </div>
           <div className={styles.infoCard}>
             <h3>中央：プレビューと設定</h3>
@@ -93,45 +93,28 @@ export function FeatureGuide() {
         </div>
       </Section>
 
-      <Section id="files" title="2. PSDとXDTSを読み込む">
+      <Section id="files" title="2. CLIPを読み込む・必要に応じてPSDを追加する">
         <p className={styles.paragraph}>
-          同じCLIPファイルからPSDとXDTSを書き出し、2ファイルをセットで読み込みます。
+          CLIPを開くと、アニメーションフォルダ・セル・タイムラインを直接読み取り、素材を描画します。
+          保存画像を優先し、文字は画像がない場合も読み取れた文字情報から描画します。
+          一部を再現できない場合も、ほかの素材の書き出しは続けられます。詳細は「再現状況」で確認できます。
         </p>
-
+        <p className={styles.paragraph}>
+          クリスタの描画結果を使用する場合は、同じ保存状態から書き出したレイヤー付きPSDを追加できます。
+          セル対応・マーク・仮想セットを保持して画像を切り替えます。
+          階層やレイヤー順が異なるPSD、画像を統合したPSDは対応付けできません。
+        </p>
         <div className={styles.fileGrid}>
-          <div className={styles.fileCard}>
-            <strong>PSD</strong>
-            <span>
-              CLIP STUDIO PAINTの「ファイル ＞ 複製を保存 ＞ Photoshopドキュメント」から
-              書き出してください。
-            </span>
-          </div>
-          <div className={styles.fileCard}>
-            <strong>XDTS</strong>
-            <span>
-              同じCLIPファイルから「ファイル ＞ アニメーション書き出し ＞
-              タイムシート情報の書き出し」でXDTS形式を選んで書き出してください。
-            </span>
-          </div>
-          <div className={styles.fileCard}>
-            <strong>設定JSON</strong>
-            <span>
-              以前「設定を書き出す」で保存した出力名・工程フォルダ・自動マークなどの設定を
-              読み込みたいときだけ、一緒に選択します。
-            </span>
-          </div>
+          <div className={styles.fileCard}><strong>CLIP</strong><span>クリスタで保存したファイルを、そのまま開きます。複数のタイムラインは画面で選択できます。</span></div>
+          <div className={styles.fileCard}><strong>PSD（任意）</strong><span>同じCLIPから「ファイル ＞ 複製を保存 ＞ Photoshopドキュメント」でレイヤーを保持して書き出します。</span></div>
+          <div className={styles.fileCard}><strong>設定JSON（任意）</strong><span>保存した出力名・工程フォルダ・自動マークなどの設定を一緒に読み込めます。</span></div>
         </div>
-
-        <div className={styles.callout}>
-          同じCLIPファイルから書き出したPSDとXDTSを、2ファイルまとめて画面へドロップするか、
-          「ファイルを開く」で同時に選択してください。
-        </div>
-
-        <ul className={styles.list}>
-          <li>別のカットや別のCLIPファイルから書き出したPSDとXDTSは組み合わせないでください。</li>
-          <li>XDTSのトラックを使って、PSD内のアニメーションフォルダとタイムライン表示を読み取ります。</li>
-          <li>別のPSDとXDTSを開くと、新しいカットとして画面を読み直します。</li>
-        </ul>
+        <div className={styles.callout}>CLIPを画面へドロップするか、「ファイルを開く」から選択してください。対応PSDは同時でも後からでも追加できます。</div>
+        <details>
+          <summary>従来のPSD＋XDTSを使う場合</summary>
+          <p>同じカットのPSDとXDTSを一緒に開きます。XDTSはクリスタの「ファイル ＞ アニメーション書き出し ＞ タイムシート情報の書き出し」で作成します。</p>
+          <p>PSDだけを開いて、右ペインでアニメーションフォルダを手動指定することもできます。</p>
+        </details>
       </Section>
 
       <Section id="preview" title="3. タイムラインと出力プレビュー">
@@ -198,7 +181,7 @@ export function FeatureGuide() {
           <div className={styles.compareCard}>
             <h3>フォルダ</h3>
             <p>
-              選択した場所にPSD名のサブフォルダを作り、生成画像を直接保存します。
+              選択した場所に入力ファイル名のサブフォルダを作り、生成画像を直接保存します。
               同名フォルダがある場合は末尾に番号を付けます。
             </p>
           </div>
@@ -206,7 +189,7 @@ export function FeatureGuide() {
 
         <ul className={styles.list}>
           <li>フォルダがメニューに表示されないブラウザではZIPを使用してください。</li>
-          <li>PSDにDPI情報がある場合は、出力するJPG／PNGにも引き継ぎます。</li>
+          <li>入力ファイルにDPI情報がある場合は、出力するJPG／PNGにも引き継ぎます。</li>
           <li>出力中はツールバーに進捗が表示され、完了すると保存先またはファイルが確定します。</li>
         </ul>
       </Section>
@@ -267,7 +250,7 @@ export function FeatureGuide() {
 
         <ul className={styles.list}>
           <li>選択したレイヤーの合成モードと不透明度は、右ペイン上部で変更できます。</li>
-          <li>「初期状態に戻す」で、目・★・🎬などをPSD読込時の状態へ戻します。</li>
+          <li>「初期状態に戻す」で、目・★・🎬などを素材読込時の状態へ戻します。</li>
           <li>Shift＋スクロールで、表示中のセル・単体出力・仮想セルを順番に確認できます。</li>
           <li>Ctrl＋Z／Ctrl＋Shift＋Zで、操作を戻す／やり直すことができます。</li>
         </ul>
@@ -281,7 +264,7 @@ export function FeatureGuide() {
 
         <div className={styles.compareGrid}>
           <div className={styles.compareCard}>
-            <h3>PSDのレイヤー構成</h3>
+            <h3>素材のレイヤー構成</h3>
             <pre>{`_原図/
   _BG/
   _BOOK1/
@@ -345,12 +328,12 @@ _SL.jpg`}</pre>
 
       <Section id="animation-folders" title="8. アニメーションフォルダを指定する">
         <p className={styles.paragraph}>
-          通常はXDTSのトラックから対応するアニメーションフォルダを見つけ、
-          直下のセルを1枚ずつ出力します。XDTSにない補助フォルダだけ、右ペインの🎬で追加指定します。
+          CLIPに保存されたアニメーションフォルダを直接認識し、
+          直下のセルを1枚ずつ出力します。通常フォルダをセル群として扱いたい場合は、右ペインの🎬で追加指定します。
         </p>
 
         <div className={styles.priorityFlow}>
-          <span>XDTSのトラックから検出</span>
+          <span>CLIPから直接認識</span>
           <b>→</b>
           <span>必要なフォルダだけ🎬で追加</span>
           <b>→</b>
@@ -359,14 +342,12 @@ _SL.jpg`}</pre>
 
         <div className={styles.compareGrid}>
           <div className={styles.compareCard}>
-            <h3>XDTSで検出される例</h3>
-            <pre>{`XDTSトラック A
-
-PSD
+            <h3>CLIPから認識される例</h3>
+            <pre>{`CLIPのアニメーションフォルダ
 A/
   1/  → A1.jpg
   2/  → A2.jpg`}</pre>
-            <p>トラックAとPSDのAフォルダを使い、タイムラインとセル出力を組み立てます。</p>
+            <p>アニメーションフォルダAのタイムラインと、直下のセル1・2を対応付けます。</p>
           </div>
           <div className={styles.compareCard}>
             <h3>🎬で追加する例</h3>
@@ -378,9 +359,7 @@ A/
         </div>
 
         <div className={styles.calloutWarning}>
-          CSP側で非表示のフォルダはXDTSへ出ないことがあります。
-          通常のセルとして扱うフォルダはCSP側で表示してPSDとXDTSを書き出してください。
-          補助的に追加する場合だけ🎬を使います。
+          タイムライン未使用セルは通常、初期OFFになります。「兼用カット」をONにすると未使用セルも表示状態に従って出力できます。目アイコンで個別に調整できます。
         </div>
       </Section>
 
@@ -451,7 +430,7 @@ A/
         />
 
         <p className={styles.paragraph}>
-          PSD内の複数のレイヤーを選び、1枚の合成画像として出力する機能です。
+          読み込んだ複数のレイヤーを選び、1枚の合成画像として出力する機能です。
           元のPSDを複製せず、セル・BG・BOOKなどの組み合わせを追加できます。
         </p>
 
@@ -459,7 +438,7 @@ A/
           <li>左ペインの「＋追加」で仮想セルを作成し、出力ファイル名になる名前を付けます。</li>
           <li>右ペインから、画像に含めたいレイヤーを仮想セルへドラッグして追加します。</li>
           <li>追加したレイヤーの順番、目、合成モード、不透明度を仮想セル内で調整します。</li>
-          <li>仮想セルの⠿を右ペインへドラッグし、PSDのレイヤー順のどこへ挿入するか指定します。</li>
+          <li>仮想セルの⠿を右ペインへドラッグし、素材のレイヤー順のどこへ挿入するか指定します。</li>
           <li>出力プレビューを確認し、通常の出力ボタンから保存します。</li>
         </ol>
 
@@ -513,12 +492,12 @@ _原図`}</pre>
               <tr>
                 <td>単体出力の自動マーク</td>
                 <td>「_」以外にも自動で単体出力にするフォルダ名を完全一致で登録</td>
-                <td>次にPSDとXDTSを読み込んだときに反映</td>
+                <td>次に素材を読み込んだときに反映</td>
               </tr>
               <tr>
                 <td>自動マークの除外</td>
                 <td>「_old」など、先頭が「_」でも単体出力にしない名前を前方一致で登録</td>
-                <td>次にPSDとXDTSを読み込んだときに反映</td>
+                <td>次に素材を読み込んだときに反映</td>
               </tr>
               <tr>
                 <td>設定を書き出す／読み込む</td>
@@ -537,14 +516,12 @@ _原図`}</pre>
             <ol>
               <li>通常起動で書き出し設定を決めます。</li>
               <li>
-                同じカットのPSDとXDTSの2ファイルを同時に選び、EXEまたはショートカットへ
-                まとめてドロップします。
+                CLIPをEXEまたはショートカットへドロップします。対応PSDを一緒に追加することもできます。
               </li>
-              <li>XDTSと同じ場所へ、PSD名を元にしたフォルダを作って自動出力します。</li>
+              <li>CLIPと同じ場所へ、CLIP名を元にしたフォルダを作って自動出力します。</li>
             </ol>
             <p>
-              2ファイルを同じ起動時に渡した場合だけ動きます。PSDだけ、XDTSだけ、片方ずつの別起動、
-              複数のPSD／XDTSでは開始しません。
+              保存時の選択タイムラインと、保存済み書き出し設定を使います。従来のPSD＋XDTSも利用できます。その場合はXDTSと同じ場所へ出力します。
             </p>
           </div>
           <div className={styles.compareCard}>
@@ -560,7 +537,7 @@ _原図`}</pre>
 
         <div className={styles.callout}>
           クイック書き出しでは、読み込み後に★や🎬を追加する画面は表示されません。
-          カットごとに指定を変えたい場合は、通常起動でPSDとXDTSを読み込んでから書き出してください。
+          カットごとに指定を変えたい場合は、通常起動で素材を読み込んでから書き出してください。
         </div>
       </Section>
     </article>
