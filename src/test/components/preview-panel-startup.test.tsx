@@ -59,7 +59,7 @@ describe('PreviewPanel startup layout', () => {
       .toHaveAttribute('aria-checked', 'true')
     expect(within(guide).getByText('書き出し設定を決める')).toBeInTheDocument()
     expect(within(guide).getByText('「出力」から保存方法を選ぶ')).toBeInTheDocument()
-    expect(guide.textContent).toContain('PSDやXDTSの書き出しは不要です')
+    expect(guide.textContent).not.toContain('XDTS')
     expect(guide.textContent).toContain('CLIPを画面へドロップ')
     expect(within(guide).queryByText('最初の1回はここだけ')).not.toBeInTheDocument()
     expect(within(guide).queryByText('起動時に見えている設定')).not.toBeInTheDocument()

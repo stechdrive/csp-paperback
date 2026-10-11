@@ -1,12 +1,14 @@
 import type { ReactNode } from 'react'
 import { isDesktopRuntime } from '../../platform/runtime'
 import { DESKTOP_RELEASES_URL } from '../../platform/external-links'
+import { ja } from '../../i18n/ja'
 import { HelpFigure } from './HelpFigure'
+import { HELP_HIGHLIGHTS } from './helpHighlights'
 import styles from './QuickStartGuide.module.css'
 
 interface QuickStartGuideProps {
   variant: 'startup' | 'help'
-  xdtsLoaded?: boolean
+  timelineOnlyLoaded?: boolean
   sampleAction?: ReactNode
 }
 
@@ -35,7 +37,7 @@ function Step({
 
 export function QuickStartGuide({
   variant,
-  xdtsLoaded = false,
+  timelineOnlyLoaded = false,
   sampleAction,
 }: QuickStartGuideProps) {
   const full = variant === 'help'
@@ -52,9 +54,7 @@ export function QuickStartGuide({
               src="startup-guide.png"
               alt="起動直後の中央ペイン上部にある書き出し設定"
               caption="赤枠が中央ペイン上部の書き出し設定です。ここで選んだ内容は次回起動とデスクトップ版の自動書き出しにも引き継がれます。"
-              highlights={[
-                { label: '書き出し設定', x: 20.7, y: 10.8, width: 55.5, height: 30.3 },
-              ]}
+              highlights={[HELP_HIGHLIGHTS.startupSettings]}
             />
           ) : undefined}
         >
@@ -62,16 +62,15 @@ export function QuickStartGuide({
           迷ったら初期設定のままで構いません。
         </Step>
 
-        <Step number={2} title="CLIPを保存する">
-          クリスタで作業中のCLIPを保存します。PSDやXDTSの書き出しは不要です。
+        <Step number={2} title="書き出す状態でCLIPを保存する">
+          クリスタで、書き出したい素材が表示される状態にしてCLIPを保存します。
         </Step>
 
-        <Step number={3} title={xdtsLoaded ? 'PSDを読み込む' : 'CLIPを読み込む'}>
-          {xdtsLoaded
-            ? 'XDTSは読み込み済みです。対応するPSDを画面へドロップしてください。'
+        <Step number={3} title={timelineOnlyLoaded ? 'PSDを読み込む' : 'CLIPを読み込む'}>
+          {timelineOnlyLoaded
+            ? 'タイムシートは読み込み済みです。対応するPSDを画面へドロップしてください。'
             : 'CLIPを画面へドロップします。「ファイルを開く」から選択しても構いません。'}
           アニメーションフォルダとタイムラインを読み取り、対応する素材を描画します。
-          クリスタの描画結果を使用する場合は、同じ保存状態から書き出したレイヤー付きPSDを追加できます。
         </Step>
 
         <Step
@@ -82,9 +81,7 @@ export function QuickStartGuide({
               src="loaded-overview.png"
               alt="サンプルを読み込んだCSP Paperbackの3ペイン画面"
               caption="読込後の画面。赤枠の出力プレビューで、出力名と合成結果を確認できます。"
-              highlights={[
-                { label: '出力プレビュー', x: 20.5, y: 73.7, width: 56, height: 25.8 },
-              ]}
+              highlights={[HELP_HIGHLIGHTS.output]}
             />
           ) : undefined}
         >
@@ -101,16 +98,7 @@ export function QuickStartGuide({
               alt="ツールバーの出力メニューでZIPとフォルダを選べる状態"
               caption="赤枠の「出力」からZIPまたはフォルダを選びます。環境によってはZIPのみ表示されます。"
               compact
-              highlights={[
-                {
-                  label: '出力メニュー',
-                  x: 89.5,
-                  y: 1,
-                  width: 9.5,
-                  height: 17.5,
-                  labelAlign: 'right',
-                },
-              ]}
+              highlights={[HELP_HIGHLIGHTS.outputMenu]}
             />
           ) : undefined}
         >
@@ -119,9 +107,10 @@ export function QuickStartGuide({
       </div>
 
       <div className={styles.callout}>
-        <strong>書き出し前の確認：</strong>
-        出したい素材が入っているアニメーションフォルダは、親フォルダも含めてCSP側で表示状態にしてください。
-        読込後に右ペインの目アイコンで調整することもできます。
+        <strong>クリスタの描画結果を使う場合：</strong>
+        ベクター・3Dレイヤーなど、CLIPだけでは再現できない素材はPSDの画像を使えます。
+        クリスタの<span className={styles.menuPath}>{ja.input.psdMenu}</span>で保存し、
+        CLIPと一緒に読み込むか、後から追加します。{ja.input.psdVisibility}
       </div>
 
       {sampleAction && <div className={styles.actions}>{sampleAction}</div>}
@@ -134,7 +123,6 @@ export function QuickStartGuide({
               通常起動で書き出し設定を決めたあと、CLIPをEXEまたはショートカットへドロップします。
               対応PSDを一緒に渡すこともできます。CLIPと同じ場所へ自動出力します。
               複数タイムラインがある場合は、保存時に選択されていたものを使用します。
-              従来のPSD＋XDTSの2ファイルでも利用できます。
               ★や🎬をカットごとに調整したい場合は、通常画面から書き出してください。
             </p>
             {!desktop && (
@@ -145,7 +133,7 @@ export function QuickStartGuide({
           </section>
 
           <div className={styles.privacy}>
-            CLIP・PSD・XDTSの解析と画像生成はブラウザ内または端末内で完結し、作品データを外部へ送信しません。
+            読み込んだファイルの解析と画像生成はブラウザ内または端末内で完結し、作品データを外部へ送信しません。
           </div>
         </>
       )}

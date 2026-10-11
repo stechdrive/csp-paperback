@@ -1,4 +1,5 @@
 import { downloadBlob } from '../utils/zip-builder'
+import { ja } from '../i18n/ja'
 import { createAbortError, isDesktopRuntime } from './runtime'
 
 export interface LoadableFile {
@@ -44,7 +45,7 @@ export async function pickProjectFiles(): Promise<LoadableFile[]> {
 
   const { open } = await import('@tauri-apps/plugin-dialog')
   const selected = await open({
-    title: 'CLIP / PSD / XDTS / 工程設定JSON を開く',
+    title: ja.input.openTitle,
     multiple: true,
     filters: [
       { name: 'CSP Paperback files', extensions: ['clip', 'psd', 'xdts', 'json'] },

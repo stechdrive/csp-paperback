@@ -22,7 +22,7 @@ describe('HelpDialog information architecture', () => {
 
     const route = [
       '書き出し設定を決める',
-      'CLIPを保存する',
+      '書き出す状態でCLIPを保存する',
       'CLIPを読み込む',
       '出力プレビューを確認する',
       '「出力」から保存方法を選ぶ',
@@ -33,7 +33,7 @@ describe('HelpDialog information architecture', () => {
     expect(document.querySelector('[data-help-highlight="出力メニュー"]')).toBeInTheDocument()
 
     const text = screen.getByRole('dialog').textContent ?? ''
-    expect(text).toContain('PSDやXDTSの書き出しは不要です')
+    expect(text).not.toContain('XDTS')
     expect(text).toContain('CLIPをEXEまたはショートカットへドロップ')
     expect(text).not.toContain('1つずつ同時に')
     expect(screen.queryByText('CSPアニメーションセル出力の課題')).not.toBeInTheDocument()
@@ -73,8 +73,8 @@ describe('HelpDialog information architecture', () => {
     expect(within(toc).queryByRole('button', { name: /困ったとき/ })).not.toBeInTheDocument()
 
     const text = screen.getByRole('article').textContent ?? ''
-    expect(text).toContain('CLIPを開くと、アニメーションフォルダ・セル・タイムラインを直接読み取り')
-    expect(text).toContain('従来のPSD＋XDTS')
+    expect(text).toContain('アニメーションフォルダ・セル・タイムラインを直接読み取り')
+    expect(text).not.toContain('XDTS')
     expect(text).toContain('設定JSON（任意）')
     expect(text).toContain('CSPのタイムラインで、そのフレームに表示されるセルの重なり')
     expect(text).toContain('兼用カット')
@@ -96,7 +96,7 @@ describe('HelpDialog information architecture', () => {
     fireEvent.click(screen.getByRole('tab', { name: /このツールについて/ }))
 
     expect(screen.getByRole('heading', {
-      name: 'CSPのセル出力で、素材ごとの出し分けをできるようにする',
+      name: '作画データを、現場で必要な素材ごとの静止画へ',
     }))
       .toBeInTheDocument()
     expect(screen.getByRole('heading', { name: '1. CSP標準のセル出力で困ること' }))

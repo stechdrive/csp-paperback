@@ -1,6 +1,6 @@
 import styles from '../HelpDialog.module.css'
 
-interface HelpHighlight {
+export interface HelpHighlight {
   label: string
   x: number
   y: number

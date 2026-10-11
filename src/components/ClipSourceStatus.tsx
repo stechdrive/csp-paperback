@@ -1,4 +1,5 @@
 import { useAppStore } from '../store'
+import { ja } from '../i18n/ja'
 import styles from './ClipSourceStatus.module.css'
 
 export function ClipSourceStatus() {
@@ -12,7 +13,7 @@ export function ClipSourceStatus() {
     <strong>{psdName ? 'PSDの画像を使用・タイムラインはCLIP' : 'CLIPから読み込み'}</strong>
     <p>{psdName
       ? 'CLIPのセル対応と設定を保持しています。'
-      : 'クリスタの描画結果を使用する場合は、同じ保存状態から書き出したレイヤー付きPSDを追加できます。'}</p>
+      : ja.input.psdOptional}</p>
     {clip.timelines.length > 1 && <label>タイムライン
       <select value={timelineId ?? ''} onChange={e => selectTimeline(Number(e.target.value))}>
         {clip.timelines.map(t => <option key={t.id} value={t.id}>{t.data.timeTableName || `タイムライン ${t.id}`}</option>)}

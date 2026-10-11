@@ -1,4 +1,5 @@
 import { HelpFigure } from './HelpFigure'
+import { HELP_HIGHLIGHTS } from './helpHighlights'
 import styles from '../HelpDialog.module.css'
 
 export function StudioTemplateGuide() {
@@ -30,9 +31,7 @@ export function StudioTemplateGuide() {
         src="settings-dialog.png"
         alt="書き出し詳細設定の工程フォルダリスト"
         caption="赤枠の工程フォルダリストで、サフィックスと対応するフォルダ名を設定します。"
-        highlights={[
-          { label: '工程設定', x: 20.8, y: 44.2, width: 58.6, height: 37.2 },
-        ]}
+        highlights={[HELP_HIGHLIGHTS.processSettings]}
       />
 
       <div className={styles.tableWrap}>

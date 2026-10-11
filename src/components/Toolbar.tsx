@@ -196,7 +196,7 @@ export function Toolbar({ onFiles, isLoading, error, notification, canUndo, canR
 
   const openFileBtn = (
     <Tooltip
-      content={"CLIP / PSD / XDTS / 工程設定JSON を開く\nCLIPだけで開始できます。必要に応じて純正PSDを追加できます"}
+      content={`${t.input.openTitle}\n${t.input.openHint}`}
       placement="bottom"
     >
       <button

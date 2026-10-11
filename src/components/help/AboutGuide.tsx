@@ -121,10 +121,18 @@ export function AboutGuide() {
     <article className={styles.article}>
       <div className={styles.pageHero}>
         <div className={styles.eyebrow}>このツールについて</div>
-        <h1 className={styles.pageTitle}>CSPのセル出力で、素材ごとの出し分けをできるようにする</h1>
+        <h1 className={styles.pageTitle}>作画データを、現場で必要な素材ごとの静止画へ</h1>
         <p className={styles.pageLead}>
-          CLIP STUDIO PAINTの標準機能では難しい出力と、CSP Paperbackで画像がどう分かれるかを
-          実際のレイヤー名とファイル名で説明します。
+          CSP Paperbackは、日本のアニメ制作で、CLIP STUDIO PAINTの作画データから
+          必要な素材を独立した静止画として書き出すためのツールです。
+          制作現場ごとのフォルダー構成や工程名に合わせて、素材の出し分けや組み合わせ、
+          出力ファイル名を柔軟に設定できます。
+        </p>
+        <p className={styles.paragraph}>
+          作画・演出・作監修正の工程別出力、背景原図・BOOK・撮影指示の単独出力、
+          共通のフレームの重ね合わせ、選んだレイヤーを組み合わせた出力など、
+          クリスタ標準のアニメーションセル書き出しでは扱いにくい素材構成に対応します。
+          以下では、実際のレイヤー名とファイル名で説明します。
         </p>
       </div>
 
@@ -331,7 +339,7 @@ export function AboutGuide() {
       <Section id="privacy" title="5. 通信とファイルアクセス">
         <div className={styles.privacyStatement}>
           <strong>作品データは外部へ送信しません。</strong>
-          <span>CLIP、PSD、XDTS、設定内容、ファイル名、生成画像の処理はブラウザ内または端末内で完結します。</span>
+          <span>読み込んだファイル、設定内容、ファイル名、生成画像の処理はブラウザ内または端末内で完結します。</span>
         </div>
 
         <ul className={styles.list}>
@@ -353,7 +361,7 @@ export function AboutGuide() {
 
         <div className={styles.callout}>
           このテンプレートを使う必要はありません。
-          普段のCLIPだけで利用できます。必要に応じて対応PSDを追加でき、従来のPSD＋XDTSも使用できます。
+          普段のCLIPだけで利用できます。クリスタの描画結果を使う場合は、対応するPSDを追加できます。
         </div>
 
         <div className={styles.templateAction}>

@@ -31,7 +31,7 @@ export function UnmatchedTracksWarning({ unmatchedTracks }: UnmatchedTracksWarni
       >
         <span className={styles.icon} aria-hidden="true">⚠</span>
         <span className={styles.summary}>
-          XDTS トラック {unmatchedTracks.length} 件に対応フォルダが見つかりません
+          タイムラインのトラック {unmatchedTracks.length} 件に対応フォルダが見つかりません
         </span>
         <span className={styles.detail}>クリックで詳細</span>
       </div>
@@ -42,11 +42,11 @@ export function UnmatchedTracksWarning({ unmatchedTracks }: UnmatchedTracksWarni
           onClick={e => { if (e.target === e.currentTarget) setShowDetail(false) }}
         >
           <div className={styles.dialog}>
-            <div className={styles.title}>⚠ 未対応の XDTS トラック</div>
+            <div className={styles.title}>⚠ 対応フォルダが見つからないトラック</div>
             <div className={styles.description}>
-              以下のトラックは XDTS に定義されていますが、PSD ツリー内に対応するアニメフォルダが見つかりませんでした。
+              以下のトラックに対応するアニメーションフォルダが、読み込んだ素材内に見つかりませんでした。
               <br />
-              PSD とペアでない XDTS を読み込んでいる可能性、またはフォルダ名が異なる可能性があります。
+              素材とタイムラインが同じカットのものか、フォルダ名が一致しているかを確認してください。
             </div>
             <ul className={styles.list}>
               {unmatchedTracks.map(track => (

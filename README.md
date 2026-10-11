@@ -6,29 +6,36 @@
 
 ## English
 
-A browser-based tool for exporting composited animation cell images from Clip Studio Paint.
+CSP Paperback exports artwork created in CLIP STUDIO PAINT as independent still images for Japanese animation production. Adapt material selection, layer combinations, and filenames to your studio's folder structure and production stages.
 
 **→ [Open the app](https://stechdrive.github.io/csp-paperback/)**
 
 ### The Problem
 
-CSP's animation export is designed around individual cels. When correction layers (layout, director's notes, animation supervisor's notes) are nested inside a cel folder — the natural structure for animation production — CSP cannot export each process independently. Work-in-progress opacity settings also bleed into the output.
+CSP's standard animation cel export cannot handle every material combination used in production. A frame guide may need to appear on every cel, while background layouts, BOOK layers, and camera instructions need separate images. Animator artwork and director or animation supervisor corrections may also need separate files, even when stored inside the same cel folder.
 
-CSP Paperback reads CLIP and exports artwork per process and per cel, ready for compositing. Add a corresponding CSP-exported PSD when you need CSP’s rasterization. The existing PSD + XDTS workflow remains available.
+CSP Paperback supports these workflows through configurable process names, standalone output rules, and virtual cels. The concept of “returning to paper” guides its compositing rules: working opacity on animation, cel, and process containers returns to 100%, while artwork opacity is preserved. The in-app help explains the rules with layer trees and output examples.
+
+### Getting Started
+
+1. In CSP, set layer visibility for the materials you want to export and save the CLIP file.
+2. Drop the CLIP into the app, or select it with the open-file button.
+3. Check the output previews and filenames, then export as ZIP or a folder.
+
+To use CSP's rendered artwork, save a PSD from the same CLIP using **File > Save Duplicate > .psd (Photoshop Document)**. Keep layer visibility the same in both files. Open them together or add the PSD afterward; CLIP continues to supply the timeline and cel identities. See the [official save instructions](https://help.clip-studio.com/en-us/manual_en/210_file/Save_file.htm).
 
 ### What You Can Do
 
 **Load your project**
-- Save and open your CLIP. PSD and XDTS export are not required
+- Save and open your CLIP to get started
 - CLIP supplies native animation-folder identities, cel timing and available artwork; select among multiple timelines in the app
 - Saved text pixels take priority. When unavailable, supported text attributes are rendered with browser fonts so exports can continue
-- Optionally add a layered PSD exported from the same saved state to use CSP’s raster images and masks, preserving marks and virtual cels
+- Optionally add a PSD saved from the same CLIP to use CSP's rendered images and masks, preserving marks and virtual cels
 - Camera and animated transforms are intentionally not applied: this app exports the original materials for compositing
-- The existing PSD + `.xdts` workflow remains available via *File > Export Animation > Export Timeline Information*
 - Open the app and drop the files to load them
 
 **Composite correctly**
-- Animation folders are read directly from CLIP, detected from XDTS data, or marked manually
+- Animation folders are read directly from CLIP; additional folders can be marked manually
 - Context layers (backgrounds, overlays, layout guides) are split by position — layers above the animation folder composite on top of each cell; layers below composite underneath
 - Blend modes are preserved exactly as authored in CSP
 
@@ -63,7 +70,7 @@ CSP Paperback reads CLIP and exports artwork per process and per cel, ready for 
 - No account, no server — everything runs in the browser and nothing leaves your machine
 
 **Privacy and file access**
-- CLIP/PSD/XDTS files, settings, and generated images are not uploaded
+- Input files, settings, and generated images are not uploaded
 - The desktop app contacts GitHub Releases only when the user manually checks for updates
 - Folder export writes generated images into a user-selected folder; browser permission prompts are for that local write access
 
@@ -72,11 +79,17 @@ CSP Paperback reads CLIP and exports artwork per process and per cel, ready for 
 | File | Purpose |
 |------|---------|
 | `.clip` | Default input: native structure, timelines and supported artwork. See the rendering limits below. |
-| `.psd` | Layered PSD exported from the same CLIP state in CSP. Optional with CLIP; required for the PSD + XDTS workflow. |
-| `.xdts` | Legacy PSD timeline input. Not required with CLIP; CLIP timing takes precedence when both are supplied. |
+| `.psd` | Optional. Use CSP's rendered artwork by saving a PSD from the same CLIP through Save Duplicate. |
 | `.json` | Optional. Shared process table and archive exclusion settings exported from the settings dialog. |
 
-CLIP-only rendering is best effort: saved rasters, basic text fallback, image-material placement, solid borders, fills, gradients, additional blend modes, and inversion/threshold corrections are supported. Brush-specific vectors, drawing layer colors and full CSP text layout remain limited. See [CLIP import](docs/clip-import.md) for details.
+### CLIP-only Rendering
+
+- Raster layers, masks, image-material placement, layer colors (including folders), and solid borders are supported.
+- Text is exported as an image using saved pixels or supported text settings. Fonts, vertical text, ruby, and other layout details may differ from CSP.
+- Vector and 3D layers, tones, watercolor edges, and some color corrections may not render correctly from CLIP alone. Add a PSD to use CSP's rendered artwork for these materials.
+- Exports continue with the supported content. Details for affected layers appear in the expandable rendering status in the app.
+
+Camera and animated transforms are left unapplied so the original materials can be exported. For implementation details and sample verification, see [CLIP import](docs/clip-import.md).
 
 ### Desktop App
 
@@ -86,32 +99,41 @@ Desktop builds are available from [GitHub Releases](https://github.com/stechdriv
 
 ## 日本語
 
-Clip Studio Paint（CSP）のアニメーションセル書き出しを補完する、ブラウザで動くセルの画像書き出しツールです。
+CSP Paperbackは、日本のアニメ制作で、CLIP STUDIO PAINTの作画データから必要な素材を独立した静止画として書き出すためのツールです。制作現場ごとのフォルダー構成や工程名に合わせて、素材の出し分けや組み合わせ、出力ファイル名を柔軟に設定できます。
 
 **→ [アプリを開く](https://stechdrive.github.io/csp-paperback/)**
 
 **デスクトップ版（Windows EXEなど）** は [GitHub Releases](https://github.com/stechdrive/csp-paperback/releases) からダウンロードできます。
-ブラウザ版と同じ合成・書き出し機能に加えて、EXEへCLIPをドロップするクイック書き出しが使えます。対応PSDの追加、従来のPSD＋XDTSにも対応します。
+ブラウザ版と同じ合成・書き出し機能に加えて、EXEへCLIPをドロップするクイック書き出しが使えます。対応するPSDも一緒に指定できます。
 
 ### 何のためのツールか
 
-CSPのアニメーションセル書き出しは、セル単体の出力が前提です。演出修正・作監修正など複数の工程をセルフォルダ内にまとめた構造では、工程ごとの独立した書き出しが自動化できません。また、作業中の半透明設定がそのまま出力に影響するという問題もありました。
+クリスタ標準のアニメーションセル書き出しでは、制作現場で必要な素材の出し分けや組み合わせを扱いきれません。たとえば、フレームは各セルへ重ね、背景原図・BOOK・撮影指示は別画像にしたい。セルフォルダー内にまとめた作画本体と演出・作監修正も、工程ごとに分けて書き出したい。そうした運用に対応するためのツールです。
 
-CSP PaperbackはCLIPを読み込み、工程ごと・セルごとの撮影前素材を一括書き出しします。純正の描画結果を使いたい場合は対応PSDを追加できます。従来のPSD＋XDTSも利用できます。
+工程名辞書、アンダースコアフォルダーなどの単体出力ルール、仮想セルを使って、現場のデータ構成に合わせた出力を設定できます。
+
+「紙に戻す」は合成ルールの設計思想です。アニメーション・セル・工程フォルダーの作業用の薄表示は100%に戻し、描画内容の不透明度は尊重します。アプリ内ヘルプでは、具体的なレイヤー構成と出力例を使って説明しています。
+
+### 使い始めるには
+
+1. クリスタで、書き出したい素材が表示される状態にしてCLIPを保存します。
+2. CLIPをアプリへドロップするか、「ファイルを開く」から選択します。
+3. 出力プレビューとファイル名を確認し、「出力」からZIPまたはフォルダーへ書き出します。
+
+クリスタの描画結果を使う場合は、同じCLIPから **［ファイル］→［複製を保存］→［.psd(Photoshopドキュメント)...］** でPSDを保存します。CLIPとPSDは、レイヤーの表示状態を合わせて保存してください。2つを一緒に読み込むことも、後からPSDを追加することもできます。タイムラインとセルの対応は引き続きCLIPから読み取ります。[クリスタ公式の保存手順](https://help.clip-studio.com/ja-jp/manual_jp/210_files/ファイルを保存する.htm)
 
 ### できること
 
 **プロジェクトの読み込み**
-- CLIPを保存して開く。PSDやXDTSの書き出しは不要
+- CLIPを保存して、そのまま開く
 - CLIPからアニメーションフォルダの識別情報、セル指定、対応する素材画像を取得。複数タイムラインも選択可能
 - テキストは保存済み画像を優先し、画像がない場合も読み取れる文字・書式と利用可能なフォントで描画を継続
-- 純正描画を使いたい場合は、同じ保存状態からCSPの「複製を保存」で書き出したレイヤー付きPSDを追加。マーク・仮想セルは保持
+- クリスタの描画結果を使いたい場合は、同じCLIPから「複製を保存」で作成したPSDを追加。マーク・仮想セルは保持
 - カメラ・変形アニメーションは意図的に適用せず、AEなどで撮影する前の素材を出力
-- 従来のPSD＋XDTSも利用可能。XDTSは *ファイル＞アニメーション書き出し＞タイムシート情報から出力* で書き出す
 - アプリを開き、ファイルをドロップして読み込む
 
 **正しい合成順序**
-- アニメーションフォルダはCLIPから直接取得、XDTSデータから自動検出、またはUI上で手動指定
+- アニメーションフォルダはCLIPから直接取得。追加で指定したいフォルダはUI上で手動指定可能
 - コンテキストレイヤー（背景・前景・レイアウト用紙など）はアニメーションフォルダとの位置関係で上下に分離して合成
 - CSPで設定したブレンドモードをそのまま維持
 
@@ -129,7 +151,6 @@ CSP PaperbackはCLIPを読み込み、工程ごと・セルごとの撮影前素
 **デスクトップ版クイック書き出し**
 - CLIPをEXEまたはショートカットへドロップすると、自動で読み込みから書き出しまで実行。対応PSDも一緒に指定可能
 - CLIPと同じフォルダに、CLIP名を元にした出力フォルダを作成
-- 従来のPSD＋XDTS同時ドロップも維持。この場合はXDTSと同じ場所へPSD名で出力
 - 通常起動時の中央ペイン上部にある「書き出し設定」は自動保存され、通常のファイル読み込みとクイック書き出しで共通して使用
 - カットごとに手動で★や🎬を付ける確認工程はないため、`_` 命名や工程フォルダリストで運用をそろえておく用途向け
 
@@ -157,7 +178,7 @@ CSP PaperbackはCLIPを読み込み、工程ごと・セルごとの撮影前素
 - アカウント不要・サーバー不要。すべてブラウザ内で完結し、データは外部に送信されない
 
 **通信とファイルアクセス**
-- CLIP/PSD/XDTS、設定内容、生成画像は外部サーバーへ送信しません
+- 読み込んだファイル、設定内容、生成画像は外部サーバーへ送信しません
 - デスクトップ版は、ユーザーが手動で更新確認した時だけ GitHub Releases の最新情報を確認します
 - フォルダ書き出し時のブラウザ権限表示は、選択したローカルフォルダへ生成画像を書き込むためのものです
 
@@ -166,20 +187,26 @@ CSP PaperbackはCLIPを読み込み、工程ごと・セルごとの撮影前素
 | ファイル | 用途 |
 |---------|------|
 | `.clip` | 標準の入力。レイヤー構造、タイムライン、対応する素材画像を取得。 |
-| `.psd` | 同じCLIPの保存状態からCSPで書き出したレイヤー付きPSD。CLIP併用時は任意、PSD＋XDTS経路では必須。 |
-| `.xdts` | 従来のPSD用タイムライン入力。CLIP使用時は不要で、両方指定された場合はCLIPを優先。 |
+| `.psd` | 任意。同じCLIPから「複製を保存」で作成し、クリスタの描画結果を使用。 |
 | `.json` | 任意。設定ダイアログから書き出した工程テーブルとアーカイブ除外設定。 |
 
-CLIP対応範囲、組み合わせの条件、同梱サンプルの検証結果は[CLIP読み込み](docs/clip-import.md)を参照してください。
+### CLIPだけで使う場合の描画範囲
+
+- ラスターレイヤー、マスク、画像素材の配置、レイヤーカラー（フォルダーへの適用を含む）、単色の境界線などに対応しています。
+- テキストも画像として書き出します。フォントや縦書き・ルビなどは、クリスタと見た目が異なる場合があります。
+- ベクター・3Dレイヤー、トーン・水彩境界・一部の色調補正などは、CLIPだけでは正しく再現できない場合があります。クリスタの描画結果を使う場合はPSDを追加してください。
+- 一部の素材を再現できない場合も、対応できる範囲で書き出しを続けます。対象の詳細はアプリ内の「再現状況」で確認できます。
+
+カメラ・変形アニメーションは適用せず、元の素材の状態で書き出します。実装仕様と同梱サンプルの検証結果は[CLIP読み込み](docs/clip-import.md)を参照してください。
 
 ### デスクトップアプリ
 
 デスクトップ版は [GitHub Releases](https://github.com/stechdrive/csp-paperback/releases) からダウンロードできます。
 
 - WindowsではReleasesのAssetsから `csp-paperback.exe` を取得して起動
-- EXEまたはショートカットへCLIPをドロップするとクイック書き出し。対応PSD、従来のPSD＋XDTSも利用可能
+- EXEまたはショートカットへCLIPをドロップするとクイック書き出し。対応するPSDも一緒に指定可能
 - ブラウザの保存ダイアログを使わず、ローカルフォルダへ直接書き出し可能
-- Web版と同じく、CLIP/PSD/XDTSの中身を外部サーバーへ送信しません
+- Web版と同じく、読み込んだファイルの中身を外部サーバーへ送信しません
 
 ---
 

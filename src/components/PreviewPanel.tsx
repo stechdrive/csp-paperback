@@ -181,7 +181,7 @@ export function PreviewPanel() {
 
             <QuickStartGuide
               variant="startup"
-              xdtsLoaded={!!xdtsFileName}
+              timelineOnlyLoaded={!!xdtsFileName}
               sampleAction={<SampleLoadButton />}
             />
           </div>
@@ -199,7 +199,7 @@ export function PreviewPanel() {
       {/* PSD のみ読み込み済み（XDTS なし）バナー */}
       {!timelineData && !clipFileName && (
         <div className={styles.noXdtsBanner}>
-          対応するCLIPを追加すると、アニメーションフォルダとタイムラインを読み込めます。XDTSも使用できます。
+          対応するCLIPを追加すると、アニメーションフォルダとタイムラインを読み込めます。
         </div>
       )}
       <NavigatorCanvas height={navHeight} />

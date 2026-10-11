@@ -1,12 +1,18 @@
 export const ja = {
   toolbar: {
     openPsd: 'CLIP / PSD を開く',
-    openXdts: 'XDTS を開く',
     settings: '設定',
     updateCheck: '更新確認',
     export: '出力',
     loading: '読み込み中…',
     uiScale: '表示サイズ',
+  },
+  input: {
+    openTitle: 'CLIP / PSD / 設定JSON を開く',
+    openHint: 'CLIPを読み込みます。クリスタの描画結果を使う場合は、対応するPSDを追加できます。',
+    psdMenu: '［ファイル］→［複製を保存］→［.psd(Photoshopドキュメント)...］',
+    psdVisibility: 'CLIPとPSDは、レイヤーの表示状態を合わせて保存してください。',
+    psdOptional: 'クリスタの描画結果を使う場合は、同じCLIPから「複製を保存」で作成したPSDを追加できます。',
   },
   export: {
     title: '出力設定',
@@ -127,13 +133,13 @@ export const ja = {
   layerTree: {
     title: 'レイヤー',
     resetVisibility: '初期状態に戻す',
-    empty: 'CLIP / PSD を読み込むと\nレイヤー構造が表示されます',
+    empty: 'CLIPを読み込むと\nレイヤー構造が表示されます',
     markTitle: '単体書き出し',
     unmarkTitle: '単体書き出し解除',
   },
   dropZone: {
     message: 'CLIPをドロップ',
-    subMessage: '純正PSDの追加、従来のPSD＋XDTSにも対応',
+    subMessage: 'クリスタの描画結果を使う場合は、PSDも追加できます',
   },
 }
 

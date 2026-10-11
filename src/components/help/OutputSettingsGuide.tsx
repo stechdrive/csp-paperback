@@ -1,6 +1,7 @@
 import { ja } from '../../i18n/ja'
 import styles from '../HelpDialog.module.css'
 import { HelpFigure } from './HelpFigure'
+import { HELP_HIGHLIGHTS } from './helpHighlights'
 
 function HintText({ text }: { text: string }) {
   return (
@@ -22,9 +23,7 @@ export function OutputSettingsGuide() {
         src="loaded-overview.png"
         alt="中央ペインの書き出し設定"
         caption="赤枠の書き出し設定を変更すると、出力例と出力プレビューへ反映されます。"
-        highlights={[
-          { label: '書き出し設定', x: 20.5, y: 49, width: 56, height: 24.8 },
-        ]}
+        highlights={[HELP_HIGHLIGHTS.exportSettings]}
       />
 
       <h3 className={styles.subsectionTitle}>画像形式と保存先の構成</h3>

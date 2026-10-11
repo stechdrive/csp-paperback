@@ -1,4 +1,6 @@
 import { HelpFigure } from './HelpFigure'
+import { HELP_HIGHLIGHTS } from './helpHighlights'
+import { ja } from '../../i18n/ja'
 import { OutputSettingsGuide } from './OutputSettingsGuide'
 import styles from '../HelpDialog.module.css'
 
@@ -55,16 +57,9 @@ export function FeatureGuide() {
           alt="CSP Paperbackのツールバーと3ペイン"
           caption="左は仮想セル、中央はタイムラインと書き出し設定・出力プレビュー、右は素材のレイヤーです。"
           highlights={[
-            { label: '仮想セル', x: 0.6, y: 20.8, width: 19, height: 32.5 },
-            { label: 'プレビュー', x: 20.5, y: 6.7, width: 56, height: 92.5 },
-            {
-              label: 'レイヤー',
-              x: 76.6,
-              y: 6.7,
-              width: 23.1,
-              height: 92.5,
-              labelAlign: 'right',
-            },
+            HELP_HIGHLIGHTS.virtualCels,
+            HELP_HIGHLIGHTS.preview,
+            HELP_HIGHLIGHTS.layers,
           ]}
         />
 
@@ -95,26 +90,45 @@ export function FeatureGuide() {
 
       <Section id="files" title="2. CLIPを読み込む・必要に応じてPSDを追加する">
         <p className={styles.paragraph}>
-          CLIPを開くと、アニメーションフォルダ・セル・タイムラインを直接読み取り、素材を描画します。
-          保存画像を優先し、文字は画像がない場合も読み取れた文字情報から描画します。
-          一部を再現できない場合も、ほかの素材の書き出しは続けられます。詳細は「再現状況」で確認できます。
+          クリスタで、書き出したい素材が表示される状態にしてCLIPを保存し、そのまま開きます。
+          アニメーションフォルダ・セル・タイムラインを直接読み取り、素材を描画します。
+          複数のタイムラインがある場合は、中央ペインで切り替えられます。
         </p>
         <p className={styles.paragraph}>
-          クリスタの描画結果を使用する場合は、同じ保存状態から書き出したレイヤー付きPSDを追加できます。
-          セル対応・マーク・仮想セットを保持して画像を切り替えます。
-          階層やレイヤー順が異なるPSD、画像を統合したPSDは対応付けできません。
+          {ja.input.psdOptional}
+          PSDを追加しても、CLIPのタイムラインとセルの対応、マーク・仮想セルの設定は引き継ぎます。
         </p>
         <div className={styles.fileGrid}>
           <div className={styles.fileCard}><strong>CLIP</strong><span>クリスタで保存したファイルを、そのまま開きます。複数のタイムラインは画面で選択できます。</span></div>
-          <div className={styles.fileCard}><strong>PSD（任意）</strong><span>同じCLIPから「ファイル ＞ 複製を保存 ＞ Photoshopドキュメント」でレイヤーを保持して書き出します。</span></div>
+          <div className={styles.fileCard}><strong>PSD（任意）</strong><span>同じCLIPから{ja.input.psdMenu}で保存します。{ja.input.psdVisibility}</span></div>
           <div className={styles.fileCard}><strong>設定JSON（任意）</strong><span>保存した出力名・工程フォルダ・自動マークなどの設定を一緒に読み込めます。</span></div>
         </div>
         <div className={styles.callout}>CLIPを画面へドロップするか、「ファイルを開く」から選択してください。対応PSDは同時でも後からでも追加できます。</div>
-        <details>
-          <summary>従来のPSD＋XDTSを使う場合</summary>
-          <p>同じカットのPSDとXDTSを一緒に開きます。XDTSはクリスタの「ファイル ＞ アニメーション書き出し ＞ タイムシート情報の書き出し」で作成します。</p>
-          <p>PSDだけを開いて、右ペインでアニメーションフォルダを手動指定することもできます。</p>
-        </details>
+
+        <h3>CLIPだけで使う場合の描画範囲</h3>
+        <div className={styles.tableWrap}>
+          <table className={styles.table}>
+            <thead><tr><th>素材・効果</th><th>現在の対応</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>通常の描画とレイヤー効果</td>
+                <td>ラスターレイヤー、マスク、画像素材の配置、レイヤーカラー、単色の境界線などに対応しています。</td>
+              </tr>
+              <tr>
+                <td>テキスト</td>
+                <td>文字も画像として書き出します。フォントや縦書き・ルビなどは、クリスタと見た目が異なる場合があります。</td>
+              </tr>
+              <tr>
+                <td>ベクター・3Dレイヤー、その他の効果</td>
+                <td>ベクター・3Dレイヤー、トーン・水彩境界・一部の色調補正などは、CLIPだけでは正しく再現できない場合があります。クリスタの描画結果を使う場合はPSDを追加してください。</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p className={styles.paragraph}>
+          一部の素材を再現できない場合も、対応できる範囲で書き出しを続けます。
+          読み込んだ素材の詳細は、中央ペインの「再現状況」で確認できます。
+        </p>
       </Section>
 
       <Section id="preview" title="3. タイムラインと出力プレビュー">
@@ -123,8 +137,8 @@ export function FeatureGuide() {
           alt="中央ペインのタイムライン表示と出力プレビュー"
           caption="上の赤枠はCSPのタイムライン表示、下の赤枠は実際に保存される画像です。"
           highlights={[
-            { label: 'タイムライン表示', x: 20.5, y: 6.7, width: 56, height: 42.4 },
-            { label: '出力プレビュー', x: 20.5, y: 73.7, width: 56, height: 25.8 },
+            HELP_HIGHLIGHTS.navigator,
+            HELP_HIGHLIGHTS.output,
           ]}
         />
 
@@ -149,6 +163,9 @@ export function FeatureGuide() {
           <li>どちらのプレビューも、ホイールで拡大縮小、ドラッグで表示位置を移動できます。</li>
           <li>書き出す前に、出力プレビュー上部のファイル名と画像を確認してください。</li>
         </ul>
+        <p className={styles.paragraph}>
+          2Dカメラや変形アニメーションは適用せず、元の素材の状態でプレビュー・書き出しします。
+        </p>
       </Section>
 
       <Section id="output-settings" title="4. 書き出し設定">
@@ -161,16 +178,7 @@ export function FeatureGuide() {
           alt="出力メニューのZIPとフォルダ"
           caption="赤枠の「出力」を押し、画像の保存方法を選びます。"
           compact
-          highlights={[
-            {
-              label: '出力メニュー',
-              x: 89.5,
-              y: 1,
-              width: 9.5,
-              height: 17.5,
-              labelAlign: 'right',
-            },
-          ]}
+          highlights={[HELP_HIGHLIGHTS.outputMenu]}
         />
 
         <div className={styles.compareGrid}>
@@ -200,16 +208,7 @@ export function FeatureGuide() {
           alt="右ペインのレイヤーツリー"
           caption="赤枠のレイヤーで、出力に含める素材と別画像にする素材を指定します。"
           compact
-          highlights={[
-            {
-              label: 'レイヤー',
-              x: 76.6,
-              y: 6.7,
-              width: 23.1,
-              height: 92.5,
-              labelAlign: 'right',
-            },
-          ]}
+          highlights={[HELP_HIGHLIGHTS.layers]}
         />
 
         <div className={styles.calloutWarning}>
@@ -431,7 +430,7 @@ A/
 
         <p className={styles.paragraph}>
           読み込んだ複数のレイヤーを選び、1枚の合成画像として出力する機能です。
-          元のPSDを複製せず、セル・BG・BOOKなどの組み合わせを追加できます。
+          元の作画データを複製せず、セル・BG・BOOKなどの組み合わせを追加できます。
         </p>
 
         <ol className={styles.numberedList}>
@@ -468,9 +467,7 @@ _原図`}</pre>
           src="settings-dialog.png"
           alt="書き出し詳細設定ダイアログ"
           caption="赤枠の詳細設定で、工程名、自動マーク、除外リスト、設定の保存・読み込みを行います。"
-          highlights={[
-            { label: '詳細設定', x: 19.5, y: 7.5, width: 61.1, height: 85 },
-          ]}
+          highlights={[HELP_HIGHLIGHTS.settingsDialog]}
         />
 
         <div className={styles.tableWrap}>
@@ -521,7 +518,7 @@ _原図`}</pre>
               <li>CLIPと同じ場所へ、CLIP名を元にしたフォルダを作って自動出力します。</li>
             </ol>
             <p>
-              保存時の選択タイムラインと、保存済み書き出し設定を使います。従来のPSD＋XDTSも利用できます。その場合はXDTSと同じ場所へ出力します。
+              保存時の選択タイムラインと、保存済み書き出し設定を使います。
             </p>
           </div>
           <div className={styles.compareCard}>
