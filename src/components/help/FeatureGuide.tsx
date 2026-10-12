@@ -127,7 +127,7 @@ export function FeatureGuide() {
         </div>
         <p className={styles.paragraph}>
           一部の素材を再現できない場合も、対応できる範囲で書き出しを続けます。
-          読み込んだ素材の詳細は、中央ペインの「再現状況」で確認できます。
+          再現に関する補足があるときは、「プレビュー」右側の「再現状況」から一覧を開けます。
         </p>
       </Section>
 

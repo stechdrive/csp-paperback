@@ -20,6 +20,16 @@
   flex-shrink: 0;
 }
 
+.loadedHeader {
+  height: 2rem;
+  padding-block: 0;
+  gap: 0.5rem;
+}
+
+.loadedHeader > span {
+  flex-shrink: 0;
+}
+
 /* ナビゲーター: パネル幅いっぱいに表示、高さはリサイズハンドルで可変 */
 .navigatorSection {
   flex-shrink: 0;
@@ -345,6 +355,13 @@
   /* ヘッダーはタブバーと重複するので非表示 */
   .header {
     display: none;
+  }
+
+  /* 読み込み後はタイムラインと再現状況を同じ見出し行に収める。 */
+  .loadedHeader {
+    display: flex;
+    height: 2.5rem;
+    padding-inline: 0.5rem;
   }
 
   .noXdtsBanner {

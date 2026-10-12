@@ -7,7 +7,7 @@ import { useIsMobile } from '../hooks/useIsMobile'
 import { OutputPreview } from './OutputPreview'
 import { ExportSettings } from './ExportSettings'
 import { TimelineSeekBar } from './TimelineSeekBar'
-import { ClipSourceStatus } from './ClipSourceStatus'
+import { ClipPreviewControls } from './ClipPreviewControls'
 import { useSampleLoader } from '../hooks/useSampleLoader'
 import { QuickStartGuide } from './help/QuickStartGuide'
 import { DESKTOP_RELEASES_URL } from '../platform/external-links'
@@ -192,10 +192,10 @@ export function PreviewPanel() {
 
   return (
     <div className={styles.panel}>
-      <div className={styles.header}>
+      <div className={`${styles.header} ${styles.loadedHeader}`}>
         <span>プレビュー</span>
+        <ClipPreviewControls />
       </div>
-      <ClipSourceStatus />
       {/* PSD のみ読み込み済み（XDTS なし）バナー */}
       {!timelineData && !clipFileName && (
         <div className={styles.noXdtsBanner}>

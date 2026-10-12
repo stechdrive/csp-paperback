@@ -41,7 +41,7 @@ test('保存設定を再読込とサンプル読込へ引き継ぎ、実ZIPを�
 
   await page.getByRole('button', { name: 'サンプルデータで試す', exact: true }).click()
   await expect(page.getByText('c001.clip', { exact: true })).toBeVisible()
-  await expect(page.getByTestId('clip-source-status')).toContainText('CLIPから読み込み')
+  await expect(page.getByText('CLIPから読み込み', { exact: true })).toHaveCount(0)
   await expect(page.getByTitle('A/A_1_e.png')).toBeVisible()
 
   const downloadPromise = page.waitForEvent('download')
