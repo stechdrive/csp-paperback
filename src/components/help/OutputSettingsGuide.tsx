@@ -66,7 +66,7 @@ export function OutputSettingsGuide() {
       <p className={styles.paragraph}>
         セル名は、クリスタのセルのレイヤー名・レイヤーフォルダ名です。「1」「2」など、すでに付けた番号も使えます。
         アニメーションフォルダ<code>A</code>にセル<code>1</code>、<code>2</code>、<code>3</code>があり、
-        2番だけ演出修正<code>_e</code>がある例です。初期設定の「フォルダ名あり・区切りあり・修正記号は後ろ」とします。
+        2枚目と同じフレームから始まる演出修正<code>_e</code>が1枚だけある例です。初期設定の「フォルダ名あり・区切りあり・修正記号は後ろ」とします。
       </p>
 
       <div className={styles.tableWrap}>
@@ -103,15 +103,17 @@ export function OutputSettingsGuide() {
               </td>
             </tr>
             <tr>
-              <td>シート連番</td>
+              <td>{ja.settings.cellNamingSheetSequence}</td>
               <td>
-                タイムライン順に番号を付け、本体と修正工程の番号を同じセル位置へそろえます。
+                クリスタのタイムラインで、作画と同じフレームから始まる修正に、作画と同じ番号を付けます。
               </td>
               <td>
+                作画：<br />
                 <code>A_1.jpg</code><br />
                 <code>A_2.jpg</code><br />
-                <code>A_2_e.jpg</code><br />
-                <code>A_3.jpg</code>
+                <code>A_3.jpg</code><br />
+                演出修正：<br />
+                <code>A_2_e.jpg</code>
               </td>
             </tr>
           </tbody>
@@ -124,8 +126,8 @@ export function OutputSettingsGuide() {
       </p>
 
       <div className={styles.callout}>
-        シート連番では、2番にだけある演出修正も<code>A_2_e.jpg</code>になります。
-        修正側で最初の1枚だからといって<code>A_1_e.jpg</code>にはなりません。
+        「{ja.settings.cellNamingSheetSequence}」では、修正が1枚だけでも、作画に合わせて「2」で書き出します。
+        作画の<code>A_2.jpg</code>と演出修正の<code>A_2_e.jpg</code>を、ファイル名で対応付けられます。
       </div>
 
       <h3 className={styles.subsectionTitle}>ファイル名と出力対象を調整する設定</h3>

@@ -622,7 +622,7 @@ describe('extractAllEntries', () => {
     expect(flatNames).not.toContain('A(2)_0001_bg.jpg')
   })
 
-  it('シート連番では工程違いの同名セル系列をXDTS初出順で統合して番号を振る', () => {
+  it('連番（シート合わせ）では工程違いの同名セル系列をXDTS初出順で統合して番号を振る', () => {
     const baseA = makeAnimationFolder('A', [
       makeLayer({ name: 'A1' }),
       makeLayer({ name: 'A2' }),
@@ -691,7 +691,7 @@ describe('extractAllEntries', () => {
     expect(flatNames).not.toContain('A_0003.jpg')
   })
 
-  it('シート連番はXDTSがない場合に従来の連番へフォールバックする', () => {
+  it('連番（シート合わせ）はXDTSがない場合に従来の連番へフォールバックする', () => {
     const animA = makeAnimationFolder('A', [
       makeLayer({ name: 'A1' }),
       makeLayer({ name: 'A2' }),

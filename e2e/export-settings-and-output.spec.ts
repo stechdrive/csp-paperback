@@ -155,7 +155,7 @@ for (const viewport of [{ width: 1440, height: 1000 }, { width: 1000, height: 70
       settings.getByRole('button', { name: 'PNG', exact: true }),
       settings.getByRole('button', { name: '連番＋セル名', exact: true }),
       settings.getByRole('button', { name: 'セル名', exact: true }),
-      settings.getByRole('button', { name: 'シート連番', exact: true }),
+      settings.getByRole('button', { name: '連番（シート合わせ）', exact: true }),
       settings.getByText('出力名', { exact: true }),
       settings.getByRole('button', { name: '自動', exact: true }),
       settings.getByRole('switch', { name: 'アニメーションフォルダ名', exact: true }),

@@ -98,7 +98,7 @@ describe('ExportSettings naming controls', () => {
     expect(screen.getByRole('switch', { name: 'アニメーションフォルダ名' })).toHaveAttribute('aria-checked', 'true')
     expect(screen.getByLabelText('出力例: A_1_e.jpg')).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: 'シート連番' }))
+    fireEvent.click(screen.getByRole('button', { name: '連番（シート合わせ）' }))
     fireEvent.click(screen.getByRole('button', { name: '4桁' }))
     expect(useAppStore.getState().projectSettings.sequenceDigitMode).toBe('fixed-4')
     expect(screen.getByLabelText('出力例: A_0001_e.jpg')).toBeInTheDocument()
@@ -142,7 +142,7 @@ describe('ExportSettings naming controls', () => {
   it('アニメーションフォルダ名はセル名モードでだけ変更でき、出力例へ反映する', () => {
     render(<ExportSettings />)
 
-    fireEvent.click(screen.getByRole('button', { name: 'シート連番' }))
+    fireEvent.click(screen.getByRole('button', { name: '連番（シート合わせ）' }))
     const toggle = screen.getByRole('switch', { name: 'アニメーションフォルダ名' })
     expect(toggle).toHaveAttribute('aria-disabled', 'true')
     fireEvent.click(toggle)
@@ -205,7 +205,7 @@ describe('ExportSettings naming controls', () => {
   it('中央ペインの各選択肢にユーザー向けツールチップを表示する', () => {
     vi.useFakeTimers()
     render(<ExportSettings />)
-    fireEvent.click(screen.getByRole('button', { name: 'シート連番' }))
+    fireEvent.click(screen.getByRole('button', { name: '連番（シート合わせ）' }))
 
     const transparentButton = screen.getByRole('button', { name: '透明（PNG のみ）' })
     expect(transparentButton).toHaveAttribute('aria-disabled', 'true')
@@ -220,7 +220,7 @@ describe('ExportSettings naming controls', () => {
       ['連番', 'フォルダ内のセルへ1、2…の順番で番号を付けます。桁数は出力する最大番号に合わせます。'],
       ['連番＋セル名', /セルのレイヤー名・レイヤーフォルダ名の前に、フォルダ内の順番で番号を付けます。.*A_1_ア\.jpg/s],
       ['セル名', /「1」「2」など、すでに付けた番号もそのまま使えます。.*A_1\.jpg、または「ア」→ A_ア\.jpg/s],
-      ['シート連番', /タイムライン順に番号を付け/],
+      ['連番（シート合わせ）', /作画と同じフレームから始まる修正に、作画と同じ番号を付けます。.*修正が1枚だけでも、作画に合わせて「2」で書き出します。/s],
       ['自動', '出力する最大番号に合わせて桁数を自動調整します。1〜9は1桁、10〜99は2桁になります。'],
       ['4桁', 'すべて0001、0002…の4桁で書き出します。'],
       ['_ あり', /セル名が「1」の場合 A_1\.jpgになります。/],
@@ -254,7 +254,7 @@ describe('ExportSettings naming controls', () => {
     const unavailableAuto = screen.getByRole('button', { name: '自動' })
     fireEvent.mouseEnter(unavailableAuto)
     act(() => vi.advanceTimersByTime(300))
-    expect(screen.getByText('セル名出力ではクリスタで付けた番号や名前を使うため、連番桁数は適用されません。連番・連番＋セル名・シート連番で使えます。')).toBeInTheDocument()
+    expect(screen.getByText('セル名出力ではクリスタで付けた番号や名前を使うため、連番桁数は適用されません。連番・連番＋セル名・連番（シート合わせ）で使えます。')).toBeInTheDocument()
     fireEvent.mouseLeave(unavailableAuto)
   })
 })
