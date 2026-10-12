@@ -17,21 +17,6 @@
   display: none;
 }
 
-.loadedHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: .5rem;
-  padding: .25rem .5rem;
-  flex-shrink: 0;
-  font-size: .75rem;
-  border-bottom: 1px solid var(--color-border-subtle);
-}
-
-.loadedHeader > span {
-  flex-shrink: 0;
-}
-
 .navigatorSection {
   flex-shrink: 0;
   max-height: 48%;
@@ -42,16 +27,6 @@
   flex-direction: column;
   gap: .3rem;
   overflow: hidden;
-}
-
-.navigatorLabel {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: .3rem;
-  font-size: .7rem;
-  color: var(--color-text-muted);
-  flex-shrink: 0;
 }
 
 .navigatorImage {
@@ -365,6 +340,8 @@
   padding: .4rem .5rem;
   flex-shrink: 0;
 }
+
+.seekActions { display: flex; flex-shrink: 0; margin-left: auto; }
 
 .seekTrack {
   flex: 1;

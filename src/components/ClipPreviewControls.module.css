@@ -42,9 +42,14 @@
 }
 
 .trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
   flex-shrink: 0;
-  height: 1.5rem;
+  height: 32px;
   padding: 0 0.4rem;
+  font-size: .75rem;
   white-space: nowrap;
 }
 
@@ -96,4 +101,9 @@
   .controls { gap: 0.3rem; }
   .timeline, .trigger { height: 2rem; }
   .close { width: 2rem; height: 2rem; }
+}
+
+@media (max-width: 735px), (pointer: coarse) and (max-width: 1024px) {
+  .triggerLabel { display: none; }
+  .trigger { width: 30px; padding: 0; height: 32px; }
 }

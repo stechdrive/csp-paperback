@@ -2,7 +2,7 @@ import { useRef, useState, type PointerEvent } from 'react'
 import { useAppStore } from '../store'
 import { usePreview } from '../hooks/usePreview'
 import { useZoomPan } from '../hooks/useZoomPan'
-import { ClipPreviewControls } from './ClipPreviewControls'
+import { ClipTimelineSelect } from './ClipPreviewControls'
 import { TimelineSeekBar } from './TimelineSeekBar'
 import styles from './PreviewPanel.module.css'
 
@@ -41,15 +41,13 @@ export function NavigatorPanel({ enabled, onEnlarge }: { enabled: boolean; onEnl
   if (!docWidth) return null
   return <>
     <section className={styles.navigatorSection} style={{ height }} aria-label="ナビゲーターパネル" data-testid="navigator-panel">
-      <div className={styles.navigatorLabel}>
-        <span>全体ナビゲーター</span>
+      <ClipTimelineSelect />
+      <NavigatorCanvas enabled={enabled} />
+      <TimelineSeekBar actions={
         <button className={styles.iconButton} onClick={onEnlarge} title="中央で大きく表示" aria-label="全体ナビゲーターを中央で大きく表示">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5M3 3l6 6m12-6-6 6M3 21l6-6m12 6-6-6" /></svg>
         </button>
-      </div>
-      <ClipPreviewControls />
-      <NavigatorCanvas enabled={enabled} />
-      <TimelineSeekBar />
+      } />
     </section>
     <div className={styles.resizeHandle} onPointerDown={resize} title="ナビゲーターの高さを変更" />
   </>

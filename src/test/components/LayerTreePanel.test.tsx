@@ -59,6 +59,55 @@ function wheel({ deltaY = 100, deltaX = 0, shiftKey = true } = {}) {
 }
 
 describe('LayerTreePanel output navigation', () => {
+  it('shares list, search and tree selection while preserving manual folder state', () => {
+    const { cell, process, expanded, collapsed } = renderTree({ manualOpen: true })
+    fireEvent.click(screen.getByRole('button', { name: '出力一覧' }))
+    const files = screen.getByRole('listbox', { name: '出力ファイル' })
+    expect(screen.getAllByRole('option').map(option => option.textContent)).toEqual(['A_1.jpg', 'A_1_s.jpg'])
+    fireEvent.click(screen.getByRole('option', { name: 'A_1_s.jpg' }))
+    expect(useAppStore.getState().selectedOutputSourceId).toBe(process.id)
+    fireEvent.wheel(files, { shiftKey: true, deltaY: -100 })
+    expect(useAppStore.getState().selectedOutputSourceId).toBe(cell.id)
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: '_s' } })
+    fireEvent.keyDown(files, { key: 'ArrowDown' })
+    expect(screen.getByRole('option', { selected: true })).toHaveTextContent('A_1_s.jpg')
+    expect(useAppStore.getState().selectedOutputSourceId).toBe(process.id)
+    fireEvent.click(screen.getByRole('button', { name: '選択中の出力をツリーで表示' }))
+    expect(screen.getByTestId('layer-tree')).toBeVisible()
+    expect(row(process.id)).toBeInTheDocument()
+    expect(useAppStore.getState().expandedFolders).toBe(expanded)
+    expect(useAppStore.getState().userCollapsedFolders).toBe(collapsed)
+  })
+
+  it('drops hidden or excluded list rows without selecting a different output, and restores them on undo', () => {
+    const { process } = renderTree()
+    fireEvent.click(screen.getByRole('button', { name: '出力一覧' }))
+    fireEvent.click(screen.getByRole('option', { name: 'A_1_s.jpg' }))
+    act(() => useAppStore.getState().toggleLayerVisibility(process.id))
+    expect(screen.queryByRole('option', { name: 'A_1_s.jpg' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('option', { selected: true })).not.toBeInTheDocument()
+    expect(useAppStore.getState().selectedOutputSourceId).toBe(process.id)
+    act(() => useAppStore.getState().undo())
+    expect(screen.getByRole('option', { selected: true })).toHaveTextContent('A_1_s.jpg')
+    act(() => useAppStore.setState({ outputConfig: { ...useAppStore.getState().outputConfig, format: 'png', excludedProcessSuffixes: ['_s'] } }))
+    expect(screen.getAllByRole('option').map(option => option.textContent)).toEqual(['A_1.png'])
+    expect(screen.queryByRole('option', { selected: true })).not.toBeInTheDocument()
+  })
+
+  it('reveals the current output without seeking a held cell back to its first frame', () => {
+    const { process } = renderTree({ timeline: true })
+    wheel()
+    wheel()
+    act(() => useAppStore.getState().seekToFrame(3))
+    const cells = useAppStore.getState().selectedCells
+    fireEvent.click(screen.getByRole('button', { name: '出力一覧' }))
+    fireEvent.click(screen.getByRole('button', { name: '選択中の出力をツリーで表示' }))
+    expect(useAppStore.getState().currentFrame).toBe(3)
+    expect(useAppStore.getState().selectedCells).toBe(cells)
+    expect(useAppStore.getState().selectedOutputSourceId).toBe(process.id)
+    expect(row(process.id)).toBeInTheDocument()
+  })
+
   it('keeps the clicked body row visible after navigating to an unmarked process folder', () => {
     const { anim, cell, body, process, correction, expanded, collapsed } = renderTree()
     expect(process.autoMarked).toBe(false)

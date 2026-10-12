@@ -7,6 +7,7 @@ export interface PreparedOutputEntry {
   relativePath: string
   segments: string[]
   fileName: string
+  names: { path: string; flatName: string }
 }
 
 export interface StreamedOutputEntry extends PreparedOutputEntry {
@@ -14,7 +15,7 @@ export interface StreamedOutputEntry extends PreparedOutputEntry {
 }
 
 export function prepareOutputEntries(
-  entries: OutputEntry[],
+  entries: Pick<OutputEntry, 'path' | 'flatName'>[],
   config: OutputConfig,
 ): PreparedOutputEntry[] {
   const normalizedEntries = entries.map(e => ({
@@ -28,7 +29,7 @@ export function prepareOutputEntries(
     const relativePath = config.structure === 'hierarchy' ? entry.path : entry.flatName
     const segments = relativePath.split('/').filter(Boolean)
     const fileName = segments[segments.length - 1] ?? '_'
-    return { relativePath, segments, fileName }
+    return { relativePath, segments, fileName, names: { path: entry.path, flatName: entry.flatName } }
   })
 }
 

@@ -54,7 +54,7 @@ export function MainLayout({ previewMode, onPreviewModeChange, virtualPanelOpen,
       <div className={styles.resizeHandle} onPointerDown={event => resize(event, 'right')} />
       <div className={styles.rightPane} style={{ width: rightWidth }} data-testid="source-panel">
         <NavigatorPanel enabled={!isMobile || activeTab === 'layer'} onEnlarge={() => onPreviewModeChange('navigator')} />
-        <div className={styles.layerPane}><LayerTreePanel /></div>
+        <div className={styles.layerPane}><LayerTreePanel onPreviewOutput={() => onPreviewModeChange('output')} /></div>
       </div>
       <nav className={styles.mobileTabBar} aria-label="作業パネル">
         {([

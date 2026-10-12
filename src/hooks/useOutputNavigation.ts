@@ -24,5 +24,13 @@ export function useOutputNavigation() {
     return entry ? state.selectOutputEntry(entry) : undefined
   }, [])
 
-  return { entries: navigation.entries, currentIdx, navigateTo, navigate }
+  const revealCurrent = useCallback(() => {
+    const state = useAppStore.getState()
+    const entries = selectOutputNavigation(state).entries
+    const index = findOutputNavigationIndex(entries, state.selectedOutputSourceId ?? state.selectedLayerId, state.selectedVirtualSetId)
+    const entry = entries[index]
+    return entry ? state.selectOutputEntry(entry, { preserveTimeline: true }) : undefined
+  }, [])
+
+  return { entries: navigation.entries, currentIdx, navigateTo, navigate, revealCurrent }
 }

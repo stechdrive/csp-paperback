@@ -47,8 +47,85 @@
 
 .tree {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: 0.25rem 0;
+}
+
+.contents {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.contents[hidden] { display: none; }
+
+.viewSwitch {
+  display: flex;
+  flex-shrink: 0;
+  gap: 3px;
+  padding: 3px 8px;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.viewSwitch button, .showTree {
+  border: 1px solid transparent;
+  border-radius: 3px;
+  padding: 3px 8px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: .75rem;
+  cursor: pointer;
+}
+
+.viewSwitch button[aria-pressed='true'], .fileRow[aria-selected='true'] {
+  background: rgba(var(--color-accent-rgb), .18);
+  color: var(--color-text-primary);
+}
+
+.viewSwitch button:hover, .showTree:hover:not(:disabled), .fileRow:hover {
+  background: var(--color-surface-hover-strong);
+}
+
+.viewSwitch button:focus-visible, .showTree:focus-visible, .fileList:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+}
+
+.listTools {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+  padding: .35rem .5rem;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.listTools input {
+  min-width: 0;
+  flex: 1;
+  height: 26px;
+  box-sizing: border-box;
+  padding: 0 6px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 3px;
+  color: var(--color-text-primary);
+  background: var(--color-surface-2);
+  font-size: .75rem;
+}
+
+.fileCount { flex-shrink: 0; font-size: .72rem; color: var(--color-text-secondary); }
+.showTree { flex-shrink: 0; height: 26px; padding: 0 5px; font-size: 1rem; }
+.showTree:disabled { opacity: .4; cursor: default; }
+.fileList { flex: 1; min-height: 0; overflow: auto; padding: .25rem 0; }
+.fileRow {
+  padding: 7px 12px;
+  font-size: .78rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+  border-bottom: 1px solid var(--color-border-subtle);
 }
 
 .footerHint {

@@ -64,12 +64,15 @@ function Diagnostics({ items }: { items: ClipDiagnostic[] }) {
       ref={trigger}
       type="button"
       className={styles.trigger}
+      aria-label={`再現状況 ${items.length}件`}
+      title={`再現状況 ${items.length}件`}
       aria-expanded={open}
       aria-controls={open ? id : undefined}
       aria-haspopup="dialog"
       onClick={() => setPosition(open || !trigger.current ? null : popupPosition(trigger.current))}
     >
-      再現状況 {items.length}件 <span aria-hidden="true">{open ? '▴' : '▾'}</span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 7v6m0 3v1" /></svg>
+      <span className={styles.triggerLabel}>再現状況 {items.length}件</span>
     </button>
     {position && createPortal(
       <div ref={popup} id={id} className={styles.popup} style={position} role="dialog" aria-labelledby={`${id}-title`}>
@@ -88,13 +91,19 @@ function Diagnostics({ items }: { items: ClipDiagnostic[] }) {
   </>
 }
 
-/** Compact controls in the preview heading; diagnostics never participate in pane layout. */
-export function ClipPreviewControls() {
+/** Document diagnostics belong to the toolbar, outside image panels. */
+export function ClipDiagnosticsControl() {
+  const clip = useAppStore(s => s.clipDocument)
+  const timelineId = useAppStore(s => s.clipTimelineId)
+  const diagnostics = useAppStore(s => s.clipDiagnostics)
+  return clip && diagnostics.length > 0 ? <Diagnostics key={timelineId} items={diagnostics} /> : null
+}
+
+export function ClipTimelineSelect() {
   const clip = useAppStore(s => s.clipDocument)
   const timelineId = useAppStore(s => s.clipTimelineId)
   const selectTimeline = useAppStore(s => s.selectClipTimeline)
-  const diagnostics = useAppStore(s => s.clipDiagnostics)
-  if (!clip || (clip.timelines.length <= 1 && diagnostics.length === 0)) return null
+  if (!clip || clip.timelines.length <= 1) return null
 
   return <div className={styles.controls}>
     {clip.timelines.length > 1 && <select
@@ -106,6 +115,5 @@ export function ClipPreviewControls() {
     >
       {clip.timelines.map(t => <option key={t.id} value={t.id}>{t.data.timeTableName || `タイムライン ${t.id}`}</option>)}
     </select>}
-    {diagnostics.length > 0 && <Diagnostics key={timelineId} items={diagnostics} />}
   </div>
 }

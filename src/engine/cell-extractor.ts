@@ -31,6 +31,41 @@ import {
   resolveTrackPrefixMode,
 } from '../utils/naming'
 
+// A plan only holds metadata and render functions. Canvas work starts at render time.
+interface OutputContext {
+  lower: FlatLayer[]
+  upper: FlatLayer[]
+  material?: MaterialOutputContext[]
+}
+type ContextFactory = (cache: OutputRenderCache) => OutputContext
+export type OutputRenderCache = Map<ContextFactory, OutputContext>
+export interface PlannedOutputEntry extends Omit<OutputEntry, 'canvas'> {
+  animFolderId?: string
+  renderCanvas: (cache: OutputRenderCache) => HTMLCanvasElement
+}
+
+// Context canvases are shared within one render batch and released with that batch,
+// never retained by the metadata plan used by the file list.
+function cachedContext(build: ContextFactory): ContextFactory {
+  const get: ContextFactory = cache => {
+    const cached = cache.get(get)
+    if (cached) return cached
+    const value = build(cache)
+    cache.set(get, value)
+    return value
+  }
+  return get
+}
+
+export function renderOutputPlans(plans: PlannedOutputEntry[]): OutputEntry[] {
+  const cache: OutputRenderCache = new Map()
+  return plans.map(entry => ({
+    path: entry.path, flatName: entry.flatName, sourceLayerId: entry.sourceLayerId,
+    sourceCellId: entry.sourceCellId, processSuffixes: entry.processSuffixes,
+    canvas: entry.renderCanvas(cache),
+  }))
+}
+
 /**
  * アニメーションフォルダからセルを抽出してOutputEntry[]を返す
  *
@@ -62,6 +97,26 @@ export function extractCells(
   materialContext?: MaterialOutputContext[],
   sourceCellId?: string,
 ): OutputEntry[] {
+  return renderOutputPlans(planCells(
+    animFolder, projectSettings, docWidth, docHeight,
+    () => ({ lower: lowerContextLayers, upper: upperContextLayers, material: materialContext }),
+    parentSuffix, hierarchyFolder, background, processSuffixPosition, sequenceDigits, sheetSequenceNumbers,
+  ).filter(entry => sourceCellId === undefined || entry.sourceCellId === sourceCellId))
+}
+
+function planCells(
+  animFolder: CspLayer,
+  projectSettings: ProjectSettings,
+  docWidth: number,
+  docHeight: number,
+  context: ContextFactory,
+  parentSuffix = '',
+  hierarchyFolder?: string,
+  background: 'white' | 'transparent' = 'white',
+  processSuffixPosition: ProcessSuffixPosition = 'after-cell',
+  sequenceDigits?: number,
+  sheetSequenceNumbers?: Map<string, number>,
+): PlannedOutputEntry[] {
   if (!animFolder.isAnimationFolder) return []
 
   // displayName: 出力フォルダ名とファイル名プレフィックスの両方で使う単一文字列
@@ -70,7 +125,7 @@ export function extractCells(
   const folderName = displayName
   const visibleChildren = animFolder.children.filter(c => !c.hidden && !c.uiHidden)
   const namingMode = projectSettings.cellNamingMode ?? DEFAULT_PROJECT_SETTINGS.cellNamingMode
-  const entries: (Omit<OutputEntry, 'canvas'> & { renderCanvas: () => HTMLCanvasElement })[] = []
+  const entries: PlannedOutputEntry[] = []
 
   // autoProcess 昇格フォルダでは、配下のセル名（`_BG`, `_BOOK1` 等）が
   // 素材分類の意味情報を持つ。連番化すると情報ロスするため、常に
@@ -102,10 +157,11 @@ export function extractCells(
       ? (cell.name || cell.originalName)
       : makeCellLabel(namingMode, cell.originalName, sequenceNumber, cellSequenceDigits)
 
-    const renderCanvas = () => {
+    const renderCanvas = (cache: OutputRenderCache) => {
+      const { lower, upper, material } = context(cache)
       const rawFlats = flattenCellContent(unit.layers, docWidth, docHeight, unit.ignoreOpacityIds)
       const cellFlats = applyContainerEffects(rawFlats, cell, animFolder, docWidth, docHeight)
-      return compositeWithContext(cellFlats, lowerContextLayers, upperContextLayers, docWidth, docHeight, background, materialContext)
+      return compositeWithContext(cellFlats, lower, upper, docWidth, docHeight, background, material)
     }
     const fileName = makeCellFileName({
       trackName,
@@ -124,14 +180,13 @@ export function extractCells(
       renderCanvas,
       sourceLayerId: unit.sourceLayerId,
       sourceCellId: cell.id,
+      animFolderId: animFolder.id,
       processSuffixes: collectProcessSuffixes(parentSuffix, unit.processSuffix ?? ''),
     })
   }
 
   resolveFlatNameCollisions(entries)
   return entries
-    .filter(entry => sourceCellId === undefined || entry.sourceCellId === sourceCellId)
-    .map(({ renderCanvas, ...entry }) => ({ ...entry, canvas: renderCanvas() }))
 }
 
 export function getMaxSequenceNumberForAnimationFolders(tree: CspLayer[]): number {
@@ -520,52 +575,55 @@ export function extractVirtualSetEntries(
   docHeight: number,
   background: 'white' | 'transparent' = 'white',
 ): OutputEntry[] {
-  const entries: OutputEntry[] = []
+  return renderOutputPlans(planVirtualSetEntries(tree, virtualSets, docWidth, docHeight, background))
+}
 
+export function planVirtualSetEntries(
+  tree: CspLayer[],
+  virtualSets: VirtualSet[],
+  docWidth: number,
+  docHeight: number,
+  background: 'white' | 'transparent' = 'white',
+): PlannedOutputEntry[] {
+  const entries: PlannedOutputEntry[] = []
   for (const vs of virtualSets) {
-    if (!vs.insertionLayerId || vs.members.length === 0) continue
+    if (!vs.insertionLayerId || !hasVirtualSetOutput(tree, vs)) continue
+    const insertionLayerId = vs.insertionLayerId
+    const renderCanvas = () => {
+      // 挿入位置から上下コンテキストを収集
+      const { lower, upper } = collectVsContextFlats(
+        insertionLayerId,
+        vs.insertionPosition,
+        tree,
+        docWidth,
+        docHeight,
+      )
 
-    // 挿入位置から上下コンテキストを収集
-    const { lower, upper } = collectVsContextFlats(
-      vs.insertionLayerId,
-      vs.insertionPosition,
-      tree,
-      docWidth,
-      docHeight,
-    )
+      // VSメンバーをフラット化（visibilityOverrides・blendModeオーバーライド適用済み）
+      const memberIds = new Set(vs.members.map(m => m.layerId))
+      const memberLayers = collectMembersInTreeOrder(tree, memberIds)
+      const vsFlats = buildMemberFlatsWithOverride(
+        vs.members, memberLayers, docWidth, docHeight, vs.visibilityOverrides, vs.layerOverrides ?? {}
+      )
 
-    // VSメンバーをフラット化（visibilityOverrides・blendModeオーバーライド適用済み）
-    const memberIds = new Set(vs.members.map(m => m.layerId))
-    const memberLayers = collectMembersInTreeOrder(tree, memberIds)
-    const vsFlats = buildMemberFlatsWithOverride(
-      vs.members, memberLayers, docWidth, docHeight, vs.visibilityOverrides, vs.layerOverrides ?? {}
-    )
-
-    if (vsFlats.length === 0 && lower.length === 0 && upper.length === 0) continue
-
-    // VSメンバーをフォルダと同様に隔離合成してから配置する
-    // （パススルーではなく非パススルーフォルダと同じ挙動）
-    const vsComposite = compositeGroup(vsFlats, docWidth, docHeight)
-    const vsAsFolder: FlatLayer[] = [{
-      canvas: vsComposite,
-      blendMode: 'normal',
-      opacity: 100,
-      top: 0,
-      left: 0,
-      sourceId: vs.id,
-      clipping: false,
-    }]
-    const canvas = compositeWithContext(vsAsFolder, lower, upper, docWidth, docHeight, background,
-      collectMaterialOutputContext(vs.insertionLayerId, tree, docWidth, docHeight, vs.insertionPosition))
+      // VSメンバーをフォルダと同様に隔離合成してから配置する
+      // （パススルーではなく非パススルーフォルダと同じ挙動）
+      const vsComposite = compositeGroup(vsFlats, docWidth, docHeight)
+      const vsAsFolder: FlatLayer[] = [{
+        canvas: vsComposite,
+        blendMode: 'normal',
+        opacity: 100,
+        top: 0,
+        left: 0,
+        sourceId: vs.id,
+        clipping: false,
+      }]
+      return compositeWithContext(vsAsFolder, lower, upper, docWidth, docHeight, background,
+        collectMaterialOutputContext(insertionLayerId, tree, docWidth, docHeight, vs.insertionPosition))
+    }
     const fileName = `${vs.name}.jpg`
-    entries.push({
-      path: fileName,
-      flatName: fileName,
-      canvas,
-      sourceLayerId: vs.id,
-    })
+    entries.push({ path: fileName, flatName: fileName, renderCanvas, sourceLayerId: vs.id })
   }
-
   resolveFlatNameCollisions(entries)
   return entries
 }
@@ -820,7 +878,23 @@ export function extractAllEntries(
   processSuffixPosition: ProcessSuffixPosition = 'after-cell',
   timelineData?: TimelineData | null,
 ): OutputEntry[] {
-  const entries: OutputEntry[] = []
+  return renderOutputPlans(planAllEntries(
+    tree, projectSettings, docWidth, docHeight, background,
+    excludeAutoMarked, processSuffixPosition, timelineData,
+  ))
+}
+
+export function planAllEntries(
+  tree: CspLayer[],
+  projectSettings: ProjectSettings,
+  docWidth: number,
+  docHeight: number,
+  background: 'white' | 'transparent' = 'white',
+  excludeAutoMarked = false,
+  processSuffixPosition: ProcessSuffixPosition = 'after-cell',
+  timelineData?: TimelineData | null,
+): PlannedOutputEntry[] {
+  const entries: PlannedOutputEntry[] = []
 
   const folderNameToSuffix = buildFolderNameToSuffixMap(projectSettings.processTable)
   const animParentSuffixMap = buildAnimParentSuffixMap(tree, folderNameToSuffix)
@@ -850,7 +924,7 @@ export function extractAllEntries(
    * 各アニメ包含フォルダを経由するたびに、そのフォルダ内での兄弟の位置を
    * 判定してinheritedLower/Upperに追加していく。
    */
-  function walk(layers: CspLayer[], inheritedLower: FlatLayer[], inheritedUpper: FlatLayer[]): void {
+  function walk(layers: CspLayer[], inherited: ContextFactory): void {
     for (let i = 0; i < layers.length; i++) {
       const layer = layers[i]
       if (layer.hidden || layer.uiHidden) continue
@@ -859,22 +933,23 @@ export function extractAllEntries(
         // XDTS/手動指定済みのアニメフォルダ: セルを抽出して出力。
         // `_` プレフィックスは単体出力マークだが、XDTS 検出済みの同一フォルダでは
         // タイムシート側の構造を優先する。
-        const [localLower, localUpper] = splitSiblingsByPosition(layers, i, docWidth, docHeight)
-        const thisLower = [...inheritedLower, ...localLower]
-        const thisUpper = [...localUpper, ...inheritedUpper]
+        const context = cachedContext(cache => {
+          const parent = inherited(cache)
+          const [lower, upper] = splitSiblingsByPosition(layers, i, docWidth, docHeight)
+          return { lower: [...parent.lower, ...lower], upper: [...upper, ...parent.upper],
+            material: collectMaterialOutputContext(layer.id, tree, docWidth, docHeight) }
+        })
 
         const parentSuffix = animParentSuffixMap.get(layer.id) ?? ''
         // displayName はフォルダ名とファイル名プレフィックスの両方に使う単一文字列。
         // 同名 anim folder は (n) で自動ナンバリングされている。
         const displayName = displayNameMap.get(layer.id) ?? layer.originalName.trim()
-        const cellEntries = extractCells(
-          layer, projectSettings, docWidth, docHeight, thisLower,
+        const cellEntries = planCells(
+          layer, projectSettings, docWidth, docHeight, context,
           parentSuffix, displayName, background,
-          thisUpper,
           processSuffixPosition,
           sequenceNamingPlan.digits,
           sequenceNamingPlan.sheetSequenceNumbers,
-          collectMaterialOutputContext(layer.id, tree, docWidth, docHeight),
         )
         entries.push(...cellEntries)
         continue
@@ -883,7 +958,7 @@ export function extractAllEntries(
       if (layer.autoMarked || layer.singleMark) {
         if (isAutoMarkedContainerOutputSuppressed(layer)) {
           if (layer.isFolder) {
-            walkMarkedOrRegularFolderChildren(layers, i, layer, inheritedLower, inheritedUpper)
+            walkMarkedOrRegularFolderChildren(layers, i, layer, inherited)
           }
           continue
         }
@@ -891,31 +966,33 @@ export function extractAllEntries(
         // 自動マークのみ（手動★なし）で除外設定の場合はスキップ
         if (layer.autoMarked && !layer.singleMark && excludeAutoMarked) {
           if (layer.isFolder) {
-            walkMarkedOrRegularFolderChildren(layers, i, layer, inheritedLower, inheritedUpper)
+            walkMarkedOrRegularFolderChildren(layers, i, layer, inherited)
           }
           continue
         }
         // プレビューと同じ collectMarkedLayerContext を使って合成コンテキストを取得する。
         // walk の inheritedLower/Upper に依存せず、ツリー全体から正しく upper/lower を収集するため
         // ネストされていても必ず一致した結果になる。
-        const { lower, upper } = collectMarkedLayerContext(layer.id, tree, docWidth, docHeight)
-        const layerFlats = flattenTree([layer], docWidth, docHeight)
-        const canvas = compositeWithContext(layerFlats, lower, upper, docWidth, docHeight, background,
-          collectMaterialOutputContext(layer.id, tree, docWidth, docHeight))
+        const renderCanvas = () => {
+          const { lower, upper } = collectMarkedLayerContext(layer.id, tree, docWidth, docHeight)
+          const layerFlats = flattenTree([layer], docWidth, docHeight)
+          return compositeWithContext(layerFlats, lower, upper, docWidth, docHeight, background,
+            collectMaterialOutputContext(layer.id, tree, docWidth, docHeight))
+        }
         const fileName = `${layer.originalName}.jpg`
-        entries.push({ path: fileName, flatName: fileName, canvas, sourceLayerId: layer.id })
+        entries.push({ path: fileName, flatName: fileName, renderCanvas, sourceLayerId: layer.id })
 
         // フォルダなら子も走査して内包マーク済みレイヤーを出力する。
         // 各子マーク済みレイヤーは独立して collectMarkedLayerContext を呼ぶが、
         // 配下のアニメフォルダには祖先コンテキストを継承させる必要がある。
         if (layer.isFolder) {
-          walkMarkedOrRegularFolderChildren(layers, i, layer, inheritedLower, inheritedUpper)
+          walkMarkedOrRegularFolderChildren(layers, i, layer, inherited)
         }
         continue
       }
 
       if (layer.isFolder) {
-        walkMarkedOrRegularFolderChildren(layers, i, layer, inheritedLower, inheritedUpper)
+        walkMarkedOrRegularFolderChildren(layers, i, layer, inherited)
       }
     }
   }
@@ -924,27 +1001,26 @@ export function extractAllEntries(
     siblings: CspLayer[],
     folderIndex: number,
     folder: CspLayer,
-    inheritedLower: FlatLayer[],
-    inheritedUpper: FlatLayer[],
+    inherited: ContextFactory,
   ): void {
     if (!folder.isFolder) return
 
     if (hasAnimFolderDescendant(folder)) {
       // フォルダ自身が path 要素になる場合は、_ マーク有無に関係なく
       // その階層の兄弟コンテキストを配下へ継承する。
-      const [localLower, localUpper] = splitSiblingsByPosition(siblings, folderIndex, docWidth, docHeight)
-      walk(
-        folder.children,
-        [...inheritedLower, ...localLower],
-        [...localUpper, ...inheritedUpper],
-      )
+      const context = cachedContext(cache => {
+        const parent = inherited(cache)
+        const [lower, upper] = splitSiblingsByPosition(siblings, folderIndex, docWidth, docHeight)
+        return { lower: [...parent.lower, ...lower], upper: [...upper, ...parent.upper] }
+      })
+      walk(folder.children, context)
       return
     }
 
-    walk(folder.children, inheritedLower, inheritedUpper)
+    walk(folder.children, inherited)
   }
 
-  walk(tree, [], [])
+  walk(tree, () => ({ lower: [], upper: [] }))
   // 異なる階層フォルダ内では同じファイル名を許容し、フラット出力名だけを一意にする。
   resolveFlatNameCollisions(entries, false)
   return entries

@@ -18,6 +18,7 @@ import { SettingsDialog } from './SettingsDialog'
 import { HelpDialog } from './HelpDialog'
 import { UpdateCheckDialog } from './UpdateCheckPanel'
 import { Tooltip } from './Tooltip'
+import { ClipDiagnosticsControl } from './ClipPreviewControls'
 import styles from './Toolbar.module.css'
 
 type IconName = 'menu' | 'open' | 'undo' | 'redo' | 'output' | 'navigator' | 'virtual' | 'help' | 'settings' | 'export' | 'info'
@@ -203,6 +204,8 @@ export function Toolbar({ onFiles, isLoading, error, notification, canUndo, canR
           </div>}
           <span className={styles.srOnly} role="status">{isLoading || isExporting || error || exportError || notification ? statusMessage : ''}</span>
         </div>
+
+        <ClipDiagnosticsControl />
 
         <div className={styles.utilityButtons}>
           <button className={`${styles.btn} ${styles.iconBtn}`} onClick={() => menuAction(() => setShowHelp(true))} aria-label="ヘルプ" title="使い方ヘルプを表示"><Icon name="help" /></button>

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAppStore } from '../store'
 import { useLocale } from '../i18n/locale'
 import { selectLayerTreeWithVisibility, selectLayerById } from '../store/selectors'
@@ -6,12 +6,14 @@ import { useOutputNavigation } from '../hooks/useOutputNavigation'
 import { useDragAutoScroll } from '../hooks/useDragDrop'
 import { LayerTreeNode } from './LayerTreeNode'
 import { BlendOpacityBar } from './BlendOpacityBar'
+import { OutputFileList } from './OutputFileList'
 import { Tooltip } from './Tooltip'
 import type { BlendMode } from '../types'
 import { mergeExpandedFolders } from '../utils/layerNavigation'
 import styles from './LayerTreePanel.module.css'
 
-export function LayerTreePanel() {
+export function LayerTreePanel({ onPreviewOutput }: { onPreviewOutput?: () => void }) {
+  const [view, setView] = useState<'tree' | 'files'>('tree')
   const tree = useAppStore(selectLayerTreeWithVisibility)
   const selectedLayerId = useAppStore(s => s.selectedLayerId)
   const expandedFolders = useAppStore(s => s.expandedFolders)
@@ -35,7 +37,7 @@ export function LayerTreePanel() {
 
   const treeRef = useRef<HTMLDivElement>(null)
   const dragAutoScrollHandlers = useDragAutoScroll(treeRef)
-  const { entries, navigate } = useOutputNavigation()
+  const { entries, navigate, revealCurrent } = useOutputNavigation()
   const visibleExpandedFolders = useMemo(
     () => mergeExpandedFolders(expandedFolders, revealedFolders),
     [expandedFolders, revealedFolders],
@@ -93,6 +95,11 @@ export function LayerTreePanel() {
 
   return (
     <div className={styles.panel}>
+      <div className={styles.viewSwitch} role="group" aria-label="レイヤーパネルの表示">
+        <button type="button" aria-pressed={view === 'tree'} onClick={() => setView('tree')}>レイヤー</button>
+        <button type="button" aria-pressed={view === 'files'} onClick={() => setView('files')}>出力一覧</button>
+      </div>
+      <div className={styles.contents} hidden={view !== 'tree'}>
       {/* 選択レイヤーの合成モード・不透明度コントロール */}
       <BlendOpacityBar
         blendMode={selectedLayer?.blendMode ?? 'normal'}
@@ -139,6 +146,19 @@ export function LayerTreePanel() {
             />
           ))
         )}
+      </div>
+      </div>
+
+      <div className={styles.contents} hidden={view !== 'files'}>
+        <OutputFileList active={view === 'files'} onPreview={onPreviewOutput} onShowTree={() => {
+          const entry = revealCurrent()
+          setView('tree')
+          requestAnimationFrame(() => {
+            if (!entry) return
+            const attr = entry.kind === 'virtualSet' ? 'data-virtual-set-id' : 'data-layer-id'
+            treeRef.current?.querySelector(`[${attr}="${CSS.escape(entry.id)}"]`)?.scrollIntoView({ block: 'nearest' })
+          })
+        }} />
       </div>
 
       <Tooltip content={"書き出される画像ごとに、セル本体・工程別画像・単体出力・仮想セルを巡回します\n出力行まで一時展開し、離れると元に戻します。手動で開いたフォルダは維持します"}>

@@ -45,7 +45,7 @@ export interface UiSlice {
   setActiveTheme: (theme: AppTheme) => void
   resetMobileUiScale: () => void
   selectLayer: (layerId: string | null) => void
-  selectOutputEntry: (entry: OutputNavigationEntry) => OutputNavigationEntry | undefined
+  selectOutputEntry: (entry: OutputNavigationEntry, options?: { preserveTimeline?: boolean }) => OutputNavigationEntry | undefined
   setSelectedVsMember: (setId: string | null, memberId: string | null) => void
   /**
    * アニメーションフォルダの選択セルを変更する。
@@ -209,7 +209,7 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
       transientExpandedFolders: collectOutputRevealFolders(tree, selectOutputNavigation(state), selectedLayerId) })
   },
 
-  selectOutputEntry: (requested) => {
+  selectOutputEntry: (requested, options) => {
     const state = get()
     const navigation = selectOutputNavigation(state)
     const entry = navigation.entries.find(item => item.id === requested.id && item.kind === requested.kind)
@@ -219,7 +219,7 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
       set({ selectedVirtualSetId: entry.id, selectedOutputSourceId: null, focusedAnimFolderId: null,
         transientExpandedFolders: collectOutputRevealFolders(tree, navigation, null, entry.id) })
     } else {
-      const update = entry.animFolderId !== undefined && entry.cellIndex !== undefined
+      const update = !options?.preserveTimeline && entry.animFolderId !== undefined && entry.cellIndex !== undefined
         ? animationSelection(state, entry.animFolderId, entry.cellIndex) : {}
       set({ ...update, selectedLayerId: entry.id, selectedOutputSourceId: entry.id,
         focusedAnimFolderId: entry.animFolderId ?? null, selectedVirtualSetId: null,

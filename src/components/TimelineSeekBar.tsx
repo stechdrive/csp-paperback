@@ -1,8 +1,8 @@
-import { useRef, useCallback } from 'react'
+import { useRef, useCallback, type ReactNode } from 'react'
 import { useAppStore } from '../store'
 import styles from './PreviewPanel.module.css'
 
-export function TimelineSeekBar() {
+export function TimelineSeekBar({ actions }: { actions?: ReactNode }) {
   const currentFrame = useAppStore(s => s.currentFrame)
   const duration = useAppStore(s => s.timelineData?.duration ?? 0)
   const fps = useAppStore(s => s.timelineData?.fps ?? 24)
@@ -44,7 +44,7 @@ export function TimelineSeekBar() {
     target.addEventListener('pointercancel', onUp)
   }, [calcFrame, seekToFrame])
 
-  if (duration <= 0) return null
+  if (duration <= 0 && !actions) return null
 
   const percent = duration <= 1 ? 0 : (currentFrame / (duration - 1)) * 100
   const secs = Math.floor(currentFrame / fps)
@@ -52,6 +52,7 @@ export function TimelineSeekBar() {
 
   return (
     <div className={styles.seekBar}>
+      {duration > 0 && <>
       <div
         ref={trackRef}
         className={styles.seekTrack}
@@ -74,6 +75,8 @@ export function TimelineSeekBar() {
         <div className={styles.seekThumb} style={{ left: `${percent}%` }} />
       </div>
       <span className={styles.seekLabel}>{secs}秒{subFrame}コマ</span>
+      </>}
+      {actions && <span className={styles.seekActions}>{actions}</span>}
     </div>
   )
 }

@@ -7,7 +7,7 @@ import { ExportSettings } from './ExportSettings'
 import { ExportSettingsPopover } from './ExportSettingsPopover'
 import { NavigatorCanvas } from './NavigatorPanel'
 import { TimelineSeekBar } from './TimelineSeekBar'
-import { ClipPreviewControls } from './ClipPreviewControls'
+import { ClipTimelineSelect } from './ClipPreviewControls'
 import { RenderWarning } from './RenderWarning'
 import { useSampleLoader } from '../hooks/useSampleLoader'
 import { QuickStartGuide } from './help/QuickStartGuide'
@@ -55,7 +55,7 @@ export function PreviewPanel({ mode = 'output', active = true }: { mode?: Previe
     </div>
   }
   return <div className={styles.panel} data-testid="main-preview" data-preview-mode={mode}>
-    {isMobile && <div className={styles.loadedHeader}><span>プレビュー</span><ClipPreviewControls /></div>}
+    {isMobile && <ClipTimelineSelect />}
     {!timelineData && !clipFileName && <div className={styles.noXdtsBanner}>対応するCLIPを追加すると、アニメーションフォルダとタイムラインを読み込めます。</div>}
     <div className={styles.view} hidden={mode !== 'output'} data-testid="output-view">
       <div className={styles.divider}>

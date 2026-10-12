@@ -6,6 +6,25 @@ import { isAutoMarkedOutputTarget } from '../utils/auto-marked-container'
 import { normalizeProcessFolderName } from '../utils/process-folder'
 import type { AppStore } from './index'
 import { collectOutputNavigation, type OutputNavigation } from '../utils/output-navigation'
+import { buildOutputPlan, type OutputFile } from '../utils/output-plan'
+
+let outputPlanCache: {
+  inputs: readonly unknown[]
+  result: OutputFile[]
+} | null = null
+
+/** Selection, frame seeking and folder expansion never rebuild the file manifest. */
+export function selectOutputFiles(state: AppStore): OutputFile[] {
+  const tree = selectLayerTreeWithVisibility(state)
+  const inputs = [tree, state.projectSettings, state.outputConfig, state.virtualSets,
+    state.timelineData, state.docWidth, state.docHeight]
+  if (outputPlanCache && inputs.every((value, index) => value === outputPlanCache!.inputs[index])) {
+    return outputPlanCache.result
+  }
+  const result = buildOutputPlan(tree, state)
+  outputPlanCache = { inputs, result }
+  return result
+}
 
 let outputNavigationCache: {
   tree: CspLayer[]

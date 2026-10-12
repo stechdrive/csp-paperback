@@ -7,6 +7,7 @@ import { buildLayerTree, detectAnimationFoldersByXdts } from '../../engine/tree-
 import { DEFAULT_OUTPUT_CONFIG, DEFAULT_PROJECT_SETTINGS, type XdtsData } from '../../types'
 import { makeAnimationFolder, makeFolder, makeLayer, makePsd } from '../helpers/psd-factory'
 import { resetTestStore } from '../helpers/store-reset'
+import { selectOutputFiles } from '../../store/selectors'
 
 function detectAnim(tree: ReturnType<typeof buildLayerTree>, trackName: string) {
   const xdts: XdtsData = {
@@ -70,6 +71,32 @@ describe('useOutputPreview', () => {
     expect(result.current).toEqual([])
   })
 
+  it('合成は選択した出力だけを行い、一覧と同じ衝突解決済みの名前を使う', () => {
+    const { process } = processTree()
+    const plans = selectOutputFiles(useAppStore.getState())
+    const renderers = plans.map(plan => vi.spyOn(plan, 'renderCanvas'))
+    try {
+      const { result } = renderHook(() => useOutputPreview())
+      expect(result.current[0].flatName).toBe(plans.find(plan => plan.sourceLayerId === process.id)!.names.flatName)
+      renderers.forEach((render, index) => expect(render).toHaveBeenCalledTimes(plans[index].sourceLayerId === process.id ? 1 : 0))
+    } finally { renderers.forEach(render => render.mockRestore()) }
+  })
+
+  it('単体出力と仮想セルの重複名も、一覧と実出力と同じ連番で表示する', () => {
+    const tree = buildLayerTree(makePsd({ children: [makeFolder('_A?1', [makeLayer()])] }))
+    useAppStore.setState({ layerTree: tree, docWidth: 100, docHeight: 100, selectedVirtualSetId: 'vs',
+      virtualSets: [{ id: 'vs', name: '_A?1', insertionLayerId: tree[0].id, insertionPosition: 'above',
+        members: [{ layerId: tree[0].id, opacity: null, blendMode: null }],
+        expandToAnimationCells: false, visibilityOverrides: {} }],
+    })
+    const { result } = renderHook(() => useOutputPreview())
+    expect(result.current[0].flatName).toBe('_A_1_2.jpg')
+    expect(result.current[0].flatName).toBe(selectOutputFiles(useAppStore.getState())[1].relativePath)
+    act(() => useAppStore.setState({ outputConfig: { ...DEFAULT_OUTPUT_CONFIG, format: 'png', excludeAutoMarked: true } }))
+    expect(result.current[0].flatName).toBe('_A_1.png')
+    expect(result.current[0].flatName).toBe(selectOutputFiles(useAppStore.getState())[0].relativePath)
+  })
+
   it('巡回のsourceが現在セルに存在しなければ別セルへフォールバックしない', () => {
     const { anim } = processTree()
     const { result } = renderHook(() => useOutputPreview())
@@ -121,7 +148,7 @@ describe('useOutputPreview', () => {
     const tree = buildLayerTree(makePsd({ children: [makeAnimationFolder('A', [makeLayer({ name: '1' }), makeLayer({ name: '2' })])] }))
     detectAnim(tree, 'A')
     useAppStore.setState({ layerTree: tree, docWidth: 100, docHeight: 100, focusedAnimFolderId: tree[0].id })
-    const extract = vi.spyOn(cellExtractor, 'extractCells')
+    const extract = vi.spyOn(cellExtractor, 'renderOutputPlans')
     try {
       const { result, rerender } = renderHook(({ enabled }) => useOutputPreview(enabled), { initialProps: { enabled: false } })
       expect(result.current).toEqual([])
@@ -141,7 +168,7 @@ describe('useOutputPreview', () => {
     const tree = buildLayerTree(makePsd({ children: [makeAnimationFolder('A', [makeLayer({ name: '1' })])] }))
     detectAnim(tree, 'A')
     useAppStore.setState({ layerTree: tree, docWidth: 100, docHeight: 100, focusedAnimFolderId: tree[0].id })
-    const extract = vi.spyOn(cellExtractor, 'extractCells')
+    const extract = vi.spyOn(cellExtractor, 'renderOutputPlans')
     try {
       const { result } = renderHook(() => useOutputPreview())
       const entries = result.current
