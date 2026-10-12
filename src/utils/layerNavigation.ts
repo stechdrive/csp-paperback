@@ -142,12 +142,14 @@ export function subtractCollapsedFolders(
 /**
  * 選択中のレイヤーを表示するために必要な一時展開フォルダだけを返す。
  * もともとユーザーが開いていたフォルダは含めないので、選択が外に出たら自然に閉じる。
+ * 出力単位の選択中は、内部レイヤーを通常クリックした場合も必要な祖先を保持する。
  */
 export function collectShiftNavigationExpandedPath(
   layers: CspLayer[],
   targetLayerId: string,
   userExpandedFolders: Set<string>,
   shiftExpandableFolders: Set<string>,
+  includeAllAncestors = false,
 ): Set<string> {
   const path: CspLayer[] = []
 
@@ -167,7 +169,7 @@ export function collectShiftNavigationExpandedPath(
   for (const layer of path) {
     if (
       layer.isFolder &&
-      shiftExpandableFolders.has(layer.id) &&
+      (shiftExpandableFolders.has(layer.id) || (includeAllAncestors && layer.id !== targetLayerId)) &&
       !userExpandedFolders.has(layer.id)
     ) {
       result.add(layer.id)

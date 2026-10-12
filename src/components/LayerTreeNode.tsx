@@ -473,7 +473,7 @@ export function LayerTreeNode({
 
         {layer.isFolder ? (
           <Tooltip content={isTransientExpanded
-            ? 'Shift+スクロール巡回で自動展開中\nクリックで閉じるとこのフォルダは巡回されません'
+            ? 'Shift+スクロール巡回で自動展開中\nクリックで閉じると、以後の巡回でも閉じた状態を保ちます'
             : ''
           }>
             <button className={styles.expandBtn} onClick={handleExpandClick}>

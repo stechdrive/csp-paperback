@@ -1,7 +1,8 @@
-import { useCallback, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { useAppStore } from '../store'
 import { useLocale } from '../i18n/locale'
 import { selectLayerTreeWithVisibility, selectLayerById } from '../store/selectors'
+import { useOutputNavigation } from '../hooks/useOutputNavigation'
 import { useDragAutoScroll } from '../hooks/useDragDrop'
 import { LayerTreeNode } from './LayerTreeNode'
 import { BlendOpacityBar } from './BlendOpacityBar'
@@ -10,12 +11,9 @@ import type { BlendMode } from '../types'
 import {
   collectShiftNavigationExpandableFolders,
   collectShiftNavigationExpandedPath,
-  flattenVisible,
-  findLayerById,
   mergeExpandedFolders,
   subtractCollapsedFolders,
 } from '../utils/layerNavigation'
-import { isAutoMarkedOutputTarget } from '../utils/auto-marked-container'
 import styles from './LayerTreePanel.module.css'
 
 export function LayerTreePanel() {
@@ -29,10 +27,7 @@ export function LayerTreePanel() {
   const { t } = useLocale()
 
   const manualAnimFolderIds = useAppStore(s => s.manualAnimFolderIds)
-  const singleMarks = useAppStore(s => s.singleMarks)
   const selectLayer = useAppStore(s => s.selectLayer)
-  const selectAnimCell = useAppStore(s => s.selectAnimCell)
-  const setFocusedAnimFolder = useAppStore(s => s.setFocusedAnimFolder)
   const toggleLayerVisibility = useAppStore(s => s.toggleLayerVisibility)
   const setFolderExpanded = useAppStore(s => s.setFolderExpanded)
   const setFolderExpandedRecursive = useAppStore(s => s.setFolderExpandedRecursive)
@@ -42,42 +37,30 @@ export function LayerTreePanel() {
   const setLayerBlendMode = useAppStore(s => s.setLayerBlendMode)
   const setLayerOpacity = useAppStore(s => s.setLayerOpacity)
   const pushHistory = useAppStore(s => s.pushHistory)
-  const setSelectedVirtualSet = useAppStore(s => s.setSelectedVirtualSet)
 
   const selectedLayer = useAppStore(s => selectedLayerId ? selectLayerById(s, selectedLayerId) : null)
 
   const treeRef = useRef<HTMLDivElement>(null)
   const dragAutoScrollHandlers = useDragAutoScroll(treeRef)
+  const { entries, currentIdx, navigate } = useOutputNavigation()
+  const currentOutput = entries[currentIdx]
 
   const shiftExpandableFolders = useMemo(
     () => collectShiftNavigationExpandableFolders(tree, manualAnimFolderIds, virtualSets),
     [tree, manualAnimFolderIds, virtualSets],
   )
-  const navigationExpandedFolders = useMemo(
-    () => subtractCollapsedFolders(
-      mergeExpandedFolders(expandedFolders, shiftExpandableFolders),
-      userCollapsedFolders,
-    ),
-    [expandedFolders, shiftExpandableFolders, userCollapsedFolders],
-  )
-  const selectedShiftExpandedFolders = useMemo(
-    () => selectedVirtualSetId
-      ? collectShiftNavigationExpandedPath(
-        tree,
-        virtualSets.find(vs => vs.id === selectedVirtualSetId)?.insertionLayerId ?? '',
-        expandedFolders,
-        shiftExpandableFolders,
-      )
+  const selectedShiftExpandedFolders = useMemo(() => {
+    const targetId = selectedVirtualSetId
+      ? virtualSets.find(vs => vs.id === selectedVirtualSetId)?.insertionLayerId
       : selectedLayerId
-      ? collectShiftNavigationExpandedPath(
-        tree,
-        selectedLayerId,
-        expandedFolders,
-        shiftExpandableFolders,
-      )
-      : new Set<string>(),
-    [tree, selectedLayerId, selectedVirtualSetId, virtualSets, expandedFolders, shiftExpandableFolders],
-  )
+    const result = targetId
+      ? collectShiftNavigationExpandedPath(tree, targetId, expandedFolders, shiftExpandableFolders, !!currentOutput)
+      : new Set<string>()
+    for (const id of currentOutput?.ancestorIds ?? []) {
+      if (!expandedFolders.has(id)) result.add(id)
+    }
+    return result
+  }, [tree, selectedLayerId, selectedVirtualSetId, virtualSets, expandedFolders, shiftExpandableFolders, currentOutput])
   const visibleExpandedFolders = useMemo(
     () => subtractCollapsedFolders(
       mergeExpandedFolders(expandedFolders, selectedShiftExpandedFolders),
@@ -99,92 +82,36 @@ export function LayerTreePanel() {
     return result
   }, [selectedShiftExpandedFolders, expandedFolders, userCollapsedFolders])
 
-  const scrollLayerIntoView = useCallback((layerId: string) => {
-    requestAnimationFrame(() => {
-      const el = treeRef.current?.querySelector(`[data-layer-id="${layerId}"]`)
-      el?.scrollIntoView({ block: 'nearest' })
-    })
-  }, [])
-
-  const scrollVirtualSetIntoView = useCallback((virtualSetId: string) => {
-    requestAnimationFrame(() => {
-      const el = treeRef.current?.querySelector(`[data-virtual-set-id="${virtualSetId}"]`)
-      el?.scrollIntoView({ block: 'nearest' })
-    })
-  }, [])
-
-  /** Shift+スクロールでレイヤーを上下切り替え（プレビュー連動） */
-  const handleWheel = useCallback((e: React.WheelEvent) => {
-    if (!e.shiftKey || tree.length === 0) return
-    e.preventDefault()
-
-    const entries = flattenVisible(tree, navigationExpandedFolders, manualAnimFolderIds, virtualSets)
-    if (entries.length === 0) return
-
-    const currentIdx = selectedVirtualSetId
-      ? entries.findIndex(e => e.kind === 'virtualSet' && e.id === selectedVirtualSetId)
-      : selectedLayerId
-        ? entries.findIndex(e => e.kind === 'layer' && e.id === selectedLayerId)
-        : -1
-    const direction = e.deltaY > 0 ? 1 : -1
-    let nextIdx: number
-    if (currentIdx < 0) {
-      nextIdx = direction > 0 ? 0 : entries.length - 1
-    } else {
-      nextIdx = Math.max(0, Math.min(entries.length - 1, currentIdx + direction))
-    }
-
-    const entry = entries[nextIdx]
-    const alreadySelected = entry.kind === 'virtualSet'
-      ? entry.id === selectedVirtualSetId
-      : entry.id === selectedLayerId && selectedVirtualSetId === null
-
-    if (!alreadySelected) {
-      // handleRowClick と同じ選択ロジックでプレビューを連動
-      if (entry.kind === 'virtualSet' && entry.virtualSet) {
-        setSelectedVirtualSet(entry.virtualSet.id)
-        scrollVirtualSetIntoView(entry.virtualSet.id)
-      } else if (entry.isCell && entry.animParentId) {
-        const { layerTree } = useAppStore.getState()
-        const animFolder = findLayerById(layerTree, entry.animParentId)
-        if (animFolder) {
-          const idx = animFolder.children.findIndex(c => c.id === entry.id)
-          if (idx >= 0) {
-            selectAnimCell(entry.animParentId, idx)
-            setFocusedAnimFolder(entry.animParentId)
-          }
+  // React's delegated wheel listeners are passive; consume Shift+wheel here so
+  // it cannot also horizontally scroll the tree in browsers/WebView2.
+  useEffect(() => {
+    const element = treeRef.current
+    if (!element) return
+    let pendingScroll: number | undefined
+    const handleWheel = (event: WheelEvent) => {
+      const delta = event.deltaY || event.deltaX
+      if (!event.shiftKey || !delta || entries.length === 0) return
+      event.preventDefault()
+      const entry = navigate(delta > 0 ? 1 : -1)
+      if (!entry) return
+      if (pendingScroll !== undefined) cancelAnimationFrame(pendingScroll)
+      pendingScroll = requestAnimationFrame(() => {
+        const attribute = entry.kind === 'virtualSet' ? 'data-virtual-set-id' : 'data-layer-id'
+        let row = element.querySelector(`[${attribute}="${CSS.escape(entry.id)}"]`)
+        // Explicitly collapsed folders stay closed; keep their nearest row in view.
+        for (const id of [...entry.ancestorIds].reverse()) {
+          if (row) break
+          row = element.querySelector(`[data-layer-id="${CSS.escape(id)}"]`)
         }
-        selectLayer(entry.id)
-      } else if (entry.layer.isAnimationFolder) {
-        selectLayer(entry.id)
-        setFocusedAnimFolder(entry.id)
-      } else if (isAutoMarkedOutputTarget(entry.layer) || singleMarks.has(entry.id)) {
-        selectLayer(entry.id)
-        setFocusedAnimFolder(null)
-      } else {
-        setSelectedVirtualSet(null)
-        selectLayer(entry.id)
-      }
-      // 選択先が見えるようにスクロール
-      if (entry.kind === 'layer') {
-        scrollLayerIntoView(entry.id)
-      }
+        row?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+      })
     }
-  }, [
-    tree,
-    navigationExpandedFolders,
-    manualAnimFolderIds,
-    virtualSets,
-    singleMarks,
-    selectedLayerId,
-    selectedVirtualSetId,
-    selectLayer,
-    selectAnimCell,
-    setFocusedAnimFolder,
-    setSelectedVirtualSet,
-    scrollLayerIntoView,
-    scrollVirtualSetIntoView,
-  ])
+    element.addEventListener('wheel', handleWheel, { passive: false })
+    return () => {
+      element.removeEventListener('wheel', handleWheel)
+      if (pendingScroll !== undefined) cancelAnimationFrame(pendingScroll)
+    }
+  }, [entries.length, navigate])
 
   const handleBlendModeChange = useCallback((value: string) => {
     if (!selectedLayerId) return
@@ -222,7 +149,7 @@ export function LayerTreePanel() {
       <div
         className={styles.tree}
         ref={treeRef}
-        onWheel={handleWheel}
+        data-testid="layer-tree"
         {...dragAutoScrollHandlers}
       >
         {tree.length === 0 ? (
@@ -251,7 +178,7 @@ export function LayerTreePanel() {
         )}
       </div>
 
-      <Tooltip content={"レイヤー一覧を上下にたどって、プレビュー対象をすばやく切り替えます\n閉じたアニメフォルダや _ フォルダも一時的に開いて移動します"}>
+      <Tooltip content={"書き出される画像ごとに、セル本体・工程別画像・単体出力・仮想セルを巡回します\n補助レイヤーや出力から除外した項目を飛ばして移動します"}>
         <div className={styles.footerHint}>
           Shift+スクロールでプレビュー切替
         </div>

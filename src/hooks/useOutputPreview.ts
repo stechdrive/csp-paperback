@@ -250,8 +250,7 @@ function previewAnimFolder(
  * レイヤーがアニメーションフォルダのセル内部にある場合、
  * そのアニメフォルダ ID とセルの children インデックスを返す。
  *
- * アニメフォルダの直接の子（isCell=true）ではなく、
- * セルフォルダの内部にあるレイヤー（工程フォルダ等）を対象とする。
+ * 直接の子であるセルと、セル内部の工程・内容レイヤーを対象とする。
  */
 function findAnimCellAncestor(
   layerId: string,
@@ -266,11 +265,10 @@ function findAnimCellAncestor(
       if (!layer.isFolder) continue
 
       if (layer.isAnimationFolder) {
-        // アニメフォルダの直接の子はセル。その内部を ctx に設定して再帰。
+        // 直接のセルも含めて調べ、出力単位巡回では本体だけを表示できるようにする。
         for (let i = 0; i < layer.children.length; i++) {
           const cell = layer.children[i]
-          if (!cell.isFolder) continue
-          const result = walk(cell.children, { animFolderId: layer.id, cellChildIndex: i })
+          const result = walk([cell], { animFolderId: layer.id, cellChildIndex: i })
           if (result) return result
         }
       } else {

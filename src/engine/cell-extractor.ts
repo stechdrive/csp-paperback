@@ -20,6 +20,8 @@ import { buildAssignmentFromDetectedFolders } from './anim-folder-assignment'
 import { computeDisplayNames } from './anim-folder-display-name'
 import { isAutoMarkedContainerOutputSuppressed } from '../utils/auto-marked-container'
 import { normalizeProcessFolderName } from '../utils/process-folder'
+import { hasDefaultFlattenedContent } from '../utils/flattened-content'
+import { buildFolderNameToSuffixMap, collectCellOutputUnits } from './cell-output-units'
 import {
   makeCellFileName,
   makeCellLabel,
@@ -67,7 +69,6 @@ export function extractCells(
   const displayName = hierarchyFolder ?? animFolder.originalName.trim()
   const folderName = displayName
   const visibleChildren = animFolder.children.filter(c => !c.hidden && !c.uiHidden)
-  const folderNameToSuffix = buildFolderNameToSuffixMap(projectSettings.processTable)
   const namingMode = projectSettings.cellNamingMode ?? DEFAULT_PROJECT_SETTINGS.cellNamingMode
   const entries: (Omit<OutputEntry, 'canvas'> & { renderCanvas: () => HTMLCanvasElement })[] = []
 
@@ -90,8 +91,10 @@ export function extractCells(
     resolveIncludeXdtsTrackPrefixInCellName(projectSettings),
   )
 
-  for (let cellIdx = 0; cellIdx < visibleChildren.length; cellIdx++) {
-    const cell = visibleChildren[cellIdx]
+  const visibleCellIndices = new Map(visibleChildren.map((cell, index) => [cell.id, index]))
+  for (const unit of collectCellOutputUnits(animFolder, projectSettings.processTable)) {
+    const { cell } = unit
+    const cellIdx = visibleCellIndices.get(cell.id)!
     // ファイル名プレフィックスはフォルダ名と同じ displayName を使う(Q3: 統一)
     const trackName = displayName
     const sequenceNumber = sheetSequenceNumbers?.get(cell.id) ?? visibleChildren.length - cellIdx
@@ -99,110 +102,30 @@ export function extractCells(
       ? (cell.name || cell.originalName)
       : makeCellLabel(namingMode, cell.originalName, sequenceNumber, cellSequenceDigits)
 
-    if (!cell.isFolder) {
-      // 単体レイヤー: XDTSキーフレーム画像 → そのまま1セル出力
-      // 単体セルレイヤーはアニメフォルダの直接の子として構造的コンテナ扱い（100%）
-      const renderCanvas = () => {
-        const rawFlats = flattenCellContent([cell], docWidth, docHeight, new Set([cell.id]))
-        const cellFlats = applyContainerEffects(rawFlats, cell, animFolder, docWidth, docHeight)
-        return compositeWithContext(cellFlats, lowerContextLayers, upperContextLayers, docWidth, docHeight, background, materialContext)
-      }
-      const fileName = makeCellFileName({
-        trackName,
-        rawTrackName: animFolder.originalName,
-        cellLabel,
-        parentSuffix,
-        processSuffixPosition,
-        trackCellSeparator,
-        trackPrefixMode,
-        suppressDuplicateProcessSuffix,
-      })
-      entries.push({
-        path: `${folderName}/${fileName}`,
-        flatName: fileName,
-        renderCanvas,
-        sourceLayerId: cell.id,
-        sourceCellId: cell.id,
-        processSuffixes: collectProcessSuffixes(parentSuffix),
-      })
-    } else {
-      // フォルダ: processTableと照合して工程別 or 本体合成
-      const visibleSubs = cell.children.filter(c => !c.hidden && !c.uiHidden)
-
-      const processGroups = new Map<string, CspLayer[]>()
-      const bodyLayers: CspLayer[] = []
-
-      for (const sub of visibleSubs) {
-        const suffix = sub.isFolder
-          ? folderNameToSuffix.get(normalizeProcessFolderName(sub.originalName))
-          : undefined
-        if (suffix !== undefined) {
-          const group = processGroups.get(suffix) ?? []
-          group.push(sub)
-          processGroups.set(suffix, group)
-        } else {
-          bodyLayers.push(sub)
-        }
-      }
-
-      // 本体（processTableに非マッチ、または工程フォルダが存在しない場合）
-      // bodyLayersはアートワークコンテンツ → オパシティを尊重（ignoreOpacityIds不要）
-      if (bodyLayers.length > 0 || processGroups.size === 0) {
-        const renderCanvas = () => {
-          const rawBodyFlats = flattenCellContent(bodyLayers, docWidth, docHeight)
-          const bodyFlats = applyContainerEffects(rawBodyFlats, cell, animFolder, docWidth, docHeight)
-          return compositeWithContext(bodyFlats, lowerContextLayers, upperContextLayers, docWidth, docHeight, background, materialContext)
-        }
-        const fileName = makeCellFileName({
-          trackName,
-          rawTrackName: animFolder.originalName,
-          cellLabel,
-          parentSuffix,
-          processSuffixPosition,
-          trackCellSeparator,
-          trackPrefixMode,
-          suppressDuplicateProcessSuffix,
-        })
-        entries.push({
-          path: `${folderName}/${fileName}`,
-          flatName: fileName,
-          renderCanvas,
-          sourceLayerId: cell.id,
-          sourceCellId: cell.id,
-          processSuffixes: collectProcessSuffixes(parentSuffix),
-        })
-      }
-
-      // 工程別出力
-      // 工程フォルダ本体は構造的コンテナとして100%、中身のアートワークはオパシティを尊重
-      for (const [suffix, processLayers] of processGroups) {
-        const renderCanvas = () => {
-          const processIgnoreIds = new Set(processLayers.map(p => p.id))
-          const rawProcessFlats = flattenCellContent(processLayers, docWidth, docHeight, processIgnoreIds)
-          const processFlats = applyContainerEffects(rawProcessFlats, cell, animFolder, docWidth, docHeight)
-          return compositeWithContext(processFlats, lowerContextLayers, upperContextLayers, docWidth, docHeight, background, materialContext)
-        }
-        const fileName = makeCellFileName({
-          trackName,
-          rawTrackName: animFolder.originalName,
-          cellLabel,
-          parentSuffix,
-          processSuffix: suffix,
-          processSuffixPosition,
-          trackCellSeparator,
-          trackPrefixMode,
-          suppressDuplicateProcessSuffix,
-        })
-        entries.push({
-          path: `${folderName}/${fileName}`,
-          flatName: fileName,
-          renderCanvas,
-          sourceLayerId: processLayers[0].id,
-          sourceCellId: cell.id,
-          processSuffixes: collectProcessSuffixes(parentSuffix, suffix),
-        })
-      }
+    const renderCanvas = () => {
+      const rawFlats = flattenCellContent(unit.layers, docWidth, docHeight, unit.ignoreOpacityIds)
+      const cellFlats = applyContainerEffects(rawFlats, cell, animFolder, docWidth, docHeight)
+      return compositeWithContext(cellFlats, lowerContextLayers, upperContextLayers, docWidth, docHeight, background, materialContext)
     }
+    const fileName = makeCellFileName({
+      trackName,
+      rawTrackName: animFolder.originalName,
+      cellLabel,
+      parentSuffix,
+      processSuffix: unit.processSuffix,
+      processSuffixPosition,
+      trackCellSeparator,
+      trackPrefixMode,
+      suppressDuplicateProcessSuffix,
+    })
+    entries.push({
+      path: `${folderName}/${fileName}`,
+      flatName: fileName,
+      renderCanvas,
+      sourceLayerId: unit.sourceLayerId,
+      sourceCellId: cell.id,
+      processSuffixes: collectProcessSuffixes(parentSuffix, unit.processSuffix ?? ''),
+    })
   }
 
   resolveFlatNameCollisions(entries)
@@ -342,22 +265,6 @@ function findFirstStartFrame(track: TimelineTrack, cellName: string): number | n
 function collectProcessSuffixes(...suffixes: string[]): string[] | undefined {
   const processSuffixes = suffixes.filter(Boolean)
   return processSuffixes.length > 0 ? processSuffixes : undefined
-}
-
-/**
- * フォルダ名→サフィックスのルックアップマップを構築（前後空白除去・小文字化済み）
- */
-function buildFolderNameToSuffixMap(
-  processTable: ProjectSettings['processTable']
-): Map<string, string> {
-  const map = new Map<string, string>()
-  for (const entry of processTable) {
-    for (const folderName of entry.folderNames) {
-      const normalized = normalizeProcessFolderName(folderName)
-      if (normalized) map.set(normalized, entry.suffix)
-    }
-  }
-  return map
 }
 
 /**
@@ -504,15 +411,13 @@ function toContextLayer(layer: CspLayer): CspLayer | null {
  *
  * アニメーションフォルダ・アニメ子孫フォルダは除外（自身の出力ロジックで別途処理）。
  */
-function collectVsContextFlats(
+function collectVsContextLayers(
   insertionLayerId: string,
   insertionPosition: 'above' | 'below',
   tree: CspLayer[],
-  docWidth: number,
-  docHeight: number,
-): { lower: FlatLayer[], upper: FlatLayer[] } {
-  const lowerStack: FlatLayer[][] = []
-  const upperStack: FlatLayer[][] = []
+): { lower: CspLayer[][], upper: CspLayer[][] } {
+  const lowerStack: CspLayer[][] = []
+  const upperStack: CspLayer[][] = []
 
   function findAndCollect(layers: CspLayer[]): boolean {
     for (let i = 0; i < layers.length; i++) {
@@ -535,8 +440,8 @@ function collectVsContextFlats(
           else lowerCsps.push(contextLayer)
         }
 
-        lowerStack.push(flattenTree(lowerCsps, docWidth, docHeight))
-        upperStack.push(flattenTree(upperCsps, docWidth, docHeight))
+        lowerStack.push(lowerCsps)
+        upperStack.push(upperCsps)
         return true
       }
 
@@ -556,8 +461,8 @@ function collectVsContextFlats(
           else lowerCsps.push(contextLayer)
         }
 
-        lowerStack.push(flattenTree(lowerCsps, docWidth, docHeight))
-        upperStack.push(flattenTree(upperCsps, docWidth, docHeight))
+        lowerStack.push(lowerCsps)
+        upperStack.push(upperCsps)
         return true
       }
     }
@@ -567,11 +472,35 @@ function collectVsContextFlats(
   findAndCollect(tree)
 
   // lowerStack: [最内側...最外側] → 外側から描画するため逆順に展開
-  const lower = [...lowerStack].reverse().flat()
+  const lower = [...lowerStack].reverse()
   // upperStack: [最内側...最外側] → 内側から描画（内側がVS直上）
-  const upper = upperStack.flat()
+  const upper = upperStack
 
   return { lower, upper }
+}
+
+function collectVsContextFlats(
+  insertionLayerId: string,
+  insertionPosition: 'above' | 'below',
+  tree: CspLayer[],
+  docWidth: number,
+  docHeight: number,
+): { lower: FlatLayer[], upper: FlatLayer[] } {
+  const layers = collectVsContextLayers(insertionLayerId, insertionPosition, tree)
+  return {
+    lower: layers.lower.flatMap(block => flattenTree(block, docWidth, docHeight)),
+    upper: layers.upper.flatMap(block => flattenTree(block, docWidth, docHeight)),
+  }
+}
+
+/** Match virtual-cell export eligibility without allocating compositing canvases. */
+export function hasVirtualSetOutput(tree: CspLayer[], vs: VirtualSet): boolean {
+  if (!vs.insertionLayerId || vs.members.length === 0) return false
+  const memberLayers = collectMembersInTreeOrder(tree, new Set(vs.members.map(member => member.layerId)))
+  if (hasDefaultFlattenedContent(memberLayers, vs.visibilityOverrides)) return true
+
+  const context = collectVsContextLayers(vs.insertionLayerId, vs.insertionPosition, tree)
+  return [...context.lower, ...context.upper].some(block => hasDefaultFlattenedContent(block))
 }
 
 /**
