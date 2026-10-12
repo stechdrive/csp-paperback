@@ -1,4 +1,5 @@
 import type { MaterialEffects } from '../types/rendering'
+import { copyRenderWarnings } from './render-warning'
 
 /** CSP's saved layer-color ramps; alpha is independent of the drawing color. */
 export function applyLayerColor(data: Uint8ClampedArray, color: NonNullable<MaterialEffects['layerColor']>): void {
@@ -38,6 +39,7 @@ export function applyMaterialEffects(canvas: HTMLCanvasElement, left: number, to
   const result = document.createElement('canvas'); result.width = width; result.height = height
   const ctx = result.getContext('2d')!
   ctx.drawImage(canvas, left, top)
+  copyRenderWarnings(result, canvas)
   const image = ctx.getImageData(0, 0, width, height), data = image.data
   // Color the artwork before adding the border; the border keeps its own color.
   if (effects.layerColor) applyLayerColor(data, effects.layerColor)

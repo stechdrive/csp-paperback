@@ -12,6 +12,9 @@ import { compositeStack } from '../../engine/compositor'
 import { buildMemberFlatsWithOverride } from '../../utils/virtual-set-utils'
 import { DEFAULT_PROJECT_SETTINGS, type FlatLayer } from '../../types'
 import type { ClipDiagnostic, ClipDocument, ClipLayer, ClipPixels } from '../../utils/clip/types'
+import { hasVectorWarning, hasUnsupported3D } from '../../engine/render-warning'
+import { extractCells } from '../../engine/cell-extractor'
+import { createRevisionBorderCanvas } from '../../utils/revision-border'
 
 const createElement = document.createElement.bind(document)
 beforeAll(() => {
@@ -29,6 +32,49 @@ const pixel = (canvas: HTMLCanvasElement, x: number, y: number) => [...canvas.ge
 const tables = (): MaterialTables => ({ mipmaps: new Map(), mipInfos: new Map(), offscreens: new Map(), thumbnails: [], external: new Map() })
 const solid = (width: number, height: number, rgba: number[], left = 0, top = 0): ClipPixels => ({ width, height, left, top, rgba: new Uint8ClampedArray(Array.from({ length: width * height }, () => rgba).flat()) })
 const clip = (layers: ClipLayer[], width = 8, height = 4): ClipDocument => ({ width, height, dpi: 72, layers, timelines: [], defaultTimelineId: null, diagnostics: [] })
+
+describe('vector warnings follow material contributions', () => {
+  it('does not warn for layer color, borders or masks alone; warns only for explicitly unsupported 3D without a cache', async () => {
+    const effects = { layerColor: { main: [0, 0, 255] as [number, number, number], sub: [255, 255, 255] as [number, number, number] }, edge: { radius: 1, color: [0, 0, 0] as [number, number, number] } }
+    const raster = { ...layer(), effects, pixels: solid(1, 1, [0, 0, 0, 255], 2, 2), mask: solid(8, 4, [255, 255, 255, 255]) }
+    const doc = clip([raster]), tree = buildClipLayerTree(doc, clipRenderingSource(doc), undefined, DEFAULT_PROJECT_SETTINGS, false)
+    const image = flattenToCanvas(tree, 8, 4)
+    expect(hasVectorWarning(image) || hasUnsupported3D(image)).toBe(false)
+    const model = { ...layer('model'), kind: '3d' as const }, cached = { ...model, pixels: solid(1, 1, [0, 0, 0, 255]) }
+    const decode = createMaterialDecoder(tables(), 8, 4, 72, [])
+    await decode(model, { Manager3DOd: 1 })
+    await decode(cached, { Manager3DOd: 1 })
+    expect(model.unsupported3D).toBe(true)
+    expect(cached.unsupported3D).toBeUndefined()
+    const d = clip([model]), unpaired = buildClipLayerTree(d, clipRenderingSource(d), undefined, DEFAULT_PROJECT_SETTINGS, false)
+    const missing = flattenToCanvas(unpaired, 8, 4)
+    expect(hasUnsupported3D(missing)).toBe(true)
+    expect(hasVectorWarning(missing)).toBe(false)
+  })
+  it('tracks selected cels through effects and masks, excludes hidden/zero-opacity layers, and clears after PSD pairing', () => {
+    const vector = { ...layer('vector'), vectorRendering: 'approximate' as const, pixels: solid(2, 2, [0, 0, 0, 200]) }
+    const raster = { ...layer('raster'), pixels: solid(2, 2, [0, 0, 0, 200]) }
+    const animation = { ...layer('animation'), isFolder: true, isAnimationFolder: true, children: [vector, raster],
+      effects: { layerColor: { main: [0, 0, 255] as [number, number, number], sub: [255, 255, 255] as [number, number, number] } }, mask: solid(8, 4, [255, 255, 255, 255]) }
+    const doc = clip([animation]), source = clipRenderingSource(doc)
+    const tree = buildClipLayerTree(doc, source, undefined, DEFAULT_PROJECT_SETTINGS, false)
+    expect(hasVectorWarning(flattenToCanvas(tree, 8, 4, 'transparent', new Map([['clip:animation', 0]])))).toBe(true)
+    expect(hasVectorWarning(flattenToCanvas(tree, 8, 4, 'transparent', new Map([['clip:animation', 1]])))).toBe(false)
+    const entries = extractCells(tree[0], DEFAULT_PROJECT_SETTINGS, 8, 4, [])
+    expect(entries.map(e => hasVectorWarning(e.canvas))).toEqual([true, false])
+    const vectorCanvas = entries.find(e => hasVectorWarning(e.canvas))!.canvas
+    expect(hasVectorWarning(createRevisionBorderCanvas(vectorCanvas, '#ff0000'))).toBe(true)
+    const virtual = compositeStack(buildMemberFlatsWithOverride([{ layerId: 'clip:vector', blendMode: null, opacity: null }], [tree[0].children[0]], 8, 4), 8, 4)
+    expect(hasVectorWarning(virtual)).toBe(true)
+    tree[0].children[0].uiHidden = true
+    expect(hasVectorWarning(flattenToCanvas(tree, 8, 4))).toBe(false)
+    tree[0].children[0].uiHidden = false; tree[0].children[0].opacity = 0
+    expect(hasVectorWarning(flattenToCanvas(tree, 8, 4))).toBe(false)
+    const paired = buildClipLayerTree(doc, source, undefined, DEFAULT_PROJECT_SETTINGS, true)
+    expect(paired[0].children[0].vectorRendering).toBeUndefined()
+    expect(hasVectorWarning(flattenToCanvas(paired, 8, 4))).toBe(false)
+  })
+})
 
 describe('CLIP text material recovery', () => {
   it('reads primary and array text objects, position, font size, color and character runs', () => {

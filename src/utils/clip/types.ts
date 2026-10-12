@@ -27,9 +27,11 @@ export interface ClipLayer {
   pixels?: ClipPixels
   fragments?: ClipPixels[]
   mask?: ClipPixels
-  kind?: 'raster' | 'folder' | 'camera' | 'text' | 'image-material' | 'vector' | 'adjustment' | 'other'
+  kind?: 'raster' | 'folder' | 'camera' | 'text' | 'image-material' | 'vector' | '3d' | 'adjustment' | 'other'
   nativeBlendMode?: number
-  materialSource?: 'render' | 'timeline-original' | 'image-original' | 'object-cache' | 'text' | 'fill' | 'gradient' | 'adjustment'
+  materialSource?: 'render' | 'timeline-original' | 'image-original' | 'object-cache' | 'text' | 'fill' | 'gradient' | 'adjustment' | 'vector'
+  vectorRendering?: 'approximate' | 'unavailable'
+  unsupported3D?: boolean
   placement?: MaterialQuad
   text?: TextObject[]
   effects?: MaterialEffects

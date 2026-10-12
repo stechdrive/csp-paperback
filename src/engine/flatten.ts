@@ -109,7 +109,7 @@ export function flattenTree(
     }
 
     // 通常レイヤー
-    const sourceCanvas = layer.agPsdRef.canvas
+    const sourceCanvas = layer.agPsdRef.canvas ?? (layer.vectorRendering || layer.unsupported3D ? createCanvas(1, 1) : undefined)
     if (!sourceCanvas) return []
     const canvas = applyMaterialEffects(sourceCanvas, layer.left, layer.top, layer.materialEffects, docWidth, docHeight)
     const fullSize = !!layer.materialEffects
@@ -130,6 +130,8 @@ export function flattenTree(
       clipping: layer.clipping,
       nativeBlendMode: layer.nativeBlendMode,
       adjustment: layer.adjustment,
+      vectorWarning: !!layer.vectorRendering,
+      unsupported3D: layer.unsupported3D,
     }]
   }
 

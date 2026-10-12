@@ -45,6 +45,8 @@ export async function parseClipDocument(bytes: Uint8Array, SQL: SqlJsStatic, inc
     check(Number.isInteger(width) && Number.isInteger(height) && width > 0 && height > 0 && width * height <= 64 * 1024 * 1024, 'キャンバス寸法が上限を超えるか不正です')
     check(rootAttribute || num(canvas, 'CanvasUnit') === 0, 'キャンバスのピクセル寸法が取得できません')
     const diagnostics: ClipDiagnostic[] = []
+    const vectors = keyed(rows(db, 'VectorObjectList'))
+    const vectorLayerIds = new Set([...vectors.values()].map(v => num(v, 'LayerId')))
     const nativeRows = new Map<string, Row>()
     const visited = new Set<number>([num(root, 'MainId')])
     function children(parent: Row, depth: number): ClipLayer[] {
@@ -68,7 +70,7 @@ export async function parseClipDocument(bytes: Uint8Array, SQL: SqlJsStatic, inc
         const composite = num(row, 'LayerComposite')
         if (!blends[composite]) diagnostics.push({ scope: 'raster', layerId: key, message: `「${str(row.LayerName)}」の合成モード ${composite} は未対応です（通常で表示）` })
         result.push({ id: key, name: str(row.LayerName), isFolder: !!(num(row, 'LayerFolder') & 1),
-          kind: num(row, 'LayerType') & 512 ? 'camera' : num(row, 'LayerFolder') & 1 ? 'folder' : row.FilterLayerInfo ? 'adjustment' : row.TextLayerString != null || row.TextLayerStringArray != null ? 'text' : row.ResizableImageInfo ? 'image-material' : num(row, 'LayerType') & 4 ? 'vector' : num(row, 'LayerType') & 1 ? 'raster' : 'other',
+          kind: num(row, 'LayerType') & 512 ? 'camera' : num(row, 'LayerFolder') & 1 ? 'folder' : row.FilterLayerInfo ? 'adjustment' : num(row, 'Manager3D') || num(row, 'Manager3DOd') ? '3d' : row.TextLayerString != null || row.TextLayerStringArray != null ? 'text' : row.ResizableImageInfo ? 'image-material' : num(row, 'VectorNormalStrokeIndex') || vectorLayerIds.has(next) ? 'vector' : num(row, 'LayerType') & 1 ? 'raster' : 'other',
           nativeBlendMode: composite,
           isAnimationFolder: !!num(row, 'AnimationFolder'), expanded: !(num(row, 'LayerFolder') & 16),
           hidden: !(num(row, 'LayerVisibility') & 1), opacity: Math.max(0, Math.min(1, num(row, 'LayerOpacity', 256) / 256)),
@@ -125,7 +127,10 @@ export async function parseClipDocument(bytes: Uint8Array, SQL: SqlJsStatic, inc
       timelines.push(timeline)
     }
     if (includeRaster) {
-      const decode = createMaterialDecoder({ mipmaps, mipInfos, offscreens, thumbnails: rows(db, 'LayerThumbnail'), external: container.external }, width, height, num(canvas, 'CanvasResolution'), diagnostics)
+      const decode = createMaterialDecoder({ mipmaps, mipInfos, offscreens, thumbnails: rows(db, 'LayerThumbnail'), external: container.external,
+        vectors, brushes: keyed(rows(db, 'BrushStyle')), brushGraphs: keyed(rows(db, 'BrushEffectorGraphData')),
+        brushPatterns: keyed(rows(db, 'BrushPatternStyle')), brushImages: keyed(rows(db, 'BrushPatternImage')),
+      }, width, height, num(canvas, 'CanvasResolution'), diagnostics)
       async function walk(layers: ClipLayer[]): Promise<void> {
         for (const layer of layers) {
           try { await decode(layer, nativeRows.get(layer.id)!) }

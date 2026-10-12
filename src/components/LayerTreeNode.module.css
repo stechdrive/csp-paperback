@@ -31,8 +31,7 @@
 
 .rowHidden .expandBtn,
 .rowHidden .typeIcon,
-.rowHidden .name,
-.rowHidden .blendWarn {
+.rowHidden .name {
   opacity: 0.46;
 }
 
@@ -288,13 +287,6 @@
   color: var(--color-cyan);
   border-color: var(--color-cyan);
   opacity: 1 !important;
-}
-
-.blendWarn {
-  font-size: 0.7rem;
-  flex-shrink: 0;
-  color: var(--color-warning);
-  cursor: default;
 }
 
 .markBtn {

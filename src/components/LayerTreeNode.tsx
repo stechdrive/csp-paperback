@@ -2,7 +2,6 @@ import { useCallback, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useAppStore } from '../store'
 import type { CspLayer, VirtualSet } from '../types'
-import { isUnsupportedBlendMode } from '../engine/compositor'
 import {
   useDragSource,
   getActiveDragPayload,
@@ -16,6 +15,7 @@ import {
 } from '../utils/virtual-set-insertion'
 import { isAutoMarkedContainerOutputSuppressed } from '../utils/auto-marked-container'
 import { Tooltip } from './Tooltip'
+import { RenderWarning } from './RenderWarning'
 import styles from './LayerTreeNode.module.css'
 import type { HistoryOptions } from '../store/history-slice'
 
@@ -514,12 +514,7 @@ export function LayerTreeNode({
           {(layer.autoMarked || isAutoProcessAnimFolder) ? layer.originalName : (layer.name || layer.originalName)}
         </span>
 
-        {isUnsupportedBlendMode(layer.blendMode) && (
-          <Tooltip content={`合成モード「${layer.blendMode}」は未対応のため通常合成で代替されます`}>
-            <span className={styles.blendWarn}>⚠</span>
-          </Tooltip>
-        )}
-
+        {(layer.vectorRendering || layer.unsupported3D) && <RenderWarning vector={!!layer.vectorRendering} unavailable={layer.vectorRendering === 'unavailable'} unsupported3D={layer.unsupported3D} />}
         {canToggleManualAnimFolder && (
           <Tooltip content={isManualAnimFolder
             ? '手動アニメーションフォルダ指定を解除する'

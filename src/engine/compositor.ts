@@ -2,6 +2,7 @@ import type { LayerMaskData } from 'ag-psd'
 import type { BlendMode, FlatLayer } from '../types'
 import { drawNativeBlend } from './native-blend'
 import { drawAdjustment } from './material-adjustment'
+import { copyRenderWarnings, markVectorWarning, markUnsupported3D } from './render-warning'
 
 /**
  * ag-psdのBlendModeをCanvasのglobalCompositeOperationにマッピング
@@ -106,6 +107,11 @@ export function drawLayer(
   ctx: CanvasRenderingContext2D,
   layer: FlatLayer
 ): void {
+  if (layer.opacity > 0) {
+    copyRenderWarnings(ctx.canvas, layer.canvas)
+    if (layer.vectorWarning) markVectorWarning(ctx.canvas)
+    if (layer.unsupported3D) markUnsupported3D(ctx.canvas)
+  }
   if (layer.adjustment) { drawAdjustment(ctx, layer); return }
   const compositeOp = blendModeToCompositeOp(layer.blendMode)
 
@@ -148,6 +154,11 @@ function applyClippingMask(
   // ベースレイヤーのアルファで切り抜き（destination-in）
   tempCtx.globalCompositeOperation = 'destination-in'
   tempCtx.drawImage(baseLayer.canvas, baseLayer.left, baseLayer.top)
+  if (baseLayer.opacity > 0) {
+    copyRenderWarnings(temp, clippingLayer.canvas, baseLayer.canvas)
+    if (baseLayer.vectorWarning || clippingLayer.vectorWarning) markVectorWarning(temp)
+    if (baseLayer.unsupported3D || clippingLayer.unsupported3D) markUnsupported3D(temp)
+  }
 
   return temp
 }
@@ -202,6 +213,7 @@ export function applyLayerMask(
     rd[i + 3] = Math.round((rd[i + 3] * md[i]) / 255)
   }
   ctx.putImageData(resultData, 0, 0)
+  copyRenderWarnings(result, layerCanvas)
 
   return result
 }

@@ -7,6 +7,7 @@ import type { MaterialEffects, MaterialQuad } from '../../types/rendering'
 import { readGradient } from './gradient'
 import { readAdjustment } from './adjustment'
 import { cropPixels } from './pixels'
+import { readVectorStrokes, renderVectors, type VectorBrushes } from './vector'
 
 /** Decode only drawing effects; palette label colors are deliberately unrelated. */
 export function readMaterialEffects(row: ClipRow, report?: (message: string) => void): MaterialEffects | undefined {
@@ -57,6 +58,11 @@ export interface MaterialTables {
   offscreens: Map<number, ClipRow>
   thumbnails: ClipRow[]
   external: Map<string, Uint8Array>
+  vectors?: Map<number, ClipRow>
+  brushes?: Map<number, ClipRow>
+  brushGraphs?: Map<number, ClipRow>
+  brushPatterns?: Map<number, ClipRow>
+  brushImages?: Map<number, ClipRow>
 }
 
 export function materialOffscreen(t: MaterialTables, row: ClipRow, field: string): ClipRow | undefined {
@@ -67,6 +73,25 @@ export function materialOffscreen(t: MaterialTables, row: ClipRow, field: string
 /** Each layer can fall back independently; one failed image cannot cancel the document. */
 export function createMaterialDecoder(t: MaterialTables, width: number, height: number, dpi: number, diagnostics: ClipDiagnostic[]) {
   let decodedBytes = 0
+  const vectorBrushes: VectorBrushes = { styles: t.brushes ?? new Map(), graphs: t.brushGraphs ?? new Map(), patterns: new Map() }
+  const loadedPatterns = new Set<number>()
+  async function loadPattern(id: number) {
+    if (!id || loadedPatterns.has(id)) return
+    loadedPatterns.add(id)
+    const pattern = t.brushPatterns?.get(id), indices = pattern?.ImageIndex
+    if (!(indices instanceof Uint8Array) || indices.length < 4) return
+    const image = t.brushImages?.get(new Reader(indices).u32())
+    const off = image && materialOffscreen(t, image, 'Mipmap')
+    if (!(off?.Attribute instanceof Uint8Array)) return
+    const a = readAttribute(off.Attribute, true)
+    check(a.width * a.height <= 4 * 1024 * 1024 && decodedBytes + a.width * a.height * 4 <= 512 * 1024 * 1024, 'ブラシ画像の展開量が上限を超えました')
+    const pixels = await readRaster(a, t.external.get(str(off.BlockData)), false)
+    if (!pixels) return
+    const alpha = new Uint8Array(a.width * a.height)
+    for (let i = 0; i < alpha.length; i++) alpha[i] = pixels.rgba[i * 4 + 3]
+    decodedBytes += alpha.length
+    vectorBrushes.patterns.set(id, { width: a.width, height: a.height, alpha })
+  }
   const referenced = new Set([...t.mipInfos.values()].map(r => num(r, 'Offscreen')))
   for (const row of t.thumbnails) referenced.add(num(row, 'ThumbnailOffscreen'))
   const objects = new Map<number, ClipRow[]>()
@@ -118,6 +143,26 @@ export function createMaterialDecoder(t: MaterialTables, width: number, height: 
           break
         } catch (e) { failures.push(errorMessage(e)) }
       }
+      if (!layer.pixels && layer.kind === 'vector') {
+        layer.vectorRendering = 'unavailable'
+        try {
+          const vector = t.vectors?.get(num(row, 'VectorNormalStrokeIndex'))
+            ?? [...(t.vectors?.values() ?? [])].find(v => num(v, 'LayerId') === num(row, 'MainId'))
+          const raw = vector && t.external.get(str(vector.VectorData))
+          check(raw, 'ベクターのストロークデータがありません')
+          // Native-resolution float RGBA + output bytes + the largest stroke alpha plane.
+          check(decodedBytes + width * height * 20 + 64 * 1024 * 1024 <= 512 * 1024 * 1024, 'ベクター画像展開の合計が512 MiBを超えました')
+          const strokes = readVectorStrokes(raw)
+          const patterns = new Set(strokes.map(s => num(vectorBrushes.styles.get(s.brush) ?? {}, 'PatternStyle')))
+          for (const id of patterns) {
+            try { await loadPattern(id) } catch (e) { report(errorMessage(e)) }
+          }
+          layer.pixels = renderVectors(strokes, vectorBrushes, width, height, num(row, 'LayerOffsetX'), num(row, 'LayerOffsetY'), report)
+          decodedBytes += layer.pixels.rgba.length
+          layer.materialSource = 'vector'; layer.vectorRendering = 'approximate'
+          report('ベクターを近似描画しています。線幅・濃さ・ブラシ形状がクリスタと異なる場合があります。同じ出力が必要な場合はクリスタで書き出したPSDを追加してください')
+        } catch (e) { failures.push(errorMessage(e)) }
+      }
       if (!layer.pixels && (row.TextLayerString != null || row.TextLayerStringArray != null)) {
         try {
           const texts = readTextObjects(row, dpi, report), caches = objects.get(num(row, 'MainId')) ?? []
@@ -160,7 +205,12 @@ export function createMaterialDecoder(t: MaterialTables, width: number, height: 
         for (let i = 0; i < rgba.length; i += 4) rgba.set([...rgb, 255], i)
         layer.pixels = { width, height, left: 0, top: 0, rgba }; layer.materialSource = 'fill'
       }
-      if (!layer.pixels && !layer.fragments?.length && !layer.text?.length && (failures.length || !(num(row, 'LayerType') & 1))) report(failures[0] ?? '素材画像を復元できません。ほかの素材は引き続き書き出せます')
+      if (!layer.pixels && !layer.fragments?.length && !layer.text?.length) {
+        if (layer.kind === '3d') {
+          layer.unsupported3D = true
+          report('3Dの描画には未対応で、保存画像も復元できません。クリスタで書き出したPSDを追加してください')
+        } else if (failures.length || !(num(row, 'LayerType') & 1)) report(failures[0] ?? '素材画像を復元できません。ほかの素材は引き続き書き出せます')
+      }
     }
     if (num(row, 'LayerType') & 2) {
       try {

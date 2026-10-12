@@ -32,9 +32,13 @@ export interface CspLayer {
   nativeBlendMode?: number
   materialEffects?: MaterialEffects
   adjustment?: MaterialAdjustment
+  vectorRendering?: 'approximate' | 'unavailable'
+  unsupported3D?: boolean
 }
 
 export interface FlatLayer {
+  vectorWarning?: boolean
+  unsupported3D?: boolean
   canvas: HTMLCanvasElement
   blendMode: BlendMode
   opacity: number          // 不透明度 0〜100

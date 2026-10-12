@@ -8,7 +8,7 @@ export interface OffscreenAttribute {
   hasColor: boolean; color: number; rgb?: number[]; sizes: number[]
 }
 
-export function readAttribute(bytes: Uint8Array): OffscreenAttribute {
+export function readAttribute(bytes: Uint8Array, brushPattern = false): OffscreenAttribute {
   const r = new Reader(bytes)
   r.take(16)
   check(r.wideName() === 'Parameter', '画像のParameterがありません')
@@ -27,7 +27,8 @@ export function readAttribute(bytes: Uint8Array): OffscreenAttribute {
   const sizes = Array.from({ length: count }, () => r.u32())
   check(r.position === bytes.length, '画像属性の末尾が不正です')
   check(p[0] > 0 && p[1] > 0 && p[0] <= p[2] * 256 && p[1] <= p[3] * 256, '画像の寸法が不正です')
-  check([1, 33].includes(p[4]) && [0, 1, 2, 4].includes(p[6]) && [1, 5].includes(p[7]), '未対応の画像色形式です')
+  check([1, 33].includes(p[4]) && [0, 1, 2, 4].includes(p[6]) && [1, 5].includes(p[7])
+    || brushPattern && p[4] === 17 && p[6] === 1 && p[7] === 2 && p[8] === 65536, '未対応の画像色形式です')
   check(p[14] === 256 && p[15] === 256, '256px以外のタイルには未対応です')
   const rgb = p[6] === 4 && extra === 4 ? [colorValues[2] >>> 24, colorValues[1] >>> 24, colorValues[0] >>> 24] : undefined
   return { width: p[0], height: p[1], cols: p[2], rows: p[3], channels: p[6], bitDepth: p[7], planeBytes: p[8], hasColor, color, rgb, sizes }

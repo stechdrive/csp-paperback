@@ -38,8 +38,11 @@ import {
   type TimelineData,
 } from '../types'
 import { applyRevisionBorders } from '../utils/revision-border'
+import { hasVectorWarning, hasUnsupported3D } from '../engine/render-warning'
 
 export interface OutputPreviewEntry {
+  vectorWarning?: boolean
+  unsupported3D?: boolean
   canvas: HTMLCanvasElement
   flatName: string
   path: string
@@ -61,6 +64,8 @@ function mapPreviewEntries(
     revisionBorderEnabled,
   ).map(e => ({
     canvas: e.canvas,
+    vectorWarning: hasVectorWarning(e.canvas),
+    unsupported3D: hasUnsupported3D(e.canvas),
     flatName: replacePreviewExtension(e.flatName, format),
     path: replacePreviewExtension(e.path, format),
   }))
@@ -125,7 +130,7 @@ export function useOutputPreview(): OutputPreviewEntry[] {
       const canvas = compositeRoot(
         [...contextFlats, ...memberFlats], docWidth, docHeight, outputConfig.background,
       )
-      return [{ canvas, flatName: vs.name, path: '' }]
+      return [{ canvas, flatName: vs.name, path: '', vectorWarning: hasVectorWarning(canvas), unsupported3D: hasUnsupported3D(canvas) }]
     }
 
     // ── 2. アニメーションフォルダ選択（直接セルクリック） ──────────────────
@@ -169,7 +174,7 @@ export function useOutputPreview(): OutputPreviewEntry[] {
         collectMaterialOutputContext(selectedLayerId, layerTree, docWidth, docHeight),
       )
       const fileName = replacePreviewExtension(`${markedLayer.originalName}.jpg`, outputConfig.format)
-      return [{ canvas, flatName: fileName, path: fileName }]
+      return [{ canvas, flatName: fileName, path: fileName, vectorWarning: hasVectorWarning(canvas), unsupported3D: hasUnsupported3D(canvas) }]
     }
 
     return []

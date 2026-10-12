@@ -1,5 +1,6 @@
 import type { OutputEntry, ProcessFolderEntry } from '../types'
 import { createCanvas } from '../engine/compositor'
+import { copyRenderWarnings } from '../engine/render-warning'
 import { resolveProcessBorderColor } from './process-color'
 
 export const REVISION_BORDER_WIDTH = 70
@@ -16,6 +17,7 @@ export function createRevisionBorderCanvas(
   const output = createCanvas(source.width, source.height)
   const ctx = output.getContext('2d')!
   ctx.drawImage(source, 0, 0)
+  copyRenderWarnings(output, source)
 
   if (source.width === 0 || source.height === 0) return output
 

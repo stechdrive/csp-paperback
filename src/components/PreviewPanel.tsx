@@ -8,6 +8,7 @@ import { OutputPreview } from './OutputPreview'
 import { ExportSettings } from './ExportSettings'
 import { TimelineSeekBar } from './TimelineSeekBar'
 import { ClipPreviewControls } from './ClipPreviewControls'
+import { RenderWarning } from './RenderWarning'
 import { useSampleLoader } from '../hooks/useSampleLoader'
 import { QuickStartGuide } from './help/QuickStartGuide'
 import { DESKTOP_RELEASES_URL } from '../platform/external-links'
@@ -213,8 +214,9 @@ export function PreviewPanel() {
         {entries.length > 0 && (
           <div className={styles.fileNames}>
             {entries.map((e, i) => (
-              <span key={i} className={styles.fileName} title={structure === 'hierarchy' ? e.path : e.flatName}>
-                {structure === 'hierarchy' ? e.path : e.flatName}
+              <span key={i} className={styles.fileName}>
+                <span title={structure === 'hierarchy' ? e.path : e.flatName}>{structure === 'hierarchy' ? e.path : e.flatName}</span>
+                {(e.vectorWarning || e.unsupported3D) && <RenderWarning vector={e.vectorWarning} unsupported3D={e.unsupported3D} />}
               </span>
             ))}
           </div>

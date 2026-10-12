@@ -50,7 +50,7 @@ export function buildClipLayerTree(clip: ClipDocument, source: Psd, timeline: Cl
       if (n.name !== r.originalName || n.isFolder !== r.isFolder) throw mismatch()
       r.id = `clip:${n.id}`
       r.parentId = parentId
-      if (!paired) { r.materialEffects = n.effects; r.nativeBlendMode = n.nativeBlendMode; r.adjustment = n.adjustment }
+      if (!paired) { r.materialEffects = n.effects; r.nativeBlendMode = n.nativeBlendMode; r.adjustment = n.adjustment; r.vectorRendering = n.vectorRendering; r.unsupported3D = n.unsupported3D }
       if (n.isAnimationFolder) {
         r.isAnimationFolder = true
         r.animationFolder = { detectedBy: 'clip', trackName: n.name, trackNo: timeline?.bindings[n.id] }
