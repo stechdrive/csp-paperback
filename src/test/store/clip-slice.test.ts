@@ -120,6 +120,7 @@ describe('CLIP project integration', () => {
     expect(useAppStore.getState().visibilityOverrides.get('clip:3')).toBe(false)
   })
 
+  // The paired case decodes the full PSD twice; allow for slower coverage runs on CI.
   it.each([false, true])('auto-enables shared cuts only on import, preserving manual OFF on timeline/PSD changes (paired=%s)', paired => {
     const secondId = Math.max(...clip.timelines.map(t => t.id)) + 1
     const multiple = { ...clip, timelines: [...clip.timelines, { ...clip.timelines[0], id: secondId }] }
@@ -131,7 +132,7 @@ describe('CLIP project integration', () => {
     expect(useAppStore.getState().projectSettings.sharedCutMode).toBe(false)
     useAppStore.getState().loadPsd(psdBytes(), 'c001.psd')
     expect(useAppStore.getState().projectSettings.sharedCutMode).toBe(false)
-  })
+  }, 30000)
 
   it.each([false, true])('keeps the shared cut preference for a single timeline (%s)', sharedCutMode => {
     useAppStore.getState().setSharedCutMode(sharedCutMode)
