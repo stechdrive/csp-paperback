@@ -34,12 +34,12 @@ export function OutputSettingsGuide() {
           </thead>
           <tbody>
             <tr>
-              <td>フォーマット</td>
+              <td>{ja.export.format}</td>
               <td>JPG</td>
               <td>{ja.export.formatJpgHint}</td>
             </tr>
             <tr>
-              <td>フォーマット</td>
+              <td>{ja.export.format}</td>
               <td>PNG</td>
               <td>{ja.export.formatPngHint}</td>
             </tr>
@@ -150,12 +150,12 @@ export function OutputSettingsGuide() {
               <td><HintText text={ja.export.sharedCutHint} /></td>
             </tr>
             <tr>
-              <td>工程名の位置</td>
+              <td>{ja.export.processSuffixPosition}</td>
               <td>前／後ろ</td>
               <td><HintText text={ja.export.processSuffixPositionHint} /></td>
             </tr>
             <tr>
-              <td>修正のフチ</td>
+              <td>{ja.export.revisionBorder}</td>
               <td>フチあり／なし</td>
               <td><HintText text={ja.export.revisionBorderHint} /></td>
             </tr>
@@ -163,7 +163,7 @@ export function OutputSettingsGuide() {
               <td>出力対象</td>
               <td>工程チップ／自動マーク</td>
               <td>
-                青いボタンの工程・自動マーク素材を書き出します。クリックで個別に切り替えます。
+                チェックの付いた修正・自動マーク素材を書き出します。クリックで個別に切り替えます。
                 本体セルの出力には影響しません。
               </td>
             </tr>
@@ -172,8 +172,8 @@ export function OutputSettingsGuide() {
       </div>
 
       <div className={styles.callout}>
-        現在のファイル名は「出力例」に表示されます。設定を変えたら、出力例と出力プレビューの
-        ファイル名・画像を確認してください。
+        ファイル名設定の直下に「出力例」が表示されます。設定にポインターを合わせると、名前の対応する部分に下線が付きます。変更時の下線は短時間で消えます。
+        出力例の文字をクリックすると、その部分の設定へ移動できます。
       </div>
     </>
   )

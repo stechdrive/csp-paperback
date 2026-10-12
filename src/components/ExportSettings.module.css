@@ -1,301 +1,248 @@
 .settings {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  padding: 0.5rem 0.75rem;
+  padding: 0 0.75rem;
   background: var(--color-surface-1);
   border-bottom: 1px solid var(--color-border-subtle);
   flex-shrink: 0;
   container-type: inline-size;
+  font-size: 0.75rem;
+  color: var(--color-text-primary);
 }
 
+.section {
+  display: grid;
+  grid-template-columns: 4.5rem minmax(0, 1fr);
+  gap: 0.5rem;
+  padding: 0.4rem 0;
+}
+.section + .section {
+  border-top: 1px solid var(--color-border-subtle);
+}
+.sectionLabel {
+  color: var(--color-text-muted);
+  padding-top: 0.25rem;
+  white-space: nowrap;
+}
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+}
 .row {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
   flex-wrap: wrap;
+  gap: 0.4rem 0.85rem;
+  min-width: 0;
 }
-
+.inlineOption {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  min-width: 0;
+  border-radius: 4px;
+}
 .label {
   font-size: 0.7rem;
   color: var(--color-text-muted);
   white-space: nowrap;
-  min-width: 2.5rem;
 }
-
 .toggleGroup {
-  display: flex;
-  border: 1px solid var(--color-border-strong);
+  display: inline-flex;
+  padding: 2px;
+  gap: 1px;
+  background: var(--color-surface-2);
   border-radius: 4px;
-  overflow: hidden;
-  margin-right: 0.5rem;
 }
-
-.inlineOption {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  white-space: nowrap;
-}
-
-.inlineOption .toggleGroup {
-  margin-right: 0;
-}
-
-.inlineSwitchLabel {
-  display: grid;
-  grid-template-columns: auto minmax(3rem, max-content);
-  align-items: center;
-  gap: 0.4rem;
-  cursor: pointer;
-}
-
-.disabledOption {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.disabledOption .switch {
-  cursor: not-allowed;
-}
-
-.namingBlock {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  min-width: 0;
-}
-
-.namingControls {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem 1rem;
-  flex-wrap: wrap;
-}
-
 .toggle {
-  padding: 0.2rem 0.5rem;
-  font-size: 0.75rem;
-  background: none;
-  border: none;
-  color: var(--color-text-muted);
-  cursor: pointer;
-  white-space: nowrap;
+  padding: 0.2rem 0.45rem;
+  font: inherit;
   line-height: 1.4;
+  background: transparent;
+  border: 0;
+  border-radius: 3px;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  cursor: pointer;
 }
-
-.toggle + .toggle {
-  border-left: 1px solid var(--color-border-strong);
-}
-
-/* Tooltip の display: contents ラッパー越しでも選択肢の境界線を保つ */
-.toggleGroup > span + span .toggle {
-  border-left: 1px solid var(--color-border-strong);
-}
-
-.toggle:hover:not(.disabled):not(.active) {
-  background: var(--color-border-subtle);
+.toggle[aria-pressed='true'] {
+  background: var(--color-surface-1);
   color: var(--color-text-primary);
-}
-
-.active {
-  background: var(--color-border-subtle);
-  color: var(--color-text-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
   font-weight: 600;
 }
-
-.disabled {
-  opacity: 0.35;
+.toggle:hover:not([aria-disabled='true']) {
+  color: var(--color-accent);
+}
+.toggle[aria-disabled='true'] {
+  opacity: 0.4;
   cursor: not-allowed;
 }
-
-.switchLabel {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(4rem, max-content);
+.checkOption {
+  display: inline-flex;
   align-items: center;
   gap: 0.4rem;
+  min-height: 1.5rem;
+  width: fit-content;
+  max-width: 100%;
   cursor: pointer;
-  width: 100%;
-  min-width: 0;
 }
-
-.switchGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
-  gap: 0.35rem 0.9rem;
-  min-width: 0;
-}
-
-.switchItem {
-  min-width: 0;
-}
-
-.switch {
-  display: inline-block;
-  width: 28px;
-  height: 16px;
-  border-radius: 8px;
-  background: var(--color-border-strong);
-  position: relative;
-  cursor: pointer;
+.checkOption input {
+  width: 0.9rem;
+  height: 0.9rem;
+  margin: 0;
   flex-shrink: 0;
-  transition: background 0.15s;
+  accent-color: var(--color-accent);
+  cursor: inherit;
+}
+.checkOption:has(input:disabled) {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.checkOption > span:not(.revisionSample) {
+  overflow-wrap: anywhere;
 }
 
-.switch::after {
+/* A paper thumbnail: the process color stays faithful in every app theme. */
+.revisionSample {
+  display: inline-block;
+  position: relative;
+  flex: 0 0 32px;
+  box-sizing: border-box;
+  width: 32px;
+  height: 18px;
+  background: #fff;
+  border: 5px solid var(--revision-color);
+  box-shadow: 0 0 0 1px var(--color-border-strong);
+}
+.revisionSample::after {
   content: '';
   position: absolute;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--color-text-primary);
-  top: 2px;
-  left: 2px;
-  transition: left 0.15s;
+  inset: 0;
+  border: 1px solid rgba(0, 0, 0, 0.14);
+}
+.revisionSample[data-enabled='false'] {
+  border-color: #fff;
+}
+.revisionSample[data-enabled='false']::after {
+  border-color: transparent;
 }
 
-.switchOn {
-  background: var(--color-accent);
+.inlineOption[data-highlighted='true'] .label,
+.inlineOption[data-highlighted='true'] .checkOption > span {
+  text-decoration: underline var(--color-accent);
+  text-underline-offset: 3px;
 }
-
-.switchOn::after {
-  left: 14px;
-}
-
-.switchValue {
-  font-size: 0.7rem;
-  color: var(--color-text-primary);
-  min-width: 3rem;
-}
-
-.nameSample {
-  font-family: monospace;
-  font-size: 0.72rem;
-  color: var(--color-info);
-  background: rgba(var(--color-info-rgb), 0.08);
-  border: 1px solid rgba(var(--color-info-rgb), 0.18);
+.nameSampleRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
+  padding: 0.4rem 0.6rem;
+  min-width: 0;
+  background: var(--color-surface-2);
   border-radius: 4px;
-  padding: 0.1rem 0.35rem;
-  white-space: nowrap;
+}
+.nameSample {
+  display: flex;
+  position: relative;
+  align-items: center;
+  flex-wrap: wrap;
+  min-width: 0;
+  font: 0.875rem/1.5 ui-monospace, Consolas, monospace;
+}
+.namePart {
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  border-radius: 3px;
+  padding: 1px 0;
+  cursor: pointer;
+}
+.namePart[data-highlighted='true'] {
+  text-decoration: underline 2px var(--color-accent);
+  text-underline-offset: 3px;
+  text-decoration-skip-ink: none;
+}
+/* Mark an omitted part below the text without covering or moving its neighbours. */
+.emptyPart {
+  position: relative;
+  align-self: stretch;
+  flex: 0 0 0;
+}
+.emptyPart[data-highlighted='true']::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: -2px;
+  width: 4px;
+  border-bottom: 2px solid var(--color-accent);
+}
+.namePart:focus-visible {
+  outline: 1px solid var(--color-accent);
+  outline-offset: 2px;
+}
+.chipGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  min-width: 0;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  max-width: 100%;
+  padding: 0.2rem 0.45rem;
+  font: inherit;
+  line-height: 1.4;
+  background: transparent;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 4px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+.chip[aria-pressed='true'] {
+  background: rgba(var(--color-accent-rgb), 0.1);
+  border-color: transparent;
+  color: var(--color-text-primary);
+}
+.chip:hover {
+  border-color: var(--color-accent);
+}
+.chipName {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.nameSampleRow {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: 0.5rem;
-  min-width: 0;
-}
-
-.chipGroup {
-  display: flex;
-  border: 1px solid var(--color-border-strong);
-  border-radius: 4px;
-  overflow: hidden;
-  margin-right: 0.25rem;
-}
-
-.chip {
-  padding: 0.15rem 0.4rem;
-  font-size: 0.7rem;
-  background: none;
-  border: none;
-  color: var(--color-text-muted);
-  cursor: pointer;
   white-space: nowrap;
-  line-height: 1.4;
-  opacity: 0.4;
-  transition: opacity 0.1s, background 0.1s;
+}
+.checkMark {
+  width: 0.7rem;
+  flex-shrink: 0;
+  color: var(--color-accent);
+}
+.suffix {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
 }
 
-.chip + .chip {
-  border-left: 1px solid var(--color-border-strong);
+@container (max-width: 34rem) {
+  .section {
+    grid-template-columns: 1fr;
+    gap: 0.3rem;
+  }
+  .sectionLabel {
+    padding-top: 0;
+  }
 }
 
-.chip:hover:not(.chipIncluded) {
-  opacity: 0.6;
-  background: rgba(var(--color-border-subtle-rgb), 0.5);
+@media (pointer: coarse) {
+  .toggle, .chip, .checkOption {
+    min-height: 2.75rem;
+  }
+  .namePart {
+    min-height: 2.75rem;
+  }
 }
-
-.chipIncluded {
-  background: var(--color-border-subtle);
-  color: var(--color-text-primary);
-  opacity: 1;
-  font-weight: 600;
-}
-
-.qualitySlider {
-  flex: 1;
-  accent-color: var(--color-accent);
-  min-width: 60px;
-  max-width: 120px;
-}
-
-.qualityValue {
-  font-size: 0.75rem;
-  color: var(--color-info);
-  width: 2.5rem;
-  text-align: right;
-}
-
-/* ─── モバイル最適化 ─── */
-@media (pointer: coarse) and (max-width: 1024px) {
-  .settings {
-    padding: 0.5rem;
-    gap: 0.5rem;
-    border-bottom: none;
-    border-top: none;
-  }
-
-  .toggle {
-    padding: 0.35rem 0.6rem;
-    font-size: 0.78rem;
-    min-height: 2rem;
-  }
-
-  .switch {
-    width: 2.25rem;
-    height: 1.375rem;
-    border-radius: 0.7rem;
-  }
-
-  .switch::after {
-    width: 1rem;
-    height: 1rem;
-    top: 0.1875rem;
-    left: 0.1875rem;
-  }
-
-  .switchOn::after {
-    left: 1.0625rem;
-  }
-
-  .label {
-    font-size: 0.75rem;
-  }
-
-  .switchValue {
-    font-size: 0.75rem;
-  }
-
-  .nameSample {
-    font-size: 0.75rem;
-    padding: 0.2rem 0.45rem;
-  }
-
-  .qualitySlider {
-    max-width: none;
-  }
-
-  .chip {
-    padding: 0.3rem 0.5rem;
-    font-size: 0.75rem;
-    min-height: 2rem;
-  }
-
-}
-
-

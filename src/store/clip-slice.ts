@@ -36,11 +36,16 @@ export const createClipSlice: StateCreator<AppStore, [], [], ClipSlice> = (set, 
   loadClip: (clip, name, sourceDirectory, psd) => {
     const timeline = clip.timelines.find(t => t.id === clip.defaultTimelineId)
     const source = psd?.psd ?? clipRenderingSource(clip)
+    // Detect shared cuts only on import, preserving later manual choices.
+    const projectSettings = clip.timelines.length > 1
+      ? { ...get().projectSettings, sharedCutMode: true }
+      : get().projectSettings
     // Build and validate before resetting the current project.
-    const tree = buildClipLayerTree(clip, source, timeline, get().projectSettings, !!psd)
+    const tree = buildClipLayerTree(clip, source, timeline, projectSettings, !!psd)
     const all = flatten(tree)
     get().resetProject()
     set({
+      projectSettings,
       // Canvases own the decoded pixels now. Retain only identities and metadata for later pairing.
       clipDocument: { ...clip, layers: metadataOnly(clip.layers) }, clipFileName: name, clipSourceDirectory: sourceDirectory ?? null,
       clipTimelineId: timeline?.id ?? null,
@@ -49,7 +54,7 @@ export const createClipSlice: StateCreator<AppStore, [], [], ClipSlice> = (set, 
       layerTree: tree, docWidth: clip.width, docHeight: clip.height, docDpiX: clip.dpi, docDpiY: clip.dpi,
       // Shared timeline representation. xdtsFileName remains null for a native timeline.
       timelineData: timeline?.data ?? null,
-      visibilityOverrides: buildDefaultVisibilityOverrides(tree, timeline?.data, !!get().projectSettings.sharedCutMode),
+      visibilityOverrides: buildDefaultVisibilityOverrides(tree, timeline?.data, !!projectSettings.sharedCutMode),
       expandedFolders: new Set(all.filter(l => l.isFolder && l.expanded).map(l => l.id)),
       focusedAnimFolderId: all.find(l => l.isAnimationFolder)?.id ?? null,
     })

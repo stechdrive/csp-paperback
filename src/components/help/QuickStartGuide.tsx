@@ -75,19 +75,16 @@ export function QuickStartGuide({
         <>
           <div className={styles.folderRules}>
             <div className={styles.folderRule}>
-              <strong>各セルに重ねて出す</strong>
-              <p>フレームなどは、アニメーションフォルダの外にある、<b>先頭に「_」のないフォルダ</b>へ。</p>
+              <strong>フレーム枠線・タップ画像を各セルに合成</strong>
+              <p>共通で重ねたい画像は、アニメーションフォルダの外に<b>先頭に「_」のないフォルダ</b>を作り、その中へ。</p>
               <code>例：フレーム</code>
             </div>
             <div className={styles.folderRule}>
-              <strong>別々に書き出す</strong>
-              <p>背景原図やカメラワークの指示は、<b>先頭に「_」を付けたフォルダ</b>へ。</p>
+              <strong>背景原図・撮影指示を単独で書き出す</strong>
+              <p>セル画像に重ねない素材は、アニメーションフォルダの外で、書き出す単位ごとに<b>先頭に「_」を付けたフォルダ</b>へ。</p>
               <code>例：_原図／_BG、_原図／_BOOK、_撮影指示</code>
             </div>
           </div>
-          <p className={styles.startupFlow}>
-            書き出したい素材を表示してCLIPを保存。読み込んだらプレビューを確認して「出力」。
-          </p>
         </>
       )}
 

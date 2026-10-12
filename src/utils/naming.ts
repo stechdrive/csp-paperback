@@ -170,8 +170,13 @@ export function parseEmbeddedTrackPrefix(
   return null
 }
 
-/** アニメーションセルの最終ファイル名を一元的に組み立てる。 */
-export function makeCellFileName({
+export interface CellFileNamePart {
+  kind: 'prefix' | 'separator' | 'cell' | 'suffix' | 'extension'
+  text: string
+}
+
+/** 書き出しと設定画面で共有する、意味ごとに分かれたファイル名。 */
+export function makeCellFileNameParts({
   trackName,
   rawTrackName,
   cellLabel,
@@ -181,7 +186,7 @@ export function makeCellFileName({
   trackCellSeparator = '_',
   trackPrefixMode = 'always',
   suppressDuplicateProcessSuffix = false,
-}: CellFileNameOptions): string {
+}: CellFileNameOptions): CellFileNamePart[] {
   const rawProcessPart = `${parentSuffix}${processSuffix}`
   const processPart = suppressDuplicateProcessSuffix
     && rawProcessPart
@@ -189,29 +194,23 @@ export function makeCellFileName({
     ? ''
     : rawProcessPart
 
-  if (trackPrefixMode === 'omit') {
-    if (processSuffixPosition === 'before-cell' && processPart) {
-      return `${processPart}${trackCellSeparator}${cellLabel}.jpg`
-    }
-    return `${cellLabel}${processPart}.jpg`
-  }
-
   const embeddedTrackPrefix = trackPrefixMode === 'dedupe-embedded' && rawTrackName
     ? parseEmbeddedTrackPrefix(rawTrackName, cellLabel)
     : null
-
-  if (embeddedTrackPrefix) {
-    const { separator, remainder } = embeddedTrackPrefix
-    if (processSuffixPosition === 'before-cell' && processPart) {
-      return `${trackName}${processPart}${separator}${remainder}.jpg`
-    }
-    return `${trackName}${separator}${remainder}${processPart}.jpg`
+  const beforeCell = processSuffixPosition === 'before-cell' && !!processPart
+  const prefix: CellFileNamePart = { kind: 'prefix', text: trackPrefixMode === 'omit' ? '' : trackName }
+  const separator: CellFileNamePart = {
+    kind: 'separator',
+    text: trackPrefixMode === 'omit' && !beforeCell ? '' : embeddedTrackPrefix?.separator ?? trackCellSeparator,
   }
+  const cell: CellFileNamePart = { kind: 'cell', text: embeddedTrackPrefix?.remainder ?? cellLabel }
+  const suffix: CellFileNamePart = { kind: 'suffix', text: processPart }
+  return [prefix, ...(beforeCell ? [suffix, separator, cell] : [separator, cell, suffix]), { kind: 'extension', text: '.jpg' }]
+}
 
-  if (processSuffixPosition === 'before-cell' && processPart) {
-    return `${trackName}${processPart}${trackCellSeparator}${cellLabel}.jpg`
-  }
-  return `${trackName}${trackCellSeparator}${cellLabel}${processPart}.jpg`
+/** アニメーションセルの最終ファイル名を一元的に組み立てる。 */
+export function makeCellFileName(options: CellFileNameOptions): string {
+  return makeCellFileNameParts(options).map(part => part.text).join('')
 }
 
 /**

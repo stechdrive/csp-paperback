@@ -84,13 +84,6 @@
   overflow-wrap: anywhere;
 }
 
-.startupFlow {
-  margin: 0.75rem 0 0;
-  font-size: 0.76rem;
-  line-height: 1.65;
-  text-align: center;
-}
-
 .route {
   display: grid;
   gap: 0.75rem;

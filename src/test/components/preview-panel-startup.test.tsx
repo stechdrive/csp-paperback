@@ -57,8 +57,8 @@ describe('PreviewPanel startup layout', () => {
     expect(within(settings).queryByText(/クイック書き出し/)).not.toBeInTheDocument()
     expect(within(settings).getByRole('switch', { name: 'フォルダ分け' }))
       .toHaveAttribute('aria-checked', 'true')
-    expect(within(guide).getByText('各セルに重ねて出す')).toBeInTheDocument()
-    expect(within(guide).getByText('別々に書き出す')).toBeInTheDocument()
+    expect(within(guide).getByText('フレーム枠線・タップ画像を各セルに合成')).toBeInTheDocument()
+    expect(within(guide).getByText('背景原図・撮影指示を単独で書き出す')).toBeInTheDocument()
     expect(within(guide).queryByText('書き出し設定を決める')).not.toBeInTheDocument()
     expect(guide.textContent).not.toContain('XDTS')
     expect(guide.textContent).toContain('CLIPファイルをここにドロップ')
@@ -86,7 +86,7 @@ describe('PreviewPanel startup layout', () => {
     render(<PreviewPanel />)
 
     const settings = screen.getByTestId('startup-export-settings')
-    fireEvent.click(within(settings).getByRole('switch', { name: '修正のフチ' }))
+    fireEvent.click(within(settings).getByRole('switch', { name: '修正ラベル' }))
 
     expect(useAppStore.getState().savedOutputConfig.revisionBorderEnabled).toBe(false)
     expect(useAppStore.getState().outputConfig.revisionBorderEnabled).toBe(true)

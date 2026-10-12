@@ -99,10 +99,14 @@ describe('CLIP project integration', () => {
       } })),
     }
     useAppStore.getState().loadClip(document, 'cuts.clip')
+    expect(useAppStore.getState().projectSettings.sharedCutMode).toBe(true)
+    expect(useAppStore.getState().visibilityOverrides).toEqual(new Map())
+    useAppStore.getState().setSharedCutMode(false)
     expect(useAppStore.getState().visibilityOverrides).toEqual(new Map([['clip:2', true], ['clip:3', true]]))
     expect(useAppStore.getState().selectedCells.get('clip:A')).toBe(0)
     useAppStore.getState().toggleLayerVisibility('clip:3')
     useAppStore.getState().selectClipTimeline(2)
+    expect(useAppStore.getState().projectSettings.sharedCutMode).toBe(false)
     expect(useAppStore.getState().visibilityOverrides).toEqual(new Map([['clip:1', true], ['clip:3', false]]))
     expect(useAppStore.getState().selectedCells.get('clip:A')).toBe(1)
     expect(useAppStore.getState().layerTree[1].animationFolder?.trackNo).toBeUndefined()
@@ -113,6 +117,35 @@ describe('CLIP project integration', () => {
     useAppStore.getState().undo()
     useAppStore.getState().selectClipTimeline(2)
     expect(useAppStore.getState().visibilityOverrides.get('clip:3')).toBe(false)
+  })
+
+  it.each([false, true])('auto-enables shared cuts only on import, preserving manual OFF on timeline/PSD changes (paired=%s)', paired => {
+    const secondId = Math.max(...clip.timelines.map(t => t.id)) + 1
+    const multiple = { ...clip, timelines: [...clip.timelines, { ...clip.timelines[0], id: secondId }] }
+    useAppStore.getState().loadClip(multiple, 'cuts.clip', undefined,
+      paired ? { psd: readPsdFile(psdBytes()), name: 'c001.psd' } : undefined)
+    expect(useAppStore.getState().projectSettings.sharedCutMode).toBe(true)
+    useAppStore.getState().setSharedCutMode(false)
+    useAppStore.getState().selectClipTimeline(secondId)
+    expect(useAppStore.getState().projectSettings.sharedCutMode).toBe(false)
+    useAppStore.getState().loadPsd(psdBytes(), 'c001.psd')
+    expect(useAppStore.getState().projectSettings.sharedCutMode).toBe(false)
+  })
+
+  it.each([false, true])('keeps the shared cut preference for a single timeline (%s)', sharedCutMode => {
+    useAppStore.getState().setSharedCutMode(sharedCutMode)
+    useAppStore.getState().loadClip({ ...clip, timelines: [clip.timelines[0]], defaultTimelineId: clip.timelines[0].id }, 'single.clip')
+    expect(useAppStore.getState().projectSettings.sharedCutMode).toBe(sharedCutMode)
+  })
+
+  it('does not auto-enable shared cuts when CLIP+PSD validation fails', () => {
+    useAppStore.getState().loadClip(clip, 'c001.clip')
+    useAppStore.getState().setSharedCutMode(false)
+    const before = useAppStore.getState()
+    const multiple = { ...clip, timelines: [...clip.timelines, { ...clip.timelines[0], id: -1 }] }
+    expect(() => before.loadClip(multiple, 'invalid.clip', undefined, { psd: { width: 10, height: 10 }, name: 'wrong.psd' })).toThrow('一致しません')
+    expect(useAppStore.getState()).toBe(before)
+    expect(useAppStore.getState().projectSettings.sharedCutMode).toBe(false)
   })
 
   it('changes a native glow blend using UI semantics and restores it on undo', () => {

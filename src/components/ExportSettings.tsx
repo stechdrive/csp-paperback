@@ -1,75 +1,64 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type FocusEvent, type PointerEvent, type ReactNode } from 'react'
 import { useAppStore } from '../store'
 import { useLocale } from '../i18n/locale'
 import { selectLayerTreeWithVisibility } from '../store/selectors'
 import { Tooltip } from './Tooltip'
 import { UnmatchedTracksWarning } from './UnmatchedTracksWarning'
-import {
-  resolveCellPrefixSeparator,
-  resolveIncludeXdtsTrackPrefixInCellName,
-  type CellNamingMode,
-  type CellPrefixSeparator,
-  type CspLayer,
-} from '../types'
+import { resolveCellPrefixSeparator, resolveIncludeXdtsTrackPrefixInCellName, type CspLayer } from '../types'
 import { isAutoMarkedOutputTarget } from '../utils/auto-marked-container'
 import { getMaxSequenceNumberForAnimationFolders } from '../engine/cell-extractor'
 import type { OutputConfigTarget } from '../store/output-slice'
+import { normalizeProcessFolderName } from '../utils/process-folder'
+import { resolveProcessBorderColor } from '../utils/process-color'
 import {
-  isSequenceNamingMode,
-  makeCellFileName,
-  makeCellLabel,
-  resolveCellPrefixSeparatorCharacter,
-  resolveSequenceDigits,
-  resolveTrackPrefixMode,
+  isSequenceNamingMode, makeCellFileNameParts, makeCellLabel,
+  resolveCellPrefixSeparatorCharacter, resolveSequenceDigits, resolveTrackPrefixMode,
+  type CellFileNamePart,
 } from '../utils/naming'
 import styles from './ExportSettings.module.css'
 
+type NamePart = CellFileNamePart['kind'] | 'directory'
+
 function collectAutoMarkedNames(layers: CspLayer[]): string[] {
-  const names: string[] = []
-  for (const l of layers) {
-    if (isAutoMarkedOutputTarget(l)) names.push(l.originalName)
-    if (l.isFolder && !l.isAnimationFolder) names.push(...collectAutoMarkedNames(l.children))
-  }
-  return names
+  return layers.flatMap(layer => [
+    ...(isAutoMarkedOutputTarget(layer) ? [layer.originalName] : []),
+    ...(layer.isFolder && !layer.isAnimationFolder ? collectAutoMarkedNames(layer.children) : []),
+  ])
 }
 
-function buildNameSample(
-  mode: CellNamingMode,
-  structure: 'hierarchy' | 'flat',
-  processSuffixPosition: 'after-cell' | 'before-cell',
-  format: 'jpg' | 'png',
-  sequenceDigits: number,
-  cellPrefixSeparator: CellPrefixSeparator,
-  includeXdtsTrackPrefixInCellName: boolean,
-): string {
-  const trackName = 'A'
-  const sampleCellName = mode === 'cellname' ? '1' : 'ア'
-  const cellLabel = makeCellLabel(mode, sampleCellName, 1, sequenceDigits)
-  const fileName = makeCellFileName({
-    trackName,
-    rawTrackName: trackName,
-    cellLabel,
-    processSuffix: '_e',
-    processSuffixPosition,
-    trackCellSeparator: resolveCellPrefixSeparatorCharacter(cellPrefixSeparator),
-    trackPrefixMode: resolveTrackPrefixMode(
-      mode,
-      'xdts',
-      includeXdtsTrackPrefixInCellName,
-    ),
-    suppressDuplicateProcessSuffix: mode === 'cellname',
-  }).replace(/\.jpg$/i, `.${format}`)
-  return structure === 'hierarchy' ? `${trackName}/${fileName}` : fileName
+function Choice<T extends string>({ label, value, options, disabled, onChange }: {
+  label: string
+  value: T
+  options: { value: T; label: string; hint: string }[]
+  disabled?: boolean
+  onChange: (value: T) => void
+}) {
+  return <div className={styles.toggleGroup} role="group" aria-label={label}>
+    {options.map(option => <Tooltip key={option.value} content={option.hint} placement="bottom">
+      <button type="button" className={styles.toggle} aria-pressed={value === option.value}
+        aria-disabled={disabled} onClick={() => { if (!disabled) onChange(option.value) }}>
+        {option.label}
+      </button>
+    </Tooltip>)}
+  </div>
 }
 
-interface ExportSettingsProps {
-  configTarget?: OutputConfigTarget
+function CheckOption({ label, hint, checked, disabled, onChange, children }: {
+  label: string; hint: string; checked: boolean; disabled?: boolean
+  onChange: (checked: boolean) => void; children?: ReactNode
+}) {
+  return <Tooltip content={hint} placement="bottom">
+    <label className={styles.checkOption}>
+      <input type="checkbox" role="switch" aria-label={label} checked={checked}
+        aria-checked={checked} aria-disabled={disabled} disabled={disabled}
+        onChange={event => { if (!disabled) onChange(event.target.checked) }} />
+      <span>{label}</span>{children}
+    </label>
+  </Tooltip>
 }
 
-export function ExportSettings({ configTarget = 'current' }: ExportSettingsProps) {
-  const outputConfig = useAppStore(s => (
-    configTarget === 'saved' ? s.savedOutputConfig : s.outputConfig
-  ))
+export function ExportSettings({ configTarget = 'current' }: { configTarget?: OutputConfigTarget }) {
+  const outputConfig = useAppStore(s => configTarget === 'saved' ? s.savedOutputConfig : s.outputConfig)
   const projectSettings = useAppStore(s => s.projectSettings)
   const layerTree = useAppStore(selectLayerTreeWithVisibility)
   const unmatchedTracks = useAppStore(s => s.unmatchedTracks)
@@ -80,309 +69,207 @@ export function ExportSettings({ configTarget = 'current' }: ExportSettingsProps
   const setCellNamingMode = useAppStore(s => s.setCellNamingMode)
   const setSequenceDigitMode = useAppStore(s => s.setSequenceDigitMode)
   const setCellPrefixSeparator = useAppStore(s => s.setCellPrefixSeparator)
-  const setIncludeXdtsTrackPrefixInCellName = useAppStore(
-    s => s.setIncludeXdtsTrackPrefixInCellName,
-  )
+  const setIncludeXdtsTrackPrefixInCellName = useAppStore(s => s.setIncludeXdtsTrackPrefixInCellName)
   const setSharedCutMode = useAppStore(s => s.setSharedCutMode)
   const toggleProcessSuffixExclusion = useAppStore(s => s.toggleProcessSuffixExclusion)
   const setExcludeAutoMarked = useAppStore(s => s.setExcludeAutoMarked)
   const setRevisionBorderEnabled = useAppStore(s => s.setRevisionBorderEnabled)
   const { t } = useLocale()
+  const root = useRef<HTMLDivElement>(null)
+  const highlightTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const [changedPart, setChangedPart] = useState<NamePart | null>(null)
+  const [hoveredPart, setHoveredPart] = useState<NamePart | null>(null)
+  const [focusedPart, setFocusedPart] = useState<NamePart | null>(null)
+  const highlighted = hoveredPart ?? focusedPart ?? changedPart
+
+  useEffect(() => () => clearTimeout(highlightTimer.current), [])
 
   const autoMarkedNames = useMemo(() => collectAutoMarkedNames(layerTree), [layerTree])
+  const maxSequenceNumber = useMemo(() => getMaxSequenceNumberForAnimationFolders(layerTree), [layerTree])
   const excludedSet = new Set(outputConfig.excludedProcessSuffixes)
   const isSequenceMode = isSequenceNamingMode(projectSettings.cellNamingMode)
   const isCellNameMode = projectSettings.cellNamingMode === 'cellname'
-  const cellPrefixSeparator = resolveCellPrefixSeparator(projectSettings)
-  const includeXdtsTrackPrefixInCellName =
-    resolveIncludeXdtsTrackPrefixInCellName(projectSettings)
-  const sequenceDigits = resolveSequenceDigits(
-    projectSettings.sequenceDigitMode ?? 'auto',
-    getMaxSequenceNumberForAnimationFolders(layerTree),
-  )
-  const nameSample = buildNameSample(
-    projectSettings.cellNamingMode,
-    outputConfig.structure,
-    outputConfig.processSuffixPosition,
-    outputConfig.format,
-    sequenceDigits,
-    cellPrefixSeparator,
-    includeXdtsTrackPrefixInCellName,
-  )
+  const separator = resolveCellPrefixSeparator(projectSettings)
+  const includePrefix = resolveIncludeXdtsTrackPrefixInCellName(projectSettings)
+  const sequenceDigits = resolveSequenceDigits(projectSettings.sequenceDigitMode ?? 'auto', maxSequenceNumber)
+  const parts: { kind: NamePart; text: string }[] = [
+    { kind: 'directory', text: outputConfig.structure === 'hierarchy' ? 'A/' : '' },
+    ...makeCellFileNameParts({
+      trackName: 'A', rawTrackName: 'A',
+      cellLabel: makeCellLabel(projectSettings.cellNamingMode, isCellNameMode ? '1' : 'ア', 1, sequenceDigits),
+      processSuffix: '_e', processSuffixPosition: outputConfig.processSuffixPosition,
+      trackCellSeparator: resolveCellPrefixSeparatorCharacter(separator),
+      trackPrefixMode: resolveTrackPrefixMode(projectSettings.cellNamingMode, 'clip', includePrefix),
+      suppressDuplicateProcessSuffix: isCellNameMode,
+    }).map(part => part.kind === 'extension' ? { ...part, text: `.${outputConfig.format}` } : part),
+  ]
+  const nameSample = parts.map(part => part.text).join('')
+  const partLabels: Record<NamePart, string> = {
+    directory: t.export.structure, prefix: t.settings.xdtsTrackPrefix,
+    separator: t.settings.cellPrefixSeparator, cell: t.settings.cellNaming,
+    suffix: t.export.processSuffixPosition, extension: t.export.format,
+  }
+  const revisionEntry = projectSettings.processTable.find(entry => entry.folderNames.some(name => normalizeProcessFolderName(name) === '作監'))
+    ?? projectSettings.processTable.find(entry => entry.suffix.trim().toLowerCase() === '_s')
+  const revisionColor = resolveProcessBorderColor(revisionEntry ?? { suffix: '_s', folderNames: [] })
 
-  return (
-    <div className={styles.settings}>
-      {/* XDTS トラック不一致警告 (件数 > 0 のときだけ表示) */}
-      <UnmatchedTracksWarning unmatchedTracks={unmatchedTracks} />
+  function change(part: NamePart, update: () => void) {
+    update()
+    flashPart(part)
+  }
+
+  function flashPart(part: NamePart) {
+    clearTimeout(highlightTimer.current)
+    setChangedPart(part)
+    highlightTimer.current = setTimeout(() => setChangedPart(null), 1200)
+  }
+
+  function clearHighlight() {
+    clearTimeout(highlightTimer.current)
+    setChangedPart(null)
+    setHoveredPart(null)
+    setFocusedPart(null)
+  }
+
+  function linkPart(part: NamePart) {
+    return {
+      'data-highlighted': highlighted === part,
+      onPointerEnter: (event: PointerEvent<HTMLElement>) => {
+        if (event.pointerType === 'mouse') setHoveredPart(part)
+      },
+      onPointerLeave: () => setHoveredPart(null),
+      onFocus: (event: FocusEvent<HTMLElement>) => {
+        if (event.target.matches(':focus-visible')) setFocusedPart(part)
+      },
+      onBlur: () => setFocusedPart(null),
+    }
+  }
+
+  function linkControl(part: NamePart) {
+    return {
+      'data-name-control': part,
+      ...linkPart(part),
+    }
+  }
+
+  function focusControl(part: NamePart) {
+    flashPart(part)
+    root.current?.querySelector<HTMLElement>(`[data-name-control="${part}"] input:not(:disabled), [data-name-control="${part}"] button[aria-pressed="true"]:not([aria-disabled="true"])`)?.focus()
+  }
+
+  return <div ref={root} className={styles.settings} data-testid="export-settings"
+    onPointerDownCapture={() => setFocusedPart(null)}
+    onKeyDownCapture={event => { if (event.key === 'Escape') clearHighlight() }}>
+    <UnmatchedTracksWarning unmatchedTracks={unmatchedTracks} />
+    <section className={styles.section} aria-label={t.export.imageSettings}>
+      <span className={styles.sectionLabel}>{t.export.imageSettings}</span>
       <div className={styles.row}>
-        <span className={styles.label}>{t.export.format}</span>
-        <div className={styles.toggleGroup}>
-          <Tooltip content={t.export.formatJpgHint} placement="bottom">
-            <button
-              className={`${styles.toggle} ${outputConfig.format === 'jpg' ? styles.active : ''}`}
-              onClick={() => setFormat('jpg', configTarget)}
-            >JPG</button>
-          </Tooltip>
-          <Tooltip content={t.export.formatPngHint} placement="bottom">
-            <button
-              className={`${styles.toggle} ${outputConfig.format === 'png' ? styles.active : ''}`}
-              onClick={() => setFormat('png', configTarget)}
-            >PNG</button>
-          </Tooltip>
+        <div className={styles.inlineOption} {...linkControl('extension')}>
+          <span className={styles.label}>{t.export.format}</span>
+          <Choice label={t.export.format} value={outputConfig.format} onChange={value => change('extension', () => setFormat(value, configTarget))} options={[
+            { value: 'jpg', label: 'JPG', hint: t.export.formatJpgHint },
+            { value: 'png', label: 'PNG', hint: t.export.formatPngHint },
+          ]} />
         </div>
-
-        <span className={styles.label}>{t.export.background}</span>
-        <div className={styles.toggleGroup}>
-          <Tooltip content={t.export.bgWhiteHint} placement="bottom">
-            <button
-              className={`${styles.toggle} ${outputConfig.background === 'white' ? styles.active : ''}`}
-              onClick={() => setBackground('white', configTarget)}
-            >{t.export.bgWhite}</button>
-          </Tooltip>
-          <Tooltip content={t.export.bgTransparentHint} placement="bottom">
-            <button
-              className={`${styles.toggle} ${outputConfig.background === 'transparent' ? styles.active : ''} ${outputConfig.format === 'jpg' ? styles.disabled : ''}`}
-              onClick={() => {
-                if (outputConfig.format === 'png') setBackground('transparent', configTarget)
-              }}
-              aria-disabled={outputConfig.format === 'jpg'}
-            >{t.export.bgTransparent}</button>
-          </Tooltip>
+        <div className={styles.inlineOption}>
+          <span className={styles.label}>{t.export.background}</span>
+          <div className={styles.toggleGroup} role="group" aria-label={t.export.background}>
+            <Tooltip content={t.export.bgWhiteHint} placement="bottom">
+              <button type="button" className={styles.toggle} aria-pressed={outputConfig.background === 'white'} onClick={() => setBackground('white', configTarget)}>{t.export.bgWhite}</button>
+            </Tooltip>
+            <Tooltip content={t.export.bgTransparentHint} placement="bottom">
+              <button type="button" className={styles.toggle} aria-label={t.export.bgTransparent} aria-pressed={outputConfig.background === 'transparent'} aria-disabled={outputConfig.format === 'jpg'}
+                onClick={() => { if (outputConfig.format === 'png') setBackground('transparent', configTarget) }}>{t.export.bgTransparentShort}</button>
+            </Tooltip>
+          </div>
         </div>
+        <CheckOption label={t.export.revisionBorder} hint={t.export.revisionBorderHint} checked={outputConfig.revisionBorderEnabled}
+          onChange={value => setRevisionBorderEnabled(value, configTarget)}>
+          <span className={styles.revisionSample} aria-hidden="true" data-testid="revision-label-sample" data-enabled={outputConfig.revisionBorderEnabled}
+            style={{ '--revision-color': revisionColor } as CSSProperties} />
+        </CheckOption>
       </div>
+    </section>
 
-      <div className={styles.namingBlock} data-testid="naming-settings">
-        <div className={styles.namingControls}>
-          <div className={styles.inlineOption}>
-            <Tooltip content={t.settings.cellNamingHint} placement="bottom">
-              <span className={styles.label}>{t.settings.cellNaming}</span>
-            </Tooltip>
-            <div className={styles.toggleGroup}>
-              <Tooltip content={t.settings.cellNamingSequenceHint} placement="bottom">
-                <button
-                  className={`${styles.toggle} ${projectSettings.cellNamingMode === 'sequence' ? styles.active : ''}`}
-                  onClick={() => setCellNamingMode('sequence')}
-                >{t.settings.cellNamingSequence}</button>
-              </Tooltip>
-              <Tooltip content={t.settings.cellNamingSequenceCellnameHint} placement="bottom">
-                <button
-                  className={`${styles.toggle} ${projectSettings.cellNamingMode === 'sequence-cellname' ? styles.active : ''}`}
-                  onClick={() => setCellNamingMode('sequence-cellname')}
-                >{t.settings.cellNamingSequenceCellname}</button>
-              </Tooltip>
-              <Tooltip content={t.settings.cellNamingCellnameHint} placement="bottom">
-                <button
-                  className={`${styles.toggle} ${projectSettings.cellNamingMode === 'cellname' ? styles.active : ''}`}
-                  onClick={() => setCellNamingMode('cellname')}
-                >{t.settings.cellNamingCellname}</button>
-              </Tooltip>
-              <Tooltip content={t.settings.cellNamingSheetSequenceHint} placement="bottom">
-                <button
-                  className={`${styles.toggle} ${projectSettings.cellNamingMode === 'sheet-sequence' ? styles.active : ''}`}
-                  onClick={() => setCellNamingMode('sheet-sequence')}
-                >{t.settings.cellNamingSheetSequence}</button>
-              </Tooltip>
-            </div>
+    <section className={styles.section} aria-label={t.export.fileNameSettings} data-testid="naming-settings">
+      <span className={styles.sectionLabel}>{t.export.fileNameSettings}</span>
+      <div className={styles.content}>
+        <div className={styles.row}>
+          <div className={styles.inlineOption} {...linkControl('cell')}>
+            <Tooltip content={t.settings.cellNamingHint} placement="bottom"><span className={styles.label}>{t.settings.cellNaming}</span></Tooltip>
+            <Choice label={t.settings.cellNaming} value={projectSettings.cellNamingMode} onChange={value => change('cell', () => setCellNamingMode(value))} options={[
+              { value: 'sequence', label: t.settings.cellNamingSequence, hint: t.settings.cellNamingSequenceHint },
+              { value: 'sequence-cellname', label: t.settings.cellNamingSequenceCellname, hint: t.settings.cellNamingSequenceCellnameHint },
+              { value: 'cellname', label: t.settings.cellNamingCellname, hint: t.settings.cellNamingCellnameHint },
+              { value: 'sheet-sequence', label: t.settings.cellNamingSheetSequence, hint: t.settings.cellNamingSheetSequenceHint },
+            ]} />
           </div>
-
-          <div className={styles.inlineOption}>
-            <Tooltip
-              content={isSequenceMode ? t.settings.sequenceDigitsHint : t.settings.sequenceOptionsUnavailableHint}
-              placement="bottom"
-            >
-              <span className={styles.label}>{t.settings.sequenceDigits}</span>
-            </Tooltip>
-            <div className={styles.toggleGroup}>
-              <Tooltip
-                content={isSequenceMode ? t.settings.sequenceDigitsAutoHint : t.settings.sequenceOptionsUnavailableHint}
-                placement="bottom"
-              >
-                <button
-                  className={`${styles.toggle} ${(projectSettings.sequenceDigitMode ?? 'auto') === 'auto' ? styles.active : ''} ${!isSequenceMode ? styles.disabled : ''}`}
-                  onClick={() => {
-                    if (isSequenceMode) setSequenceDigitMode('auto')
-                  }}
-                  aria-disabled={!isSequenceMode}
-                >{t.settings.sequenceDigitsAuto}</button>
-              </Tooltip>
-              <Tooltip
-                content={isSequenceMode ? t.settings.sequenceDigitsFixed4Hint : t.settings.sequenceOptionsUnavailableHint}
-                placement="bottom"
-              >
-                <button
-                  className={`${styles.toggle} ${projectSettings.sequenceDigitMode === 'fixed-4' ? styles.active : ''} ${!isSequenceMode ? styles.disabled : ''}`}
-                  onClick={() => {
-                    if (isSequenceMode) setSequenceDigitMode('fixed-4')
-                  }}
-                  aria-disabled={!isSequenceMode}
-                >{t.settings.sequenceDigitsFixed4}</button>
-              </Tooltip>
-            </div>
-          </div>
-
-          <div className={styles.inlineOption}>
-            <Tooltip content={t.settings.cellPrefixSeparatorHint} placement="bottom">
-              <span className={styles.label}>{t.settings.cellPrefixSeparator}</span>
-            </Tooltip>
-            <div className={styles.toggleGroup}>
-              <Tooltip content={t.settings.cellPrefixSeparatorUnderscoreHint} placement="bottom">
-                <button
-                  className={`${styles.toggle} ${cellPrefixSeparator === 'underscore' ? styles.active : ''}`}
-                  onClick={() => setCellPrefixSeparator('underscore')}
-                >{t.settings.cellPrefixSeparatorUnderscore}</button>
-              </Tooltip>
-              <Tooltip content={t.settings.cellPrefixSeparatorNoneHint} placement="bottom">
-                <button
-                  className={`${styles.toggle} ${cellPrefixSeparator === 'none' ? styles.active : ''}`}
-                  onClick={() => setCellPrefixSeparator('none')}
-                >{t.settings.cellPrefixSeparatorNone}</button>
-              </Tooltip>
-            </div>
-          </div>
-
-          <div className={styles.inlineOption} data-testid="xdts-track-prefix-option">
-            <Tooltip content={t.settings.xdtsTrackPrefixHint} placement="bottom">
-              <span className={styles.label}>{t.settings.xdtsTrackPrefix}</span>
-            </Tooltip>
-            <Tooltip content={t.settings.xdtsTrackPrefixHint} placement="bottom">
-              <label
-                className={`${styles.inlineSwitchLabel} ${!isCellNameMode ? styles.disabledOption : ''}`}
-              >
-                <span
-                  className={`${styles.switch} ${includeXdtsTrackPrefixInCellName ? styles.switchOn : ''}`}
-                  onClick={() => {
-                    if (isCellNameMode) {
-                      setIncludeXdtsTrackPrefixInCellName(!includeXdtsTrackPrefixInCellName)
-                    }
-                  }}
-                  role="switch"
-                  aria-label={t.settings.xdtsTrackPrefix}
-                  aria-checked={includeXdtsTrackPrefixInCellName}
-                  aria-disabled={!isCellNameMode}
-                />
-                <span className={styles.switchValue}>
-                  {includeXdtsTrackPrefixInCellName
-                    ? t.settings.xdtsTrackPrefixOn
-                    : t.settings.xdtsTrackPrefixOff}
-                </span>
-              </label>
-            </Tooltip>
+          <div className={styles.inlineOption} {...linkControl('cell')}>
+            <Tooltip content={isSequenceMode ? t.settings.sequenceDigitsHint : t.settings.sequenceOptionsUnavailableHint} placement="bottom"><span className={styles.label}>{t.settings.sequenceDigits}</span></Tooltip>
+            <Choice label={t.settings.sequenceDigits} value={projectSettings.sequenceDigitMode ?? 'auto'} disabled={!isSequenceMode}
+              onChange={value => change('cell', () => setSequenceDigitMode(value))} options={[
+                { value: 'auto', label: t.settings.sequenceDigitsAuto, hint: isSequenceMode ? t.settings.sequenceDigitsAutoHint : t.settings.sequenceOptionsUnavailableHint },
+                { value: 'fixed-4', label: t.settings.sequenceDigitsFixed4, hint: isSequenceMode ? t.settings.sequenceDigitsFixed4Hint : t.settings.sequenceOptionsUnavailableHint },
+              ]} />
           </div>
         </div>
-
+        <div className={styles.row}>
+          <div className={styles.inlineOption} data-testid="xdts-track-prefix-option" {...linkControl('prefix')}>
+            <CheckOption label={t.settings.xdtsTrackPrefix} hint={t.settings.xdtsTrackPrefixHint} checked={includePrefix} disabled={!isCellNameMode}
+              onChange={value => change('prefix', () => setIncludeXdtsTrackPrefixInCellName(value))} />
+          </div>
+          <div className={styles.inlineOption} {...linkControl('separator')}>
+            <Tooltip content={t.settings.cellPrefixSeparatorHint} placement="bottom"><span className={styles.label}>{t.settings.cellPrefixSeparatorShort}</span></Tooltip>
+            <Choice label={t.settings.cellPrefixSeparator} value={separator} onChange={value => change('separator', () => setCellPrefixSeparator(value))} options={[
+              { value: 'underscore', label: t.settings.cellPrefixSeparatorUnderscore, hint: t.settings.cellPrefixSeparatorUnderscoreHint },
+              { value: 'none', label: t.settings.cellPrefixSeparatorNone, hint: t.settings.cellPrefixSeparatorNoneHint },
+            ]} />
+          </div>
+          <div className={styles.inlineOption} {...linkControl('suffix')}>
+            <Tooltip content={t.export.processSuffixPositionHint} placement="bottom"><span className={styles.label}>{t.export.processSuffixShort}</span></Tooltip>
+            <Choice label={t.export.processSuffixPosition} value={outputConfig.processSuffixPosition}
+              onChange={value => change('suffix', () => setProcessSuffixPosition(value, configTarget))} options={[
+                { value: 'before-cell', label: t.export.processSuffixBeforeCell, hint: t.export.processSuffixPositionHint },
+                { value: 'after-cell', label: t.export.processSuffixAfterCell, hint: t.export.processSuffixPositionHint },
+              ]} />
+          </div>
+          <div className={styles.inlineOption} {...linkControl('directory')}>
+            <CheckOption label={t.export.structure} hint={t.export.structureHint} checked={outputConfig.structure === 'hierarchy'}
+              onChange={value => change('directory', () => setStructure(value ? 'hierarchy' : 'flat', configTarget))} />
+          </div>
+        </div>
         <div className={styles.nameSampleRow} data-testid="name-sample-row">
           <span className={styles.label}>{t.export.outputNameSample}</span>
-          <span className={styles.nameSample} title={nameSample}>{nameSample}</span>
+          <output className={styles.nameSample} title={nameSample} aria-label={`${t.export.outputNameSample}: ${nameSample}`} aria-live="polite">
+            {parts.map(part => part.text ? <button type="button" key={part.kind} className={styles.namePart} data-name-part={part.kind} {...linkPart(part.kind)}
+              aria-label={`${partLabels[part.kind]}: ${part.text}`} onClick={() => focusControl(part.kind)}>{part.text}</button>
+              : <span key={part.kind} className={styles.emptyPart} data-name-part={part.kind} data-highlighted={highlighted === part.kind} aria-hidden="true" />)}
+          </output>
         </div>
       </div>
+    </section>
 
-      <div className={styles.switchGrid} data-testid="export-option-switch-grid">
-        <div className={styles.switchItem} data-switch-option="shared-cut">
-          <Tooltip content={t.export.sharedCutHint} placement="bottom">
-            <label className={styles.switchLabel}>
-              <span className={styles.label}>{t.export.sharedCut}</span>
-              <span
-                className={`${styles.switch} ${projectSettings.sharedCutMode ? styles.switchOn : ''}`}
-                onClick={() => setSharedCutMode(!projectSettings.sharedCutMode)}
-                role="switch"
-                aria-label={t.export.sharedCut}
-                aria-checked={!!projectSettings.sharedCutMode}
-              />
-              <span className={styles.switchValue}>
-                {projectSettings.sharedCutMode ? t.export.switchOn : t.export.switchOff}
-              </span>
-            </label>
-          </Tooltip>
-        </div>
-
-        <div className={styles.switchItem} data-switch-option="structure">
-          <Tooltip content={t.export.structureHint} placement="bottom">
-            <label className={styles.switchLabel}>
-              <span className={styles.label}>{t.export.structure}</span>
-              <span
-                className={`${styles.switch} ${outputConfig.structure === 'hierarchy' ? styles.switchOn : ''}`}
-                onClick={() => setStructure(outputConfig.structure === 'hierarchy' ? 'flat' : 'hierarchy', configTarget)}
-                role="switch"
-                aria-label={t.export.structure}
-                aria-checked={outputConfig.structure === 'hierarchy'}
-              />
-              <span className={styles.switchValue}>
-                {outputConfig.structure === 'hierarchy' ? t.export.switchOn : t.export.switchOff}
-              </span>
-            </label>
-          </Tooltip>
-        </div>
-
-        <div className={styles.switchItem} data-switch-option="process-position">
-          <Tooltip content={t.export.processSuffixPositionHint} placement="bottom">
-            <label className={styles.switchLabel}>
-              <span className={styles.label}>{t.export.processSuffixPosition}</span>
-              <span
-                className={`${styles.switch} ${outputConfig.processSuffixPosition === 'before-cell' ? styles.switchOn : ''}`}
-                onClick={() => setProcessSuffixPosition(outputConfig.processSuffixPosition === 'before-cell' ? 'after-cell' : 'before-cell', configTarget)}
-                role="switch"
-                aria-label={t.export.processSuffixPosition}
-                aria-checked={outputConfig.processSuffixPosition === 'before-cell'}
-              />
-              <span className={styles.switchValue}>
-                {outputConfig.processSuffixPosition === 'before-cell'
-                  ? t.export.processSuffixBeforeCell
-                  : t.export.processSuffixAfterCell}
-              </span>
-            </label>
-          </Tooltip>
-        </div>
-
-        <div className={styles.switchItem} data-switch-option="revision-border">
-          <Tooltip content={t.export.revisionBorderHint} placement="bottom">
-            <label className={styles.switchLabel}>
-              <span className={styles.label}>{t.export.revisionBorder}</span>
-              <span
-                className={`${styles.switch} ${outputConfig.revisionBorderEnabled ? styles.switchOn : ''}`}
-                onClick={() => setRevisionBorderEnabled(!outputConfig.revisionBorderEnabled, configTarget)}
-                role="switch"
-                aria-label={t.export.revisionBorder}
-                aria-checked={outputConfig.revisionBorderEnabled}
-              />
-              <span className={styles.switchValue}>
-                {outputConfig.revisionBorderEnabled
-                  ? t.export.revisionBorderOn
-                  : t.export.revisionBorderOff}
-              </span>
-            </label>
-          </Tooltip>
-        </div>
-      </div>
-
+    <section className={styles.section} aria-label={t.export.outputTarget}>
+      <Tooltip content={t.export.outputTargetHint} placement="bottom"><span className={styles.sectionLabel}>{t.export.outputTarget}</span></Tooltip>
       <div className={styles.row}>
-        <Tooltip content={t.export.outputTargetHint} placement="bottom">
-          <span className={styles.label}>{t.export.outputTarget}</span>
-        </Tooltip>
         <div className={styles.chipGroup} role="group" aria-label={t.export.outputTarget}>
           {projectSettings.processTable.map(entry => {
-            const tip = entry.folderNames.join(', ')
-            return (
-              <Tooltip key={entry.suffix} content={tip} placement="bottom">
-                <button
-                  className={`${styles.chip} ${!excludedSet.has(entry.suffix) ? styles.chipIncluded : ''}`}
-                  aria-pressed={!excludedSet.has(entry.suffix)}
-                  onClick={() => toggleProcessSuffixExclusion(entry.suffix, configTarget)}
-                >{entry.suffix}</button>
-              </Tooltip>
-            )
+            const name = entry.folderNames.find(name => name.trim() && !name.trim().startsWith('_'))?.trim() ?? entry.suffix
+            return <Tooltip key={entry.suffix} content={entry.folderNames.join(', ')} placement="bottom">
+              <button type="button" className={styles.chip} aria-label={name === entry.suffix ? name : `${name} ${entry.suffix}`} aria-pressed={!excludedSet.has(entry.suffix)} onClick={() => toggleProcessSuffixExclusion(entry.suffix, configTarget)}>
+                <span className={styles.checkMark} aria-hidden="true">{!excludedSet.has(entry.suffix) ? '✓' : ''}</span>
+                <span className={styles.chipName}>{name}</span>{name !== entry.suffix && <span className={styles.suffix}>{entry.suffix}</span>}
+              </button>
+            </Tooltip>
           })}
-          <Tooltip
-            content={autoMarkedNames.length > 0 ? autoMarkedNames.join(', ') : t.export.autoMarkNone}
-            placement="bottom"
-          >
-            <button
-              className={`${styles.chip} ${!outputConfig.excludeAutoMarked ? styles.chipIncluded : ''}`}
-              aria-pressed={!outputConfig.excludeAutoMarked}
-              onClick={() => setExcludeAutoMarked(!outputConfig.excludeAutoMarked, configTarget)}
-            >{t.export.autoMark}</button>
+          <Tooltip content={autoMarkedNames.length > 0 ? autoMarkedNames.join(', ') : t.export.autoMarkNone} placement="bottom">
+            <button type="button" className={styles.chip} aria-pressed={!outputConfig.excludeAutoMarked} onClick={() => setExcludeAutoMarked(!outputConfig.excludeAutoMarked, configTarget)}>
+              <span className={styles.checkMark} aria-hidden="true">{!outputConfig.excludeAutoMarked ? '✓' : ''}</span>{t.export.autoMark}
+            </button>
           </Tooltip>
         </div>
+        <CheckOption label={t.export.sharedCut} hint={t.export.sharedCutHint} checked={!!projectSettings.sharedCutMode} onChange={setSharedCutMode} />
       </div>
-    </div>
-  )
+    </section>
+  </div>
 }
