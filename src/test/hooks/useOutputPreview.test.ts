@@ -138,6 +138,7 @@ describe('useOutputPreview', () => {
       outputConfig: { ...DEFAULT_OUTPUT_CONFIG, format: 'png', background: 'transparent' },
       projectSettings: {
         ...DEFAULT_PROJECT_SETTINGS,
+        cellNamingMode: 'sheet-sequence',
         sequenceDigitMode: 'fixed-4',
         cellPrefixSeparator: 'none',
       },

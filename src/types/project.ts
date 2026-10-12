@@ -48,7 +48,7 @@ export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
     { suffix: '_y',  folderNames: ['_y',  '料理作監'], revisionBorderColor: '#FFDDAA' },
     { suffix: '_ss', folderNames: ['_ss', '総作監'], revisionBorderColor: '#EAF6D5' },
   ],
-  cellNamingMode: 'sheet-sequence',
+  cellNamingMode: 'cellname',
   sequenceDigitMode: 'auto',
   cellPrefixSeparator: 'none',
   animationSequenceSeparator: 'none',

@@ -19,6 +19,7 @@ import { DEFAULT_PROJECT_SETTINGS, type CspLayer } from '../../types'
 
 const GOLDEN_PROJECT_SETTINGS = {
   ...DEFAULT_PROJECT_SETTINGS,
+  cellNamingMode: 'sheet-sequence' as const,
   sequenceDigitMode: 'fixed-4' as const,
   cellPrefixSeparator: 'underscore' as const,
   animationSequenceSeparator: 'underscore' as const,

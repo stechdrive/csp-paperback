@@ -21,8 +21,8 @@ beforeEach(() => {
 })
 
 describe('project-slice - auto mark folder names', () => {
-  it('シート連番・自動桁数・区切りなしをデフォルトにする', () => {
-    expect(useAppStore.getState().projectSettings.cellNamingMode).toBe('sheet-sequence')
+  it('セル名・アニメーションフォルダ名付加・区切りなしをデフォルトにする', () => {
+    expect(useAppStore.getState().projectSettings.cellNamingMode).toBe('cellname')
     expect(useAppStore.getState().projectSettings.sequenceDigitMode).toBe('auto')
     expect(useAppStore.getState().projectSettings.cellPrefixSeparator).toBe('none')
     expect(useAppStore.getState().projectSettings.animationSequenceSeparator).toBe('none')

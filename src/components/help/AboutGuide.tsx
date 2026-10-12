@@ -237,7 +237,7 @@ export function AboutGuide() {
           A・B・Aの各トラックに対応するアニメーションフォルダが、レイヤー側では
           <code>LO/演出/A</code>、<code>LO/作画/B</code>、<code>LO/作画/A</code>にあります。
           設定では「演出」を<code>_e</code>、「_s」を<code>_s</code>の工程として登録しています。
-          出力名はシート連番、区切りなし、フォルダ分けOFFです。
+          出力名はセル名、アニメーションフォルダ名を付ける、区切りなし、フォルダ分けOFFです。
         </p>
 
         <SampleLayerStructure />

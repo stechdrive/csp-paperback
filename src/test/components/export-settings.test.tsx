@@ -68,14 +68,16 @@ describe('ExportSettings naming controls', () => {
     expect(screen.getByText('フチなし')).toBeInTheDocument()
   })
 
-  it('シート連番・自動桁数・区切りなしを初期選択し、サンプルへ反映する', () => {
+  it('セル名・フォルダ名付加・区切りなしを初期選択し、連番へ切り替えると桁数を選べる', () => {
     render(<ExportSettings />)
 
-    expect(useAppStore.getState().projectSettings.cellNamingMode).toBe('sheet-sequence')
+    expect(useAppStore.getState().projectSettings.cellNamingMode).toBe('cellname')
     expect(useAppStore.getState().projectSettings.sequenceDigitMode).toBe('auto')
     expect(useAppStore.getState().projectSettings.cellPrefixSeparator).toBe('none')
+    expect(screen.getByRole('switch', { name: 'アニメーションフォルダ名' })).toHaveAttribute('aria-checked', 'true')
     expect(screen.getByText('A1_e.jpg')).toBeInTheDocument()
 
+    fireEvent.click(screen.getByRole('button', { name: 'シート連番' }))
     fireEvent.click(screen.getByRole('button', { name: '4桁' }))
     expect(useAppStore.getState().projectSettings.sequenceDigitMode).toBe('fixed-4')
     expect(screen.getByText('A0001_e.jpg')).toBeInTheDocument()
@@ -119,6 +121,7 @@ describe('ExportSettings naming controls', () => {
   it('アニメーションフォルダ名はセル名モードでだけ変更でき、出力例へ反映する', () => {
     render(<ExportSettings />)
 
+    fireEvent.click(screen.getByRole('button', { name: 'シート連番' }))
     const toggle = screen.getByRole('switch', { name: 'アニメーションフォルダ名' })
     expect(toggle).toHaveAttribute('aria-disabled', 'true')
     fireEvent.click(toggle)
@@ -164,6 +167,7 @@ describe('ExportSettings naming controls', () => {
   it('中央ペインの各選択肢にユーザー向けツールチップを表示する', () => {
     vi.useFakeTimers()
     render(<ExportSettings />)
+    fireEvent.click(screen.getByRole('button', { name: 'シート連番' }))
 
     const transparentButton = screen.getByRole('button', { name: '透明（PNG のみ）' })
     expect(transparentButton).toHaveAttribute('aria-disabled', 'true')

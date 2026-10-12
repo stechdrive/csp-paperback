@@ -27,6 +27,7 @@ import { collectMembersInTreeOrder, buildMemberFlatsWithOverride } from '../util
 import { resolveSelectedAnimCell } from '../utils/anim-cell-selection'
 import { isAutoMarkedContainerOutputSuppressed } from '../utils/auto-marked-container'
 import {
+  DEFAULT_PROJECT_SETTINGS,
   resolveCellPrefixSeparator,
   resolveIncludeXdtsTrackPrefixInCellName,
   type CspLayer,
@@ -236,7 +237,7 @@ function previewAnimFolder(
   )
 
   // 選択セルのエントリに絞り込む
-  const namingMode = projectSettings.cellNamingMode ?? 'sheet-sequence'
+  const namingMode = projectSettings.cellNamingMode ?? DEFAULT_PROJECT_SETTINGS.cellNamingMode
   const isAutoProcessAnim = animFolder.animationFolder?.detectedBy === 'autoProcess'
   const sequenceNumber = sequenceNamingPlan.sheetSequenceNumbers?.get(selectedCell.id)
     ?? visibleChildren.length - clampedIndex

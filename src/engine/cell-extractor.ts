@@ -1,5 +1,6 @@
 import { applyMaterialEffects } from './material-effects'
 import {
+  DEFAULT_PROJECT_SETTINGS,
   resolveCellPrefixSeparator,
   resolveIncludeXdtsTrackPrefixInCellName,
   type CspLayer,
@@ -65,7 +66,7 @@ export function extractCells(
   const folderName = displayName
   const visibleChildren = animFolder.children.filter(c => !c.hidden && !c.uiHidden)
   const folderNameToSuffix = buildFolderNameToSuffixMap(projectSettings.processTable)
-  const namingMode = projectSettings.cellNamingMode ?? 'sheet-sequence'
+  const namingMode = projectSettings.cellNamingMode ?? DEFAULT_PROJECT_SETTINGS.cellNamingMode
   const entries: OutputEntry[] = []
 
   // autoProcess 昇格フォルダでは、配下のセル名（`_BG`, `_BOOK1` 等）が
