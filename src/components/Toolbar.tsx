@@ -100,6 +100,8 @@ export function Toolbar({ onFiles, isLoading, error, notification, canUndo, canR
   const isMobile = useIsMobile()
   const canExportToDirectory = supportsDirectoryExport()
   const desktopRuntime = isDesktopRuntime()
+  const hasStatusDetails = Boolean(error || exportError || isLoading || isExporting || notification)
+  if (openPopover === 'status' && !hasStatusDetails) setOpenPopover(null)
 
   useEffect(() => {
     if (!openPopover) return
@@ -188,8 +190,10 @@ export function Toolbar({ onFiles, isLoading, error, notification, canUndo, canR
         <button className={`${styles.btn} ${styles.virtualButton} ${virtualPanelOpen ? styles.active : ''}`} onClick={onToggleVirtualPanel} aria-label="仮想セル" title="仮想セルの編集パネルを開閉" aria-expanded={virtualPanelOpen} aria-pressed={virtualPanelOpen}><Icon name="virtual" /><span className={styles.fullLabel}>仮想セル</span></button>
 
         <div className={styles.statusArea} ref={statusRef}>
-          {hasStatus && <button className={`${styles.statusButton} ${statusClass}`} onClick={() => setOpenPopover(openPopover === 'status' ? null : 'status')} aria-label={error || exportError ? 'エラーの詳細' : 'ファイルと処理状況'} title={statusMessage ?? undefined} aria-expanded={openPopover === 'status'} aria-controls="toolbar-status"><Icon name="info" /><span className={styles.statusText}>{statusMessage}</span></button>}
-          {openPopover === 'status' && <div className={`${styles.popover} ${styles.statusPopover}`} id="toolbar-status">
+          {hasStatus && (hasStatusDetails
+            ? <button className={`${styles.statusButton} ${statusClass}`} onClick={() => setOpenPopover(openPopover === 'status' ? null : 'status')} aria-label={error || exportError ? 'エラーの詳細' : isLoading || isExporting ? '処理状況の詳細' : '通知の詳細'} aria-expanded={openPopover === 'status'} aria-controls="toolbar-status"><Icon name="info" /><span className={styles.statusText}>{statusMessage}</span></button>
+            : <span className={`${styles.statusText} ${styles.statusLabel} ${statusClass}`}>{statusMessage}</span>)}
+          {openPopover === 'status' && hasStatusDetails && <div className={`${styles.popover} ${styles.statusPopover}`} id="toolbar-status">
             {isLoading && <p className={styles.loading}>{t.toolbar.loading}</p>}
             {isExporting && <p className={styles.loading}>{t.export.exporting} {Math.round(progress * 100)}%</p>}
             {error && <p className={styles.error}>{error}</p>}

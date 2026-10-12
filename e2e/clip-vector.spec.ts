@@ -8,16 +8,27 @@ async function expectLoadedFile(page: Page, file: string) {
   await page.keyboard.press('Escape')
 }
 
+async function filenameLayout(page: Page) {
+  const names = (await page.locator('[class*="_fileNames_"]').boundingBox())!
+  const view = (await page.getByTestId('output-view').boundingBox())!
+  const output = (await page.locator('[class*="_outputSection_"]').boundingBox())!
+  // PSD pairing also changes the separate mobile diagnostics header.
+  return { filenameHeight: names.height, imageOffset: output.y - view.y }
+}
+
 test('explicitly identified 3D without cached pixels is warned separately from vectors', async ({ page }) => {
   await page.goto('./')
   await page.locator('input[type=file][multiple]').setInputFiles({ name: 'c001.clip', mimeType: 'application/octet-stream', buffer: await clipVectorFixture('3d') })
   const warning = page.locator('[class*="_fileNames_"]').getByRole('button', { name: '3D描画の制限' }).first()
   await expect(warning).toBeVisible({ timeout: 30000 })
+  await page.evaluate(() => document.fonts.ready)
+  const before = await filenameLayout(page)
   await expect(page.getByRole('button', { name: 'ベクター描画の制限' })).toHaveCount(0)
   await warning.hover()
   await expect(page.getByRole('tooltip')).toContainText('出力に含まれません')
   await page.locator('input[type=file][multiple]').setInputFiles('testdata/c001.psd')
   await expect(page.getByRole('button', { name: '3D描画の制限' })).toHaveCount(0)
+  await expect.poll(() => filenameLayout(page)).toEqual(before)
 })
 
 for (const touch of [false, true]) test.describe(touch ? 'touch' : 'desktop', () => {
@@ -34,7 +45,9 @@ for (const touch of [false, true]) test.describe(touch ? 'touch' : 'desktop', ()
     const names = page.locator('[class*="_fileNames_"]')
     const warning = names.getByRole('button', { name: 'ベクター描画の制限' }).first()
     await expect(warning).toBeVisible()
+    await page.evaluate(() => document.fonts.ready)
     const output = page.locator('[class*="_outputSection_"]'), before = await output.boundingBox()
+    const filenamesBefore = await filenameLayout(page)
     if (touch) await warning.tap(); else await warning.hover()
     const tip = page.getByRole('tooltip').filter({ hasText: 'ベクターレイヤー' })
     await expect(tip).toBeVisible()
@@ -58,6 +71,8 @@ for (const touch of [false, true]) test.describe(touch ? 'touch' : 'desktop', ()
     await page.locator('input[type=file][multiple]').setInputFiles('testdata/c001.psd')
     await expectLoadedFile(page, 'c001.psd')
     await expect(page.getByRole('button', { name: 'ベクター描画の制限', includeHidden: true })).toHaveCount(0)
+    // Removing the warning must also keep the filename row and image boundary fixed.
+    await expect.poll(() => filenameLayout(page)).toEqual(filenamesBefore)
     expect(errors).toEqual([])
   })
 })

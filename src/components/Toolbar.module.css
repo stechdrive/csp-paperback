@@ -146,6 +146,11 @@
   white-space: nowrap;
 }
 
+.statusLabel {
+  padding: 0 5px;
+  font-size: 0.75rem;
+}
+
 .fileInfo { color: var(--color-text-secondary); }
 .error { color: var(--color-danger); }
 .loading { color: var(--color-info); }

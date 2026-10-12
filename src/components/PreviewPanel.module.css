@@ -166,6 +166,12 @@
 }
 
 .fileName {
+  display: inline-grid;
+  /* Reserve the warning's column and row even when no warning is present. */
+  grid-template-columns: minmax(0, 1fr) 24px;
+  grid-auto-rows: minmax(24px, auto);
+  align-items: center;
+  column-gap: .15rem;
   font-family: monospace;
   font-size: .68rem;
   color: var(--color-text-secondary);
