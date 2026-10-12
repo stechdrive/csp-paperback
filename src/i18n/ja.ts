@@ -138,8 +138,8 @@ export const ja = {
     unmarkTitle: '単体書き出し解除',
   },
   dropZone: {
-    message: 'CLIPをドロップ',
-    subMessage: 'クリスタの描画結果を使う場合は、PSDも追加できます',
+    message: 'CLIPファイルをここにドロップ',
+    subMessage: 'CLIP＋PSDの2ファイルも、まとめてドロップできます',
   },
 }
 

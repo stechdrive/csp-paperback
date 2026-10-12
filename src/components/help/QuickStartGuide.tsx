@@ -45,6 +45,20 @@ export function QuickStartGuide({
 
   return (
     <div className={`${styles.guide} ${styles[variant]}`}>
+      {!full && (
+        <div className={styles.dropPrompt}>
+          <h2 className={styles.dropTitle}>
+            {timelineOnlyLoaded ? 'PSDファイルをここにドロップ' : ja.dropZone.message}
+          </h2>
+          <p className={styles.dropDescription}>
+            {timelineOnlyLoaded
+              ? '読み込み済みのタイムシートに対応するPSDを読み込んでください。'
+              : ja.dropZone.subMessage}
+          </p>
+          <p className={styles.dropAlternative}>「ファイルを開く」からも選べます。</p>
+        </div>
+      )}
+
       <div className={styles.callout}>
         <strong>ベクターレイヤー・3Dレイヤーを正しく書き出すには</strong>
         クリスタの<span className={styles.menuPath}>{ja.input.psdMenu}</span>で同じCLIPからPSDを保存し、
@@ -119,8 +133,8 @@ export function QuickStartGuide({
           <section className={styles.secondary} data-help-section="desktop-quick">
             <div className={styles.secondaryTitle}>デスクトップ版の自動書き出し</div>
             <p className={styles.secondaryText}>
-              通常起動で書き出し設定を決めたあと、CLIPをEXEまたはショートカットへドロップします。
-              対応PSDを一緒に渡すこともできます。CLIPと同じ場所へ自動出力します。
+              通常起動で書き出し設定を決めたあと、CLIP単独、またはCLIPと対応PSDの2ファイルをまとめて
+              EXEやショートカットへドロップします。CLIPと同じ場所へ自動出力します。
               複数タイムラインがある場合は、保存時に選択されていたものを使用します。
               ★や🎬をカットごとに調整したい場合は、通常画面から書き出してください。
             </p>

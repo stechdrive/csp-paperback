@@ -11,6 +11,37 @@
   margin: 0 auto;
 }
 
+.dropPrompt {
+  margin-bottom: 0.75rem;
+  padding: 1.1rem 0.75rem;
+  border: 2px dashed rgba(var(--color-accent-rgb), 0.55);
+  border-radius: 9px;
+  background: rgba(var(--color-accent-rgb), 0.05);
+  text-align: center;
+}
+
+.dropTitle {
+  margin: 0;
+  color: var(--color-accent);
+  font-size: 1.15rem;
+  font-weight: 750;
+  line-height: 1.5;
+  text-wrap: balance;
+}
+
+.dropDescription {
+  margin: 0.4rem 0 0;
+  color: var(--color-text-primary);
+  font-size: 0.76rem;
+  line-height: 1.6;
+}
+
+.dropAlternative {
+  margin: 0.25rem 0 0;
+  font-size: 0.7rem;
+  line-height: 1.6;
+}
+
 .route {
   display: grid;
   gap: 0.75rem;

@@ -34,7 +34,7 @@ describe('HelpDialog information architecture', () => {
 
     const text = screen.getByRole('dialog').textContent ?? ''
     expect(text).not.toContain('XDTS')
-    expect(text).toContain('CLIPをEXEまたはショートカットへドロップ')
+    expect(text).toMatch(/CLIP単独、またはCLIPと対応PSDの2ファイルをまとめて\s*EXEやショートカットへドロップ/)
     expect(text).not.toContain('1つずつ同時に')
     expect(screen.queryByText('CSPアニメーションセル出力の課題')).not.toBeInTheDocument()
   })
