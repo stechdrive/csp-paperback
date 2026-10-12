@@ -95,10 +95,6 @@ export function LayerTreePanel({ onPreviewOutput }: { onPreviewOutput?: () => vo
 
   return (
     <div className={styles.panel}>
-      <div className={styles.viewSwitch} role="group" aria-label="レイヤーパネルの表示">
-        <button type="button" aria-pressed={view === 'tree'} onClick={() => setView('tree')}>レイヤー</button>
-        <button type="button" aria-pressed={view === 'files'} onClick={() => setView('files')}>出力一覧</button>
-      </div>
       <div className={styles.contents} hidden={view !== 'tree'}>
       {/* 選択レイヤーの合成モード・不透明度コントロール */}
       <BlendOpacityBar
@@ -161,11 +157,21 @@ export function LayerTreePanel({ onPreviewOutput }: { onPreviewOutput?: () => vo
         }} />
       </div>
 
-      <Tooltip content={"書き出される画像ごとに、セル本体・工程別画像・単体出力・仮想セルを巡回します\n出力行まで一時展開し、離れると元に戻します。手動で開いたフォルダは維持します"}>
-        <div className={styles.footerHint}>
-          Shift+スクロールでプレビュー切替
+      <div className={styles.footer} data-testid="layer-panel-footer">
+        <div className={styles.viewSwitch} role="group" aria-label="レイヤーパネルの表示">
+          <button type="button" aria-label="レイヤー" title="レイヤー" aria-pressed={view === 'tree'} onClick={() => setView('tree')}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="m12 3 10 5-10 5L2 8Zm-10 9 10 5 10-5M2 16l10 5 10-5" /></svg>
+            <span className={styles.viewLabel}>レイヤー</span>
+          </button>
+          <button type="button" aria-label="出力一覧" title="出力一覧" aria-pressed={view === 'files'} onClick={() => setView('files')}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M8 5h13M8 12h13M8 19h13M3 5h1M3 12h1M3 19h1" /></svg>
+            <span className={styles.viewLabel}>出力一覧</span>
+          </button>
         </div>
-      </Tooltip>
+        <Tooltip content={"Shift+スクロールでプレビュー切替\n書き出される画像ごとに、セル本体・工程別画像・単体出力・仮想セルを巡回します\n出力行まで一時展開し、離れると元に戻します。手動で開いたフォルダは維持します"}>
+          <span className={styles.footerHint}>Shift+スクロール<span className={styles.hintAction}>で切替</span></span>
+        </Tooltip>
+      </div>
     </div>
   )
 }

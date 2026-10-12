@@ -114,7 +114,7 @@ async function exportedImageNames(page: Page) {
 }
 
 function previewNames(page: Page) {
-  return page.getByTestId('output-view').locator('[class*="_fileName_"] > span[title]')
+  return page.getByTestId('preview-file-name')
 }
 
 async function previewPixelHash(page: Page) {
@@ -171,10 +171,11 @@ test('出力一覧は実ZIPと一致し、検索・選択・ツリー復帰・�
   const viewport = await navigator.locator('[class*="_navigatorViewport_"]').boundingBox()
   expect(viewport!.height).toBeGreaterThan(navigatorBefore!.height * 0.7)
   await expect(navigator.getByText('全体ナビゲーター', { exact: true })).toHaveCount(0)
-  const seek = navigator.getByRole('slider')
-  const enlarge = navigator.getByRole('button', { name: '全体ナビゲーターを中央で大きく表示' })
-  const seekBox = (await seek.boundingBox())!, enlargeBox = (await enlarge.boundingBox())!
-  expect(Math.abs(seekBox.y + seekBox.height / 2 - enlargeBox.y - enlargeBox.height / 2)).toBeLessThan(1)
+  await expect(navigator.getByRole('button', { name: '全体ナビゲーターを中央で大きく表示' })).toHaveCount(0)
+  await expect(navigator.getByRole('slider')).toBeVisible()
+  const seekHeight = (await navigator.getByTestId('timeline-seek-bar').boundingBox())!.height
+  expect(seekHeight).toBeGreaterThanOrEqual(24)
+  expect(seekHeight).toBeLessThanOrEqual(28)
 
   // Keep a manually opened branch while exploring a different branch in the list.
   await expansion(row(page, 'instructions')).click()

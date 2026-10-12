@@ -8,7 +8,7 @@ import { ExportSettingsPopover } from './ExportSettingsPopover'
 import { NavigatorCanvas } from './NavigatorPanel'
 import { TimelineSeekBar } from './TimelineSeekBar'
 import { ClipTimelineSelect } from './ClipPreviewControls'
-import { RenderWarning } from './RenderWarning'
+import { OutputPreviewFiles } from './OutputPreviewFiles'
 import { useSampleLoader } from '../hooks/useSampleLoader'
 import { QuickStartGuide } from './help/QuickStartGuide'
 import { DESKTOP_RELEASES_URL } from '../platform/external-links'
@@ -58,24 +58,17 @@ export function PreviewPanel({ mode = 'output', active = true }: { mode?: Previe
     {isMobile && <ClipTimelineSelect />}
     {!timelineData && !clipFileName && <div className={styles.noXdtsBanner}>対応するCLIPを追加すると、アニメーションフォルダとタイムラインを読み込めます。</div>}
     <div className={styles.view} hidden={mode !== 'output'} data-testid="output-view">
-      <div className={styles.divider}>
-        <span className={styles.dividerLabel}>出力プレビュー</span>
-        {outputZoomPan.zoom !== 1 && <span className={styles.outputZoomBadge}>{Math.round(outputZoomPan.zoom * 100)}%</span>}
-        {entries.length > 0 && <div className={styles.fileNames}>
-          {entries.map((e, i) => <span key={i} className={styles.fileName}>
-            <span title={structure === 'hierarchy' ? e.path : e.flatName}>{structure === 'hierarchy' ? e.path : e.flatName}</span>
-            {(e.vectorWarning || e.unsupported3D) && <RenderWarning vector={e.vectorWarning} unsupported3D={e.unsupported3D} />}
-          </span>)}
-        </div>}
-      </div>
       <div className={styles.outputSection}>
         <OutputPreview entries={entries} focusedAnimFolderId={focusedAnimFolderId} zoomPan={outputZoomPan} />
+        {outputZoomPan.zoom !== 1 && <span className={styles.zoomBadge}>{Math.round(outputZoomPan.zoom * 100)}%</span>}
       </div>
     </div>
     <div className={styles.view} hidden={mode !== 'navigator'} data-testid="navigator-view">
       <NavigatorCanvas enabled={active && mode === 'navigator'} />
       {isMobile && <TimelineSeekBar />}
     </div>
-    <ExportSettingsPopover />
+    <ExportSettingsPopover>
+      {mode === 'output' && entries.length > 0 && <OutputPreviewFiles entries={entries} structure={structure} />}
+    </ExportSettingsPopover>
   </div>
 }

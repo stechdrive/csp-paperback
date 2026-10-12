@@ -9,17 +9,17 @@ async function expectLoadedFile(page: Page, file: string) {
 }
 
 async function filenameLayout(page: Page) {
-  const names = (await page.locator('[class*="_fileNames_"]').boundingBox())!
+  const names = (await page.getByTestId('preview-files').boundingBox())!
   const view = (await page.getByTestId('output-view').boundingBox())!
   const output = (await page.locator('[class*="_outputSection_"]').boundingBox())!
-  // PSD pairing also changes the separate mobile diagnostics header.
+  // Compare boundaries within the preview so unrelated source status cannot affect this check.
   return { filenameHeight: names.height, imageOffset: output.y - view.y }
 }
 
 test('explicitly identified 3D without cached pixels is warned separately from vectors', async ({ page }) => {
   await page.goto('./')
   await page.locator('input[type=file][multiple]').setInputFiles({ name: 'c001.clip', mimeType: 'application/octet-stream', buffer: await clipVectorFixture('3d') })
-  const warning = page.locator('[class*="_fileNames_"]').getByRole('button', { name: '3D描画の制限' }).first()
+  const warning = page.getByTestId('preview-files').getByRole('button', { name: '3D描画の制限' }).first()
   await expect(warning).toBeVisible({ timeout: 30000 })
   await page.evaluate(() => document.fonts.ready)
   const before = await filenameLayout(page)
@@ -42,12 +42,18 @@ for (const touch of [false, true]) test.describe(touch ? 'touch' : 'desktop', ()
     await page.goto('./')
     await page.locator('input[type=file][multiple]').setInputFiles({ name: 'c001.clip', mimeType: 'application/octet-stream', buffer: await clipVectorFixture() })
     await expectLoadedFile(page, 'c001.clip')
-    const names = page.locator('[class*="_fileNames_"]')
+    const names = page.getByTestId('preview-files')
     const warning = names.getByRole('button', { name: 'ベクター描画の制限' }).first()
     await expect(warning).toBeVisible()
     await page.evaluate(() => document.fonts.ready)
     const output = page.locator('[class*="_outputSection_"]'), before = await output.boundingBox()
     const filenamesBefore = await filenameLayout(page)
+    const nameBounds = (await page.getByTestId('preview-file-name').boundingBox())!
+    const warningBounds = (await warning.boundingBox())!
+    const settingsBounds = (await page.getByRole('button', { name: '書き出し設定', exact: true }).boundingBox())!
+    const center = nameBounds.y + nameBounds.height / 2
+    expect(Math.abs(center - warningBounds.y - warningBounds.height / 2)).toBeLessThan(1)
+    expect(Math.abs(center - settingsBounds.y - settingsBounds.height / 2)).toBeLessThan(1)
     if (touch) await warning.tap(); else await warning.hover()
     const tip = page.getByRole('tooltip').filter({ hasText: 'ベクターレイヤー' })
     await expect(tip).toBeVisible()

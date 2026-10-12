@@ -21,11 +21,11 @@
   flex-shrink: 0;
   max-height: 48%;
   min-height: 150px;
-  padding: .35rem .5rem;
+  padding: .2rem .5rem;
   background: var(--color-bg-app);
   display: flex;
   flex-direction: column;
-  gap: .3rem;
+  gap: .15rem;
   overflow: hidden;
 }
 
@@ -64,9 +64,6 @@
   right: .5rem;
   top: .5rem;
   pointer-events: none;
-}
-
-.zoomBadge, .outputZoomBadge {
   font-size: .65rem;
   color: var(--color-text-primary);
   background: rgba(var(--color-surface-1-rgb), .9);
@@ -114,51 +111,52 @@
   outline-offset: -2px;
 }
 
-.divider {
-  display: flex;
-  align-items: flex-start;
-  gap: .5rem;
-  padding: .3rem .6rem;
-  font-size: .7rem;
-  color: var(--color-text-muted);
-  border-bottom: 1px solid var(--color-border-subtle);
-  flex-shrink: 0;
-  max-height: 25%;
-  overflow: auto;
-  background: var(--color-surface-2);
-}
-
-.dividerLabel {
-  flex-shrink: 0;
-}
-
 .fileNames {
   display: flex;
+  align-items: center;
   gap: .3rem;
-  flex-wrap: wrap;
   flex: 1 1 auto;
   min-width: 0;
+  height: 100%;
 }
 
-.fileName {
-  display: inline-grid;
-  /* Reserve the warning's column and row even when no warning is present. */
-  grid-template-columns: minmax(0, 1fr) 24px;
-  grid-auto-rows: minmax(24px, auto);
+.fileNameButton {
+  display: flex;
   align-items: center;
-  column-gap: .15rem;
+  gap: .4rem;
+  flex: 0 1 auto;
+  min-width: 0;
+  height: 1.5rem;
+  min-height: 24px;
   font-family: monospace;
-  font-size: .68rem;
+  font-size: .72rem;
+  line-height: 1;
   color: var(--color-text-secondary);
-  background: var(--color-border-subtle);
+  background: transparent;
+  border: 1px solid transparent;
   border-radius: 3px;
-  padding: .05rem .3rem;
-  max-width: 100%;
-  overflow-wrap: anywhere;
-  white-space: normal;
+  padding: 0 .25rem;
+  cursor: pointer;
 }
+
+.fileNameButton:hover { background: var(--color-border-subtle); }
+.fileNameButton:focus-visible { outline: 2px solid var(--color-info); outline-offset: -2px; }
+.fileNameText { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.previewFileCount { flex-shrink: 0; font-family: sans-serif; color: var(--color-text-muted); }
+.previewFileList {
+  margin: 0;
+  padding: .5rem .75rem .5rem 2.25rem;
+  overflow-y: auto;
+  min-height: 0;
+  font-family: monospace;
+  font-size: .75rem;
+  color: var(--color-text-secondary);
+}
+.previewFileList li { padding: .25rem 0; overflow-wrap: anywhere; }
+.previewFileList li > span { vertical-align: middle; }
 
 .outputSection {
+  position: relative;
   flex: 1;
   overflow: hidden;
   background: var(--color-bg-app);
@@ -171,27 +169,26 @@
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: .5rem;
-  min-height: 2.2rem;
-  padding: .2rem .5rem;
+  height: max(2rem, 30px);
+  padding: 0 .5rem;
   background: var(--color-surface-1);
   border-top: 1px solid var(--color-border-subtle);
 }
 
-.settingsSummary {
-  color: var(--color-text-muted);
-  font-size: .7rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .settingsToggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .25rem;
+  margin-left: auto;
   white-space: nowrap;
   flex-shrink: 0;
   font-size: .72rem;
-  padding: .25rem .4rem;
+  line-height: 1;
+  height: 1.5rem;
+  min-height: 24px;
+  padding: 0 .4rem;
   background: var(--color-surface-2);
   color: var(--color-text-primary);
   border: 1px solid var(--color-border-strong);
@@ -337,11 +334,11 @@
   display: flex;
   align-items: center;
   gap: .4rem;
-  padding: .4rem .5rem;
+  height: 1.625rem;
+  min-height: 24px;
+  padding: 0 .3rem;
   flex-shrink: 0;
 }
-
-.seekActions { display: flex; flex-shrink: 0; margin-left: auto; }
 
 .seekTrack {
   flex: 1;
@@ -356,7 +353,7 @@
 .seekTrack::before {
   content: '';
   position: absolute;
-  inset: -8px 0;
+  inset: -9px 0;
 }
 
 .seekFill {
@@ -383,6 +380,7 @@
 
 .seekLabel {
   font-size: .68rem;
+  line-height: 1;
   color: var(--color-text-muted);
   font-variant-numeric: tabular-nums;
   flex-shrink: 0;
@@ -398,7 +396,9 @@
     display: none;
   }
   .seekBar {
-    padding: .75rem .6rem;
+    height: 2.25rem;
+    min-height: 36px;
+    padding: 0 .6rem;
   }
   .seekTrack {
     height: .6rem;
@@ -407,7 +407,7 @@
     width: 1.25rem;
     height: 1.25rem;
   }
-  .settingsToggle {
-    min-height: 2rem;
-  }
+  .seekTrack::before { inset: -12px 0; }
+  .settingsFooter { height: 2.5rem; }
+  .settingsToggle, .fileNameButton { height: 2rem; }
 }

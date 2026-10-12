@@ -19,9 +19,9 @@ export function NavigatorCanvas({ enabled = true }: { enabled?: boolean }) {
 }
 
 /** The timeline stays with the navigator, so changing the main view never moves the tree. */
-export function NavigatorPanel({ enabled, onEnlarge }: { enabled: boolean; onEnlarge: () => void }) {
+export function NavigatorPanel({ enabled }: { enabled: boolean }) {
   const docWidth = useAppStore(s => s.docWidth)
-  const [height, setHeight] = useState(238)
+  const [height, setHeight] = useState(200)
   const resize = (event: PointerEvent<HTMLDivElement>) => {
     event.preventDefault()
     const handle = event.currentTarget
@@ -43,11 +43,7 @@ export function NavigatorPanel({ enabled, onEnlarge }: { enabled: boolean; onEnl
     <section className={styles.navigatorSection} style={{ height }} aria-label="ナビゲーターパネル" data-testid="navigator-panel">
       <ClipTimelineSelect />
       <NavigatorCanvas enabled={enabled} />
-      <TimelineSeekBar actions={
-        <button className={styles.iconButton} onClick={onEnlarge} title="中央で大きく表示" aria-label="全体ナビゲーターを中央で大きく表示">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5M3 3l6 6m12-6-6 6M3 21l6-6m12 6-6-6" /></svg>
-        </button>
-      } />
+      <TimelineSeekBar />
     </section>
     <div className={styles.resizeHandle} onPointerDown={resize} title="ナビゲーターの高さを変更" />
   </>

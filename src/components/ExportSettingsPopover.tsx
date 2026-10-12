@@ -1,6 +1,5 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
-import { useAppStore } from '../store'
 import { ExportSettings } from './ExportSettings'
 import styles from './PreviewPanel.module.css'
 
@@ -11,8 +10,7 @@ function positionFor(button: HTMLButtonElement) {
   return { width, bottom, left: Math.max(8, Math.min(rect.right - width, window.innerWidth - width - 8)), maxHeight: Math.max(120, rect.top - 14) }
 }
 
-export function ExportSettingsPopover() {
-  const config = useAppStore(s => s.outputConfig)
+export function ExportSettingsPopover({ children }: { children?: ReactNode }) {
   const id = useId()
   const trigger = useRef<HTMLButtonElement>(null)
   const popup = useRef<HTMLDivElement>(null)
@@ -46,10 +44,8 @@ export function ExportSettingsPopover() {
       window.removeEventListener('resize', reposition)
     }
   }, [open])
-  return <div className={styles.settingsFooter}>
-    <span className={styles.settingsSummary} title="現在の書き出し設定">
-      {config.format.toUpperCase()} · {config.background === 'white' ? '白背景' : '透明背景'} · {config.structure === 'flat' ? 'フォルダ分けなし' : 'フォルダ分けあり'}
-    </span>
+  return <div className={styles.settingsFooter} data-testid="preview-footer">
+    {children}
     <button ref={trigger} type="button" className={styles.settingsToggle} aria-expanded={open} aria-haspopup="dialog" aria-controls={open ? id : undefined}
       onClick={() => setPosition(open || !trigger.current ? null : positionFor(trigger.current))}>
       書き出し設定 <span aria-hidden="true">{open ? '▾' : '▴'}</span>
