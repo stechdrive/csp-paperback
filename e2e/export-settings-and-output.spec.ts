@@ -1,5 +1,11 @@
 import { readFile } from 'node:fs/promises'
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
+
+async function expectSampleLoaded(page: Page) {
+  await page.getByRole('button', { name: 'メニュー', exact: true }).click()
+  await expect(page.locator('#toolbar-app-menu').getByText('c001.clip', { exact: true })).toBeVisible({ timeout: 30000 })
+  await page.keyboard.press('Escape')
+}
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
@@ -13,6 +19,33 @@ test.beforeEach(async ({ page }) => {
     })
   })
 })
+
+for (const name of ['ヘルプ', '設定']) {
+  test(`アプリメニューからTabで${name}を開いてもメニューがダイアログに残らない`, async ({ page }) => {
+    await page.goto('./')
+    await page.getByRole('button', { name: 'メニュー', exact: true }).click()
+    const menu = page.locator('#toolbar-app-menu')
+    await menu.getByRole('button', { name: '設定', exact: true }).focus()
+    const action = page.locator('[class*="_utilityButtons_"]').getByRole('button', { name, exact: true })
+    for (let step = 0; step < 15 && !await action.evaluate(element => document.activeElement === element); step++) {
+      await page.keyboard.press('Tab')
+    }
+    await expect(action).toBeFocused()
+    await page.keyboard.press('Enter')
+    await expect(menu).toHaveCount(0)
+    if (name === 'ヘルプ') {
+      const dialog = page.getByRole('dialog', { name: 'CSP Paperback ヘルプ' })
+      await expect(dialog).toBeVisible()
+      await dialog.getByRole('button', { name: 'ヘルプを閉じる' }).click()
+      await expect(dialog).toHaveCount(0)
+    } else {
+      const dialog = page.locator('[class*="_dialog_"]').filter({ has: page.getByText('書き出し詳細設定', { exact: true }) })
+      await expect(dialog).toBeVisible()
+      await dialog.locator('[class*="_header_"]').getByRole('button', { name: '✕', exact: true }).click()
+      await expect(dialog).toHaveCount(0)
+    }
+  })
+}
 
 test('保存設定を再読込とサンプル読込へ引き継ぎ、実ZIPを書き出す', async ({ page }) => {
   const pageErrors: string[] = []
@@ -40,9 +73,11 @@ test('保存設定を再読込とサンプル読込へ引き継ぎ、実ZIPを�
     .toHaveAttribute('aria-checked', 'true')
 
   await page.getByRole('button', { name: 'サンプルデータで試す', exact: true }).click()
-  await expect(page.getByText('c001.clip', { exact: true })).toBeVisible()
+  await expectSampleLoaded(page)
   await expect(page.getByText('CLIPから読み込み', { exact: true })).toHaveCount(0)
+  await page.getByRole('button', { name: '書き出し設定', exact: true }).click()
   await expect(page.getByLabel('出力例: A/A_1_e.png')).toBeVisible()
+  await page.keyboard.press('Escape')
 
   const downloadPromise = page.waitForEvent('download')
   await page.getByRole('button', { name: '出力', exact: true }).click()
@@ -71,7 +106,7 @@ test.describe('タッチ端末', () => {
       .toBe(true)
 
     await page.getByRole('button', { name: 'サンプルデータで試す', exact: true }).click()
-    const drawerToggle = page.getByRole('button', { name: /書き出し設定/ })
+    const drawerToggle = page.getByRole('button', { name: '書き出し設定', exact: true })
     await expect(drawerToggle).toBeVisible()
     await expect(drawerToggle).toHaveAttribute('aria-expanded', 'false')
     await drawerToggle.click()
@@ -133,11 +168,14 @@ test('設定と出力名の対応を示し、修正ラベルの切り替えで�
   const output = page.locator('[class*="_outputSection_"]')
   await expect(output).toBeVisible()
   const before = await output.boundingBox()
+  await page.getByRole('button', { name: '書き出し設定', exact: true }).click()
   const revision = settings.getByRole('switch', { name: '修正ラベル', exact: true })
   await revision.uncheck()
   await expect(sample).toHaveCSS('border-top-color', 'rgb(255, 255, 255)')
   expect(await output.boundingBox()).toEqual(before)
   await revision.check()
+  expect(await output.boundingBox()).toEqual(before)
+  await page.keyboard.press('Escape')
   expect(await output.boundingBox()).toEqual(before)
   await page.screenshot({ path: testInfo.outputPath('loaded.png') })
 })
@@ -169,9 +207,9 @@ for (const viewport of [{ width: 1440, height: 1000 }, { width: 1000, height: 70
     for (const phase of ['startup', 'loaded']) {
       if (phase === 'loaded') {
         await page.getByRole('button', { name: 'サンプルデータで試す', exact: true }).click()
-        await expect(page.getByText('c001.clip', { exact: true })).toBeAttached()
-        const drawer = page.getByRole('button', { name: /書き出し設定/ })
-        if (await drawer.isVisible()) await drawer.click()
+        await expectSampleLoaded(page)
+        const drawer = page.getByRole('button', { name: '書き出し設定', exact: true })
+        await drawer.click()
       }
       await expect(settings).toBeVisible()
       await page.evaluate(() => document.fonts.ready)
@@ -201,6 +239,7 @@ for (const viewport of [{ width: 1440, height: 1000 }, { width: 1000, height: 70
       await expect(page.getByRole('tooltip')).toBeVisible()
       await page.screenshot({ path: testInfo.outputPath(`${phase}-tooltip.png`) })
       await page.mouse.move(0, 0)
+      if (phase === 'loaded') await page.keyboard.press('Escape')
     }
     expect(errors).toEqual([])
   })

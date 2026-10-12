@@ -55,6 +55,19 @@ export function TimelineSeekBar() {
       <div
         ref={trackRef}
         className={styles.seekTrack}
+        role="slider"
+        tabIndex={0}
+        aria-label="タイムラインのフレーム"
+        aria-valuemin={1}
+        aria-valuemax={duration}
+        aria-valuenow={currentFrame + 1}
+        aria-valuetext={`${secs}秒${subFrame}コマ`}
+        onKeyDown={event => {
+          const next = event.key === 'Home' ? 0 : event.key === 'End' ? duration - 1
+            : event.key === 'ArrowRight' ? Math.min(duration - 1, currentFrame + 1)
+              : event.key === 'ArrowLeft' ? Math.max(0, currentFrame - 1) : null
+          if (next !== null) { event.preventDefault(); seekToFrame(next) }
+        }}
         onPointerDown={handlePointerDown}
       >
         <div className={styles.seekFill} style={{ width: `${percent}%` }} />

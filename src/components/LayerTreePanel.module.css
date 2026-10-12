@@ -26,8 +26,13 @@
 }
 
 .resetBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
   font-size: 0.75rem;
-  padding: 0.2rem 0.5rem;
+  padding: 0;
   border: 1px solid var(--color-border-strong);
   border-radius: 3px;
   background: none;
@@ -67,15 +72,16 @@
 }
 
 /* ─── モバイル最適化 ─── */
-@media (pointer: coarse) and (max-width: 1024px) {
+@media (max-width: 735px), (pointer: coarse) and (max-width: 1024px) {
   .header {
     padding: 0.5rem 0.75rem;
   }
 
   .resetBtn {
     font-size: 0.8rem;
-    padding: 0.35rem 0.7rem;
-    min-height: 2.25rem;
+    padding: 0;
+    width: 2rem;
+    height: 2rem;
     display: flex;
     align-items: center;
   }

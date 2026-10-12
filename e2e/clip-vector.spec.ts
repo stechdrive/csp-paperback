@@ -1,6 +1,12 @@
 import { readFile } from 'node:fs/promises'
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 import { clipVectorFixture } from './helpers/clip-vector-fixture'
+
+async function expectLoadedFile(page: Page, file: string) {
+  await page.getByRole('button', { name: 'メニュー', exact: true }).click()
+  await expect(page.locator('#toolbar-app-menu').getByText(file, { exact: true })).toBeVisible({ timeout: 30000 })
+  await page.keyboard.press('Escape')
+}
 
 test('explicitly identified 3D without cached pixels is warned separately from vectors', async ({ page }) => {
   await page.goto('./')
@@ -24,7 +30,7 @@ for (const touch of [false, true]) test.describe(touch ? 'touch' : 'desktop', ()
     const errors: string[] = []; page.on('pageerror', e => errors.push(e.message))
     await page.goto('./')
     await page.locator('input[type=file][multiple]').setInputFiles({ name: 'c001.clip', mimeType: 'application/octet-stream', buffer: await clipVectorFixture() })
-    await expect(page.getByText('c001.clip', { exact: true })).toBeAttached({ timeout: 30000 })
+    await expectLoadedFile(page, 'c001.clip')
     const names = page.locator('[class*="_fileNames_"]')
     const warning = names.getByRole('button', { name: 'ベクター描画の制限' }).first()
     await expect(warning).toBeVisible()
@@ -50,7 +56,7 @@ for (const touch of [false, true]) test.describe(touch ? 'touch' : 'desktop', ()
       expect(bytes.subarray(0, 2).toString()).toBe('PK')
     }
     await page.locator('input[type=file][multiple]').setInputFiles('testdata/c001.psd')
-    await expect(page.getByText('c001.psd', { exact: true })).toBeAttached()
+    await expectLoadedFile(page, 'c001.psd')
     await expect(page.getByRole('button', { name: 'ベクター描画の制限', includeHidden: true })).toHaveCount(0)
     expect(errors).toEqual([])
   })

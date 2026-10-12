@@ -203,15 +203,6 @@ export function LayerTreePanel() {
 
   return (
     <div className={styles.panel}>
-      <div className={styles.header}>
-        <span className={styles.title}>{t.layerTree.title}</span>
-        <Tooltip content="すべての 👁 表示/非表示を元に戻す（出力には影響しません）">
-          <button className={styles.resetBtn} onClick={resetVisibility}>
-            {t.layerTree.resetVisibility}
-          </button>
-        </Tooltip>
-      </div>
-
       {/* 選択レイヤーの合成モード・不透明度コントロール */}
       <BlendOpacityBar
         blendMode={selectedLayer?.blendMode ?? 'normal'}
@@ -221,6 +212,11 @@ export function LayerTreePanel() {
         onBlendModeChange={handleBlendModeChange}
         onOpacityChangeStart={handleOpacityChangeStart}
         onOpacityChange={handleOpacityChange}
+        actions={<Tooltip content="すべての表示/非表示を元に戻す（出力には影響しません）">
+          <button className={styles.resetBtn} onClick={resetVisibility} aria-label={t.layerTree.resetVisibility} title="表示状態を初期状態に戻す">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M3 10a9 9 0 1 1 2.6 8.5M3 4v6h6" /></svg>
+          </button>
+        </Tooltip>}
       />
 
       <div

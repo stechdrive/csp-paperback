@@ -579,7 +579,7 @@ dependencies = [
 
 [[package]]
 name = "csp-paperback"
-version = "1.21.232"
+version = "1.22.233"
 dependencies = [
  "tauri",
  "tauri-build",

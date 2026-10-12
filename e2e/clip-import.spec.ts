@@ -1,6 +1,14 @@
 import { readFile } from 'node:fs/promises'
 import { expect, test, type Page } from '@playwright/test'
 
+async function expectLoadedFiles(page: Page, files: string[]) {
+  await page.getByRole('button', { name: 'メニュー', exact: true }).click()
+  for (const file of files) {
+    await expect(page.locator('#toolbar-app-menu').getByText(file, { exact: true })).toBeVisible({ timeout: 30000 })
+  }
+  await page.keyboard.press('Escape')
+}
+
 async function exportZip(page: Page) {
   const downloading = page.waitForEvent('download')
   await page.getByRole('button', { name: '出力', exact: true }).click()
@@ -23,8 +31,12 @@ test('サンプルボタンはCLIPだけを取得し、仮想セルを含む出�
   page.on('request', request => { if (/\.(clip|psd|xdts)(?:\?|$)/.test(request.url())) files.push(new URL(request.url()).pathname) })
   await page.goto('./')
   await page.getByRole('button', { name: 'サンプルデータで試す', exact: true }).click()
-  await expect(page.getByText('c001.clip', { exact: true })).toBeVisible({ timeout: 30000 })
+  await expectLoadedFiles(page, ['c001.clip'])
   await expect(page.getByText('CLIPから読み込み', { exact: true })).toHaveCount(0)
+  const virtualToggle = page.getByRole('button', { name: '仮想セル', exact: true })
+  await expect(virtualToggle).toHaveAttribute('aria-expanded', 'false')
+  await expect(page.getByTestId('virtual-panel')).toBeHidden()
+  await virtualToggle.click()
   await expect(page.getByText('仮想セルテスト', { exact: true }).first()).toBeVisible()
   expect(files).toEqual(['/csp-paperback/sample/c001.clip'])
   await exportZip(page)
@@ -35,12 +47,11 @@ test('CLIP＋PSDを読み込み、実ZIPを出力し、従来のPSD＋XDTSへ切
   page.on('pageerror', e => errors.push(e.message))
   await page.goto('./')
   await page.locator('input[type=file][multiple]').setInputFiles(['public/sample/c001.clip', 'testdata/c001.psd'])
-  await expect(page.getByText('c001.psd', { exact: true })).toBeVisible({ timeout: 30000 })
-  await expect(page.getByText('c001.clip', { exact: true })).toBeVisible()
+  await expectLoadedFiles(page, ['c001.psd', 'c001.clip'])
   await expect(page.getByRole('button', { name: /^再現状況/ })).toHaveCount(0)
   await exportZip(page)
   await page.locator('input[type=file][multiple]').setInputFiles(['testdata/c001.psd', 'testdata/c001.xdts'])
-  await expect(page.getByText('c001.xdts', { exact: true })).toBeVisible()
+  await expectLoadedFiles(page, ['c001.psd', 'c001.xdts'])
   await expect(page.getByRole('combobox', { name: 'タイムライン', exact: true })).toHaveCount(0)
   await expect(page.getByRole('button', { name: /^再現状況/ })).toHaveCount(0)
   await exportZip(page)
@@ -54,11 +65,11 @@ test('CLIP単独で出力でき、後からPSDを追加すると純正画像へ�
   page.on('request', request => requests.push(request.url()))
   await page.goto('./')
   await page.locator('input[type=file][multiple]').setInputFiles('public/sample/c001.clip')
-  await expect(page.getByText('c001.clip', { exact: true })).toBeVisible({ timeout: 30000 })
+  await expectLoadedFiles(page, ['c001.clip'])
   await expect(page.getByRole('button', { name: /^再現状況/ })).toHaveCount(0)
   await exportZip(page)
   await page.locator('input[type=file][multiple]').setInputFiles('testdata/c001.psd')
-  await expect(page.getByText('c001.psd', { exact: true })).toBeVisible()
+  await expectLoadedFiles(page, ['c001.psd'])
   await expect(page.getByRole('button', { name: /^再現状況/ })).toHaveCount(0)
   await exportZip(page)
   expect(errors).toEqual([])
@@ -68,7 +79,7 @@ test('CLIP単独で出力でき、後からPSDを追加すると純正画像へ�
 test('同梱CLIPテンプレートを単独で読み込み、タイムラインを表示できる', async ({ page }) => {
   await page.goto('./')
   await page.locator('input[type=file][multiple]').setInputFiles('public/templates/csp-paperback-sample-template.clip')
-  await expect(page.getByText('csp-paperback-sample-template.clip', { exact: true })).toBeVisible({ timeout: 30000 })
+  await expectLoadedFiles(page, ['csp-paperback-sample-template.clip'])
   await expect(page.getByText('0秒1コマ', { exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: '出力', exact: true })).toBeEnabled()
 })
@@ -83,7 +94,7 @@ test('デスクトップのCSP設定でも同梱WorkerとWASMを実行できる'
   page.on('pageerror', e => errors.push(e.message))
   await page.goto('./')
   await page.locator('input[type=file][multiple]').setInputFiles(['public/sample/c001.clip', 'testdata/c001.psd'])
-  await expect(page.getByText('c001.psd', { exact: true })).toBeVisible({ timeout: 30000 })
+  await expectLoadedFiles(page, ['c001.psd', 'c001.clip'])
   await expect(page.getByRole('button', { name: /^再現状況/ })).toHaveCount(0)
   await exportZip(page)
   expect(errors).toEqual([])

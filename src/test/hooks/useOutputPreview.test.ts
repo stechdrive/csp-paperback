@@ -1,5 +1,6 @@
-import { cleanup, renderHook } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { act, cleanup, renderHook } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import * as cellExtractor from '../../engine/cell-extractor'
 import { useOutputPreview } from '../../hooks/useOutputPreview'
 import { useAppStore } from '../../store'
 import { buildLayerTree, detectAnimationFoldersByXdts } from '../../engine/tree-builder'
@@ -40,6 +41,42 @@ afterEach(() => {
 })
 
 describe('useOutputPreview', () => {
+  it('非表示中は出力画像を合成せず、表示時に最新セルを描画する', () => {
+    const tree = buildLayerTree(makePsd({ children: [makeAnimationFolder('A', [makeLayer({ name: '1' }), makeLayer({ name: '2' })])] }))
+    detectAnim(tree, 'A')
+    useAppStore.setState({ layerTree: tree, docWidth: 100, docHeight: 100, focusedAnimFolderId: tree[0].id })
+    const extract = vi.spyOn(cellExtractor, 'extractCells')
+    try {
+      const { result, rerender } = renderHook(({ enabled }) => useOutputPreview(enabled), { initialProps: { enabled: false } })
+      expect(result.current).toEqual([])
+      expect(extract).not.toHaveBeenCalled()
+      act(() => useAppStore.setState({ selectedCells: new Map([[tree[0].id, 1]]) }))
+      expect(extract).not.toHaveBeenCalled()
+      rerender({ enabled: true })
+      expect(result.current).toHaveLength(1)
+      expect(result.current[0].flatName).toBe('A_1.jpg')
+      expect(extract).toHaveBeenCalledTimes(1)
+    } finally {
+      extract.mockRestore()
+    }
+  })
+
+  it('別トラックだけのセル変更では選択中の出力を再合成しない', () => {
+    const tree = buildLayerTree(makePsd({ children: [makeAnimationFolder('A', [makeLayer({ name: '1' })])] }))
+    detectAnim(tree, 'A')
+    useAppStore.setState({ layerTree: tree, docWidth: 100, docHeight: 100, focusedAnimFolderId: tree[0].id })
+    const extract = vi.spyOn(cellExtractor, 'extractCells')
+    try {
+      const { result } = renderHook(() => useOutputPreview())
+      const entries = result.current
+      act(() => useAppStore.setState({ selectedCells: new Map([['another-track', 3]]) }))
+      expect(result.current).toBe(entries)
+      expect(extract).toHaveBeenCalledTimes(1)
+    } finally {
+      extract.mockRestore()
+    }
+  })
+
   it('親工程名の末尾空白を無視してプレビューにも工程サフィックスを付ける', () => {
     const tree = buildLayerTree(makePsd({
       children: [makeFolder('作監 \u3000', [makeAnimationFolder('A', [makeLayer({ name: '1' })])])],

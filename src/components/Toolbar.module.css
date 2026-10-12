@@ -1,44 +1,102 @@
 .toolbar {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
+  gap: 4px;
+  height: 44px;
+  min-width: 0;
+  padding: 4px 8px;
+  box-sizing: border-box;
   background: var(--color-surface-1);
   border-bottom: 1px solid var(--color-border-subtle);
   flex-shrink: 0;
 }
 
-.title {
-  font-size: 0.875rem;
-  font-weight: 700;
-  color: var(--color-text-primary);
-  letter-spacing: 0.05em;
-}
-
-.version {
-  font-size: 0.7rem;
-  color: var(--color-text-dim);
-  margin-right: 0.25rem;
-}
-
 .btn {
-  padding: 0.35rem 0.75rem;
-  font-size: 0.875rem;
-  border: 1px solid var(--color-border-strong);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 32px;
+  padding: 0 8px;
+  flex-shrink: 0;
+  font-size: 0.78rem;
+  white-space: nowrap;
+  border: 1px solid transparent;
   border-radius: 4px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.btn:hover:not(:disabled),
+.statusButton:hover,
+.menuItem:hover:not(:disabled) {
   background: var(--color-border-subtle);
   color: var(--color-text-primary);
-  cursor: pointer;
-  transition: background 0.1s;
 }
 
-.btn:hover {
-  background: var(--color-border-strong);
+.btn:focus-visible,
+.statusButton:focus-visible,
+.menuItem:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
 }
 
-.btn:disabled {
+.btn:disabled,
+.menuItem:disabled,
+.scaleAdjustBtn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+.iconBtn {
+  width: 32px;
+  padding: 0;
+}
+
+.icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.historyButtons,
+.utilityButtons {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.historyButtons {
+  margin-right: 4px;
+}
+
+.viewSwitch {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+  padding: 1px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 5px;
+  background: var(--color-surface-2);
+}
+
+.viewButton {
+  height: 28px;
+}
+
+.btn.active {
+  color: var(--color-text-primary);
+  background: var(--color-border-strong);
+  border-color: var(--color-border-strong);
+}
+
+.virtualButton {
+  margin-left: 4px;
+}
+
+.shortLabel {
+  display: none;
 }
 
 .btnPrimary {
@@ -48,98 +106,170 @@
 }
 
 .btnPrimary:hover:not(:disabled) {
+  color: var(--color-on-accent);
   background: var(--color-accent-strong);
 }
 
-.spacer {
-  flex: 1;
+.exportCaret {
+  font-size: 0.7em;
 }
 
-.fileInfo {
-  font-size: 0.8rem;
-  color: var(--color-text-secondary);
-  max-width: 200px;
+.statusArea {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 1;
+  min-width: 28px;
+  margin: 0 4px;
+}
+
+.statusButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 32px;
+  min-width: 28px;
+  max-width: 100%;
+  padding: 0 5px;
+  font-size: 0.75rem;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  cursor: pointer;
+}
+
+.statusText {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.error {
-  font-size: 0.8rem;
-  color: var(--color-danger);
-}
+.fileInfo { color: var(--color-text-secondary); }
+.error { color: var(--color-danger); }
+.loading { color: var(--color-info); }
+.notification { color: var(--color-success); }
 
-.loading {
-  font-size: 0.8rem;
-  color: var(--color-info);
-}
-
-.notification {
-  font-size: 0.8rem;
-  color: var(--color-success);
-}
-
-.langBtn {
-  padding: 0.2rem 0.5rem;
-  font-size: 0.75rem;
-  font-weight: 700;
-  border: 1px solid var(--color-border-strong);
-  border-radius: 4px;
-  background: none;
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  letter-spacing: 0.05em;
-}
-
-.langBtn:hover {
-  color: var(--color-text-primary);
-  border-color: var(--color-text-subtle);
-}
-
-/* ─── オーバーフローメニュー ─── */
-.overflowWrap {
+.menuWrap {
   position: relative;
+  flex-shrink: 0;
 }
 
-.exportWrap {
-  position: relative;
-}
-
-.exportCaret {
-  font-size: 0.75em;
-}
-
-.scaleWrap {
-  position: relative;
-}
-
-.scaleBtnActive {
-  background: var(--color-border-strong);
-  border-color: var(--color-text-subtle);
-}
-
-.scalePopover {
+.popover {
   position: absolute;
-  top: 100%;
+  top: calc(100% + 5px);
   right: 0;
-  margin-top: 0.35rem;
-  width: 13.5rem;
-  background: var(--color-surface-1);
+  padding: 5px;
   border: 1px solid var(--color-border-strong);
   border-radius: 6px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  background: var(--color-surface-1);
+  color: var(--color-text-primary);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
   z-index: 220;
-  padding: 0.7rem 0.75rem;
 }
 
-.scaleHeader {
+.appMenu {
+  left: 0;
+  right: auto;
+  width: min(280px, calc(100vw - 16px));
+  max-height: calc(100dvh - 52px);
+  overflow: auto;
+  box-sizing: border-box;
+}
+
+.appIdentity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 8px 12px;
+  font-size: 0.85rem;
+}
+
+.appIdentity span {
+  font-size: 0.7rem;
+  color: var(--color-text-dim);
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 8px;
+  font-size: 0.8rem;
+  color: var(--color-text-primary);
+  background: none;
+  border: none;
+  border-radius: 3px;
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.menuItem kbd {
+  margin-left: auto;
+  color: var(--color-text-dim);
+  font-family: inherit;
+  font-size: 0.68rem;
+}
+
+.menuSeparator {
+  margin: 4px 0;
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.menuFiles {
+  margin-top: 5px;
+  padding: 8px;
+  border-top: 1px solid var(--color-border-subtle);
+  font-size: 0.72rem;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.exportMenu {
+  min-width: 160px;
+}
+
+.statusPopover {
+  position: fixed;
+  top: 46px;
+  right: 8px;
+  width: min(380px, calc(100vw - 16px));
+  max-height: calc(100dvh - 54px);
+  overflow: auto;
+  box-sizing: border-box;
+  padding: 8px 12px;
+  overflow-wrap: anywhere;
+  font-size: 0.8rem;
+}
+
+.statusPopover p {
+  margin: 5px 0;
+}
+
+.scaleControl {
+  padding: 10px 8px 5px;
+  margin-top: 5px;
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.scaleHeader,
+.scaleControls,
+.scaleFooter {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
-  font-size: 0.78rem;
-  color: var(--color-text-primary);
-  margin-bottom: 0.55rem;
+  gap: 8px;
+}
+
+.scaleHeader {
+  margin-bottom: 6px;
+  font-size: 0.8rem;
 }
 
 .scaleValue {
@@ -147,164 +277,80 @@
   color: var(--color-info);
 }
 
-.scaleControls {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-}
-
 .scaleSlider {
-  width: 100%;
+  min-width: 0;
   flex: 1;
   accent-color: var(--color-accent);
   touch-action: pan-y;
 }
 
-.scaleAdjustBtn {
-  width: 2rem;
-  height: 2rem;
+.scaleAdjustBtn,
+.scaleReset {
+  height: 32px;
+  min-width: 32px;
   flex-shrink: 0;
   border: 1px solid var(--color-border-strong);
   border-radius: 4px;
   background: var(--color-border-subtle);
   color: var(--color-text-primary);
   cursor: pointer;
-  font-size: 0.9rem;
-  line-height: 1;
-}
-
-.scaleAdjustBtn:hover {
-  background: var(--color-border-strong);
-}
-
-.scaleAdjustBtn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
 }
 
 .scaleFooter {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  margin-top: 0.45rem;
-}
-
-.scaleRange {
-  font-size: 0.68rem;
-  color: var(--color-text-faint);
-  font-variant-numeric: tabular-nums;
+  margin-top: 5px;
+  font-size: 0.7rem;
+  color: var(--color-text-dim);
 }
 
 .scaleReset {
-  padding: 0.15rem 0.45rem;
+  padding: 0 8px;
+  height: 28px;
   font-size: 0.72rem;
-  border: 1px solid var(--color-border-strong);
-  border-radius: 4px;
-  background: var(--color-border-subtle);
-  color: var(--color-text-primary);
-  cursor: pointer;
 }
 
-.scaleReset:hover {
-  background: var(--color-border-strong);
-}
-
-.overflowMenu {
+.srOnly {
   position: absolute;
-  top: 100%;
-  right: 0;
-  margin-top: 0.35rem;
-  min-width: 160px;
-  background: var(--color-surface-1);
-  border: 1px solid var(--color-border-strong);
-  border-radius: 6px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-  z-index: 200;
-  padding: 0.25rem 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.exportMenu {
-  min-width: 120px;
-}
-
-.menuItem {
-  display: block;
-  width: 100%;
-  padding: 0.6rem 0.75rem;
-  font-size: 0.82rem;
-  color: var(--color-text-primary);
-  background: none;
-  border: none;
-  text-align: left;
-  cursor: pointer;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
   white-space: nowrap;
+  border: 0;
 }
 
-.menuItem:active {
-  background: var(--color-border-subtle);
+@media (max-width: 900px) {
+  .statusText { display: none; }
+  .historyButtons { margin-right: 0; }
+  .virtualButton { margin-left: 0; }
 }
 
-.menuItem:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+@media (max-width: 735px), (pointer: coarse) and (max-width: 1024px) {
+  .toolbar { padding: 4px 6px; }
+  .historyButtons,
+  .utilityButtons { display: none; }
+  .fullLabel { display: none; }
+  .shortLabel { display: inline; }
+  .btn { height: 34px; }
+  .viewButton { height: 30px; }
+  .virtualButton { width: 34px; padding: 0; }
+  .menuItem { min-height: 38px; }
+  .menuItem kbd { display: none; }
 }
 
-@media (pointer: coarse) and (max-width: 1024px) {
-  .toolbar {
-    gap: 0.35rem;
-    padding: 0.4rem 0.5rem;
-  }
-
-  .title {
-    display: none;
-  }
-
-  .version {
-    display: none;
-  }
-
-  .spacer {
-    flex: 1;
-  }
-
-  .fileInfo {
-    display: none;
-  }
-
-  .btn {
-    padding: 0.4rem 0.65rem;
-    font-size: 0.8rem;
-    min-height: 2.25rem;
-  }
-
-  .scalePopover {
-    width: 16rem;
-    padding: 0.8rem;
-  }
-
-  .scaleHeader {
-    font-size: 0.8rem;
-  }
-
-  .scaleAdjustBtn {
-    width: 2.25rem;
-    height: 2.25rem;
-    font-size: 1rem;
-  }
-
-  .scaleReset {
-    min-height: 2rem;
-    padding: 0.25rem 0.55rem;
-  }
-
-  .langBtn {
-    min-height: 2.25rem;
-    padding: 0.35rem 0.6rem;
-  }
+@media (max-width: 600px) {
+  .viewButton { width: 34px; padding: 0; }
+  .viewButton .shortLabel { display: none; }
 }
 
+@media (max-width: 420px) {
+  .openButton { display: none; }
+  .toolbar { gap: 3px; }
+  .statusArea { margin: 0; }
+  .viewButton { padding: 0 6px; }
+}
 
-
+@media (max-width: 360px) {
+  .btnPrimary .icon { display: none; }
+}

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useCallback } from 'react'
 import { useAppStore } from '../store'
 import { useLocale } from '../i18n/locale'
 import { VirtualSetItem } from './VirtualSetItem'
@@ -8,25 +8,12 @@ import { selectLayerById } from '../store/selectors'
 import type { BlendMode, CspLayer } from '../types'
 import styles from './VirtualSetPanel.module.css'
 
-function Chevron({ open }: { open: boolean }) {
-  return (
-    <svg
-      className={`${styles.expandChevron} ${open ? styles.expandChevronOpen : ''}`}
-      viewBox="0 0 10 10"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path d="M3 2 L7 5 L3 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
 function containsLayerId(layer: CspLayer, layerId: string): boolean {
   if (layer.id === layerId) return true
   return layer.children.some(child => containsLayerId(child, layerId))
 }
 
-export function VirtualSetPanel() {
+export function VirtualSetPanel({ onClose }: { onClose?: () => void }) {
   const virtualSets = useAppStore(s => s.virtualSets)
   const addVirtualSet = useAppStore(s => s.addVirtualSet)
   const selectedVsMemberSetId = useAppStore(s => s.selectedVsMemberSetId)
@@ -35,7 +22,6 @@ export function VirtualSetPanel() {
   const setVirtualSetLayerOpacity = useAppStore(s => s.setVirtualSetLayerOpacity)
   const pushHistory = useAppStore(s => s.pushHistory)
   const { t } = useLocale()
-  const [collapsed, setCollapsed] = useState(false)
 
   // 選択中の仮想セル内レイヤー情報を解決
   const selectedVirtualLayer = (() => {
@@ -86,15 +72,16 @@ export function VirtualSetPanel() {
   return (
     <div className={styles.panel}>
       <div className={styles.header}>
-        <button
+        {onClose && <button
           className={styles.collapseBtn}
-          onClick={() => setCollapsed(c => !c)}
-          title={collapsed ? '展開' : '折りたたむ'}
+          onClick={onClose}
+          title="仮想セルを閉じる"
+          aria-label="仮想セルを閉じる"
         >
-          <Chevron open={!collapsed} />
-        </button>
+          ‹
+        </button>}
         <Tooltip
-          content={'PSD のレイヤーを自由に組み合わせ、1枚のセルとして出力する仮想グループ。\n挿入位置はレイヤーツリーへのドラッグで指定できます。'}
+          content={'背景原図と任意のキャラのセルを組み合わせ、レイアウト画像を作れます。\n挿入位置はレイヤーツリーへのドラッグで指定できます。'}
           placement="bottom"
         >
           <span className={styles.title}>{t.virtualSet.title}</span>
@@ -118,7 +105,7 @@ export function VirtualSetPanel() {
         onOpacityChange={handleOpacityChange}
       />
 
-      <div className={`${styles.list} ${collapsed ? styles.listCollapsed : ''}`}>
+      <div className={styles.list}>
         {virtualSets.length === 0 ? (
           <div className={styles.empty}>
             {t.virtualSet.empty.split('\n').map((line, i) => (

@@ -6,68 +6,12 @@
 
 .leftPane {
   flex-shrink: 0;
+  max-width: 32%;
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  transition: width 0.15s ease;
 }
 
-.resizeHandleWrapper {
-  width: 4px;
-  flex-shrink: 0;
-  position: relative;
-  cursor: col-resize;
-  background: var(--color-border-subtle);
-  transition: background 0.15s;
-}
-
-.resizeHandleWrapper:hover,
-.resizeHandleWrapper:active {
-  background: var(--color-accent);
-}
-
-.resizeHandleCollapsed {
-  cursor: default;
-  background: var(--color-border-subtle);
-}
-
-.resizeHandleCollapsed:hover {
-  background: var(--color-border-strong);
-}
-
-/* リサイズハンドル上に表示される折りたたみボタン */
-.collapseToggle {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 16px;
-  height: 32px;
-  background: var(--color-border-strong);
-  border: none;
-  color: var(--color-text-dim);
-  cursor: pointer;
-  border-radius: 3px;
-  font-size: 0.75rem;
-  line-height: 1;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity 0.15s, background 0.15s, color 0.15s;
-  z-index: 10;
-  pointer-events: none;
-}
-
-.resizeHandleWrapper:hover .collapseToggle {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.collapseToggle:hover {
-  background: var(--color-accent);
-  color: var(--color-on-accent);
+.leftPane[hidden] {
+  display: none;
 }
 
 .centerPane {
@@ -76,80 +20,59 @@
   overflow: hidden;
 }
 
-.rightResizeHandle {
+.rightPane {
+  flex-shrink: 0;
+  max-width: 45%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.layerPane {
+  flex: 1;
+  min-height: 0;
+}
+
+.resizeHandle {
   width: 4px;
   flex-shrink: 0;
   cursor: col-resize;
+  touch-action: none;
   background: var(--color-border-subtle);
-  transition: background 0.15s;
 }
 
-.rightResizeHandle:hover,
-.rightResizeHandle:active {
+.resizeHandle:hover, .resizeHandle:active {
   background: var(--color-accent);
 }
 
-.rightPane {
-  flex-shrink: 0;
-  overflow: hidden;
-}
-
-/* ─── モバイルタブバー（デスクトップでは非表示） ─── */
 .mobileTabBar {
   display: none;
 }
 
-/* ─── モバイルレイアウト ─── */
-@media (pointer: coarse) and (max-width: 1024px) {
+@media (max-width: 735px), (pointer: coarse) and (max-width: 1024px) {
   .layout {
     flex-direction: column;
   }
-
-  /* リサイズハンドルはモバイル不要 */
-  .resizeHandleWrapper,
-  .rightResizeHandle {
-    display: none !important;
+  .resizeHandle {
+    display: none;
   }
-
-  /* アクティブなパネルを全幅・残り高さ全体に */
-  .leftPane,
-  .centerPane,
-  .rightPane {
+  .leftPane, .centerPane, .rightPane {
     width: 100% !important;
+    max-width: none;
     flex: 1;
     min-height: 0;
-    transition: none !important;
-    border-left: none !important;
-    border-right: none !important;
   }
-
-  /* タブで非アクティブなパネルを隠す */
-  .layout[data-mobile-tab="preview"] .leftPane,
-  .layout[data-mobile-tab="preview"] .rightPane {
+  .layout[data-mobile-tab="preview"] .leftPane, .layout[data-mobile-tab="preview"] .rightPane, .layout[data-mobile-tab="virtual"] .centerPane, .layout[data-mobile-tab="virtual"] .rightPane, .layout[data-mobile-tab="layer"] .leftPane, .layout[data-mobile-tab="layer"] .centerPane {
     display: none;
   }
-
-  .layout[data-mobile-tab="virtual"] .centerPane,
-  .layout[data-mobile-tab="virtual"] .rightPane {
-    display: none;
-  }
-
-  .layout[data-mobile-tab="layer"] .leftPane,
-  .layout[data-mobile-tab="layer"] .centerPane {
-    display: none;
-  }
-
-  /* ボトムタブバー */
   .mobileTabBar {
     display: flex;
     flex-shrink: 0;
-    height: 3.5rem;
+    height: calc(3rem + env(safe-area-inset-bottom));
     background: var(--color-surface-1);
     border-top: 1px solid var(--color-border-subtle);
-    /* iOS ホームインジケーター対応 */
     padding-bottom: env(safe-area-inset-bottom);
   }
-
   .mobileTab {
     flex: 1;
     display: flex;
@@ -161,28 +84,19 @@
     background: none;
     color: var(--color-text-subtle);
     cursor: pointer;
-    transition: color 0.1s;
-    -webkit-tap-highlight-color: transparent;
   }
-
   .mobileTab:active {
     background: rgba(var(--color-accent-rgb), 0.08);
   }
-
   .mobileTabActive {
     color: var(--color-accent);
   }
-
   .mobileTabIcon {
     font-size: 1.1rem;
     line-height: 1;
   }
-
   .mobileTabLabel {
-    font-size: 0.6rem;
+    font-size: 0.65rem;
     line-height: 1;
-    letter-spacing: 0.02em;
   }
 }
-
-

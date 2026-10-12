@@ -122,14 +122,15 @@ export function QuickStartGuide({
           figure={full ? (
             <HelpFigure
               src="loaded-overview.png"
-              alt="サンプルを読み込んだCSP Paperbackの3ペイン画面"
+              alt="サンプルを読み込んだCSP Paperbackの出力プレビュー画面"
               caption="読込後の画面。赤枠の出力プレビューで、出力名と合成結果を確認できます。"
               highlights={[HELP_HIGHLIGHTS.output]}
             />
           ) : undefined}
         >
-          中央下の「出力プレビュー」で画像とファイル名を確認します。
-          通常のセル出力だけなら、左の仮想セルや右の★／🎬を操作する必要はありません。
+          上部の「出力プレビュー」を選び、中央の画像とファイル名を確認します。
+          通常のセル出力だけなら、仮想セルを開いたり、右の★／🎬を操作したりする必要はありません。
+          読み込み後の設定変更は、中央下部の「書き出し設定」から行えます。
         </Step>
 
         <Step

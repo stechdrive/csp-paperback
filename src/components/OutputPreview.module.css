@@ -79,7 +79,7 @@
   display: none;
 }
 
-@media (pointer: coarse) and (max-width: 1024px) {
+@media (max-width: 735px), (pointer: coarse) and (max-width: 1024px) {
   .seekBarVertical {
     display: flex;
     align-items: center;

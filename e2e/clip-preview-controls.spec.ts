@@ -4,14 +4,29 @@ import { clipPreviewFixture } from './helpers/clip-preview-fixture'
 async function previewBounds(page: Page) {
   return page.evaluate(() => {
     const bounds = (selector: string) => {
-      const { x, y, width, height } = document.querySelector(selector)!.getBoundingClientRect()
+      const visible = [...document.querySelectorAll(selector)].map(element => element.getBoundingClientRect()).find(rect => rect.width > 0 && rect.height > 0)
+      if (!visible) return null
+      const { x, y, width, height } = visible
       return { x, y, width, height }
     }
     return {
+      main: bounds('[data-testid="main-preview"]'),
       navigator: bounds('[class*="_navigatorViewport_"]'),
       output: bounds('[class*="_outputSection_"]'),
     }
   })
+}
+
+async function expectLoadedFile(page: Page, file: string) {
+  await page.getByRole('button', { name: 'メニュー', exact: true }).click()
+  await expect(page.locator('#toolbar-app-menu').getByText(file, { exact: true })).toBeVisible({ timeout: 30000 })
+  await page.keyboard.press('Escape')
+}
+
+async function expectSharedCut(page: Page, checked: boolean) {
+  await page.getByRole('button', { name: '書き出し設定', exact: true }).click()
+  await expect(page.getByRole('switch', { name: '兼用カット', exact: true })).toHaveJSProperty('checked', checked)
+  await page.keyboard.press('Escape')
 }
 
 for (const device of [
@@ -29,10 +44,12 @@ for (const device of [
       await page.locator('input[type=file][multiple]').setInputFiles({
         name: 'c001.clip', mimeType: 'application/octet-stream', buffer: await clipPreviewFixture(),
       })
-      await expect(page.getByText('c001.clip', { exact: true })).toBeAttached({ timeout: 30000 })
-      const sharedCut = page.getByRole('switch', { name: '兼用カット', exact: true, includeHidden: true })
+      await expectLoadedFile(page, 'c001.clip')
+      await page.getByRole('button', { name: '書き出し設定', exact: true }).click()
+      const sharedCut = page.getByRole('switch', { name: '兼用カット', exact: true })
       await expect(sharedCut).toBeChecked()
       if (!device.touch) await sharedCut.uncheck()
+      await page.keyboard.press('Escape')
       const trigger = page.getByRole('button', { name: /^再現状況 \d+件/ })
       const timeline = page.getByRole('combobox', { name: 'タイムライン', exact: true })
       const popup = page.getByRole('dialog', { name: /^再現状況/ })
@@ -41,8 +58,10 @@ for (const device of [
       await expect(page.getByText('CLIPから読み込み', { exact: true })).toHaveCount(0)
       await page.evaluate(() => document.fonts.ready)
       const before = await previewBounds(page)
-      expect(before.navigator.height).toBeGreaterThan(50)
-      expect(before.output.height).toBeGreaterThan(50)
+      expect(before.main!.height).toBeGreaterThan(50)
+      expect(before.output!.height).toBeGreaterThan(50)
+      if (!device.touch) expect(before.navigator!.height).toBeGreaterThan(50)
+      else expect(before.navigator).toBeNull()
 
       await trigger.click()
       await expect(trigger).toHaveAttribute('aria-expanded', 'true')
@@ -74,40 +93,51 @@ for (const device of [
       await popup.getByRole('button', { name: '再現状況を閉じる' }).click()
       await expect(trigger).toBeFocused()
       await trigger.click()
-      const heading = page.locator('[class*="_loadedHeader_"]').getByText('プレビュー', { exact: true })
+      const heading = device.touch
+        ? page.locator('[class*="_loadedHeader_"]').getByText('プレビュー', { exact: true })
+        : page.getByTestId('navigator-panel').getByText('全体ナビゲーター', { exact: true })
       if (device.touch) await heading.tap()
       else await heading.click()
       await expect(popup).toHaveCount(0)
 
       // The selector uses the parsed CLIP timelines, including their distinct durations.
-      const seekTrack = page.locator('[class*="_seekTrack_"]')
+      if (device.touch) await page.getByRole('button', { name: '全体ナビゲーター', exact: true }).click()
+      const timelineBounds = await previewBounds(page)
+      expect(timelineBounds.navigator!.height).toBeGreaterThan(50)
+      // The navigator is also mounted in the hidden mobile layer panel.
+      const seekTrack = page.getByRole('slider', { name: 'タイムラインのフレーム', exact: true })
+      const seekLabel = page.locator('[class*="_seekLabel_"]:visible')
       const seekBounds = (await seekTrack.boundingBox())!
       await seekTrack.click({ position: { x: seekBounds.width - 1, y: seekBounds.height / 2 } })
-      await expect(page.getByText('0秒6コマ', { exact: true })).toBeVisible()
+      await expect(seekLabel).toHaveText('0秒6コマ')
       await trigger.click()
       await timeline.selectOption('2')
       await expect(popup).toHaveCount(0)
       await expect(timeline).toHaveValue('2')
-      await expect(sharedCut).toHaveJSProperty('checked', device.touch)
-      await expect(page.getByText('0秒1コマ', { exact: true })).toBeVisible()
+      await expectSharedCut(page, device.touch)
+      await expect(seekLabel).toHaveText('0秒1コマ')
       await seekTrack.click({ position: { x: seekBounds.width - 1, y: seekBounds.height / 2 } })
-      await expect(page.getByText('0秒12コマ', { exact: true })).toBeVisible()
+      await expect(seekLabel).toHaveText('0秒12コマ')
       // Compare the same populated frame; an empty frame has no output filename chips.
       await seekTrack.click({ position: { x: 1, y: seekBounds.height / 2 } })
-      await expect(page.getByText('0秒1コマ', { exact: true })).toBeVisible()
-      expect(await previewBounds(page)).toEqual(before)
+      await expect(seekLabel).toHaveText('0秒1コマ')
+      expect(await previewBounds(page)).toEqual(timelineBounds)
+
+      // The large navigator keeps its bounds while the same diagnostics are open.
+      await trigger.click()
+      expect(await previewBounds(page)).toEqual(timelineBounds)
+      await page.keyboard.press('Escape')
 
       // Replacing the raster source removes these raster diagnostics and any open list.
       await trigger.click()
       await page.locator('input[type=file][multiple]').setInputFiles('testdata/c001.psd')
-      await expect(page.getByText('c001.psd', { exact: true })).toBeAttached()
-      await expect(sharedCut).toHaveJSProperty('checked', device.touch)
       await expect(trigger).toHaveCount(0)
       await expect(popup).toHaveCount(0)
+      await expectLoadedFile(page, 'c001.psd')
+      await expectSharedCut(page, device.touch)
       await expect(timeline).toHaveValue('2')
-      // The existing toolbar notification lasts five seconds and can wrap on a phone.
-      await expect(page.getByText('PSDの画像に切り替えました', { exact: true })).toHaveCount(0, { timeout: 10000 })
-      expect(await previewBounds(page)).toEqual(before)
+      // The toolbar stays on one row even while the source-change notification is visible.
+      expect(await previewBounds(page)).toEqual(timelineBounds)
 
       await testInfo.attach('preview-bounds.json', { body: JSON.stringify({ before, opened, closed }, null, 2), contentType: 'application/json' })
       expect(errors).toEqual([])

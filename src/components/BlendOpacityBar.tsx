@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { BlendMode } from '../types'
 import styles from './BlendOpacityBar.module.css'
 
@@ -103,6 +103,7 @@ export function DragNumber({ value, min, max, disabled, onChangeStart, onChange 
         ref={inputRef}
         className={styles.opacityEditInput}
         type="number"
+        aria-label="不透明度"
         min={min}
         max={max}
         value={editVal}
@@ -117,10 +118,20 @@ export function DragNumber({ value, min, max, disabled, onChangeStart, onChange 
   }
 
   return (
-    <div
+    <button
+      type="button"
+      disabled={disabled}
+      aria-label={`不透明度 ${value}%`}
       className={`${styles.opacityScrubber} ${disabled ? styles.opacityScrubberDisabled : ''}`}
       onMouseDown={handleMouseDown}
       onClick={handleClick}
+      onKeyDown={event => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault()
+          moved.current = false
+          handleClick()
+        }
+      }}
       title="左右にドラッグして変更 / クリックで数値入力"
     >
       <span className={styles.opacityScrubberLabel}>不透明度</span>
@@ -128,7 +139,7 @@ export function DragNumber({ value, min, max, disabled, onChangeStart, onChange 
         <span className={styles.opacityScrubberFill} style={{ width: `${value}%` }} />
       </span>
       <span className={styles.opacityScrubberValue}>{value}%</span>
-    </div>
+    </button>
   )
 }
 
@@ -145,6 +156,7 @@ interface BlendOpacityBarProps {
   onBlendModeChange: (value: string) => void
   onOpacityChangeStart?: () => void
   onOpacityChange: (value: number) => void
+  actions?: ReactNode
 }
 
 export function BlendOpacityBar({
@@ -155,6 +167,7 @@ export function BlendOpacityBar({
   onBlendModeChange,
   onOpacityChangeStart,
   onOpacityChange,
+  actions,
 }: BlendOpacityBarProps) {
   return (
     <div className={`${styles.bar} ${disabled ? '' : styles.barActive}`}>
@@ -163,6 +176,7 @@ export function BlendOpacityBar({
         value={blendMode}
         onChange={e => onBlendModeChange(e.target.value)}
         disabled={disabled}
+        aria-label="合成モード"
       >
         {BLEND_MODES
           .filter(m => showPassThrough || m.value !== 'pass through')
@@ -179,6 +193,7 @@ export function BlendOpacityBar({
         onChangeStart={onOpacityChangeStart}
         onChange={onOpacityChange}
       />
+      {actions}
     </div>
   )
 }

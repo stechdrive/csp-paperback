@@ -17,19 +17,10 @@ import {
 import { computeDisplayNames } from '../engine/anim-folder-display-name'
 import { flattenTree, compositeRoot } from '../engine/flatten'
 import { replaceExtension } from '../utils/image-export'
-import {
-  makeCellFileName,
-  makeCellLabel,
-  resolveCellPrefixSeparatorCharacter,
-  resolveTrackPrefixMode,
-} from '../utils/naming'
 import { collectMembersInTreeOrder, buildMemberFlatsWithOverride } from '../utils/virtual-set-utils'
 import { resolveSelectedAnimCell } from '../utils/anim-cell-selection'
 import { isAutoMarkedContainerOutputSuppressed } from '../utils/auto-marked-container'
 import {
-  DEFAULT_PROJECT_SETTINGS,
-  resolveCellPrefixSeparator,
-  resolveIncludeXdtsTrackPrefixInCellName,
   type CspLayer,
   type OutputEntry,
   type ProjectSettings,
@@ -85,13 +76,13 @@ function mapPreviewEntries(
  *      └ アニメセル内部のレイヤー  → extractCells（セル特定後にフィルタ）
  *      └ アニメセル外のレイヤー    → collectMarkedLayerContext（extractAllEntriesと同一）
  */
-export function useOutputPreview(): OutputPreviewEntry[] {
+export function useOutputPreview(enabled = true): OutputPreviewEntry[] {
   const layerTree = useAppStore(selectLayerTreeWithVisibility)
   const focusedAnimFolderId = useAppStore(s => s.focusedAnimFolderId)
   const selectedVirtualSetId = useAppStore(s => s.selectedVirtualSetId)
   const selectedLayerId = useAppStore(s => s.selectedLayerId)
   const virtualSets = useAppStore(s => s.virtualSets)
-  const selectedCells = useAppStore(s => s.selectedCells)
+  const selectedCellIndex = useAppStore(s => s.focusedAnimFolderId ? s.selectedCells.get(s.focusedAnimFolderId) : undefined)
   const projectSettings = useAppStore(s => s.projectSettings)
   const outputConfig = useAppStore(s => s.outputConfig)
   const timelineData = useAppStore(s => s.timelineData)
@@ -99,7 +90,7 @@ export function useOutputPreview(): OutputPreviewEntry[] {
   const docHeight = useAppStore(s => s.docHeight)
 
   return useMemo(() => {
-    if (docWidth === 0 || docHeight === 0) return []
+    if (!enabled || docWidth === 0 || docHeight === 0) return []
 
     // ── 1. 仮想セット選択 ──────────────────────────────────────────────────
     if (selectedVirtualSetId) {
@@ -137,7 +128,7 @@ export function useOutputPreview(): OutputPreviewEntry[] {
     if (focusedAnimFolderId) {
       return previewAnimFolder(
         focusedAnimFolderId,
-        selectedCells.get(focusedAnimFolderId),
+        selectedCellIndex,
         null,
         layerTree, projectSettings, outputConfig, timelineData, docWidth, docHeight,
       )
@@ -180,13 +171,13 @@ export function useOutputPreview(): OutputPreviewEntry[] {
     return []
   }, [
     focusedAnimFolderId, selectedVirtualSetId, selectedLayerId,
-    virtualSets, selectedCells, layerTree, projectSettings, outputConfig, timelineData,
-    docWidth, docHeight,
+    virtualSets, selectedCellIndex, layerTree, projectSettings, outputConfig, timelineData,
+    docWidth, docHeight, enabled,
   ])
 }
 
 /**
- * 指定アニメーションフォルダの選択セルを extractCells で描画しフィルタリングする。
+ * 指定アニメーションフォルダの選択セルだけを extractCells で描画する。
  *
  * filterSourceLayerId が指定された場合（工程フォルダ直接クリック時）、
  * その sourceLayerId に一致するエントリのみを返す。
@@ -211,8 +202,6 @@ function previewAnimFolder(
 
   const selection = resolveSelectedAnimCell(animFolder, rawCellIndex)
   if (!selection) return []
-  const visibleChildren = selection.visibleChildren
-  const clampedIndex = selection.visibleIndex
   const selectedCell = selection.cell
 
   const parentSuffix = resolveParentSuffix(animFolderId, layerTree, projectSettings.processTable)
@@ -232,48 +221,14 @@ function previewAnimFolder(
     displayNames,
   )
 
-  const allEntries: OutputEntry[] = extractCells(
+  let entries: OutputEntry[] = extractCells(
     animFolder, projectSettings, docWidth, docHeight, lowerContextFlats,
     parentSuffix, displayName, outputConfig.background, localUpperFlats,
     outputConfig.processSuffixPosition,
     sequenceNamingPlan.digits,
     sequenceNamingPlan.sheetSequenceNumbers,
     collectMaterialOutputContext(animFolderId, layerTree, docWidth, docHeight),
-  )
-
-  // 選択セルのエントリに絞り込む
-  const namingMode = projectSettings.cellNamingMode ?? DEFAULT_PROJECT_SETTINGS.cellNamingMode
-  const isAutoProcessAnim = animFolder.animationFolder?.detectedBy === 'autoProcess'
-  const sequenceNumber = sequenceNamingPlan.sheetSequenceNumbers?.get(selectedCell.id)
-    ?? visibleChildren.length - clampedIndex
-  const cellLabel = isAutoProcessAnim
-    ? (selectedCell.name || selectedCell.originalName)
-    : makeCellLabel(
-        namingMode,
-        selectedCell.originalName,
-        sequenceNumber,
-        sequenceNamingPlan.digits,
-      )
-  const prefix = makeCellFileName({
-    trackName: displayName,
-    rawTrackName: animFolder.originalName,
-    cellLabel,
-    parentSuffix,
-    processSuffixPosition: outputConfig.processSuffixPosition,
-    trackCellSeparator: resolveCellPrefixSeparatorCharacter(
-      resolveCellPrefixSeparator(projectSettings),
-    ),
-    trackPrefixMode: resolveTrackPrefixMode(
-      namingMode,
-      animFolder.animationFolder?.detectedBy,
-      resolveIncludeXdtsTrackPrefixInCellName(projectSettings),
-    ),
-    suppressDuplicateProcessSuffix: !isAutoProcessAnim && namingMode === 'cellname',
-  }).replace(/\.jpg$/i, '')
-
-  let entries = allEntries.filter(e => e.sourceCellId === selectedCell.id)
-  if (entries.length === 0) entries = allEntries.filter(e =>
-    e.flatName === `${prefix}.jpg` || e.flatName.startsWith(`${prefix}_`),
+    selectedCell.id,
   )
 
   // さらに sourceLayerId で絞り込む（工程フォルダ直接選択時）

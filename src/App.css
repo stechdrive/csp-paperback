@@ -182,7 +182,7 @@ body {
   font-size: 0.9rem;
 }
 
-@media (pointer: coarse) and (max-width: 1024px) {
+@media (max-width: 735px), (pointer: coarse) and (max-width: 1024px) {
   :root {
     /* 390px→16px, 480px→19.7px, 488px+→20px を基準に UI スケールを掛ける */
     font-size: clamp(

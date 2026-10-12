@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-const MOBILE_MEDIA_QUERY = '(pointer: coarse) and (max-width: 1024px)'
+const MOBILE_MEDIA_QUERY = '(max-width: 735px), (pointer: coarse) and (max-width: 1024px)'
 
 function getMobileMediaQuery(): MediaQueryList | null {
   if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {

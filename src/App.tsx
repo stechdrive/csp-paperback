@@ -13,6 +13,17 @@ import './App.css'
 function NormalApp() {
   const { isLoading, error, notification, loadFiles } = useFileLoader()
   const { canUndo, canRedo, undo, redo } = useUndoRedo()
+  const [previewMode, setPreviewMode] = useState<'output' | 'navigator'>('output')
+  const [virtualPanelOpen, setVirtualPanelOpen] = useState(false)
+  const [activeTab, setActiveTab] = useState<'virtual' | 'preview' | 'layer'>('preview')
+  const changePreviewMode = (mode: 'output' | 'navigator') => {
+    setPreviewMode(mode)
+    setActiveTab('preview')
+  }
+  const toggleVirtualPanel = () => {
+    setVirtualPanelOpen(open => !open)
+    setActiveTab(virtualPanelOpen ? 'preview' : 'virtual')
+  }
 
   return (
     <FileDropZone onFiles={loadFiles}>
@@ -26,9 +37,20 @@ function NormalApp() {
           canRedo={canRedo}
           onUndo={undo}
           onRedo={redo}
+          previewMode={previewMode}
+          onPreviewModeChange={changePreviewMode}
+          virtualPanelOpen={virtualPanelOpen}
+          onToggleVirtualPanel={toggleVirtualPanel}
         />
         <div className="app-main">
-          <MainLayout />
+          <MainLayout
+            previewMode={previewMode}
+            onPreviewModeChange={changePreviewMode}
+            virtualPanelOpen={virtualPanelOpen}
+            onCloseVirtualPanel={() => { setVirtualPanelOpen(false); setActiveTab('preview') }}
+            activeTab={activeTab}
+            onActiveTabChange={tab => { setActiveTab(tab); if (tab === 'virtual') setVirtualPanelOpen(true) }}
+          />
         </div>
       </div>
     </FileDropZone>

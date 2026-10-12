@@ -38,6 +38,7 @@ import {
  * hierarchyFolder: 出力時のフォルダ名とファイル名プレフィックスの両方に使う displayName。
  *   同名 anim folder は呼び出し側で (n) ナンバリング済み。末尾空白も trim 済み。
  *   省略時は animFolder.originalName.trim() にフォールバック。
+ * sourceCellId: プレビュー用。命名・衝突解決は全セルで行い、このセルだけを描画する。
  *
  * セルの種別は構造から自動判定する:
  * - 直接子が単体レイヤー → そのまま1セルとして出力（XDTSキーフレーム画像）
@@ -57,6 +58,7 @@ export function extractCells(
   sequenceDigits?: number,
   sheetSequenceNumbers?: Map<string, number>,
   materialContext?: MaterialOutputContext[],
+  sourceCellId?: string,
 ): OutputEntry[] {
   if (!animFolder.isAnimationFolder) return []
 
@@ -67,7 +69,7 @@ export function extractCells(
   const visibleChildren = animFolder.children.filter(c => !c.hidden && !c.uiHidden)
   const folderNameToSuffix = buildFolderNameToSuffixMap(projectSettings.processTable)
   const namingMode = projectSettings.cellNamingMode ?? DEFAULT_PROJECT_SETTINGS.cellNamingMode
-  const entries: OutputEntry[] = []
+  const entries: (Omit<OutputEntry, 'canvas'> & { renderCanvas: () => HTMLCanvasElement })[] = []
 
   // autoProcess 昇格フォルダでは、配下のセル名（`_BG`, `_BOOK1` 等）が
   // 素材分類の意味情報を持つ。連番化すると情報ロスするため、常に
@@ -100,9 +102,11 @@ export function extractCells(
     if (!cell.isFolder) {
       // 単体レイヤー: XDTSキーフレーム画像 → そのまま1セル出力
       // 単体セルレイヤーはアニメフォルダの直接の子として構造的コンテナ扱い（100%）
-      const rawFlats = flattenCellContent([cell], docWidth, docHeight, new Set([cell.id]))
-      const cellFlats = applyContainerEffects(rawFlats, cell, animFolder, docWidth, docHeight)
-      const canvas = compositeWithContext(cellFlats, lowerContextLayers, upperContextLayers, docWidth, docHeight, background, materialContext)
+      const renderCanvas = () => {
+        const rawFlats = flattenCellContent([cell], docWidth, docHeight, new Set([cell.id]))
+        const cellFlats = applyContainerEffects(rawFlats, cell, animFolder, docWidth, docHeight)
+        return compositeWithContext(cellFlats, lowerContextLayers, upperContextLayers, docWidth, docHeight, background, materialContext)
+      }
       const fileName = makeCellFileName({
         trackName,
         rawTrackName: animFolder.originalName,
@@ -116,7 +120,7 @@ export function extractCells(
       entries.push({
         path: `${folderName}/${fileName}`,
         flatName: fileName,
-        canvas,
+        renderCanvas,
         sourceLayerId: cell.id,
         sourceCellId: cell.id,
         processSuffixes: collectProcessSuffixes(parentSuffix),
@@ -144,9 +148,11 @@ export function extractCells(
       // 本体（processTableに非マッチ、または工程フォルダが存在しない場合）
       // bodyLayersはアートワークコンテンツ → オパシティを尊重（ignoreOpacityIds不要）
       if (bodyLayers.length > 0 || processGroups.size === 0) {
-        const rawBodyFlats = flattenCellContent(bodyLayers, docWidth, docHeight)
-        const bodyFlats = applyContainerEffects(rawBodyFlats, cell, animFolder, docWidth, docHeight)
-        const canvas = compositeWithContext(bodyFlats, lowerContextLayers, upperContextLayers, docWidth, docHeight, background, materialContext)
+        const renderCanvas = () => {
+          const rawBodyFlats = flattenCellContent(bodyLayers, docWidth, docHeight)
+          const bodyFlats = applyContainerEffects(rawBodyFlats, cell, animFolder, docWidth, docHeight)
+          return compositeWithContext(bodyFlats, lowerContextLayers, upperContextLayers, docWidth, docHeight, background, materialContext)
+        }
         const fileName = makeCellFileName({
           trackName,
           rawTrackName: animFolder.originalName,
@@ -160,7 +166,7 @@ export function extractCells(
         entries.push({
           path: `${folderName}/${fileName}`,
           flatName: fileName,
-          canvas,
+          renderCanvas,
           sourceLayerId: cell.id,
           sourceCellId: cell.id,
           processSuffixes: collectProcessSuffixes(parentSuffix),
@@ -170,10 +176,12 @@ export function extractCells(
       // 工程別出力
       // 工程フォルダ本体は構造的コンテナとして100%、中身のアートワークはオパシティを尊重
       for (const [suffix, processLayers] of processGroups) {
-        const processIgnoreIds = new Set(processLayers.map(p => p.id))
-        const rawProcessFlats = flattenCellContent(processLayers, docWidth, docHeight, processIgnoreIds)
-        const processFlats = applyContainerEffects(rawProcessFlats, cell, animFolder, docWidth, docHeight)
-        const canvas = compositeWithContext(processFlats, lowerContextLayers, upperContextLayers, docWidth, docHeight, background, materialContext)
+        const renderCanvas = () => {
+          const processIgnoreIds = new Set(processLayers.map(p => p.id))
+          const rawProcessFlats = flattenCellContent(processLayers, docWidth, docHeight, processIgnoreIds)
+          const processFlats = applyContainerEffects(rawProcessFlats, cell, animFolder, docWidth, docHeight)
+          return compositeWithContext(processFlats, lowerContextLayers, upperContextLayers, docWidth, docHeight, background, materialContext)
+        }
         const fileName = makeCellFileName({
           trackName,
           rawTrackName: animFolder.originalName,
@@ -188,7 +196,7 @@ export function extractCells(
         entries.push({
           path: `${folderName}/${fileName}`,
           flatName: fileName,
-          canvas,
+          renderCanvas,
           sourceLayerId: processLayers[0].id,
           sourceCellId: cell.id,
           processSuffixes: collectProcessSuffixes(parentSuffix, suffix),
@@ -199,6 +207,8 @@ export function extractCells(
 
   resolveFlatNameCollisions(entries)
   return entries
+    .filter(entry => sourceCellId === undefined || entry.sourceCellId === sourceCellId)
+    .map(({ renderCanvas, ...entry }) => ({ ...entry, canvas: renderCanvas() }))
 }
 
 export function getMaxSequenceNumberForAnimationFolders(tree: CspLayer[]): number {
@@ -429,7 +439,7 @@ export function buildEffectiveAnimationAssignment(tree: CspLayer[]): Map<string,
  * フラットファイル名の衝突を解決する（_2, _3 を拡張子前に挿入）
  * ZIP 展開時の衝突回避のため、大文字小文字は区別しない
  */
-function resolveFlatNameCollisions(entries: OutputEntry[], updatePath = true): void {
+function resolveFlatNameCollisions(entries: Pick<OutputEntry, 'flatName' | 'path'>[], updatePath = true): void {
   const resolvedFlatNames = resolveNameCollisions(entries.map(e => e.flatName))
   for (let i = 0; i < entries.length; i++) {
     const e = entries[i]

@@ -37,6 +37,26 @@ function markManualAnimFolder(layer: CspLayer): void {
 }
 
 describe('ui-slice XDTS timeline sync', () => {
+  it('ホールド区間はフレーム位置だけを更新し、選択セルの参照を保つ', () => {
+    const tree = buildLayerTree(makePsd({ children: [makeFolder('A', [makeLayer({ name: '1' }), makeLayer({ name: '2' })])] }))
+    const timeline: XdtsData = {
+      tracks: [{ name: 'A', trackNo: 0, cellNames: ['1', '2'], frames: [{ frameIndex: 0, cellName: '1' }, { frameIndex: 4, cellName: '2' }] }],
+      version: 5, header: { cut: '1', scene: '1' }, timeTableName: 'test', duration: 8, fps: 24,
+    }
+    detectAnimationFoldersByXdts(tree, timeline)
+    useAppStore.setState({ layerTree: tree, timelineData: timeline })
+    useAppStore.getState().seekToFrame(0)
+    const first = useAppStore.getState().selectedCells
+    useAppStore.getState().seekToFrame(3)
+    expect(useAppStore.getState().currentFrame).toBe(3)
+    expect(useAppStore.getState().selectedCells).toBe(first)
+    useAppStore.getState().seekToFrame(4)
+    const next = useAppStore.getState().selectedCells
+    expect(next).not.toBe(first)
+    useAppStore.getState().selectAnimCell(tree[0].id, next.get(tree[0].id)!)
+    expect(useAppStore.getState().selectedCells).toBe(next)
+  })
+
   it('同名トラックでも trackNo で各アニメフォルダのセルを同期する', () => {
     const bottomA = makeFolder('A', [makeLayer({ name: '1' }), makeLayer({ name: '2' })])
     const topA = makeFolder('A', [makeLayer({ name: '1' }), makeLayer({ name: '2' })])

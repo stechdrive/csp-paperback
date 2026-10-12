@@ -8,7 +8,7 @@ test('独立したタブから各社テンプレート向けの設定と共有�
   })
 
   await page.goto('./')
-  await page.getByRole('button', { name: '?', exact: true }).click()
+  await page.getByRole('button', { name: 'ヘルプ', exact: true }).click()
 
   const dialog = page.getByRole('dialog', { name: 'CSP Paperback ヘルプ' })
   await expect(dialog).toBeVisible()

@@ -6,125 +6,151 @@
   overflow: hidden;
 }
 
-.header {
+.view {
+  flex: 1;
+  min-height: 0;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.4rem 0.75rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--color-text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  border-bottom: 1px solid var(--color-border-subtle);
-  flex-shrink: 0;
+  flex-direction: column;
+}
+
+.view[hidden] {
+  display: none;
 }
 
 .loadedHeader {
-  height: 2rem;
-  padding-block: 0;
-  gap: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  padding: .25rem .5rem;
+  flex-shrink: 0;
+  font-size: .75rem;
+  border-bottom: 1px solid var(--color-border-subtle);
 }
 
 .loadedHeader > span {
   flex-shrink: 0;
 }
 
-/* ナビゲーター: パネル幅いっぱいに表示、高さはリサイズハンドルで可変 */
 .navigatorSection {
   flex-shrink: 0;
-  padding: 0.5rem;
+  max-height: 48%;
+  min-height: 150px;
+  padding: .35rem .5rem;
   background: var(--color-bg-app);
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
-  /* height は JS で制御 */
+  gap: .3rem;
+  overflow: hidden;
 }
 
-/* ナビゲーターキャンバスのズーム/パン用ビューポート */
+.navigatorLabel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .3rem;
+  font-size: .7rem;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.navigatorImage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  padding: .3rem;
+}
+
 .navigatorViewport {
   flex: 1;
   min-height: 0;
-  height: 0; /* flex:1 で引き伸ばされつつ、子の max-height:100% をパーセント解決させるため */
+  height: 0;
   overflow: hidden;
   position: relative;
-  /* キャンバスがビューポートより小さいとき中央配置 */
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-/* ナビゲーターと書き出し設定の間のリサイズハンドル */
-.resizeHandle {
-  flex-shrink: 0;
-  height: 4px;
-  background: var(--color-border-subtle);
-  cursor: ns-resize;
-  border-top: 1px solid var(--color-border-strong);
-  border-bottom: 1px solid var(--color-border-strong);
-  transition: background 0.1s;
-}
-
-.resizeHandle:hover {
-  background: var(--color-border-soft);
-}
-
-.navigatorLabel {
-  font-size: 0.7rem;
-  color: var(--color-text-muted);
-  letter-spacing: 0.04em;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-}
-
-.zoomBadge {
-  font-size: 0.62rem;
-  color: var(--color-text-primary);
-  background: rgba(var(--color-surface-1-rgb), 0.9);
-  border: 1px solid var(--color-border-strong);
-  border-radius: 3px;
-  padding: 0.05rem 0.3rem;
-  font-variant-numeric: tabular-nums;
-}
-
 .navigatorCanvas {
-  /* 幅・高さ両方に収まるように contain 表示（CSS が初期フィットを担い、zoom/pan は上乗せ） */
   max-width: 100%;
   max-height: 100%;
   width: auto;
   height: auto;
   display: block;
   border: 1px solid var(--color-border-subtle);
-  border-radius: 2px;
   background: var(--color-surface-1);
 }
 
-/* 出力プレビューセクションのヘッダー */
+.zoomBadge {
+  position: absolute;
+  right: .5rem;
+  top: .5rem;
+  pointer-events: none;
+}
+
+.zoomBadge, .outputZoomBadge {
+  font-size: .65rem;
+  color: var(--color-text-primary);
+  background: rgba(var(--color-surface-1-rgb), .9);
+  border: 1px solid var(--color-border-strong);
+  border-radius: 3px;
+  padding: .05rem .3rem;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.resizeHandle {
+  height: 4px;
+  flex-shrink: 0;
+  touch-action: none;
+  cursor: ns-resize;
+  background: var(--color-border-subtle);
+}
+
+.resizeHandle:hover {
+  background: var(--color-accent);
+}
+
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  flex-shrink: 0;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  color: var(--color-text-secondary);
+  background: transparent;
+  cursor: pointer;
+}
+
+.iconButton:hover {
+  background: var(--color-border-subtle);
+  color: var(--color-text-primary);
+}
+
+.iconButton:focus-visible, .settingsToggle:focus-visible {
+  outline: 2px solid var(--color-info);
+  outline-offset: -2px;
+}
+
 .divider {
   display: flex;
   align-items: flex-start;
-  gap: 0.5rem;
-  padding: 0.3rem 0.75rem;
-  font-size: 0.7rem;
+  gap: .5rem;
+  padding: .3rem .6rem;
+  font-size: .7rem;
   color: var(--color-text-muted);
-  letter-spacing: 0.04em;
   border-bottom: 1px solid var(--color-border-subtle);
   flex-shrink: 0;
+  max-height: 25%;
+  overflow: auto;
   background: var(--color-surface-2);
-  overflow: visible;
-}
-
-.outputZoomBadge {
-  font-size: 0.62rem;
-  color: var(--color-text-primary);
-  background: rgba(var(--color-surface-1-rgb), 0.9);
-  border: 1px solid var(--color-border-strong);
-  border-radius: 3px;
-  padding: 0.05rem 0.3rem;
-  font-variant-numeric: tabular-nums;
-  flex-shrink: 0;
 }
 
 .dividerLabel {
@@ -133,26 +159,24 @@
 
 .fileNames {
   display: flex;
-  gap: 0.3rem;
+  gap: .3rem;
   flex-wrap: wrap;
   flex: 1 1 auto;
   min-width: 0;
-  overflow: visible;
 }
 
 .fileName {
   font-family: monospace;
-  font-size: 0.68rem;
+  font-size: .68rem;
   color: var(--color-text-secondary);
   background: var(--color-border-subtle);
   border-radius: 3px;
-  padding: 0.05rem 0.3rem;
+  padding: .05rem .3rem;
   max-width: 100%;
   overflow-wrap: anywhere;
   white-space: normal;
 }
 
-/* 出力プレビュー: 残りの高さをすべて使う */
 .outputSection {
   flex: 1;
   overflow: hidden;
@@ -160,6 +184,66 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
+}
+
+.settingsFooter {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  min-height: 2.2rem;
+  padding: .2rem .5rem;
+  background: var(--color-surface-1);
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.settingsSummary {
+  color: var(--color-text-muted);
+  font-size: .7rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settingsToggle {
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-size: .72rem;
+  padding: .25rem .4rem;
+  background: var(--color-surface-2);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-strong);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.settingsPopup {
+  position: fixed;
+  z-index: 170;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border-strong);
+  border-radius: 6px;
+  box-shadow: 0 8px 30px #0006;
+}
+
+.settingsHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .35rem .6rem;
+  flex-shrink: 0;
+  font-size: .8rem;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.settingsContent {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .emptyWrapper {
@@ -188,19 +272,19 @@
   position: sticky;
   top: 0;
   z-index: 1;
-  padding: 0.55rem 0.75rem 0.4rem;
+  padding: .55rem .75rem .4rem;
   background: var(--color-surface-1);
 }
 
 .startupSettingsTitle {
   color: var(--color-text-primary);
-  font-size: 0.78rem;
+  font-size: .78rem;
   font-weight: 700;
 }
 
 .empty {
   color: var(--color-text-muted);
-  font-size: 0.8rem;
+  font-size: .8rem;
   line-height: 1.8;
   max-width: 660px;
   width: 100%;
@@ -209,7 +293,7 @@
 .sampleSection {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.55rem;
+  gap: .55rem;
   align-items: center;
   justify-content: center;
   margin-top: 1rem;
@@ -220,73 +304,59 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.78rem;
+  font-size: .78rem;
   color: var(--color-text-primary);
-  background: rgba(var(--color-info-rgb), 0.12);
-  border: 1px solid rgba(var(--color-info-rgb), 0.3);
+  background: rgba(var(--color-info-rgb), .12);
+  border: 1px solid rgba(var(--color-info-rgb), .3);
   border-radius: 5px;
-  padding: 0.45rem 1rem;
+  padding: .45rem 1rem;
   cursor: pointer;
   line-height: 1.4;
   text-decoration: none;
-  transition: background 0.15s, border-color 0.15s;
 }
 
 .sampleButton:hover:not(:disabled) {
-  background: rgba(var(--color-info-rgb), 0.22);
-  border-color: rgba(var(--color-info-rgb), 0.5);
+  background: rgba(var(--color-info-rgb), .22);
+  border-color: rgba(var(--color-info-rgb), .5);
 }
 
 .sampleButton:disabled {
-  opacity: 0.5;
+  opacity: .5;
   cursor: default;
 }
 
 .desktopDownloadButton {
-  border-color: rgba(var(--color-accent-rgb), 0.38);
-  background: rgba(var(--color-accent-rgb), 0.12);
+  border-color: rgba(var(--color-accent-rgb), .38);
+  background: rgba(var(--color-accent-rgb), .12);
 }
 
-.desktopDownloadButton:hover {
-  border-color: rgba(var(--color-accent-rgb), 0.58);
-  background: rgba(var(--color-accent-rgb), 0.2);
-}
-
-/* XDTS 読み込み済みバナー（エンプティステート上部） */
 .xdtsBanner {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  font-size: 0.75rem;
+  gap: .4rem;
+  font-size: .75rem;
   color: var(--color-success);
-  background: rgba(var(--color-success-rgb), 0.08);
-  border: 1px solid rgba(var(--color-success-rgb), 0.25);
+  background: rgba(var(--color-success-rgb), .08);
+  border: 1px solid rgba(var(--color-success-rgb), .25);
   border-radius: 5px;
-  padding: 0.35rem 0.6rem;
+  padding: .35rem .6rem;
   margin-bottom: 1rem;
 }
 
-.xdtsBannerCheck {
-  font-size: 0.8rem;
-  flex-shrink: 0;
-}
-
-/* XDTS 未読込バナー（PSD 読み込み済み状態のヘッダー直下） */
 .noXdtsBanner {
-  font-size: 0.7rem;
+  font-size: .7rem;
   color: var(--color-warning);
-  background: rgba(var(--color-warning-rgb), 0.07);
-  border-bottom: 1px solid rgba(var(--color-warning-rgb), 0.2);
-  padding: 0.3rem 0.75rem;
+  background: rgba(var(--color-warning-rgb), .07);
+  border-bottom: 1px solid rgba(var(--color-warning-rgb), .2);
+  padding: .3rem .75rem;
   flex-shrink: 0;
 }
 
-/* タイムラインシークバー */
 .seekBar {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.25rem 0.5rem;
+  gap: .4rem;
+  padding: .4rem .5rem;
   flex-shrink: 0;
 }
 
@@ -298,6 +368,12 @@
   position: relative;
   cursor: pointer;
   touch-action: none;
+}
+
+.seekTrack::before {
+  content: '';
+  position: absolute;
+  inset: -8px 0;
 }
 
 .seekFill {
@@ -323,7 +399,7 @@
 }
 
 .seekLabel {
-  font-size: 0.68rem;
+  font-size: .68rem;
   color: var(--color-text-muted);
   font-variant-numeric: tabular-nums;
   flex-shrink: 0;
@@ -331,153 +407,24 @@
   text-align: right;
 }
 
-/* ─── 書き出し設定ドロワー（モバイル用） ─── */
-.drawerWrapper {
-  order: 10;
-  position: relative;
-  flex-shrink: 0;
-}
-
-.drawerToggle {
-  display: none;
-}
-
-.drawerBody {
-  /* デスクトップではそのまま表示 */
-}
-
-.drawerOverlay {
-  display: none;
-}
-
-/* ─── モバイル最適化 ─── */
-@media (pointer: coarse) and (max-width: 1024px) {
-  /* ヘッダーはタブバーと重複するので非表示 */
-  .header {
-    display: none;
-  }
-
-  /* 読み込み後はタイムラインと再現状況を同じ見出し行に収める。 */
-  .loadedHeader {
-    display: flex;
-    height: 2.5rem;
-    padding-inline: 0.5rem;
-  }
-
-  .noXdtsBanner {
-    order: 0;
-  }
-
-  /* ナビゲーター: JS の inline height を上書きし、画面上部に配置 */
+@media (max-width: 735px), (pointer: coarse) and (max-width: 1024px) {
   .navigatorSection {
-    height: 30vh !important;
-    order: 1;
+    max-height: 45%;
   }
-
-  /* リサイズハンドルはモバイルで非表示（固定比率で配分） */
   .resizeHandle {
     display: none;
   }
-
-  /* 出力プレビューヘッダー */
-  .divider {
-    order: 3;
-  }
-
-  /* 出力プレビュー: 残りの高さすべて */
-  .outputSection {
-    order: 4;
-    flex: 1;
-    min-height: 0;
-  }
-
   .seekBar {
-    padding: 0.75rem 0.5rem;
+    padding: .75rem .6rem;
   }
-
   .seekTrack {
-    height: 0.75rem;
-    border-radius: 0.375rem;
+    height: .6rem;
   }
-
-  .seekTrack::before {
-    /* タッチ判定を上下に拡張（視覚サイズは変えず当たり判定だけ広げる） */
-    content: '';
-    position: absolute;
-    inset: -0.75rem 0;
-  }
-
-  .seekFill {
-    border-radius: 0.375rem;
-  }
-
   .seekThumb {
-    width: 1.75rem;
-    height: 1.75rem;
+    width: 1.25rem;
+    height: 1.25rem;
   }
-
-  .seekLabel {
-    font-size: 0.72rem;
-  }
-
-  .fileName {
-    max-width: 100%;
-  }
-
-  /* ドロワー: タブバー（3.5rem + safe-area）の上に固定配置 */
-  .drawerWrapper {
-    position: fixed;
-    bottom: calc(3.5rem + env(safe-area-inset-bottom));
-    left: 0;
-    right: 0;
-    z-index: 100;
-    order: 10;
-  }
-
-  .drawerToggle {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.4rem;
-    width: 100%;
-    padding: 0.5rem;
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--color-text-primary);
-    background: var(--color-surface-1);
-    border: none;
-    border-top: 1px solid var(--color-border-strong);
-    cursor: pointer;
-  }
-
-  .drawerToggleIcon {
-    font-size: 0.6rem;
-    color: var(--color-text-muted);
-  }
-
-  .drawerBody {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.25s ease-out;
-    background: var(--color-surface-1);
-  }
-
-  .drawerOpen {
-    max-height: 200px;
-  }
-
-  .drawerOverlay {
-    display: block;
-    position: fixed;
-    inset: 0;
-    z-index: -1;
-    background: rgba(0, 0, 0, 0.4);
-  }
-
-  /* ドロワー化したのでoutputSectionに下余白を追加（トグルボタン分） */
-  .outputSection {
-    padding-bottom: 2.75rem;
+  .settingsToggle {
+    min-height: 2rem;
   }
 }
-
-

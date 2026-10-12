@@ -63,6 +63,10 @@ export interface UiSlice {
 
 // --------- ツリー走査ヘルパー（スライス内部用）---------
 
+function sameSelectedCells(a: Map<string, number>, b: Map<string, number>): boolean {
+  return a.size === b.size && [...a].every(([id, index]) => b.get(id) === index)
+}
+
 function findLayerById(layers: CspLayer[], id: string): CspLayer | null {
   for (const l of layers) {
     if (l.id === id) return l
@@ -167,13 +171,17 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
       }
     }
 
-    const update: Partial<AppStore> = { selectedCells: newSelectedCells, focusedAnimFolderId: animFolderId, selectedVirtualSetId: null }
+    const update: Partial<AppStore> = {
+      selectedCells: sameSelectedCells(selectedCells, newSelectedCells) ? selectedCells : newSelectedCells,
+      focusedAnimFolderId: animFolderId,
+      selectedVirtualSetId: null,
+    }
     if (resolvedFrame >= 0) update.currentFrame = resolvedFrame
     set(update as AppStore)
   },
 
   seekToFrame: (frameIndex) => {
-    const { timelineData, layerTree } = get()
+    const { timelineData, layerTree, selectedCells } = get()
     if (!timelineData || timelineData.duration <= 0) return
     const clamped = Math.max(0, Math.min(timelineData.duration - 1, frameIndex))
     const resolved = resolveCellsAtFrameByTrackNo(timelineData.tracks, clamped)
@@ -189,7 +197,11 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
         if (idx >= 0) newSelectedCells.set(folder.id, idx)
       }
     }
-    set({ currentFrame: clamped, selectedCells: newSelectedCells })
+    set({
+      currentFrame: clamped,
+      // Holds move the timeline playhead, but do not invalidate either preview.
+      selectedCells: sameSelectedCells(selectedCells, newSelectedCells) ? selectedCells : newSelectedCells,
+    })
   },
 
   setFocusedAnimFolder: (id) => {
