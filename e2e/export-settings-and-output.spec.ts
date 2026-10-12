@@ -31,18 +31,18 @@ test('保存設定を再読込とサンプル読込へ引き継ぎ、実ZIPを�
 
   await startupSettings.getByRole('button', { name: 'PNG', exact: true }).click()
   await startupSettings.getByRole('switch', { name: 'フォルダ分け', exact: true }).click()
-  await expect(startupSettings.getByTitle('A/A1_e.png')).toBeVisible()
+  await expect(startupSettings.getByTitle('A/A_1_e.png')).toBeVisible()
 
   await page.reload()
   const reloadedSettings = page.getByTestId('startup-export-settings')
-  await expect(reloadedSettings.getByTitle('A/A1_e.png')).toBeVisible()
+  await expect(reloadedSettings.getByTitle('A/A_1_e.png')).toBeVisible()
   await expect(reloadedSettings.getByRole('switch', { name: 'フォルダ分け', exact: true }))
     .toHaveAttribute('aria-checked', 'true')
 
   await page.getByRole('button', { name: 'サンプルデータで試す', exact: true }).click()
   await expect(page.getByText('c001.clip', { exact: true })).toBeVisible()
   await expect(page.getByTestId('clip-source-status')).toContainText('CLIPから読み込み')
-  await expect(page.getByTitle('A/A1_e.png')).toBeVisible()
+  await expect(page.getByTitle('A/A_1_e.png')).toBeVisible()
 
   const downloadPromise = page.waitForEvent('download')
   await page.getByRole('button', { name: '出力', exact: true }).click()

@@ -35,6 +35,16 @@ function Step({
   )
 }
 
+function PsdInstructions() {
+  return (
+    <div className={styles.psdInstructions}>
+      <strong>ベクター・3Dレイヤーがあるときは、PSDも一緒にドロップ</strong>
+      <p>クリスタの<span className={styles.menuPath}>{ja.input.psdMenu}</span>でPSDを保存してください。</p>
+      <p>{ja.input.psdVisibility}</p>
+    </div>
+  )
+}
+
 export function QuickStartGuide({
   variant,
   timelineOnlyLoaded = false,
@@ -53,19 +63,35 @@ export function QuickStartGuide({
           <p className={styles.dropDescription}>
             {timelineOnlyLoaded
               ? '読み込み済みのタイムシートに対応するPSDを読み込んでください。'
-              : ja.dropZone.subMessage}
+              : '「ファイルを開く」からも選べます。'}
           </p>
-          <p className={styles.dropAlternative}>「ファイルを開く」からも選べます。</p>
+          {!timelineOnlyLoaded && <PsdInstructions />}
         </div>
       )}
 
-      <div className={styles.callout}>
-        <strong>ベクターレイヤー・3Dレイヤーを正しく書き出すには</strong>
-        クリスタの<span className={styles.menuPath}>{ja.input.psdMenu}</span>で同じCLIPからPSDを保存し、
-        CLIPと一緒に読み込んでください。{ja.input.psdVisibility}
-      </div>
+      {full ? (
+        <div className={styles.callout}><PsdInstructions /></div>
+      ) : (
+        <>
+          <div className={styles.folderRules}>
+            <div className={styles.folderRule}>
+              <strong>各セルに重ねて出す</strong>
+              <p>フレームなどは、アニメーションフォルダの外にある、<b>先頭に「_」のないフォルダ</b>へ。</p>
+              <code>例：フレーム</code>
+            </div>
+            <div className={styles.folderRule}>
+              <strong>別々に書き出す</strong>
+              <p>背景原図やカメラワークの指示は、<b>先頭に「_」を付けたフォルダ</b>へ。</p>
+              <code>例：_原図／_BG、_原図／_BOOK、_撮影指示</code>
+            </div>
+          </div>
+          <p className={styles.startupFlow}>
+            書き出したい素材を表示してCLIPを保存。読み込んだらプレビューを確認して「出力」。
+          </p>
+        </>
+      )}
 
-      <div className={styles.route}>
+      {full && <div className={styles.route}>
         <Step
           number={1}
           title="書き出し設定を決める"
@@ -78,7 +104,7 @@ export function QuickStartGuide({
             />
           ) : undefined}
         >
-          JPG／PNG、背景、出力名、フォルダ分け、修正工程などを選びます。
+          JPG／PNG、背景、出力名、フォルダ分け、出力対象などを選びます。
           迷ったら初期設定のままで構いません。
         </Step>
 
@@ -124,7 +150,7 @@ export function QuickStartGuide({
         >
           ZIPなら1ファイルにまとめて保存、フォルダなら出力用サブフォルダを作って画像を書き込みます。
         </Step>
-      </div>
+      </div>}
 
       {sampleAction && <div className={styles.actions}>{sampleAction}</div>}
 

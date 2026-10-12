@@ -31,7 +31,6 @@ export function ExportDialog({ onClose }: ExportDialogProps) {
   const setProcessSuffixPosition = useAppStore(s => s.setProcessSuffixPosition)
   const setSharedCutMode = useAppStore(s => s.setSharedCutMode)
   const toggleProcessSuffixExclusion = useAppStore(s => s.toggleProcessSuffixExclusion)
-  const setAllProcessSuffixExclusions = useAppStore(s => s.setAllProcessSuffixExclusions)
   const setExcludeAutoMarked = useAppStore(s => s.setExcludeAutoMarked)
   // const setJpgQuality = useAppStore(s => s.setJpgQuality)  // JPG品質UI復活時に有効化
   const { t } = useLocale()
@@ -143,13 +142,14 @@ export function ExportDialog({ onClose }: ExportDialogProps) {
         <div className={styles.section}>
           <div className={styles.label}>{t.export.outputTarget}</div>
           <div className={styles.chipRow}>
-            <div className={styles.chipGroup}>
+            <div className={styles.chipGroup} role="group" aria-label={t.export.outputTarget}>
               {projectSettings.processTable.map(entry => {
                 const excluded = outputConfig.excludedProcessSuffixes.includes(entry.suffix)
                 return (
                   <Tooltip key={entry.suffix} content={entry.folderNames.join(', ')} placement="bottom">
                     <button
                       className={`${styles.chip} ${!excluded ? styles.chipIncluded : ''}`}
+                      aria-pressed={!excluded}
                       onClick={() => toggleProcessSuffixExclusion(entry.suffix)}
                     >{entry.suffix}</button>
                   </Tooltip>
@@ -161,24 +161,11 @@ export function ExportDialog({ onClose }: ExportDialogProps) {
               >
                 <button
                   className={`${styles.chip} ${!outputConfig.excludeAutoMarked ? styles.chipIncluded : ''}`}
+                  aria-pressed={!outputConfig.excludeAutoMarked}
                   onClick={() => setExcludeAutoMarked(!outputConfig.excludeAutoMarked)}
                 >{t.export.autoMark}</button>
               </Tooltip>
             </div>
-            <button
-              className={styles.batchBtn}
-              onClick={() => {
-                setAllProcessSuffixExclusions([])
-                setExcludeAutoMarked(false)
-              }}
-            >{t.export.allOn}</button>
-            <button
-              className={styles.batchBtn}
-              onClick={() => {
-                setAllProcessSuffixExclusions(projectSettings.processTable.map(e => e.suffix))
-                setExcludeAutoMarked(true)
-              }}
-            >{t.export.allOff}</button>
           </div>
         </div>
 

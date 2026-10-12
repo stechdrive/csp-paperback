@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ExportSettings } from '../../components/ExportSettings'
 import { useAppStore } from '../../store'
@@ -49,7 +49,7 @@ describe('ExportSettings naming controls', () => {
     expect(screen.getByRole('button', { name: '透明（PNG のみ）' })).toHaveAttribute('aria-disabled', 'false')
     expect(screen.getByRole('switch', { name: 'フォルダ分け' })).toHaveAttribute('aria-checked', 'true')
 
-    fireEvent.click(screen.getByRole('switch', { name: '修正工程' }))
+    fireEvent.click(screen.getByRole('switch', { name: '修正のフチ' }))
     expect(useAppStore.getState().savedOutputConfig.revisionBorderEnabled).toBe(false)
     expect(useAppStore.getState().savedOutputConfig.format).toBe('png')
     expect(useAppStore.getState().outputConfig.revisionBorderEnabled).toBe(true)
@@ -58,7 +58,7 @@ describe('ExportSettings naming controls', () => {
   it('修正工程フチを中央ペインでオンオフできる', () => {
     render(<ExportSettings />)
 
-    const toggle = screen.getByRole('switch', { name: '修正工程' })
+    const toggle = screen.getByRole('switch', { name: '修正のフチ' })
     expect(toggle).toHaveAttribute('aria-checked', 'true')
     expect(screen.getByText('フチあり')).toBeInTheDocument()
 
@@ -68,19 +68,40 @@ describe('ExportSettings naming controls', () => {
     expect(screen.getByText('フチなし')).toBeInTheDocument()
   })
 
-  it('セル名・フォルダ名付加・区切りなしを初期選択し、連番へ切り替えると桁数を選べる', () => {
+  it('出力対象は工程と自動マークを個別に選び、修正のフチと独立して切り替える', () => {
+    render(<ExportSettings />)
+    const targets = screen.getByRole('group', { name: '出力対象' })
+    const direction = within(targets).getByRole('button', { name: '_e' })
+    const autoMarked = within(targets).getByRole('button', { name: '自動マーク' })
+    expect(direction).toHaveAttribute('aria-pressed', 'true')
+
+    fireEvent.click(direction)
+    fireEvent.click(autoMarked)
+    expect(direction).toHaveAttribute('aria-pressed', 'false')
+    expect(useAppStore.getState().outputConfig.excludedProcessSuffixes).toEqual(['_e'])
+    expect(useAppStore.getState().outputConfig.excludeAutoMarked).toBe(true)
+    expect(screen.getByRole('switch', { name: '修正のフチ' })).toHaveAttribute('aria-checked', 'true')
+
+    fireEvent.click(screen.getByRole('switch', { name: '修正のフチ' }))
+    expect(useAppStore.getState().outputConfig.excludedProcessSuffixes).toEqual(['_e'])
+    expect(autoMarked).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.queryByRole('button', { name: '全ON' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '全OFF' })).not.toBeInTheDocument()
+  })
+
+  it('セル名・フォルダ名付加・区切りありを初期選択し、連番へ切り替えると桁数を選べる', () => {
     render(<ExportSettings />)
 
     expect(useAppStore.getState().projectSettings.cellNamingMode).toBe('cellname')
     expect(useAppStore.getState().projectSettings.sequenceDigitMode).toBe('auto')
-    expect(useAppStore.getState().projectSettings.cellPrefixSeparator).toBe('none')
+    expect(useAppStore.getState().projectSettings.cellPrefixSeparator).toBe('underscore')
     expect(screen.getByRole('switch', { name: 'アニメーションフォルダ名' })).toHaveAttribute('aria-checked', 'true')
-    expect(screen.getByText('A1_e.jpg')).toBeInTheDocument()
+    expect(screen.getByText('A_1_e.jpg')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'シート連番' }))
     fireEvent.click(screen.getByRole('button', { name: '4桁' }))
     expect(useAppStore.getState().projectSettings.sequenceDigitMode).toBe('fixed-4')
-    expect(screen.getByText('A0001_e.jpg')).toBeInTheDocument()
+    expect(screen.getByText('A_0001_e.jpg')).toBeInTheDocument()
   })
 
   it('アニメーションフォルダ名とセル部分の区切りを省略できる', () => {
@@ -129,7 +150,7 @@ describe('ExportSettings naming controls', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'セル名' }))
     expect(toggle).toHaveAttribute('aria-disabled', 'false')
-    expect(screen.getByText('A1_e.jpg')).toBeInTheDocument()
+    expect(screen.getByText('A_1_e.jpg')).toBeInTheDocument()
 
     fireEvent.click(toggle)
     expect(useAppStore.getState().projectSettings.includeXdtsTrackPrefixInCellName).toBe(false)
@@ -155,7 +176,7 @@ describe('ExportSettings naming controls', () => {
     fireEvent.click(screen.getByRole('switch', { name: '兼用カット' }))
     fireEvent.click(screen.getByRole('switch', { name: 'フォルダ分け' }))
     fireEvent.click(screen.getByRole('switch', { name: '工程名の位置' }))
-    fireEvent.click(screen.getByRole('switch', { name: '修正工程' }))
+    fireEvent.click(screen.getByRole('switch', { name: '修正のフチ' }))
     fireEvent.click(screen.getByRole('button', { name: 'セル名' }))
     fireEvent.click(screen.getByRole('switch', { name: 'アニメーションフォルダ名' }))
 
@@ -187,8 +208,6 @@ describe('ExportSettings naming controls', () => {
       ['4桁', 'すべて0001、0002…の4桁で書き出します。'],
       ['_ あり', /セル名が「1」の場合 A_1\.jpgになります。/],
       ['なし', /セル名が「1」の場合 A1\.jpgになります。/],
-      ['全ON', 'すべての修正工程と自動マーク素材を書き出し対象にします。'],
-      ['全OFF', 'すべての修正工程と自動マーク素材を書き出し対象から外します。'],
     ] as const
 
     for (const [name, hint] of cases) {
@@ -204,7 +223,7 @@ describe('ExportSettings naming controls', () => {
       ['兼用カット', /OFF: 選択中のタイムラインで未使用のセルは初期OFFになります。/],
       ['フォルダ分け', /すべて出力先の直下へまとめます。/],
       ['工程名の位置', /工程名をセル番号の前に付けます/],
-      ['修正工程', /OFF: 修正工程は出力しますが、フチは付けません。/],
+      ['修正のフチ', /工程ごとに書き出すかどうかは「出力対象」で選びます。/],
     ] as const
 
     for (const [name, hint] of switchCases) {

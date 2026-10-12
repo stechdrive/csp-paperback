@@ -7,7 +7,7 @@ export interface ProcessFolderEntry {
 
 /** セル画像名の命名モード */
 export type CellNamingMode =
-  | 'sequence'   // アニメフォルダ名 + 連番（初期設定の区切りなし・自動桁数なら例: A1.jpg）
+  | 'sequence'   // アニメフォルダ名 + 連番（初期設定の区切りあり・自動桁数なら例: A_1.jpg）
   | 'sequence-cellname' // アニメフォルダ名 + 連番 + セル名（例: A1_ア.jpg）
   | 'cellname'   // CSPのセル名を使用。必要に応じてアニメフォルダ名を付加（例: A1.jpg）
   | 'sheet-sequence' // 同名セル系列をXDTS初出順で工程込み連番化（例: A1.jpg）
@@ -50,8 +50,8 @@ export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
   ],
   cellNamingMode: 'cellname',
   sequenceDigitMode: 'auto',
-  cellPrefixSeparator: 'none',
-  animationSequenceSeparator: 'none',
+  cellPrefixSeparator: 'underscore',
+  animationSequenceSeparator: 'underscore',
   includeXdtsTrackPrefixInCellName: true,
   sharedCutMode: false,
   autoMarkFolderNames: ['撮影指示', '原図'],
@@ -71,7 +71,7 @@ export function resolveCellPrefixSeparator(
   ) {
     return settings.animationSequenceSeparator
   }
-  return 'none'
+  return DEFAULT_PROJECT_SETTINGS.cellPrefixSeparator ?? 'underscore'
 }
 
 /** 未設定の旧データでは従来どおりXDTSフォルダ名を付ける。 */

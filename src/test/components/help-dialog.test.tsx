@@ -79,7 +79,7 @@ describe('HelpDialog information architecture', () => {
     expect(text).toContain('CSPのタイムラインで、そのフレームに表示されるセルの重なり')
     expect(text).toContain('兼用カット')
     expect(text).toContain('アニメーションフォルダ名')
-    expect(text).toContain('出力する修正工程')
+    expect(text).toContain('出力対象')
     expect(text).toContain('A2_e.jpg')
     expect(text).toContain('目がOFFのレイヤーやフォルダは、プレビューにも出力にも含まれません')
     expect(text).toContain('タイムラインへセルとして登録する必要がない')

@@ -21,36 +21,36 @@ beforeEach(() => {
 })
 
 describe('project-slice - auto mark folder names', () => {
-  it('セル名・アニメーションフォルダ名付加・区切りなしをデフォルトにする', () => {
+  it('セル名・アニメーションフォルダ名付加・区切りありをデフォルトにする', () => {
     expect(useAppStore.getState().projectSettings.cellNamingMode).toBe('cellname')
     expect(useAppStore.getState().projectSettings.sequenceDigitMode).toBe('auto')
-    expect(useAppStore.getState().projectSettings.cellPrefixSeparator).toBe('none')
-    expect(useAppStore.getState().projectSettings.animationSequenceSeparator).toBe('none')
+    expect(useAppStore.getState().projectSettings.cellPrefixSeparator).toBe('underscore')
+    expect(useAppStore.getState().projectSettings.animationSequenceSeparator).toBe('underscore')
     expect(useAppStore.getState().projectSettings.includeXdtsTrackPrefixInCellName).toBe(true)
   })
 
   it('命名設定の変更をUndo/Redoできる', () => {
     useAppStore.getState().setSequenceDigitMode('fixed-4')
-    useAppStore.getState().setCellPrefixSeparator('underscore')
+    useAppStore.getState().setCellPrefixSeparator('none')
     useAppStore.getState().setIncludeXdtsTrackPrefixInCellName(false)
     expect(useAppStore.getState().projectSettings.sequenceDigitMode).toBe('fixed-4')
-    expect(useAppStore.getState().projectSettings.cellPrefixSeparator).toBe('underscore')
-    expect(useAppStore.getState().projectSettings.animationSequenceSeparator).toBe('underscore')
+    expect(useAppStore.getState().projectSettings.cellPrefixSeparator).toBe('none')
+    expect(useAppStore.getState().projectSettings.animationSequenceSeparator).toBe('none')
     expect(useAppStore.getState().projectSettings.includeXdtsTrackPrefixInCellName).toBe(false)
 
     useAppStore.getState().undo()
     expect(useAppStore.getState().projectSettings.includeXdtsTrackPrefixInCellName).toBe(true)
     useAppStore.getState().undo()
-    expect(useAppStore.getState().projectSettings.cellPrefixSeparator).toBe('none')
-    expect(useAppStore.getState().projectSettings.animationSequenceSeparator).toBe('none')
+    expect(useAppStore.getState().projectSettings.cellPrefixSeparator).toBe('underscore')
+    expect(useAppStore.getState().projectSettings.animationSequenceSeparator).toBe('underscore')
     useAppStore.getState().undo()
     expect(useAppStore.getState().projectSettings.sequenceDigitMode).toBe('auto')
     useAppStore.getState().redo()
     useAppStore.getState().redo()
     useAppStore.getState().redo()
     expect(useAppStore.getState().projectSettings.sequenceDigitMode).toBe('fixed-4')
-    expect(useAppStore.getState().projectSettings.cellPrefixSeparator).toBe('underscore')
-    expect(useAppStore.getState().projectSettings.animationSequenceSeparator).toBe('underscore')
+    expect(useAppStore.getState().projectSettings.cellPrefixSeparator).toBe('none')
+    expect(useAppStore.getState().projectSettings.animationSequenceSeparator).toBe('none')
     expect(useAppStore.getState().projectSettings.includeXdtsTrackPrefixInCellName).toBe(false)
   })
 
@@ -92,8 +92,8 @@ describe('project-slice - auto mark folder names', () => {
 
     expect(useAppStore.getState().projectSettings.autoMarkFolderNames).toEqual(['撮影指示', '原図'])
     expect(useAppStore.getState().projectSettings.sequenceDigitMode).toBe('auto')
-    expect(useAppStore.getState().projectSettings.cellPrefixSeparator).toBe('none')
-    expect(useAppStore.getState().projectSettings.animationSequenceSeparator).toBe('none')
+    expect(useAppStore.getState().projectSettings.cellPrefixSeparator).toBe('underscore')
+    expect(useAppStore.getState().projectSettings.animationSequenceSeparator).toBe('underscore')
     expect(useAppStore.getState().projectSettings.includeXdtsTrackPrefixInCellName).toBe(true)
   })
 

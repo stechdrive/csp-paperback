@@ -42,8 +42,8 @@ describe('buildOutputEntriesFromState', () => {
       revisionBorderEnabled: false,
     })
     expect(withoutBorder.map(entry => entry.flatName).sort()).toEqual([
-      'A1.jpg',
-      'A1_e.jpg',
+      'A_1.jpg',
+      'A_1_e.jpg',
     ])
 
     const excluded = buildOutputEntriesFromState(useAppStore.getState(), {
@@ -51,14 +51,14 @@ describe('buildOutputEntriesFromState', () => {
       revisionBorderEnabled: false,
       excludedProcessSuffixes: ['_e'],
     })
-    expect(excluded.map(entry => entry.flatName)).toEqual(['A1.jpg'])
+    expect(excluded.map(entry => entry.flatName)).toEqual(['A_1.jpg'])
 
     const bordered = buildOutputEntriesFromState(useAppStore.getState(), {
       ...DEFAULT_OUTPUT_CONFIG,
       revisionBorderEnabled: true,
     })
-    const body = bordered.find(entry => entry.flatName === 'A1.jpg')!
-    const process = bordered.find(entry => entry.flatName === 'A1_e.jpg')!
+    const body = bordered.find(entry => entry.flatName === 'A_1.jpg')!
+    const process = bordered.find(entry => entry.flatName === 'A_1_e.jpg')!
     const bodyEvents = (body.canvas.getContext('2d') as unknown as {
       __getEvents: () => Array<{ type: string; props: Record<string, unknown> }>
     }).__getEvents()

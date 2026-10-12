@@ -227,29 +227,6 @@
   font-weight: 600;
 }
 
-.batchBtn {
-  padding: 0.15rem 0.35rem;
-  font-size: 0.65rem;
-  background: none;
-  border: 1px solid var(--color-border-strong);
-  border-radius: 3px;
-  color: var(--color-text-subtle);
-  cursor: pointer;
-  white-space: nowrap;
-  line-height: 1.4;
-  transition: color 0.1s, border-color 0.1s;
-}
-
-.batchBtn:hover {
-  color: var(--color-text-muted);
-  border-color: var(--color-border-soft);
-}
-
-.batchActive {
-  color: var(--color-info);
-  border-color: var(--color-info);
-}
-
 .qualitySlider {
   flex: 1;
   accent-color: var(--color-accent);
@@ -319,11 +296,6 @@
     min-height: 2rem;
   }
 
-  .batchBtn {
-    padding: 0.25rem 0.45rem;
-    font-size: 0.7rem;
-    min-height: 2rem;
-  }
 }
 
 

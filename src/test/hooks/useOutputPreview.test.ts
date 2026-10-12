@@ -56,8 +56,8 @@ describe('useOutputPreview', () => {
     const { result } = renderHook(() => useOutputPreview())
 
     expect(result.current).toHaveLength(1)
-    expect(result.current[0].flatName).toBe('A1_s.png')
-    expect(result.current[0].path).toBe('A/A1_s.png')
+    expect(result.current[0].flatName).toBe('A_1_s.png')
+    expect(result.current[0].path).toBe('A/A_1_s.png')
   })
 
   it('PNG選択時はアニメセルのプレビュー名を.pngで返す', () => {
@@ -76,8 +76,8 @@ describe('useOutputPreview', () => {
     const { result } = renderHook(() => useOutputPreview())
 
     expect(result.current).toHaveLength(1)
-    expect(result.current[0].flatName).toBe('A1.png')
-    expect(result.current[0].path).toBe('A/A1.png')
+    expect(result.current[0].flatName).toBe('A_1.png')
+    expect(result.current[0].path).toBe('A/A_1.png')
   })
 
   it('連番セル名モードではプレビュー名にもセル名を付加する', () => {
@@ -97,8 +97,8 @@ describe('useOutputPreview', () => {
     const { result } = renderHook(() => useOutputPreview())
 
     expect(result.current).toHaveLength(1)
-    expect(result.current[0].flatName).toBe('A1_ア.png')
-    expect(result.current[0].path).toBe('A/A1_ア.png')
+    expect(result.current[0].flatName).toBe('A_1_ア.png')
+    expect(result.current[0].path).toBe('A/A_1_ア.png')
   })
 
   it('最大可視セル数に合わせた連番桁数をプレビュー名にも使う', () => {
@@ -122,8 +122,8 @@ describe('useOutputPreview', () => {
     const { result } = renderHook(() => useOutputPreview())
 
     expect(result.current).toHaveLength(1)
-    expect(result.current[0].flatName).toBe('A001_1.png')
-    expect(result.current[0].path).toBe('A/A001_1.png')
+    expect(result.current[0].flatName).toBe('A_001_1.png')
+    expect(result.current[0].path).toBe('A/A_001_1.png')
   })
 
   it('4桁固定と連番区切りなしをプレビュー名にも反映する', () => {

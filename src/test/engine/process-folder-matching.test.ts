@@ -44,9 +44,9 @@ describe('工程フォルダの空白を含む辞書照合', () => {
 
     const entries = extractAllEntries(tree, settings, 100, 100, 'white', false, 'after-cell', xdts)
 
-    expect(entries.map(entry => entry.flatName).sort()).toEqual(['A1.jpg', 'A1_s.jpg'])
-    expect(entries.map(entry => entry.path).sort()).toEqual(['A/A1.jpg', 'A/A1_s.jpg'])
-    expect(entries.find(entry => entry.flatName === 'A1_s.jpg')?.processSuffixes).toEqual(['_s'])
+    expect(entries.map(entry => entry.flatName).sort()).toEqual(['A_1.jpg', 'A_1_s.jpg'])
+    expect(entries.map(entry => entry.path).sort()).toEqual(['A/A_1.jpg', 'A/A_1_s.jpg'])
+    expect(entries.find(entry => entry.flatName === 'A_1_s.jpg')?.processSuffixes).toEqual(['_s'])
     expect(tree[0].children[0].originalName).toBe(folderName)
     expect(settings.processTable[0].folderNames).toEqual([dictionaryName])
   })
@@ -67,7 +67,7 @@ describe('工程フォルダの空白を含む辞書照合', () => {
     const entries = extractCells(tree[0], settings, 100, 100, [])
     const processFolder = tree[0].children[0].children[0]
 
-    expect(entries.map(entry => entry.flatName)).toEqual(['A1.jpg', 'A1_s.jpg'])
+    expect(entries.map(entry => entry.flatName)).toEqual(['A_1.jpg', 'A_1_s.jpg'])
     expect(entries[0].processSuffixes).toBeUndefined()
     expect(entries[1].processSuffixes).toEqual(['_s'])
     expect(entries[1].sourceLayerId).toBe(processFolder.id)
@@ -84,7 +84,7 @@ describe('工程フォルダの空白を含む辞書照合', () => {
 
     const entries = extractCells(tree[0], DEFAULT_PROJECT_SETTINGS, 100, 100, [])
 
-    expect(entries.map(entry => entry.flatName)).toEqual(['A1.jpg'])
+    expect(entries.map(entry => entry.flatName)).toEqual(['A_1.jpg'])
     expect(entries[0].processSuffixes).toBeUndefined()
   })
 
@@ -102,7 +102,7 @@ describe('工程フォルダの空白を含む辞書照合', () => {
 
     const entries = extractAllEntries(tree, settings, 100, 100)
 
-    expect(entries.map(entry => entry.flatName)).toEqual(['A1.jpg'])
+    expect(entries.map(entry => entry.flatName)).toEqual(['A_1.jpg'])
     expect(entries[0].processSuffixes).toBeUndefined()
   })
 
@@ -118,7 +118,7 @@ describe('工程フォルダの空白を含む辞書照合', () => {
 
     const entries = extractAllEntries(tree, settings, 100, 100)
 
-    expect(entries[0].flatName).toBe('A1 _S .jpg')
+    expect(entries[0].flatName).toBe('A_1 _S .jpg')
     expect(entries[0].processSuffixes).toEqual([' _S '])
   })
 })

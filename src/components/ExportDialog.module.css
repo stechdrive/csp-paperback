@@ -171,22 +171,6 @@
   font-weight: 600;
 }
 
-.batchBtn {
-  padding: 0.2rem 0.45rem;
-  font-size: 0.7rem;
-  background: none;
-  border: 1px solid var(--color-border-strong);
-  border-radius: 3px;
-  color: var(--color-text-subtle);
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.batchBtn:hover {
-  color: var(--color-text-muted);
-  border-color: var(--color-border-soft);
-}
-
 .actions {
   display: flex;
   justify-content: flex-end;

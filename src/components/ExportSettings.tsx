@@ -85,17 +85,12 @@ export function ExportSettings({ configTarget = 'current' }: ExportSettingsProps
   )
   const setSharedCutMode = useAppStore(s => s.setSharedCutMode)
   const toggleProcessSuffixExclusion = useAppStore(s => s.toggleProcessSuffixExclusion)
-  const setAllProcessSuffixExclusions = useAppStore(s => s.setAllProcessSuffixExclusions)
   const setExcludeAutoMarked = useAppStore(s => s.setExcludeAutoMarked)
   const setRevisionBorderEnabled = useAppStore(s => s.setRevisionBorderEnabled)
   const { t } = useLocale()
 
-  const processSuffixes = projectSettings.processTable.map(e => e.suffix)
-
   const autoMarkedNames = useMemo(() => collectAutoMarkedNames(layerTree), [layerTree])
   const excludedSet = new Set(outputConfig.excludedProcessSuffixes)
-  const allIncluded = processSuffixes.every(s => !excludedSet.has(s)) && !outputConfig.excludeAutoMarked
-  const allExcluded = processSuffixes.every(s => excludedSet.has(s)) && outputConfig.excludeAutoMarked
   const isSequenceMode = isSequenceNamingMode(projectSettings.cellNamingMode)
   const isCellNameMode = projectSettings.cellNamingMode === 'cellname'
   const cellPrefixSeparator = resolveCellPrefixSeparator(projectSettings)
@@ -114,16 +109,6 @@ export function ExportSettings({ configTarget = 'current' }: ExportSettingsProps
     cellPrefixSeparator,
     includeXdtsTrackPrefixInCellName,
   )
-
-  const handleAllOn = () => {
-    setAllProcessSuffixExclusions([], configTarget)
-    setExcludeAutoMarked(false, configTarget)
-  }
-
-  const handleAllOff = () => {
-    setAllProcessSuffixExclusions(processSuffixes, configTarget)
-    setExcludeAutoMarked(true, configTarget)
-  }
 
   return (
     <div className={styles.settings}>
@@ -373,13 +358,14 @@ export function ExportSettings({ configTarget = 'current' }: ExportSettingsProps
         <Tooltip content={t.export.outputTargetHint} placement="bottom">
           <span className={styles.label}>{t.export.outputTarget}</span>
         </Tooltip>
-        <div className={styles.chipGroup}>
+        <div className={styles.chipGroup} role="group" aria-label={t.export.outputTarget}>
           {projectSettings.processTable.map(entry => {
             const tip = entry.folderNames.join(', ')
             return (
               <Tooltip key={entry.suffix} content={tip} placement="bottom">
                 <button
                   className={`${styles.chip} ${!excludedSet.has(entry.suffix) ? styles.chipIncluded : ''}`}
+                  aria-pressed={!excludedSet.has(entry.suffix)}
                   onClick={() => toggleProcessSuffixExclusion(entry.suffix, configTarget)}
                 >{entry.suffix}</button>
               </Tooltip>
@@ -391,22 +377,11 @@ export function ExportSettings({ configTarget = 'current' }: ExportSettingsProps
           >
             <button
               className={`${styles.chip} ${!outputConfig.excludeAutoMarked ? styles.chipIncluded : ''}`}
+              aria-pressed={!outputConfig.excludeAutoMarked}
               onClick={() => setExcludeAutoMarked(!outputConfig.excludeAutoMarked, configTarget)}
             >{t.export.autoMark}</button>
           </Tooltip>
         </div>
-        <Tooltip content={t.export.allOnHint} placement="bottom">
-          <button
-            className={`${styles.batchBtn} ${allIncluded ? styles.batchActive : ''}`}
-            onClick={handleAllOn}
-          >{t.export.allOn}</button>
-        </Tooltip>
-        <Tooltip content={t.export.allOffHint} placement="bottom">
-          <button
-            className={`${styles.batchBtn} ${allExcluded ? styles.batchActive : ''}`}
-            onClick={handleAllOff}
-          >{t.export.allOff}</button>
-        </Tooltip>
       </div>
     </div>
   )

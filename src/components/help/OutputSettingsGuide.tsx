@@ -155,15 +155,15 @@ export function OutputSettingsGuide() {
               <td><HintText text={ja.export.processSuffixPositionHint} /></td>
             </tr>
             <tr>
-              <td>修正工程のフチ</td>
+              <td>修正のフチ</td>
               <td>フチあり／なし</td>
               <td><HintText text={ja.export.revisionBorderHint} /></td>
             </tr>
             <tr>
-              <td>出力する修正工程</td>
+              <td>出力対象</td>
               <td>工程チップ／自動マーク</td>
               <td>
-                青いチップの工程だけを書き出します。全ON／全OFFでまとめて切り替えられます。
+                青いボタンの工程・自動マーク素材を書き出します。クリックで個別に切り替えます。
                 本体セルの出力には影響しません。
               </td>
             </tr>
