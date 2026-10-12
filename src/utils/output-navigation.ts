@@ -2,6 +2,7 @@ import type { CspLayer, OutputConfig, ProjectSettings, VirtualSet } from '../typ
 import { buildParentSuffixMap, hasVirtualSetOutput } from '../engine/cell-extractor'
 import { collectCellOutputUnits } from '../engine/cell-output-units'
 import { isAutoMarkedContainerOutputSuppressed } from './auto-marked-container'
+import { findLayerPath } from './layerNavigation'
 
 export interface OutputNavigationEntry {
   id: string
@@ -132,4 +133,30 @@ export function nextOutputNavigationIndex(
     return direction > 0 ? entries.length - 1 : 0
   }
   return direction > 0 ? 0 : entries.length - 1
+}
+
+/** Reveal only the path to output rows; never open their artwork-only contents. */
+export function collectOutputRevealFolders(
+  tree: CspLayer[],
+  navigation: OutputNavigation,
+  selectedLayerId: string | null,
+  selectedVirtualSetId: string | null = null,
+): Set<string> {
+  if (selectedVirtualSetId) {
+    return new Set(navigation.entries.find(e => e.kind === 'virtualSet' && e.id === selectedVirtualSetId)?.ancestorIds ?? [])
+  }
+  if (!selectedLayerId) return new Set()
+  const path = findLayerPath(tree, selectedLayerId)
+  const result = new Set(path.slice(0, -1).filter(layer => layer.isFolder).map(layer => layer.id))
+  const layer = path.at(-1)
+  if (layer?.isAnimationFolder) result.add(layer.id)
+  // A cell body can also contain separate process outputs. Show those endpoints
+  // while the body is selected so the tree communicates the remaining images.
+  if (navigation.entries.some(e => e.kind === 'layer' && e.id === selectedLayerId)) {
+    for (const entry of navigation.entries) {
+      const index = entry.ancestorIds.indexOf(selectedLayerId)
+      if (index >= 0) entry.ancestorIds.slice(index).forEach(id => result.add(id))
+    }
+  }
+  return result
 }

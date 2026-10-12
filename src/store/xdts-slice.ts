@@ -5,6 +5,7 @@ import { detectAnimationFoldersByXdts, clearXdtsAnimFolders } from '../engine/tr
 import { sanitizeManualAnimFolderIds } from '../utils/manual-animation-folder'
 import { addXdtsAnimationFolderShowOverrides, addXdtsUnusedCellHiddenOverrides } from '../utils/default-visibility'
 import type { AppStore } from './index'
+import { normalizePreviewSelection } from './selection-validity'
 
 export interface XdtsSlice {
   timelineData: TimelineData | null
@@ -63,20 +64,20 @@ export const createXdtsSlice: StateCreator<AppStore, [], [], XdtsSlice> = (set, 
     // フレーム0のセルを自動選択して初期プレビューを表示
     const firstAnimFolder = findFirstAnimFolder(layerTree)
     if (firstAnimFolder) {
+      get().setFocusedAnimFolder(firstAnimFolder.id)
       get().seekToFrame(0)
-      set({ focusedAnimFolderId: firstAnimFolder.id })
     }
   },
 
   clearXdts: () => {
     if (get().clipDocument) return
     const { layerTree } = get()
-    set({ timelineData: null, xdtsFileName: null, xdtsSourceDirectory: null, currentFrame: 0 })
-    if (layerTree.length > 0) {
-      clearXdtsAnimFolders(layerTree)
-      set({ layerTree: [...layerTree] })
+    clearXdtsAnimFolders(layerTree)
+    const nextState: Partial<AppStore> = {
+      timelineData: null, xdtsFileName: null, xdtsSourceDirectory: null, currentFrame: 0,
+      layerTree: [...layerTree], unmatchedTracks: [],
     }
-    get().setUnmatchedTracks([])
+    set({ ...nextState, ...normalizePreviewSelection({ ...get(), ...nextState }) })
   },
 })
 

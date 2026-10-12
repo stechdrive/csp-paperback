@@ -18,10 +18,9 @@ export function useSampleLoader() {
       const virtualSets = buildC001VirtualSets(useAppStore.getState().layerTree)
       useAppStore.setState({
         virtualSets,
-        selectedVirtualSetId: virtualSets[0]?.id ?? null,
-        focusedAnimFolderId: null,
         selectedLayerId: null,
       })
+      useAppStore.getState().setSelectedVirtualSet(virtualSets[0]?.id ?? null)
     } finally {
       setLoading(false)
     }

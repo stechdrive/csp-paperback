@@ -41,6 +41,82 @@ afterEach(() => {
 })
 
 describe('useOutputPreview', () => {
+  function processTree() {
+    const tree = buildLayerTree(makePsd({ children: [makeAnimationFolder('A', [
+      makeFolder('2', [makeLayer({ name: 'body2' })]),
+      makeFolder('1', [
+        makeLayer({ name: 'body1' }),
+        makeFolder('演出', [makeLayer({ name: 'correction2' })]),
+        makeFolder('EN', [makeLayer({ name: 'correction1' })]),
+      ]),
+    ])] }))
+    const anim = tree[0]
+    markManualAnimFolder(anim)
+    const cell = anim.children[0]
+    const process = cell.children.find(layer => layer.originalName === 'EN')!
+    useAppStore.setState({ layerTree: tree, docWidth: 100, docHeight: 100,
+      projectSettings: { ...DEFAULT_PROJECT_SETTINGS, cellNamingMode: 'sequence', processTable: [{ suffix: '_e', folderNames: ['EN', '演出'] }] },
+      selectedCells: new Map([[anim.id, 0]]), focusedAnimFolderId: anim.id,
+      selectedLayerId: process.id, selectedOutputSourceId: process.id,
+    })
+    return { tree, anim, cell, process }
+  }
+
+  it('巡回対象の工程だけを表示し、除外された工程を本体へすり替えない', () => {
+    processTree()
+    const { result } = renderHook(() => useOutputPreview())
+    expect(result.current.map(entry => entry.flatName)).toEqual(['A_2_e.jpg'])
+    act(() => useAppStore.setState({ outputConfig: { ...DEFAULT_OUTPUT_CONFIG, excludedProcessSuffixes: ['_e'] } }))
+    expect(result.current).toEqual([])
+  })
+
+  it('巡回のsourceが現在セルに存在しなければ別セルへフォールバックしない', () => {
+    const { anim } = processTree()
+    const { result } = renderHook(() => useOutputPreview())
+    expect(result.current).toHaveLength(1)
+    act(() => useAppStore.setState({ selectedCells: new Map([[anim.id, 1]]) }))
+    expect(result.current).toEqual([])
+  })
+
+  it('巡回対象セルや祖先の目玉を閉じると出力も消え、再表示で戻る', () => {
+    const { anim, cell } = processTree()
+    const { result } = renderHook(() => useOutputPreview())
+    act(() => useAppStore.getState().toggleLayerVisibility(cell.id))
+    expect(result.current).toEqual([])
+    act(() => useAppStore.getState().toggleLayerVisibility(cell.id))
+    expect(result.current).toHaveLength(1)
+    act(() => useAppStore.getState().toggleLayerVisibility(anim.id))
+    expect(result.current).toEqual([])
+  })
+
+  it('通常の素材クリックは本体だけ、統合工程の後続フォルダ内クリックはその工程だけを表示する', () => {
+    const { cell } = processTree()
+    const body = cell.children.find(layer => layer.originalName === 'body1')!
+    const laterProcess = cell.children.find(layer => layer.originalName === '演出')!
+    useAppStore.setState({ focusedAnimFolderId: null, selectedOutputSourceId: null, selectedLayerId: body.id })
+    const { result } = renderHook(() => useOutputPreview())
+    expect(result.current.map(entry => entry.flatName)).toEqual(['A_2.jpg'])
+    act(() => useAppStore.setState({ selectedLayerId: laterProcess.children[0].id }))
+    expect(result.current.map(entry => entry.flatName)).toEqual(['A_2_e.jpg'])
+  })
+
+  it('通常セルクリックの複数出力も実際の工程除外設定に従う', () => {
+    processTree()
+    useAppStore.setState({ selectedOutputSourceId: null, outputConfig: { ...DEFAULT_OUTPUT_CONFIG, excludedProcessSuffixes: ['_e'] } })
+    const { result } = renderHook(() => useOutputPreview())
+    expect(result.current.map(entry => entry.flatName)).toEqual(['A_2.jpg'])
+  })
+
+  it('自動マーク出力の除外をプレビューへ反映し、手動マークでは除外を解除する', () => {
+    const tree = buildLayerTree(makePsd({ children: [makeFolder('_BG', [makeLayer()])] }))
+    useAppStore.setState({ layerTree: tree, docWidth: 100, docHeight: 100, selectedLayerId: tree[0].id,
+      outputConfig: { ...DEFAULT_OUTPUT_CONFIG, excludeAutoMarked: true } })
+    const { result } = renderHook(() => useOutputPreview())
+    expect(result.current).toEqual([])
+    act(() => useAppStore.getState().toggleSingleMark(tree[0].id))
+    expect(result.current).toHaveLength(1)
+  })
+
   it('非表示中は出力画像を合成せず、表示時に最新セルを描画する', () => {
     const tree = buildLayerTree(makePsd({ children: [makeAnimationFolder('A', [makeLayer({ name: '1' }), makeLayer({ name: '2' })])] }))
     detectAnim(tree, 'A')

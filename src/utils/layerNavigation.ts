@@ -187,3 +187,13 @@ export function findLayerById(layers: CspLayer[], id: string): CspLayer | null {
   }
   return null
 }
+
+/** The current source row and its ancestors, independent of UI expansion/visibility. */
+export function findLayerPath(layers: CspLayer[], id: string): CspLayer[] {
+  for (const layer of layers) {
+    if (layer.id === id) return [layer]
+    const path = findLayerPath(layer.children, id)
+    if (path.length) return [layer, ...path]
+  }
+  return []
+}

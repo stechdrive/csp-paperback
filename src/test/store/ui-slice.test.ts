@@ -4,6 +4,7 @@ import { buildLayerTree, detectAnimationFoldersByXdts } from '../../engine/tree-
 import { makeFolder, makeLayer, makePsd } from '../helpers/psd-factory'
 import { DEFAULT_OUTPUT_CONFIG, DEFAULT_PROJECT_SETTINGS, type CspLayer, type XdtsData } from '../../types'
 import { DEFAULT_APP_THEME } from '../../theme'
+import { selectOutputNavigation } from '../../store/selectors'
 
 beforeEach(() => {
   useAppStore.setState({
@@ -37,6 +38,69 @@ function markManualAnimFolder(layer: CspLayer): void {
 }
 
 describe('ui-slice XDTS timeline sync', () => {
+  it.each(['row', 'output'] as const)('同名セルの%s明示選択を保持し、初出フレームで他トラックだけ同期する', mode => {
+    const tree = buildLayerTree(makePsd({ children: [
+      makeFolder('A', [makeLayer({ name: '1' }), makeLayer({ name: '1' })]),
+      makeFolder('B', [makeLayer({ name: 'b1' }), makeLayer({ name: 'b2' })]),
+    ] }))
+    const timeline: XdtsData = {
+      tracks: [
+        { name: 'A', trackNo: 0, cellNames: ['1'], frames: [{ frameIndex: 5, cellName: '1' }, { frameIndex: 10, cellName: '1' }] },
+        { name: 'B', trackNo: 1, cellNames: ['b1', 'b2'], frames: [{ frameIndex: 0, cellName: 'b1' }, { frameIndex: 3, cellName: 'b2' }] },
+      ],
+      duration: 12, fps: 24, version: 5, timeTableName: 'test', header: { cut: '1', scene: '1' },
+    }
+    detectAnimationFoldersByXdts(tree, timeline)
+    const animA = tree.find(layer => layer.originalName === 'A')!
+    const animB = tree.find(layer => layer.originalName === 'B')!
+    useAppStore.setState({ layerTree: tree, timelineData: timeline, currentFrame: 11,
+      selectedCells: new Map([[animA.id, 1], [animB.id, 1]]) })
+
+    if (mode === 'row') useAppStore.getState().selectAnimCell(animA.id, 0)
+    else {
+      const entry = selectOutputNavigation(useAppStore.getState()).entries.find(candidate => candidate.id === animA.children[0].id)!
+      useAppStore.getState().selectOutputEntry(entry)
+    }
+
+    const selected = useAppStore.getState()
+    expect(selected.selectedLayerId).toBe(animA.children[0].id)
+    expect(selected.selectedCells.get(animA.id)).toBe(0)
+    expect(selected.selectedCells.get(animB.id)).toBe(0)
+    expect(selected.currentFrame).toBe(5)
+    expect(selected.focusedAnimFolderId).toBe(animA.id)
+    if (mode === 'output') expect(selected.selectedOutputSourceId).toBe(animA.children[0].id)
+
+    // A timeline seek still uses CSP's bottom-first name resolution.
+    useAppStore.getState().seekToFrame(6)
+    expect(useAppStore.getState().selectedCells.get(animA.id)).toBe(1)
+    expect(useAppStore.getState().selectedCells.get(animB.id)).toBe(0)
+    expect(useAppStore.getState().selectedLayerId).toBe(animA.children[1].id)
+    expect(useAppStore.getState().currentFrame).toBe(6)
+  })
+
+  it('タイムライン未使用セルの明示選択ではフレーム位置と他トラックを変更しない', () => {
+    const tree = buildLayerTree(makePsd({ children: [
+      makeFolder('A', [makeLayer({ name: '1' }), makeLayer({ name: 'unused' })]),
+      makeFolder('B', [makeLayer({ name: 'b1' }), makeLayer({ name: 'b2' })]),
+    ] }))
+    const timeline: XdtsData = {
+      tracks: [
+        { name: 'A', trackNo: 0, cellNames: ['1'], frames: [{ frameIndex: 0, cellName: '1' }] },
+        { name: 'B', trackNo: 1, cellNames: ['b1', 'b2'], frames: [{ frameIndex: 0, cellName: 'b1' }, { frameIndex: 3, cellName: 'b2' }] },
+      ],
+      duration: 12, fps: 24, version: 5, timeTableName: 'test', header: { cut: '1', scene: '1' },
+    }
+    detectAnimationFoldersByXdts(tree, timeline)
+    const animA = tree.find(layer => layer.originalName === 'A')!
+    const animB = tree.find(layer => layer.originalName === 'B')!
+    useAppStore.setState({ layerTree: tree, timelineData: timeline, currentFrame: 7,
+      selectedCells: new Map([[animA.id, 1], [animB.id, 1]]) })
+    useAppStore.getState().selectAnimCell(animA.id, 0)
+    expect(useAppStore.getState().selectedCells.get(animA.id)).toBe(0)
+    expect(useAppStore.getState().selectedCells.get(animB.id)).toBe(1)
+    expect(useAppStore.getState().currentFrame).toBe(7)
+  })
+
   it('ホールド区間はフレーム位置だけを更新し、選択セルの参照を保つ', () => {
     const tree = buildLayerTree(makePsd({ children: [makeFolder('A', [makeLayer({ name: '1' }), makeLayer({ name: '2' })])] }))
     const timeline: XdtsData = {

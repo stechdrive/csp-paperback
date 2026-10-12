@@ -26,6 +26,8 @@ function resetStore() {
     visibilityOverrides: new Map(),
     expandedFolders: new Set(),
     userCollapsedFolders: new Set(),
+    transientExpandedFolders: new Set(),
+    selectedOutputSourceId: null,
     selectedLayerId: null,
     selectedCells: new Map(),
     focusedAnimFolderId: null,
@@ -47,6 +49,46 @@ function resetStore() {
 beforeEach(() => resetStore())
 
 describe('history-slice', () => {
+  it('メンバー追加をUndoすると除去された子孫の選択を解除し、Redoで勝手に選択しない', () => {
+    const tree = buildLayerTree(makePsd({ children: [makeFolder('group', [makeLayer()])] }))
+    useAppStore.setState({ layerTree: tree })
+    useAppStore.getState().addVirtualSet('layout')
+    const id = useAppStore.getState().selectedVirtualSetId!
+    useAppStore.getState().addVirtualSetMember(id, tree[0].id)
+    useAppStore.getState().setSelectedVsMember(id, tree[0].children[0].id)
+    useAppStore.getState().undo()
+    expect(useAppStore.getState().selectedVsMemberId).toBeNull()
+    expect(useAppStore.getState().selectedVsMemberSetId).toBeNull()
+    useAppStore.getState().redo()
+    expect(useAppStore.getState().selectedVsMemberId).toBeNull()
+  })
+
+  it('仮想セル作成をUndoしたときは存在しない巡回選択と一時展開を解除する', () => {
+    const tree = buildLayerTree(makePsd({ children: [makeFolder('_old-output', [makeLayer()])] }))
+    useAppStore.setState({ layerTree: tree, selectedLayerId: tree[0].id })
+    useAppStore.getState().addVirtualSet('layout')
+    useAppStore.setState({ transientExpandedFolders: new Set(['ancestor']) })
+    useAppStore.getState().undo()
+    expect(useAppStore.getState().selectedVirtualSetId).toBeNull()
+    expect(useAppStore.getState().selectedLayerId).toBeNull()
+    expect(useAppStore.getState().focusedAnimFolderId).toBeNull()
+    expect(useAppStore.getState().selectedOutputSourceId).toBeNull()
+    expect(useAppStore.getState().transientExpandedFolders.size).toBe(0)
+  })
+
+  it('Undo後も存在する仮想セル内の子孫選択は維持する', () => {
+    const tree = buildLayerTree(makePsd({ children: [makeFolder('group', [makeLayer()])] }))
+    useAppStore.setState({ layerTree: tree })
+    useAppStore.getState().addVirtualSet('layout')
+    const id = useAppStore.getState().selectedVirtualSetId!
+    useAppStore.getState().addVirtualSetMember(id, tree[0].id)
+    useAppStore.getState().setSelectedVsMember(id, tree[0].children[0].id)
+    useAppStore.getState().updateVirtualSet(id, { name: 'renamed' })
+    useAppStore.getState().undo()
+    expect(useAppStore.getState().selectedVsMemberSetId).toBe(id)
+    expect(useAppStore.getState().selectedVsMemberId).toBe(tree[0].children[0].id)
+  })
+
   it('レイヤー本体の不透明度と合成モードをUndo/Redoできる', () => {
     const tree = buildLayerTree(makePsd({
       children: [makeLayer({ name: 'layer', opacity: 0.8, blendMode: 'normal' })],

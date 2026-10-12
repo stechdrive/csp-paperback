@@ -141,8 +141,13 @@ export const createPsdSlice: StateCreator<AppStore, [], [], PsdSlice> = (set, ge
       docHeight: psd.height,
       docDpiX: dpiX,
       docDpiY: dpiY,
+      selectedVirtualSetId: null,
+      selectedVsMemberSetId: null,
+      selectedVsMemberId: null,
       // PSD読み込み時にUI状態・履歴をリセット（レイヤーIDが変わるため履歴は無効）
       selectedLayerId: null,
+      selectedOutputSourceId: null,
+      transientExpandedFolders: new Set(),
       selectedCells: new Map(),
       focusedAnimFolderId: null,
       visibilityOverrides: initialVisibility,
@@ -160,8 +165,8 @@ export const createPsdSlice: StateCreator<AppStore, [], [], PsdSlice> = (set, ge
     if (xdts) {
       const firstAnimFolder = findFirstAnimFolder(tree)
       if (firstAnimFolder) {
+        get().setFocusedAnimFolder(firstAnimFolder.id)
         get().seekToFrame(0)
-        set({ focusedAnimFolderId: firstAnimFolder.id })
       }
     }
   },
@@ -193,6 +198,8 @@ export const createPsdSlice: StateCreator<AppStore, [], [], PsdSlice> = (set, ge
       virtualSets: [],
       manualAnimFolderIds: new Set(),
       selectedLayerId: null,
+      selectedOutputSourceId: null,
+      transientExpandedFolders: new Set(),
       selectedCells: new Map(),
       focusedAnimFolderId: null,
       selectedVirtualSetId: null,

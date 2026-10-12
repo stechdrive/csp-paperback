@@ -1,6 +1,9 @@
 import type { StateCreator } from 'zustand'
 import type { SingleMark, VirtualSet, ProjectSettings, OutputConfig, CspLayer, BlendMode } from '../types'
 import type { AppStore } from './index'
+import { collectMembersInTreeOrder } from '../utils/virtual-set-utils'
+import { findLayerById } from '../utils/layerNavigation'
+import { normalizePreviewSelection } from './selection-validity'
 
 const MAX_HISTORY = 50
 
@@ -127,11 +130,16 @@ function restoreSnapshot(
   const selectedVirtualSetId = state.virtualSets.some(vs => vs.id === current.selectedVirtualSetId)
     ? current.selectedVirtualSetId
     : null
-  const selectedVsMemberSetId = state.virtualSets.some(vs => vs.id === current.selectedVsMemberSetId)
+  const memberSet = state.virtualSets.find(vs => vs.id === current.selectedVsMemberSetId)
+  const selectedMemberExists = memberSet && current.selectedVsMemberId && findLayerById(
+    collectMembersInTreeOrder(current.layerTree, new Set(memberSet.members.map(member => member.layerId))),
+    current.selectedVsMemberId,
+  )
+  const selectedVsMemberSetId = selectedMemberExists
     ? current.selectedVsMemberSetId
     : null
 
-  set({
+  const nextState: Partial<AppStore> = {
     singleMarks: state.singleMarks,
     virtualSets: state.virtualSets,
     manualAnimFolderIds: state.manualAnimFolderIds,
@@ -144,8 +152,15 @@ function restoreSnapshot(
     selectedVirtualSetId,
     selectedVsMemberSetId,
     selectedVsMemberId: selectedVsMemberSetId ? current.selectedVsMemberId : null,
+    ...(current.selectedVirtualSetId && !selectedVirtualSetId ? {
+      selectedLayerId: null,
+      focusedAnimFolderId: null,
+      selectedOutputSourceId: null,
+      transientExpandedFolders: new Set<string>(),
+    } : {}),
     ...historyState,
-  })
+  }
+  set({ ...nextState, ...normalizePreviewSelection({ ...current, ...nextState }) })
 }
 
 export const createHistorySlice: StateCreator<AppStore, [], [], HistorySlice> = (set, get) => ({

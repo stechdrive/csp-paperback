@@ -4,6 +4,10 @@ import type { TimelineTrack } from '../types/timeline'
 import { findFirstFrameOfCell, resolveCellsAtFrameByTrackNo } from '../utils/xdts-parser'
 import { buildDefaultVisibilityOverrides } from '../utils/default-visibility'
 import { DEFAULT_MOBILE_UI_SCALE, clampMobileUiScale } from '../utils/mobile-ui-scale'
+import { selectLayerTreeWithVisibility, selectOutputNavigation } from './selectors'
+import { collectCellOutputUnits } from '../engine/cell-output-units'
+import { collectOutputRevealFolders, type OutputNavigationEntry } from '../utils/output-navigation'
+import { findLayerPath } from '../utils/layerNavigation'
 import { findTimelineCellChildIndex } from '../utils/anim-cell-selection'
 import type { AppTheme } from '../theme'
 import { DEFAULT_APP_THEME } from '../theme'
@@ -14,6 +18,8 @@ export interface UiSlice {
   mobileUiScale: number
   activeTheme: AppTheme
   selectedLayerId: string | null
+  /** Exact image selected by output navigation; null for ordinary row selection. */
+  selectedOutputSourceId: string | null
   /** animFolderId → 選択中のセルインデックス。未登録は先頭（0）扱い。-1 はカラ（何も表示しない） */
   selectedCells: Map<string, number>
   /** 出力プレビューに表示するアニメーションフォルダのID */
@@ -26,9 +32,11 @@ export interface UiSlice {
   manualVisibilityIds: Set<string>
   visibilityOverrides: Map<string, boolean>  // layerId → uiHidden
   expandedFolders: Set<string>
+  /** Temporary reveal only; never persisted or copied into manual expansion preferences. */
+  transientExpandedFolders: Set<string>
   /**
    * ユーザーが明示的に閉じたフォルダ。Shift+ホイール巡回で祖先が仮展開されていても、
-   * この集合にあるフォルダは閉じたまま表示する（ユーザーの開閉意志を尊重）。
+   * 手動設定の記録。次の巡回は必要な経路だけ再び一時展開する。
    */
   userCollapsedFolders: Set<string>
   /** タイムラインの現在フレーム（0-based） */
@@ -37,6 +45,7 @@ export interface UiSlice {
   setActiveTheme: (theme: AppTheme) => void
   resetMobileUiScale: () => void
   selectLayer: (layerId: string | null) => void
+  selectOutputEntry: (entry: OutputNavigationEntry) => OutputNavigationEntry | undefined
   setSelectedVsMember: (setId: string | null, memberId: string | null) => void
   /**
    * アニメーションフォルダの選択セルを変更する。
@@ -54,7 +63,7 @@ export interface UiSlice {
   /**
    * フォルダの開閉を「視覚状態 → 反対方向」で明示的に設定する。
    * 仮展開（Shift巡回による自動展開）されているフォルダを閉じると、
-   * userCollapsedFolders に記録され以降の仮展開を抑制する。
+   * 現在の仮展開を解除する。次の巡回では出力行まで再度一時展開する。
    */
   setFolderExpanded: (layerId: string, expanded: boolean) => void
   setFolderExpandedRecursive: (layerId: string, expanded: boolean) => void
@@ -94,12 +103,64 @@ function findAnimFolderByTrackNo(
   return null
 }
 
+function animationSelection(state: AppStore, animFolderId: string, cellIndex: number): Partial<AppStore> {
+  const { timelineData, layerTree, selectedCells } = state
+  const newSelectedCells = new Map(selectedCells)
+  let resolvedFrame = -1
+
+  if (timelineData && timelineData.tracks.length > 0) {
+    // 選択されたセルの名前を取得
+    const animFolder = findLayerById(layerTree, animFolderId)
+    const selectedCell = animFolder?.children[cellIndex]
+
+    if (animFolder && selectedCell) {
+      const cellName = selectedCell.originalName
+      // XDTS同期は読み込み時に trackNo が確定したフォルダだけが対象。
+      // 手動指定フォルダは XDTS トラックと対応しないため、名前フォールバックはしない。
+      const track: TimelineTrack | undefined = typeof animFolder.animationFolder?.trackNo === 'number'
+        ? timelineData.tracks.find(t => t.trackNo === animFolder.animationFolder!.trackNo)
+        : undefined
+      if (track) {
+        const frameIndex = findFirstFrameOfCell(track, cellName)
+        if (frameIndex >= 0) {
+          resolvedFrame = frameIndex
+          // そのフレームでの全トラックのセルをホールドルールで解決
+          const resolved = resolveCellsAtFrameByTrackNo(timelineData.tracks, frameIndex)
+          for (const [trackNo, resolvedCellName] of resolved) {
+            const otherFolder = findAnimFolderByTrackNo(layerTree, trackNo)
+            if (!otherFolder) continue
+            if (resolvedCellName === null) {
+              // SYMBOL_NULL_CELL: カラ（何も表示しない）
+              newSelectedCells.set(otherFolder.id, -1)
+            } else {
+              const idx = findTimelineCellChildIndex(otherFolder, resolvedCellName)
+              if (idx >= 0) newSelectedCells.set(otherFolder.id, idx)
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Explicit selection wins when the same track contains duplicate cel names.
+  // Timeline seeking can still use its normal name-based tie breaking.
+  newSelectedCells.set(animFolderId, cellIndex)
+  const update: Partial<AppStore> = {
+    selectedCells: sameSelectedCells(selectedCells, newSelectedCells) ? selectedCells : newSelectedCells,
+    focusedAnimFolderId: animFolderId,
+    selectedVirtualSetId: null,
+  }
+  if (resolvedFrame >= 0) update.currentFrame = resolvedFrame
+  return update
+}
+
 // -------------------------------------------------------
 
 export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get) => ({
   mobileUiScale: DEFAULT_MOBILE_UI_SCALE,
   activeTheme: DEFAULT_APP_THEME,
   selectedLayerId: null,
+  selectedOutputSourceId: null,
   selectedCells: new Map(),
   focusedAnimFolderId: null,
   selectedVirtualSetId: null,
@@ -108,6 +169,7 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
   visibilityOverrides: new Map(),
   manualVisibilityIds: new Set(),
   expandedFolders: new Set(),
+  transientExpandedFolders: new Set(),
   userCollapsedFolders: new Set(),
   currentFrame: 0,
 
@@ -124,7 +186,46 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
   },
 
   selectLayer: (layerId) => {
-    set({ selectedLayerId: layerId })
+    const state = get()
+    const tree = selectLayerTreeWithVisibility(state)
+    const path = layerId ? findLayerPath(tree, layerId) : []
+    const layer = path.at(-1)
+    const animIndex = path.findIndex(item => item.isAnimationFolder)
+    const anim = path[animIndex]
+    const cell = path[animIndex + 1]
+    const update = anim && cell
+      ? animationSelection(state, anim.id, anim.children.findIndex(item => item.id === cell.id))
+      : {}
+    const selectedLayerId = layer?.id ?? null
+    const findOwner = (includeHidden: boolean) => anim && cell && cell.id !== selectedLayerId
+      ? collectCellOutputUnits(anim, state.projectSettings.processTable, { includeHidden }).find(candidate =>
+        candidate.cell.id === cell.id && candidate.layers.some(member => path.some(item => item.id === member.id)))
+      : undefined
+    // Hidden rows remain clickable. Retain their structural owner so toggling
+    // visibility cannot turn an internal-row selection into an all-cel preview.
+    const unit = findOwner(false) ?? findOwner(true)
+    set({ ...update, selectedLayerId, selectedOutputSourceId: unit?.sourceLayerId ?? null, selectedVirtualSetId: null,
+      focusedAnimFolderId: layer?.isAnimationFolder ? layer.id : (anim && cell ? anim.id : null),
+      transientExpandedFolders: collectOutputRevealFolders(tree, selectOutputNavigation(state), selectedLayerId) })
+  },
+
+  selectOutputEntry: (requested) => {
+    const state = get()
+    const navigation = selectOutputNavigation(state)
+    const entry = navigation.entries.find(item => item.id === requested.id && item.kind === requested.kind)
+    if (!entry) return
+    const tree = selectLayerTreeWithVisibility(state)
+    if (entry.kind === 'virtualSet') {
+      set({ selectedVirtualSetId: entry.id, selectedOutputSourceId: null, focusedAnimFolderId: null,
+        transientExpandedFolders: collectOutputRevealFolders(tree, navigation, null, entry.id) })
+    } else {
+      const update = entry.animFolderId !== undefined && entry.cellIndex !== undefined
+        ? animationSelection(state, entry.animFolderId, entry.cellIndex) : {}
+      set({ ...update, selectedLayerId: entry.id, selectedOutputSourceId: entry.id,
+        focusedAnimFolderId: entry.animFolderId ?? null, selectedVirtualSetId: null,
+        transientExpandedFolders: collectOutputRevealFolders(tree, navigation, entry.id) })
+    }
+    return entry
   },
 
   setSelectedVsMember: (setId, memberId) => {
@@ -132,52 +233,13 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
   },
 
   selectAnimCell: (animFolderId, cellIndex) => {
-    const { timelineData, layerTree, selectedCells } = get()
-    const newSelectedCells = new Map(selectedCells)
-    newSelectedCells.set(animFolderId, cellIndex)
-    let resolvedFrame = -1
-
-    if (timelineData && timelineData.tracks.length > 0) {
-      // 選択されたセルの名前を取得
-      const animFolder = findLayerById(layerTree, animFolderId)
-      const selectedCell = animFolder?.children[cellIndex]
-
-      if (animFolder && selectedCell) {
-        const cellName = selectedCell.originalName
-        // XDTS同期は読み込み時に trackNo が確定したフォルダだけが対象。
-        // 手動指定フォルダは XDTS トラックと対応しないため、名前フォールバックはしない。
-        const track: TimelineTrack | undefined = typeof animFolder.animationFolder?.trackNo === 'number'
-          ? timelineData.tracks.find(t => t.trackNo === animFolder.animationFolder!.trackNo)
-          : undefined
-        if (track) {
-          const frameIndex = findFirstFrameOfCell(track, cellName)
-          if (frameIndex >= 0) {
-            resolvedFrame = frameIndex
-            // そのフレームでの全トラックのセルをホールドルールで解決
-            const resolved = resolveCellsAtFrameByTrackNo(timelineData.tracks, frameIndex)
-            for (const [trackNo, resolvedCellName] of resolved) {
-              const otherFolder = findAnimFolderByTrackNo(layerTree, trackNo)
-              if (!otherFolder) continue
-              if (resolvedCellName === null) {
-                // SYMBOL_NULL_CELL: カラ（何も表示しない）
-                newSelectedCells.set(otherFolder.id, -1)
-              } else {
-                const idx = findTimelineCellChildIndex(otherFolder, resolvedCellName)
-                if (idx >= 0) newSelectedCells.set(otherFolder.id, idx)
-              }
-            }
-          }
-        }
-      }
-    }
-
-    const update: Partial<AppStore> = {
-      selectedCells: sameSelectedCells(selectedCells, newSelectedCells) ? selectedCells : newSelectedCells,
-      focusedAnimFolderId: animFolderId,
-      selectedVirtualSetId: null,
-    }
-    if (resolvedFrame >= 0) update.currentFrame = resolvedFrame
-    set(update as AppStore)
+    const state = get()
+    const tree = selectLayerTreeWithVisibility(state)
+    const folder = findLayerById(tree, animFolderId)
+    if (!folder?.isAnimationFolder) return
+    const selectedLayerId = folder.children[cellIndex]?.id ?? folder.id
+    set({ ...animationSelection(state, animFolderId, cellIndex), selectedLayerId, selectedOutputSourceId: null,
+      transientExpandedFolders: collectOutputRevealFolders(tree, selectOutputNavigation(state), selectedLayerId) })
   },
 
   seekToFrame: (frameIndex) => {
@@ -185,7 +247,8 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
     if (!timelineData || timelineData.duration <= 0) return
     const clamped = Math.max(0, Math.min(timelineData.duration - 1, frameIndex))
     const resolved = resolveCellsAtFrameByTrackNo(timelineData.tracks, clamped)
-    const newSelectedCells = new Map<string, number>()
+    // Untimed/manual folders keep their chosen cel when the playhead moves.
+    const newSelectedCells = new Map([...selectedCells].filter(([id]) => findLayerById(layerTree, id)))
     for (const [trackNo, cellName] of resolved) {
       const folder = findAnimFolderByTrackNo(layerTree, trackNo)
       if (!folder) continue
@@ -197,19 +260,44 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
         if (idx >= 0) newSelectedCells.set(folder.id, idx)
       }
     }
-    set({
-      currentFrame: clamped,
-      // Holds move the timeline playhead, but do not invalidate either preview.
-      selectedCells: sameSelectedCells(selectedCells, newSelectedCells) ? selectedCells : newSelectedCells,
-    })
+    const tree = selectLayerTreeWithVisibility(get())
+    const focus = get().focusedAnimFolderId
+    const folder = focus ? findLayerById(tree, focus) : null
+    const selection: Partial<AppStore> = {}
+    if (folder?.isAnimationFolder && focus && newSelectedCells.has(focus) &&
+      selectedCells.get(focus) !== newSelectedCells.get(focus)) {
+      const nextIndex = newSelectedCells.get(focus)!
+      const nextCell = folder.children[nextIndex]
+      const previousSource = get().selectedOutputSourceId
+      let selectedLayerId = nextCell?.id ?? folder.id
+      let selectedOutputSourceId: string | null = null
+      if (nextCell && previousSource) {
+        const units = collectCellOutputUnits(folder, get().projectSettings.processTable)
+        const previous = units.find(unit => unit.sourceLayerId === previousSource)
+        const nextUnits = units.filter(unit => unit.cellIndex === nextIndex)
+        const nextUnit = nextUnits.find(unit => unit.processSuffix === previous?.processSuffix) ?? nextUnits[0]
+        selectedLayerId = nextUnit?.sourceLayerId ?? nextCell.id
+        selectedOutputSourceId = selectedLayerId
+      }
+      if (selectedLayerId !== get().selectedLayerId || selectedOutputSourceId !== previousSource) {
+        Object.assign(selection, { selectedLayerId, selectedOutputSourceId,
+          transientExpandedFolders: collectOutputRevealFolders(tree, selectOutputNavigation(get()), selectedLayerId) })
+      }
+    }
+    set({ ...selection, currentFrame: clamped,
+      selectedCells: sameSelectedCells(selectedCells, newSelectedCells) ? selectedCells : newSelectedCells })
   },
 
   setFocusedAnimFolder: (id) => {
-    set({ focusedAnimFolderId: id, selectedVirtualSetId: null })
+    if (id) get().selectLayer(id)
+    else set({ focusedAnimFolderId: null, selectedOutputSourceId: null, selectedVirtualSetId: null })
   },
 
   setSelectedVirtualSet: (id) => {
-    set({ selectedVirtualSetId: id, focusedAnimFolderId: null })
+    const state = get()
+    const selectedVirtualSetId = state.virtualSets.some(vs => vs.id === id) ? id : null
+    set({ selectedVirtualSetId, focusedAnimFolderId: null, selectedOutputSourceId: null,
+      transientExpandedFolders: collectOutputRevealFolders(selectLayerTreeWithVisibility(state), selectOutputNavigation(state), null, selectedVirtualSetId) })
   },
 
   toggleLayerVisibility: (layerId, options) => {
@@ -225,44 +313,13 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
   },
 
   toggleFolderExpanded: (layerId) => {
-    const expandedFolders = new Set(get().expandedFolders)
-    const userCollapsedFolders = new Set(get().userCollapsedFolders)
-    if (expandedFolders.has(layerId)) {
-      expandedFolders.delete(layerId)
-    } else {
-      expandedFolders.add(layerId)
-    }
-    // 永続状態を直接トグルする場合、明示的な閉じる意志は解除
-    userCollapsedFolders.delete(layerId)
-    set({ expandedFolders, userCollapsedFolders })
+    const state = get()
+    state.setFolderExpanded(layerId, !(state.expandedFolders.has(layerId) || state.transientExpandedFolders.has(layerId)))
   },
 
   toggleFolderExpandedRecursive: (layerId) => {
-    const { layerTree, expandedFolders } = get()
-    const root = findLayerById(layerTree, layerId)
-    if (!root) return
-
-    // クリックしたフォルダの現在状態で開閉方向を決定
-    const willExpand = !expandedFolders.has(layerId)
-
-    // 対象フォルダ以下のすべてのフォルダIDを収集
-    function collectFolderIds(layer: CspLayer): string[] {
-      const ids: string[] = layer.isFolder ? [layer.id] : []
-      for (const child of layer.children) {
-        ids.push(...collectFolderIds(child))
-      }
-      return ids
-    }
-
-    const ids = collectFolderIds(root)
-    const nextExpanded = new Set(expandedFolders)
-    const nextCollapsed = new Set(get().userCollapsedFolders)
-    for (const id of ids) {
-      if (willExpand) nextExpanded.add(id)
-      else nextExpanded.delete(id)
-      nextCollapsed.delete(id)
-    }
-    set({ expandedFolders: nextExpanded, userCollapsedFolders: nextCollapsed })
+    const state = get()
+    state.setFolderExpandedRecursive(layerId, !(state.expandedFolders.has(layerId) || state.transientExpandedFolders.has(layerId)))
   },
 
   setFolderExpanded: (layerId, expanded) => {
@@ -275,7 +332,9 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
       expandedFolders.delete(layerId)
       userCollapsedFolders.add(layerId)
     }
-    set({ expandedFolders, userCollapsedFolders })
+    const transientExpandedFolders = new Set(get().transientExpandedFolders)
+    transientExpandedFolders.delete(layerId)
+    set({ expandedFolders, userCollapsedFolders, transientExpandedFolders })
   },
 
   setFolderExpandedRecursive: (layerId, expanded) => {
@@ -303,7 +362,9 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
         nextCollapsed.add(id)
       }
     }
-    set({ expandedFolders: nextExpanded, userCollapsedFolders: nextCollapsed })
+    const transientExpandedFolders = new Set(get().transientExpandedFolders)
+    for (const id of ids) transientExpandedFolders.delete(id)
+    set({ expandedFolders: nextExpanded, userCollapsedFolders: nextCollapsed, transientExpandedFolders })
   },
 
   resetVisibility: () => {

@@ -30,6 +30,7 @@ export function buildFolderNameToSuffixMap(
 export function collectCellOutputUnits(
   animFolder: CspLayer,
   processTable: ProjectSettings['processTable'],
+  options: { includeHidden?: boolean } = {},
 ): CellOutputUnit[] {
   if (!animFolder.isAnimationFolder) return []
 
@@ -37,7 +38,7 @@ export function collectCellOutputUnits(
   const units: CellOutputUnit[] = []
 
   for (const [cellIndex, cell] of animFolder.children.entries()) {
-    if (cell.hidden || cell.uiHidden) continue
+    if (!options.includeHidden && (cell.hidden || cell.uiHidden)) continue
     if (!cell.isFolder) {
       units.push({ cell, cellIndex, sourceLayerId: cell.id, layers: [cell], ignoreOpacityIds: new Set([cell.id]) })
       continue
@@ -46,7 +47,7 @@ export function collectCellOutputUnits(
     const bodyLayers: CspLayer[] = []
     const processGroups = new Map<string, CspLayer[]>()
     for (const sub of cell.children) {
-      if (sub.hidden || sub.uiHidden) continue
+      if (!options.includeHidden && (sub.hidden || sub.uiHidden)) continue
       const suffix = sub.isFolder
         ? folderNameToSuffix.get(normalizeProcessFolderName(sub.originalName))
         : undefined

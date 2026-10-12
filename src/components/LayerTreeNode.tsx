@@ -242,8 +242,6 @@ export function LayerTreeNode({
   const singleMarks = useAppStore(s => s.singleMarks)
   const manualAnimFolderIds = useAppStore(s => s.manualAnimFolderIds)
   const selectedCells = useAppStore(s => s.selectedCells)
-  const selectAnimCell = useAppStore(s => s.selectAnimCell)
-  const setFocusedAnimFolder = useAppStore(s => s.setFocusedAnimFolder)
   const focusedAnimFolderId = useAppStore(s => s.focusedAnimFolderId)
   const virtualSets = useAppStore(s => s.virtualSets)
   const updateVirtualSet = useAppStore(s => s.updateVirtualSet)
@@ -251,6 +249,7 @@ export function LayerTreeNode({
   const [dropPlacement, setDropPlacement] = useState<DropPlacement | null>(null)
   const nodeRef = useRef<HTMLDivElement | null>(null)
   const rowRef = useRef<HTMLDivElement | null>(null)
+  const visibilityMouseHandled = useRef(false)
 
   const { draggable, onDragStart, onDragEnd, onPointerDown } = useDragSource({ type: 'layer', layerId: layer.id })
 
@@ -280,32 +279,14 @@ export function LayerTreeNode({
 
   const handleRowClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
-    if (isCell && animParentId) {
-      const { layerTree } = useAppStore.getState()
-      const animFolder = findLayerById(layerTree, animParentId)
-      if (animFolder) {
-        const idx = animFolder.children.findIndex(c => c.id === layer.id)
-        if (idx >= 0) {
-          selectAnimCell(animParentId, idx)
-          setFocusedAnimFolder(animParentId)
-        }
-      }
-      onSelect(layer.id)
-    } else if (isAnimFolder) {
-      onSelect(layer.id)
-      setFocusedAnimFolder(layer.id)
-    } else if (isMarked) {
-      // autoMarked/singleMark クリック時: アニメフォーカス・仮想セット選択をクリアして出力プレビューを表示
-      onSelect(layer.id)
-      setFocusedAnimFolder(null)
-    } else {
-      onSelect(layer.id)
-    }
-  }, [layer, isCell, animParentId, isAnimFolder, isMarked, onSelect, selectAnimCell, setFocusedAnimFolder])
+    onSelect(layer.id)
+  }, [layer.id, onSelect])
 
   const handleVisibilityMouseDown = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
+    if (e.button !== 0) return
     e.preventDefault() // テキスト選択を防ぐ
+    visibilityMouseHandled.current = true
     visibilityDrag.active = true
     visibilityDrag.targetHidden = !isUiHidden // 現在の逆状態をドラッグ中の適用値とする
     onToggleVisibility(layer.id)
@@ -323,7 +304,7 @@ export function LayerTreeNode({
   const handleExpandClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
     // 視覚状態（仮展開も含む）の反対方向に切り替える。
-    // 仮展開を閉じるときは userCollapsedFolders に記録され、以降の仮展開が抑制される。
+    // 手動設定と現在の一時展開を更新。次の巡回は必要な経路を再度開く。
     const nextExpanded = !isExpanded
     if (e.altKey) {
       onSetExpandedRecursive(layer.id, nextExpanded)
@@ -473,10 +454,11 @@ export function LayerTreeNode({
 
         {layer.isFolder ? (
           <Tooltip content={isTransientExpanded
-            ? 'Shift+スクロール巡回で自動展開中\nクリックで閉じると、以後の巡回でも閉じた状態を保ちます'
+            ? 'Shift+スクロール巡回で自動展開中\nクリックで閉じると元の閉じた状態に戻ります。次の巡回では必要な経路を再び開きます'
             : ''
           }>
-            <button className={styles.expandBtn} onClick={handleExpandClick}>
+            <button className={styles.expandBtn} onClick={handleExpandClick}
+              aria-label={`${layer.originalName}を${isExpanded ? '折りたたむ' : '展開する'}`} aria-expanded={isExpanded}>
               <svg
                 className={[
                   styles.expandChevron,
@@ -501,6 +483,13 @@ export function LayerTreeNode({
             className={`${styles.visibilityBtn} ${isUiHidden ? styles.visibilityBtnHidden : styles.visibilityBtnVisible}`}
             onMouseDown={handleVisibilityMouseDown}
             onMouseEnter={handleVisibilityMouseEnter}
+            onClick={event => {
+              event.stopPropagation()
+              // Keyboard activation has no preceding mouse-down.
+              if (!visibilityMouseHandled.current && event.detail === 0) onToggleVisibility(layer.id)
+              visibilityMouseHandled.current = false
+            }}
+            onKeyDown={() => { visibilityMouseHandled.current = false }}
             aria-label={isUiHidden ? 'プレビューに表示する' : 'プレビューから非表示にする'}
             aria-pressed={!isUiHidden}
           >

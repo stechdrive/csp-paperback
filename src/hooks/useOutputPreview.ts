@@ -15,6 +15,7 @@ import {
   buildSequenceNamingPlan,
 } from '../engine/cell-extractor'
 import { computeDisplayNames } from '../engine/anim-folder-display-name'
+import { collectCellOutputUnits } from '../engine/cell-output-units'
 import { flattenTree, compositeRoot } from '../engine/flatten'
 import { replaceExtension } from '../utils/image-export'
 import { collectMembersInTreeOrder, buildMemberFlatsWithOverride } from '../utils/virtual-set-utils'
@@ -81,6 +82,7 @@ export function useOutputPreview(enabled = true): OutputPreviewEntry[] {
   const focusedAnimFolderId = useAppStore(s => s.focusedAnimFolderId)
   const selectedVirtualSetId = useAppStore(s => s.selectedVirtualSetId)
   const selectedLayerId = useAppStore(s => s.selectedLayerId)
+  const selectedOutputSourceId = useAppStore(s => s.selectedOutputSourceId)
   const virtualSets = useAppStore(s => s.virtualSets)
   const selectedCellIndex = useAppStore(s => s.focusedAnimFolderId ? s.selectedCells.get(s.focusedAnimFolderId) : undefined)
   const projectSettings = useAppStore(s => s.projectSettings)
@@ -129,8 +131,9 @@ export function useOutputPreview(enabled = true): OutputPreviewEntry[] {
       return previewAnimFolder(
         focusedAnimFolderId,
         selectedCellIndex,
-        null,
+        selectedOutputSourceId,
         layerTree, projectSettings, outputConfig, timelineData, docWidth, docHeight,
+        true,
       )
     }
 
@@ -156,6 +159,7 @@ export function useOutputPreview(enabled = true): OutputPreviewEntry[] {
       markedLayer &&
       !markedLayer.isAnimationFolder &&
       (markedLayer.autoMarked || markedLayer.singleMark) &&
+      (!markedLayer.autoMarked || markedLayer.singleMark || !outputConfig.excludeAutoMarked) &&
       !isAutoMarkedContainerOutputSuppressed(markedLayer)
     ) {
       const { lower, upper } = collectMarkedLayerContext(selectedLayerId, layerTree, docWidth, docHeight)
@@ -170,7 +174,7 @@ export function useOutputPreview(enabled = true): OutputPreviewEntry[] {
 
     return []
   }, [
-    focusedAnimFolderId, selectedVirtualSetId, selectedLayerId,
+    focusedAnimFolderId, selectedVirtualSetId, selectedLayerId, selectedOutputSourceId,
     virtualSets, selectedCellIndex, layerTree, projectSettings, outputConfig, timelineData,
     docWidth, docHeight, enabled,
   ])
@@ -179,9 +183,8 @@ export function useOutputPreview(enabled = true): OutputPreviewEntry[] {
 /**
  * 指定アニメーションフォルダの選択セルだけを extractCells で描画する。
  *
- * filterSourceLayerId が指定された場合（工程フォルダ直接クリック時）、
- * その sourceLayerId に一致するエントリのみを返す。
- * 一致なしの場合はセル全エントリにフォールバック。
+ * 巡回時は指定sourceだけを表示し、内部素材クリック時は所有する出力単位へ解決する。
+ * 対象が非表示・除外・削除されたときは他の出力へフォールバックしない。
  */
 function previewAnimFolder(
   animFolderId: string,
@@ -193,18 +196,33 @@ function previewAnimFolder(
   timelineData: TimelineData | null,
   docWidth: number,
   docHeight: number,
+  exactOutputSource = false,
 ): OutputPreviewEntry[] {
   const animFolder = findLayerById(layerTree, animFolderId)
   if (!animFolder || !animFolder.isAnimationFolder) return []
-
-  const { lower: lowerContextFlats, upper: localUpperFlats } =
-    collectLocalSiblingContext(animFolderId, layerTree, docWidth, docHeight)
 
   const selection = resolveSelectedAnimCell(animFolder, rawCellIndex)
   if (!selection) return []
   const selectedCell = selection.cell
 
   const parentSuffix = resolveParentSuffix(animFolderId, layerTree, projectSettings.processTable)
+  const excluded = new Set(outputConfig.excludedProcessSuffixes)
+  if (parentSuffix && excluded.has(parentSuffix)) return []
+
+  let targetSourceLayerId: string | undefined
+  if (filterSourceLayerId) {
+    const units = collectCellOutputUnits(animFolder, projectSettings.processTable)
+      .filter(unit => unit.cell.id === selectedCell.id)
+    const exact = units.find(unit => unit.sourceLayerId === filterSourceLayerId)
+    const target = exact ?? (!exactOutputSource
+      ? units.find(unit => !!findLayerById(unit.layers, filterSourceLayerId))
+      : undefined)
+    if (!target || (target.processSuffix && excluded.has(target.processSuffix))) return []
+    targetSourceLayerId = target.sourceLayerId
+  }
+
+  const { lower: lowerContextFlats, upper: localUpperFlats } =
+    collectLocalSiblingContext(animFolderId, layerTree, docWidth, docHeight)
 
   // displayName を計算(extractAllEntries と同じロジック)
   // Identity = (name, parentSuffix)。同一 identity に複数候補のあるケースのみ (n) 連番化し、
@@ -231,12 +249,10 @@ function previewAnimFolder(
     selectedCell.id,
   )
 
-  // さらに sourceLayerId で絞り込む（工程フォルダ直接選択時）
-  if (filterSourceLayerId) {
-    const filtered = entries.filter(e => e.sourceLayerId === filterSourceLayerId)
-    if (filtered.length > 0) entries = filtered
-    // 一致なし（本体レイヤー等）の場合はセル全エントリをフォールバック表示
-  }
+  entries = entries.filter(entry =>
+    (targetSourceLayerId === undefined || entry.sourceLayerId === targetSourceLayerId) &&
+    !entry.processSuffixes?.some(suffix => excluded.has(suffix)),
+  )
 
   return mapPreviewEntries(
     entries,
@@ -261,6 +277,7 @@ function findAnimCellAncestor(
     ctx: { animFolderId: string; cellChildIndex: number } | null,
   ): { animFolderId: string; cellChildIndex: number } | null {
     for (const layer of layers) {
+      if (layer.hidden || layer.uiHidden) continue
       if (layer.id === layerId) return ctx
       if (!layer.isFolder) continue
 
@@ -283,6 +300,7 @@ function findAnimCellAncestor(
 
 function findLayerById(layers: CspLayer[], id: string): CspLayer | null {
   for (const l of layers) {
+    if (l.hidden || l.uiHidden) continue
     if (l.id === id) return l
     const found = findLayerById(l.children, id)
     if (found) return found

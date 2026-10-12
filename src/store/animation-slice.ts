@@ -2,6 +2,7 @@ import type { StateCreator } from 'zustand'
 import { canEnableManualAnimFolder } from '../utils/manual-animation-folder'
 import { selectLayerTreeWithVisibility } from './selectors'
 import type { AppStore } from './index'
+import { normalizePreviewSelection } from './selection-validity'
 
 export interface AnimationSlice {
   // 手動指定されたアニメーションフォルダのIDセット
@@ -18,7 +19,8 @@ export const createAnimationSlice: StateCreator<AppStore, [], [], AnimationSlice
     if (current.has(layerId)) {
       get().pushHistory()
       current.delete(layerId)
-      set({ manualAnimFolderIds: current })
+      const nextState = { manualAnimFolderIds: current }
+      set({ ...nextState, ...normalizePreviewSelection({ ...get(), ...nextState }) })
       return
     }
 
@@ -28,6 +30,7 @@ export const createAnimationSlice: StateCreator<AppStore, [], [], AnimationSlice
 
     get().pushHistory()
     current.add(layerId)
-    set({ manualAnimFolderIds: current })
+    const nextState = { manualAnimFolderIds: current }
+    set({ ...nextState, ...normalizePreviewSelection({ ...get(), ...nextState }) })
   },
 })

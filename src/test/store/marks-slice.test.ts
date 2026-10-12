@@ -1,20 +1,11 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { useAppStore } from '../../store'
 import { buildLayerTree } from '../../engine/tree-builder'
-import { makeLayer, makePsd } from '../helpers/psd-factory'
+import { makeFolder, makeLayer, makePsd } from '../helpers/psd-factory'
+import { resetTestStore } from '../helpers/store-reset'
 
 beforeEach(() => {
-  useAppStore.setState({
-    singleMarks: new Map(),
-    virtualSets: [],
-    layerTree: [],
-    selectedVirtualSetId: null,
-    focusedAnimFolderId: null,
-    _past: [],
-    _future: [],
-    canUndo: false,
-    canRedo: false,
-  })
+  resetTestStore()
 })
 
 describe('marks-slice - singleMark', () => {
@@ -40,6 +31,41 @@ describe('marks-slice - singleMark', () => {
 })
 
 describe('marks-slice - virtualSet', () => {
+  it('PSDで非表示だった素材を目玉で表示してから追加すると仮想セルでも表示を引き継ぐ', () => {
+    const tree = buildLayerTree(makePsd({ children: [makeLayer({ name: 'hidden', hidden: true })] }))
+    useAppStore.setState({ layerTree: tree })
+    useAppStore.getState().toggleLayerVisibility(tree[0].id)
+    useAppStore.getState().addVirtualSet('layout')
+    const id = useAppStore.getState().selectedVirtualSetId!
+    useAppStore.getState().addVirtualSetMember(id, tree[0].id)
+    expect(useAppStore.getState().virtualSets[0].visibilityOverrides[tree[0].id]).toBe(true)
+  })
+
+  it('選択中の仮想セル削除ではプレビュー・メンバー選択・一時展開を残さない', () => {
+    const tree = buildLayerTree(makePsd({ children: [makeFolder('_old-output', [makeLayer()])] }))
+    useAppStore.setState({ layerTree: tree, selectedLayerId: tree[0].id })
+    useAppStore.getState().addVirtualSet('layout')
+    const id = useAppStore.getState().selectedVirtualSetId!
+    useAppStore.setState({ selectedVsMemberSetId: id, selectedVsMemberId: 'member',
+      transientExpandedFolders: new Set(['ancestor']) })
+    useAppStore.getState().removeVirtualSet(id)
+    expect(useAppStore.getState()).toMatchObject({ selectedVirtualSetId: null, selectedVsMemberSetId: null,
+      selectedVsMemberId: null, selectedLayerId: null, focusedAnimFolderId: null,
+      selectedOutputSourceId: null, transientExpandedFolders: new Set() })
+  })
+
+  it('メンバーフォルダを削除したときは内部素材のコントロール選択も解除する', () => {
+    const tree = buildLayerTree(makePsd({ children: [makeFolder('group', [makeLayer()])] }))
+    useAppStore.setState({ layerTree: tree })
+    useAppStore.getState().addVirtualSet('layout')
+    const id = useAppStore.getState().selectedVirtualSetId!
+    useAppStore.getState().addVirtualSetMember(id, tree[0].id)
+    useAppStore.getState().setSelectedVsMember(id, tree[0].children[0].id)
+    useAppStore.getState().removeVirtualSetMember(id, tree[0].id)
+    expect(useAppStore.getState().selectedVsMemberSetId).toBeNull()
+    expect(useAppStore.getState().selectedVsMemberId).toBeNull()
+  })
+
   it('addVirtualSetで仮想セットを追加する', () => {
     useAppStore.getState().addVirtualSet('背景セット')
     const { virtualSets } = useAppStore.getState()

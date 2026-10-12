@@ -5,6 +5,28 @@ import { promoteAutoMarkedByProcessMatch } from '../engine/tree-builder'
 import { isAutoMarkedOutputTarget } from '../utils/auto-marked-container'
 import { normalizeProcessFolderName } from '../utils/process-folder'
 import type { AppStore } from './index'
+import { collectOutputNavigation, type OutputNavigation } from '../utils/output-navigation'
+
+let outputNavigationCache: {
+  tree: CspLayer[]
+  projectSettings: AppStore['projectSettings']
+  outputConfig: AppStore['outputConfig']
+  virtualSets: AppStore['virtualSets']
+  result: OutputNavigation
+} | null = null
+
+/** Shared by event handlers and views, so rapid events always use current outputs. */
+export function selectOutputNavigation(state: AppStore): OutputNavigation {
+  const tree = selectLayerTreeWithVisibility(state)
+  const { projectSettings, outputConfig, virtualSets } = state
+  if (outputNavigationCache?.tree === tree && outputNavigationCache.projectSettings === projectSettings &&
+    outputNavigationCache.outputConfig === outputConfig && outputNavigationCache.virtualSets === virtualSets) {
+    return outputNavigationCache.result
+  }
+  const result = collectOutputNavigation(tree, projectSettings, outputConfig, virtualSets)
+  outputNavigationCache = { tree, projectSettings, outputConfig, virtualSets, result }
+  return result
+}
 
 /**
  * selectLayerTreeWithVisibility のメモ化キャッシュ。

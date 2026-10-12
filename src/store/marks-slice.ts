@@ -4,6 +4,7 @@ import type { CspLayer } from '../types'
 import type { VirtualSetLayerOverride } from '../types/marks'
 import type { AppStore } from './index'
 import type { HistoryOptions } from './history-slice'
+import { collectMembersInTreeOrder } from '../utils/virtual-set-utils'
 
 export interface MarksSlice {
   singleMarks: Map<string, SingleMark>
@@ -37,8 +38,9 @@ function captureVisibilitySnapshot(
   globalOverrides: Map<string, boolean>,
   out: Record<string, boolean>,
 ): void {
-  const globalUiHidden = globalOverrides.get(layer.id) ?? layer.uiHidden
-  out[layer.id] = !layer.hidden && !globalUiHidden
+  out[layer.id] = globalOverrides.has(layer.id)
+    ? !globalOverrides.get(layer.id)!
+    : !layer.hidden && !layer.uiHidden
   for (const child of layer.children) {
     captureVisibilitySnapshot(child, globalOverrides, out)
   }
@@ -137,6 +139,8 @@ export const createMarksSlice: StateCreator<AppStore, [], [], MarksSlice> = (set
       virtualSets: [...get().virtualSets, newSet],
       selectedVirtualSetId: newSet.id,
       focusedAnimFolderId: null,
+      selectedOutputSourceId: null,
+      transientExpandedFolders: new Set(),
     })
   },
 
@@ -150,8 +154,20 @@ export const createMarksSlice: StateCreator<AppStore, [], [], MarksSlice> = (set
   },
 
   removeVirtualSet: (id) => {
+    const state = get()
+    if (!state.virtualSets.some(vs => vs.id === id)) return
     get().pushHistory()
-    set({ virtualSets: get().virtualSets.filter(vs => vs.id !== id) })
+    set({
+      virtualSets: state.virtualSets.filter(vs => vs.id !== id),
+      ...(state.selectedVirtualSetId === id ? {
+        selectedVirtualSetId: null,
+        selectedLayerId: null,
+        focusedAnimFolderId: null,
+        selectedOutputSourceId: null,
+        transientExpandedFolders: new Set<string>(),
+      } : {}),
+      ...(state.selectedVsMemberSetId === id ? { selectedVsMemberSetId: null, selectedVsMemberId: null } : {}),
+    })
   },
 
   addVirtualSetMember: (setId, layerId) => {
@@ -185,12 +201,20 @@ export const createMarksSlice: StateCreator<AppStore, [], [], MarksSlice> = (set
   },
 
   removeVirtualSetMember: (setId, layerId) => {
+    const state = get()
+    const vs = state.virtualSets.find(v => v.id === setId)
+    if (!vs?.members.some(member => member.layerId === layerId)) return
     get().pushHistory()
+    const nextSet = { ...vs, members: vs.members.filter(member => member.layerId !== layerId) }
+    const selectedMemberExists = state.selectedVsMemberId !== null && !!findLayerInTree(
+      collectMembersInTreeOrder(state.layerTree, new Set(nextSet.members.map(member => member.layerId))),
+      state.selectedVsMemberId,
+    )
     set({
-      virtualSets: get().virtualSets.map(vs => {
-        if (vs.id !== setId) return vs
-        return { ...vs, members: vs.members.filter(m => m.layerId !== layerId) }
-      }),
+      virtualSets: state.virtualSets.map(vs => vs.id === setId ? nextSet : vs),
+      ...(state.selectedVsMemberSetId === setId && !selectedMemberExists
+        ? { selectedVsMemberSetId: null, selectedVsMemberId: null }
+        : {}),
     })
   },
 
