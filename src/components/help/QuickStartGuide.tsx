@@ -45,6 +45,12 @@ export function QuickStartGuide({
 
   return (
     <div className={`${styles.guide} ${styles[variant]}`}>
+      <div className={styles.callout}>
+        <strong>ベクターレイヤー・3Dレイヤーを正しく書き出すには</strong>
+        クリスタの<span className={styles.menuPath}>{ja.input.psdMenu}</span>で同じCLIPからPSDを保存し、
+        CLIPと一緒に読み込んでください。{ja.input.psdVisibility}
+      </div>
+
       <div className={styles.route}>
         <Step
           number={1}
@@ -104,13 +110,6 @@ export function QuickStartGuide({
         >
           ZIPなら1ファイルにまとめて保存、フォルダなら出力用サブフォルダを作って画像を書き込みます。
         </Step>
-      </div>
-
-      <div className={styles.callout}>
-        <strong>クリスタの描画結果を使う場合：</strong>
-        ベクター・3Dレイヤーなど、CLIPだけでは再現できない素材はPSDの画像を使えます。
-        クリスタの<span className={styles.menuPath}>{ja.input.psdMenu}</span>で保存し、
-        CLIPと一緒に読み込むか、後から追加します。{ja.input.psdVisibility}
       </div>
 
       {sampleAction && <div className={styles.actions}>{sampleAction}</div>}

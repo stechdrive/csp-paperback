@@ -97,7 +97,7 @@
 }
 
 .callout {
-  margin-top: 1rem;
+  margin-bottom: 1rem;
   padding: 0.8rem 0.9rem;
   border: 1px solid rgba(var(--color-info-rgb), 0.28);
   border-radius: 7px;
@@ -107,8 +107,14 @@
   line-height: 1.65;
 }
 
+.callout strong {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: var(--color-text-primary);
+}
+
 .startup .callout {
-  margin-top: 0.65rem;
+  margin-bottom: 0.65rem;
   padding: 0.55rem 0.65rem;
   font-size: 0.69rem;
 }

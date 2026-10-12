@@ -59,6 +59,45 @@ describe('CLIP native structure and timeline', () => {
     expect(() => buildClipLayerTree(clip, { width: clip.width, height: clip.height }, clip.timelines[0], DEFAULT_PROJECT_SETTINGS)).toThrow('一致しません')
   })
 
+  it('excludes light-table references from the material tree without removing their source cels', async () => {
+    const db = new SQL.Database()
+    let bytes: Buffer
+    try {
+      db.run(`
+        CREATE TABLE Canvas (CanvasRootFolder INTEGER, CanvasWidth INTEGER, CanvasHeight INTEGER, CanvasUnit INTEGER);
+        INSERT INTO Canvas VALUES (1, 16, 16, 0);
+        CREATE TABLE Layer (MainId INTEGER, LayerUuid TEXT, LayerName TEXT, LayerFolder INTEGER,
+          LayerType INTEGER, LayerFirstChildIndex INTEGER, LayerNextIndex INTEGER, LayerVisibility INTEGER,
+          LightTableReferCell INTEGER, LinkLayerUUID TEXT, AnimationFolder INTEGER);
+        INSERT INTO Layer VALUES
+          (1, '', '', 1, 256, 2, 0, 1, NULL, NULL, NULL),
+          (2, '00000000000000000000000000000002', 'A', 1, 0, 3, 5, 1, NULL, NULL, 1),
+          (3, '00000000000000000000000000000003', '1', 0, 1, 0, 4, 1, NULL, NULL, NULL),
+          (4, '00000000000000000000000000000004', '2', 0, 1, 0, 0, 1, NULL, NULL, NULL),
+          (5, '00000000000000000000000000000005', '1', 0, 10016, 0, 6, 1, 1, '00000000000000000000000000000003', NULL),
+          (6, '00000000000000000000000000000006', 'frame', 0, 1, 0, 7, 1, 0, NULL, NULL),
+          (7, '00000000000000000000000000000007', 'external reference', 0, 10016, 0, 0, 1, 1, NULL, NULL);
+      `)
+      const database = db.export()
+      bytes = Buffer.alloc(40 + database.length)
+      bytes.write('CSFCHUNK')
+      bytes.write('CHNKSQLi', 24)
+      bytes.writeBigUInt64BE(BigInt(database.length), 32)
+      bytes.set(database, 40)
+    } finally { db.close() }
+    const native = await parseClipDocument(bytes, SQL, false)
+    expect(native.layers.map(l => l.name)).toEqual(['frame', 'A'])
+    expect(native.layers[1].children.map(l => l.name)).toEqual(['2', '1'])
+    expect(native.layers[1].isAnimationFolder).toBe(true)
+    expect(native.diagnostics).toEqual([])
+    const psd = { width: 16, height: 16, children: [
+      { name: 'A', children: [{ name: '1' }, { name: '2' }] }, { name: 'frame' },
+    ] }
+    const tree = buildClipLayerTree(native, psd, undefined, DEFAULT_PROJECT_SETTINGS)
+    expect(all(tree).map(l => l.originalName)).toEqual(['frame', 'A', '2', '1'])
+    expect(tree[1].children[1].id).toBe('clip:00000000000000000000000000000003')
+  })
+
   it('reads the bundled template including nine A folders and shifted motion clips', async () => {
     const template = await parseClipDocument(readFileSync('public/templates/csp-paperback-sample-template.clip'), SQL, false)
     expect(Object.keys(template.timelines[0].bindings)).toHaveLength(9)

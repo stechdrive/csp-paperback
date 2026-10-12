@@ -55,6 +55,13 @@ export async function parseClipDocument(bytes: Uint8Array, SQL: SqlJsStatic, inc
         const row = layersById.get(next)
         check(row && !visited.has(next), 'レイヤー参照の循環または欠落があります')
         visited.add(next)
+        // Light-table references share the layer sibling list, but are drawing aids,
+        // not canvas artwork. Their saved previews would otherwise cover every cel
+        // and introduce extra layers absent from CSP's PSD export.
+        if (num(row, 'LightTableReferCell')) {
+          next = num(row, 'LayerNextIndex')
+          continue
+        }
         const key = uuid(row.LayerUuid)
         check(/^[0-9a-f]{32}$/.test(key) && !nativeRows.has(key), 'レイヤーUUIDが不正または重複しています')
         nativeRows.set(key, row)
