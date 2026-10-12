@@ -64,8 +64,9 @@ export function OutputSettingsGuide() {
 
       <h3 className={styles.subsectionTitle}>出力名の違いを実例で確認する</h3>
       <p className={styles.paragraph}>
+        セル名は、クリスタのセルのレイヤー名・レイヤーフォルダ名です。「1」「2」など、すでに付けた番号も使えます。
         アニメーションフォルダ<code>A</code>にセル<code>1</code>、<code>2</code>、<code>3</code>があり、
-        2番だけ演出修正<code>_e</code>がある例です。区切りは「なし」、工程名は「後ろ」とします。
+        2番だけ演出修正<code>_e</code>がある例です。初期設定の「フォルダ名あり・区切りあり・修正記号は後ろ」とします。
       </p>
 
       <div className={styles.tableWrap}>
@@ -78,27 +79,27 @@ export function OutputSettingsGuide() {
               <td>連番</td>
               <td>{ja.settings.cellNamingSequenceHint}</td>
               <td>
-                <code>A1.jpg</code><br />
-                <code>A2.jpg</code><br />
-                <code>A3.jpg</code>
+                <code>A_1.jpg</code><br />
+                <code>A_2.jpg</code><br />
+                <code>A_3.jpg</code>
               </td>
             </tr>
             <tr>
-              <td>連番セル名</td>
-              <td>{ja.settings.cellNamingSequenceCellnameHint}</td>
+              <td>{ja.settings.cellNamingSequenceCellname}</td>
+              <td>連番の後ろに元のセル名を付けます。</td>
               <td>
-                <code>A1_1.jpg</code><br />
-                <code>A2_2.jpg</code><br />
-                <code>A3_3.jpg</code>
+                <code>A_1_1.jpg</code><br />
+                <code>A_2_2.jpg</code><br />
+                <code>A_3_3.jpg</code>
               </td>
             </tr>
             <tr>
               <td>セル名</td>
-              <td>{ja.settings.cellNamingCellnameHint}</td>
+              <td>クリスタで付けた番号や名前を使います。</td>
               <td>
-                <code>A1.jpg</code><br />
-                <code>A2.jpg</code><br />
-                <code>A3.jpg</code>
+                <code>A_1.jpg</code><br />
+                <code>A_2.jpg</code><br />
+                <code>A_3.jpg</code>
               </td>
             </tr>
             <tr>
@@ -107,19 +108,24 @@ export function OutputSettingsGuide() {
                 タイムライン順に番号を付け、本体と修正工程の番号を同じセル位置へそろえます。
               </td>
               <td>
-                <code>A1.jpg</code><br />
-                <code>A2.jpg</code><br />
-                <code>A2_e.jpg</code><br />
-                <code>A3.jpg</code>
+                <code>A_1.jpg</code><br />
+                <code>A_2.jpg</code><br />
+                <code>A_2_e.jpg</code><br />
+                <code>A_3.jpg</code>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
 
+      <p className={styles.paragraph}>
+        または、Aフォルダの1番目のセルが<code>ア</code>なら、
+        「連番＋セル名」は<code>A_1_ア.jpg</code>、「セル名」は<code>A_ア.jpg</code>になります。
+      </p>
+
       <div className={styles.callout}>
-        シート連番では、2番にだけある演出修正も<code>A2_e.jpg</code>になります。
-        修正工程側で最初の1枚だからといって<code>A1_e.jpg</code>にはなりません。
+        シート連番では、2番にだけある演出修正も<code>A_2_e.jpg</code>になります。
+        修正側で最初の1枚だからといって<code>A_1_e.jpg</code>にはなりません。
       </div>
 
       <h3 className={styles.subsectionTitle}>ファイル名と出力対象を調整する設定</h3>
@@ -141,7 +147,7 @@ export function OutputSettingsGuide() {
             </tr>
             <tr>
               <td>アニメーションフォルダ名</td>
-              <td>付ける／付けない</td>
+              <td>ON／OFF</td>
               <td><HintText text={ja.settings.xdtsTrackPrefixHint} /></td>
             </tr>
             <tr>
@@ -156,7 +162,7 @@ export function OutputSettingsGuide() {
             </tr>
             <tr>
               <td>{ja.export.revisionBorder}</td>
-              <td>フチあり／なし</td>
+              <td>ON／OFF</td>
               <td><HintText text={ja.export.revisionBorderHint} /></td>
             </tr>
             <tr>
@@ -173,7 +179,7 @@ export function OutputSettingsGuide() {
 
       <div className={styles.callout}>
         ファイル名設定の直下に「出力例」が表示されます。設定にポインターを合わせると、名前の対応する部分に下線が付きます。変更時の下線は短時間で消えます。
-        出力例の文字をクリックすると、その部分の設定へ移動できます。
+        説明の吹き出しは出力例を避けて表示されます。出力例の文字をクリックすると、その部分の設定へ移動できます。
       </div>
     </>
   )

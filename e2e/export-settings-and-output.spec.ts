@@ -31,18 +31,18 @@ test('保存設定を再読込とサンプル読込へ引き継ぎ、実ZIPを�
 
   await startupSettings.getByRole('button', { name: 'PNG', exact: true }).click()
   await startupSettings.getByRole('switch', { name: 'フォルダ分け', exact: true }).click()
-  await expect(startupSettings.getByTitle('A/A_1_e.png')).toBeVisible()
+  await expect(startupSettings.getByLabel('出力例: A/A_1_e.png')).toBeVisible()
 
   await page.reload()
   const reloadedSettings = page.getByTestId('startup-export-settings')
-  await expect(reloadedSettings.getByTitle('A/A_1_e.png')).toBeVisible()
+  await expect(reloadedSettings.getByLabel('出力例: A/A_1_e.png')).toBeVisible()
   await expect(reloadedSettings.getByRole('switch', { name: 'フォルダ分け', exact: true }))
     .toHaveAttribute('aria-checked', 'true')
 
   await page.getByRole('button', { name: 'サンプルデータで試す', exact: true }).click()
   await expect(page.getByText('c001.clip', { exact: true })).toBeVisible()
   await expect(page.getByText('CLIPから読み込み', { exact: true })).toHaveCount(0)
-  await expect(page.getByTitle('A/A_1_e.png')).toBeVisible()
+  await expect(page.getByLabel('出力例: A/A_1_e.png')).toBeVisible()
 
   const downloadPromise = page.waitForEvent('download')
   await page.getByRole('button', { name: '出力', exact: true }).click()
@@ -107,15 +107,15 @@ test('設定と出力名の対応を示し、修正ラベルの切り替えで�
   await page.mouse.move(0, 0)
   await expect(settings.locator('[data-highlighted="true"]')).toHaveCount(0)
   await settings.getByRole('button', { name: '前', exact: true }).click()
-  await expect(settings.getByTitle('A_e_1.png')).toBeVisible()
+  await expect(settings.getByLabel('出力例: A_e_1.png')).toBeVisible()
   await expect(settings.locator('[data-name-part="suffix"]')).toHaveAttribute('data-highlighted', 'true')
   await settings.getByRole('button', { name: 'なし', exact: true }).click()
-  await expect(settings.getByTitle('A_e1.png')).toBeVisible()
+  await expect(settings.getByLabel('出力例: A_e1.png')).toBeVisible()
   await expect(settings.locator('[data-name-part="separator"]')).toHaveAttribute('data-highlighted', 'true')
   await settings.locator('[data-name-part="prefix"]').click()
   await expect(settings.getByRole('switch', { name: 'アニメーションフォルダ名', exact: true })).toBeFocused()
   await page.keyboard.press('Space')
-  await expect(settings.getByTitle('_e1.png')).toBeVisible()
+  await expect(settings.getByLabel('出力例: _e1.png')).toBeVisible()
   await page.mouse.move(0, 0)
   await page.keyboard.press('Tab')
   await expect(settings.getByRole('button', { name: '_ あり', exact: true })).toBeFocused()
@@ -141,3 +141,67 @@ test('設定と出力名の対応を示し、修正ラベルの切り替えで�
   expect(await output.boundingBox()).toEqual(before)
   await page.screenshot({ path: testInfo.outputPath('loaded.png') })
 })
+
+for (const viewport of [{ width: 1440, height: 1000 }, { width: 1000, height: 700 }, { width: 700, height: 700 }]) {
+  test(`説明を表示しても出力例を隠さず、画面内に収める（${viewport.width}px）`, async ({ page }, testInfo) => {
+    const errors: string[] = []
+    page.on('pageerror', error => errors.push(error.message))
+    page.on('console', message => { if (message.type() === 'error') errors.push(message.text()) })
+    await page.setViewportSize(viewport)
+    await page.goto('./')
+    const settings = page.getByTestId('export-settings')
+    const sample = settings.getByTestId('name-sample-row')
+    const targets = [
+      settings.getByRole('button', { name: 'PNG', exact: true }),
+      settings.getByRole('button', { name: '連番＋セル名', exact: true }),
+      settings.getByRole('button', { name: 'セル名', exact: true }),
+      settings.getByRole('button', { name: 'シート連番', exact: true }),
+      settings.getByText('出力名', { exact: true }),
+      settings.getByRole('button', { name: '自動', exact: true }),
+      settings.getByRole('switch', { name: 'アニメーションフォルダ名', exact: true }),
+      settings.getByRole('button', { name: 'なし', exact: true }),
+      settings.getByRole('button', { name: '前', exact: true }),
+      settings.getByRole('switch', { name: 'フォルダ分け', exact: true }),
+      settings.getByRole('switch', { name: '修正ラベル', exact: true }),
+      settings.getByRole('switch', { name: '兼用カット', exact: true }),
+      settings.getByRole('button', { name: '演出 _e', exact: true }),
+    ]
+    for (const phase of ['startup', 'loaded']) {
+      if (phase === 'loaded') {
+        await page.getByRole('button', { name: 'サンプルデータで試す', exact: true }).click()
+        await expect(page.getByText('c001.clip', { exact: true })).toBeAttached()
+        const drawer = page.getByRole('button', { name: /書き出し設定/ })
+        if (await drawer.isVisible()) await drawer.click()
+      }
+      await expect(settings).toBeVisible()
+      await page.evaluate(() => document.fonts.ready)
+      const settingsHeight = (await settings.boundingBox())!.height
+      const output = page.locator('[class*="_outputSection_"]')
+      const outputHeight = phase === 'loaded' ? (await output.boundingBox())!.height : null
+      for (const control of targets) {
+        await control.hover()
+        const tooltip = page.getByRole('tooltip')
+        await expect(tooltip).toBeVisible()
+        const tip = (await tooltip.boundingBox())!
+        const example = (await sample.boundingBox())!
+        expect(tip.x + tip.width <= example.x || tip.x >= example.x + example.width
+          || tip.y + tip.height <= example.y || tip.y >= example.y + example.height).toBe(true)
+        expect(tip.x).toBeGreaterThanOrEqual(0)
+        expect(tip.y).toBeGreaterThanOrEqual(0)
+        expect(tip.x + tip.width).toBeLessThanOrEqual(viewport.width)
+        expect(tip.y + tip.height).toBeLessThanOrEqual(viewport.height)
+        expect((await settings.boundingBox())!.height).toBe(settingsHeight)
+        if (outputHeight !== null) expect((await output.boundingBox())!.height).toBe(outputHeight)
+        await page.mouse.move(0, 0)
+        await expect(tooltip).toHaveCount(0)
+      }
+      // The browser's native title popup cannot avoid the example, so do not duplicate it.
+      await expect(sample.locator('[title]')).toHaveCount(0)
+      await settings.getByRole('switch', { name: 'アニメーションフォルダ名', exact: true }).hover()
+      await expect(page.getByRole('tooltip')).toBeVisible()
+      await page.screenshot({ path: testInfo.outputPath(`${phase}-tooltip.png`) })
+      await page.mouse.move(0, 0)
+    }
+    expect(errors).toEqual([])
+  })
+}

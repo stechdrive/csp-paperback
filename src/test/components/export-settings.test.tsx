@@ -96,12 +96,12 @@ describe('ExportSettings naming controls', () => {
     expect(useAppStore.getState().projectSettings.sequenceDigitMode).toBe('auto')
     expect(useAppStore.getState().projectSettings.cellPrefixSeparator).toBe('underscore')
     expect(screen.getByRole('switch', { name: 'アニメーションフォルダ名' })).toHaveAttribute('aria-checked', 'true')
-    expect(screen.getByTitle('A_1_e.jpg')).toBeInTheDocument()
+    expect(screen.getByLabelText('出力例: A_1_e.jpg')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'シート連番' }))
     fireEvent.click(screen.getByRole('button', { name: '4桁' }))
     expect(useAppStore.getState().projectSettings.sequenceDigitMode).toBe('fixed-4')
-    expect(screen.getByTitle('A_0001_e.jpg')).toBeInTheDocument()
+    expect(screen.getByLabelText('出力例: A_0001_e.jpg')).toBeInTheDocument()
   })
 
   it('アニメーションフォルダ名とセル部分の区切りを省略できる', () => {
@@ -110,12 +110,12 @@ describe('ExportSettings naming controls', () => {
     fireEvent.click(screen.getByRole('button', { name: '_ あり' }))
     expect(useAppStore.getState().projectSettings.cellPrefixSeparator).toBe('underscore')
     expect(useAppStore.getState().projectSettings.animationSequenceSeparator).toBe('underscore')
-    expect(screen.getByTitle('A_1_e.jpg')).toBeInTheDocument()
+    expect(screen.getByLabelText('出力例: A_1_e.jpg')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'なし' }))
     expect(useAppStore.getState().projectSettings.cellPrefixSeparator).toBe('none')
     expect(useAppStore.getState().projectSettings.animationSequenceSeparator).toBe('none')
-    expect(screen.getByTitle('A1_e.jpg')).toBeInTheDocument()
+    expect(screen.getByLabelText('出力例: A1_e.jpg')).toBeInTheDocument()
   })
 
   it('セル名出力では連番桁数だけを無効化し、区切りを操作できる', () => {
@@ -136,7 +136,7 @@ describe('ExportSettings naming controls', () => {
     fireEvent.click(noSeparatorButton)
     expect(useAppStore.getState().projectSettings.sequenceDigitMode).toBe('auto')
     expect(useAppStore.getState().projectSettings.cellPrefixSeparator).toBe('none')
-    expect(screen.getByTitle('A1_e.jpg')).toBeInTheDocument()
+    expect(screen.getByLabelText('出力例: A1_e.jpg')).toBeInTheDocument()
   })
 
   it('アニメーションフォルダ名はセル名モードでだけ変更でき、出力例へ反映する', () => {
@@ -150,11 +150,11 @@ describe('ExportSettings naming controls', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'セル名' }))
     expect(toggle).toHaveAttribute('aria-disabled', 'false')
-    expect(screen.getByTitle('A_1_e.jpg')).toBeInTheDocument()
+    expect(screen.getByLabelText('出力例: A_1_e.jpg')).toBeInTheDocument()
 
     fireEvent.click(toggle)
     expect(useAppStore.getState().projectSettings.includeXdtsTrackPrefixInCellName).toBe(false)
-    expect(screen.getByTitle('1_e.jpg')).toBeInTheDocument()
+    expect(screen.getByLabelText('出力例: 1_e.jpg')).toBeInTheDocument()
   })
 
   it('名前に関わる設定を出力例とまとめ、変更箇所の目印は時間経過やEscapeで消す', () => {
@@ -166,14 +166,14 @@ describe('ExportSettings naming controls', () => {
     expect(naming).toContainElement(sampleRow)
     expect(within(naming).getByRole('switch', { name: 'フォルダ分け' })).toBeInTheDocument()
     fireEvent.click(within(naming).getByRole('button', { name: '前' }))
-    expect(screen.getByTitle('A_e_1.jpg')).toBeInTheDocument()
+    expect(screen.getByLabelText('出力例: A_e_1.jpg')).toBeInTheDocument()
     expect(part('suffix')).toHaveAttribute('data-highlighted', 'true')
     fireEvent.click(screen.getByRole('button', { name: 'なし' }))
-    expect(screen.getByTitle('A_e1.jpg')).toBeInTheDocument()
+    expect(screen.getByLabelText('出力例: A_e1.jpg')).toBeInTheDocument()
     expect(part('separator')).toHaveAttribute('data-highlighted', 'true')
     expect(part('separator')).toBeEmptyDOMElement()
     fireEvent.click(screen.getByRole('button', { name: 'PNG' }))
-    expect(screen.getByTitle('A_e1.png')).toBeInTheDocument()
+    expect(screen.getByLabelText('出力例: A_e1.png')).toBeInTheDocument()
     expect(part('extension')).toHaveAttribute('data-highlighted', 'true')
     act(() => vi.advanceTimersByTime(1200))
     expect(part('extension')).toHaveAttribute('data-highlighted', 'false')
@@ -218,8 +218,8 @@ describe('ExportSettings naming controls', () => {
       ['白ベタ', '透明な部分を白で埋めて書き出します。JPGとPNGのどちらでも使えます。'],
       ['透明（PNG のみ）', '透明な部分を残したまま書き出します。PNGを選んでいるときだけ使えます。'],
       ['連番', 'フォルダ内のセルへ1、2…の順番で番号を付けます。桁数は出力する最大番号に合わせます。'],
-      ['連番セル名', /A1_ア\.jpgのように、連番とクリスタのセル名を両方付けます/],
-      ['セル名', 'クリスタのセル名を使います。A1 / A_1のようにアニメーションフォルダ名から始まるセルは、同じフォルダ名を重ねて付けません。'],
+      ['連番＋セル名', /セルのレイヤー名・レイヤーフォルダ名の前に、フォルダ内の順番で番号を付けます。.*A_1_ア\.jpg/s],
+      ['セル名', /「1」「2」など、すでに付けた番号もそのまま使えます。.*A_1\.jpg、または「ア」→ A_ア\.jpg/s],
       ['シート連番', /タイムライン順に番号を付け/],
       ['自動', '出力する最大番号に合わせて桁数を自動調整します。1〜9は1桁、10〜99は2桁になります。'],
       ['4桁', 'すべて0001、0002…の4桁で書き出します。'],
@@ -236,7 +236,7 @@ describe('ExportSettings naming controls', () => {
     }
 
     const switchCases = [
-      ['アニメーションフォルダ名', /セル名が「1」のように.*セル名が「A1」のように.*「付けない」を選びます。/s],
+      ['アニメーションフォルダ名', /ファイル名の先頭にアニメーションフォルダ名を付けます。.*ON：A_1\.jpg／OFF：1\.jpg/s],
       ['兼用カット', /OFF: 選択中のタイムラインで未使用のセルは初期OFFになります。/],
       ['フォルダ分け', /すべて出力先の直下へまとめます。/],
       ['修正ラベル', /CLIP内に色付きの下敷きレイヤーを用意せずに/],
@@ -254,7 +254,7 @@ describe('ExportSettings naming controls', () => {
     const unavailableAuto = screen.getByRole('button', { name: '自動' })
     fireEvent.mouseEnter(unavailableAuto)
     act(() => vi.advanceTimersByTime(300))
-    expect(screen.getByText('セル名出力ではクリスタのセル名を使うため、連番桁数は適用されません。連番・連番セル名・シート連番で使えます。')).toBeInTheDocument()
+    expect(screen.getByText('セル名出力ではクリスタで付けた番号や名前を使うため、連番桁数は適用されません。連番・連番＋セル名・シート連番で使えます。')).toBeInTheDocument()
     fireEvent.mouseLeave(unavailableAuto)
   })
 })

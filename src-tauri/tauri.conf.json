@@ -31,8 +31,8 @@
     "active": true,
     "targets": "all",
     "category": "GraphicsAndDesign",
-    "shortDescription": "PSD-based animation cell exporter for Clip Studio Paint.",
-    "longDescription": "CSP Paperback reads PSD and XDTS files locally and exports composited animation cell images without uploading project data.",
+    "shortDescription": "Animation artwork exporter for Clip Studio Paint.",
+    "longDescription": "CSP Paperback reads CLIP files locally, with an optional matching PSD exported from Clip Studio Paint, and exports composited still-image animation materials without uploading project data.",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
