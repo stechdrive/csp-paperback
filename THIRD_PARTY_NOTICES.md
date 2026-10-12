@@ -6,9 +6,12 @@ reference to the following MIT-licensed format research and implementations:
 - [wamsoft/clipparse](https://github.com/wamsoft/clipparse), commit
   `322a273c0e059d1dee9132af78289efa12a59522` (Offscreen attributes, raster tiles and blend equations).
 - [animeops/clip-tools](https://github.com/animeops/clip-tools), commit
-  `8807134932a39a009c980fb29acd1ae934354a7c` (BINC serialization and CLIP structure).
+  `8807134932a39a009c980fb29acd1ae934354a7c` (BINC serialization, CLIP structure,
+  vector spline sampling, brush dynamics and stamp rasterization).
 - [Aodaruma/clipfile-rs](https://github.com/Aodaruma/clipfile-rs), commit
   `bd88467fa80e63ad48c6c713fbfb5a8a116d798a` (native timeline identities and correction metadata).
+  Release `clipfile-svg-v0.2.0`, commit `b3c4aefe3ba944f47f27aaf0777cbffc1038e75c`,
+  was also consulted for the modern 92-byte vector stroke layout.
 - [dobrokot/clip_to_psd](https://github.com/dobrokot/clip_to_psd), commit
   `e8db68c768f52ec91ba7530820f52537261cbad0` (text attributes, image effects and fill metadata).
 - [sql.js](https://github.com/sql-js/sql.js), `1.14.2` (bundled SQLite WebAssembly).
