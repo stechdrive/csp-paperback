@@ -38,8 +38,6 @@ CSP Paperbackでは、共通で合成する素材と、別々に書き出す素�
 
 セルのレイヤーフォルダ内に、`_e`・`_s`などの登録済み工程フォルダを置くと、作画本体と修正を分けて書き出せます。
 
-レイヤーパレットと同じく、上が前面です。修正フォルダは作画レイヤーより上に置きます。
-
 ```text
 A                       アニメーションフォルダ
 └─ 1                    セルのレイヤーフォルダ
@@ -140,8 +138,6 @@ Keep animation folders inside the folders for drawings, director revisions, anim
 **Revisions inside each cel**
 
 Place registered stage folders such as `_e` and `_s` inside a cel's layer folder to export the original drawing and revisions separately.
-
-As in the layer palette, the top of this example is the front of the stack. Place revisions above the original drawing.
 
 ```text
 A                       Animation folder
