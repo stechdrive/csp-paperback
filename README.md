@@ -93,7 +93,11 @@ A_1_s.jpg    作監修正
 
 カメラ・変形アニメーションは適用せず、撮影前の素材として書き出します。描画範囲と制限の詳細は[CLIP読み込み](docs/clip-import.md)を参照してください。
 
-Windows版では、あらかじめ設定を保存しておけば、CLIPをEXEやショートカットへドロップして自動出力できます。対応するPSDも一緒に指定できます。
+Windows版では、あらかじめ設定を保存しておけば、複数のCLIPをEXEやショートカットへまとめてドロップして自動出力できます。必要なPSDも一緒に指定できます。
+
+複数作品では、同じフォルダ・同じファイル名（拡張子を除く）のCLIPとPSDを組にし、PSDのないCLIPは単独で処理します。例えば `c001.clip`、`c001.psd`、`c002.clip` を渡すと、c001はPSD併用、c002はCLIP単独で順番に書き出します。ドロップしたファイルだけが対象です。
+
+各CLIPの隣へ作品名の出力フォルダを作ります。既存のフォルダは上書きせず、末尾に番号を付けます。構造不一致や対応先のないPSDなどは失敗として記録し、残りの作品を続行します。結果一覧で成功・失敗・再現上の注意を確認してください。CLIPとPSDの寸法・階層・名前・重なり順を照合しますが、画像内容や保存時点の一致は検証しません。同じ保存状態の組を使用してください。
 
 アプリ内のサンプルから、出力結果を試せます。
 
@@ -194,7 +198,9 @@ For materials that CLIP alone cannot fully reproduce, such as vector or 3D layer
 
 Camera and animated transforms are left unapplied so the original materials can be exported for compositing. See [CLIP import](docs/clip-import.md) for rendering support and limitations.
 
-In the Windows app, save your settings first, then drop a CLIP onto the EXE or its shortcut to export automatically. You can include a matching PSD.
+In the Windows app, save your settings first, then drop multiple CLIP files and optional PSDs onto the EXE or its shortcut. For multiple projects, each PSD is paired with the CLIP in the same directory with the same filename stem. CLIPs without a supplied PSD are processed on their own; neighboring files are not searched automatically.
+
+Projects export one at a time into separate folders beside their CLIPs. Existing output folders are preserved by adding a numeric suffix. Failed projects, including structural mismatches and unmatched PSDs, are listed while remaining projects continue. Review the results for successes, failures, and rendering warnings. Dimensions, hierarchy, names, and stacking order are checked; image content and save-state equivalence are not. Use CLIP and PSD files from the same saved state.
 
 Try the in-app sample to inspect the output.
 

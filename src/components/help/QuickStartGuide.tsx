@@ -157,8 +157,11 @@ export function QuickStartGuide({
           <section className={styles.secondary} data-help-section="desktop-quick">
             <div className={styles.secondaryTitle}>デスクトップ版の自動書き出し</div>
             <p className={styles.secondaryText}>
-              通常起動で書き出し設定を決めたあと、CLIP単独、またはCLIPと対応PSDの2ファイルをまとめて
-              EXEやショートカットへドロップします。CLIPと同じ場所へ自動出力します。
+              通常起動で書き出し設定を決めたあと、複数のCLIPと必要なPSDをまとめて
+              EXEやショートカットへドロップできます。複数作品では同じフォルダ・同名のCLIPとPSDを組にし、
+              PSDのないCLIPは単独で処理します。各CLIPと同じ場所へ、作品ごとのフォルダを作って順番に出力します。
+              構造不一致などで失敗した作品はスキップし、結果一覧に成功・失敗・再現上の注意を表示します。
+              CLIPとPSDは同じ保存状態の組を用意してください。画像内容そのものの一致は検証しません。
               複数タイムラインがある場合は、保存時に選択されていたものを使用します。
               ★や🎬をカットごとに調整したい場合は、通常画面から書き出してください。
             </p>

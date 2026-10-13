@@ -65,10 +65,14 @@ pub fn run() {
             if has_quick_export_args() {
                 if let Some(window) = app.get_webview_window("main") {
                     let _ = window.set_title("CSP Paperback クイック書き出し");
-                    let _ = window.set_resizable(false);
+                    let _ = window.set_min_size(Some(Size::Logical(LogicalSize {
+                        width: 480.0,
+                        height: 360.0,
+                    })));
+                    let _ = window.set_resizable(true);
                     let _ = window.set_size(Size::Logical(LogicalSize {
-                        width: 460.0,
-                        height: 300.0,
+                        width: 640.0,
+                        height: 520.0,
                     }));
                     let _ = window.center();
                 }

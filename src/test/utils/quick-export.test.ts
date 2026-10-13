@@ -81,14 +81,14 @@ describe('resolveQuickExportFilePair', () => {
 describe('runQuickExport', () => {
   it('CLIP単独を共通ローダーで読み、CLIPと同じ場所へ書き出す', async () => {
     const source = { width: 8, height: 8, dpi: 72, layers: [], timelines: [], defaultTimelineId: null, diagnostics: [] }
-    const state = { loadClip: vi.fn(), clipFileName: 'cut.clip', docWidth: 8, docDpiX: 72, docDpiY: 72, savedOutputConfig: DEFAULT_OUTPUT_CONFIG }
+    const state = { loadClip: vi.fn(), clipFileName: 'cut.clip', docWidth: 8, docDpiX: 72, docDpiY: 72, savedOutputConfig: DEFAULT_OUTPUT_CONFIG, clipDiagnostics: [] }
     vi.mocked(readClipFile).mockResolvedValue(source)
     mockedGetState.mockReturnValue(state as never)
     mockedDirname.mockResolvedValue('C:/cut')
     mockedLoadableFilesFromPaths.mockResolvedValue([{ name: 'cut.clip', sourceDirectory: 'C:/cut', arrayBuffer: async () => new ArrayBuffer(0), text: async () => '' }])
     mockedBuildOutputEntries.mockReturnValue([{} as OutputEntry])
     mockedSaveEntries.mockResolvedValue('C:/cut/cut')
-    await expect(runQuickExport(['C:/cut/cut.clip'], vi.fn())).resolves.toEqual({ outputDirectory: 'C:/cut/cut', entryCount: 1 })
+    await expect(runQuickExport(['C:/cut/cut.clip'], vi.fn())).resolves.toEqual({ outputDirectory: 'C:/cut/cut', entryCount: 1, warnings: [] })
     expect(readClipFile).toHaveBeenCalledWith(expect.any(ArrayBuffer), true)
     expect(state.loadClip).toHaveBeenCalledWith(source, 'cut.clip', 'C:/cut', undefined)
     expect(mockedSaveEntries).toHaveBeenCalledWith(expect.any(Array), DEFAULT_OUTPUT_CONFIG, 'cut.clip', 'C:/cut', 72, 72, expect.any(Function))
@@ -115,6 +115,7 @@ describe('runQuickExport', () => {
       timelineData: { tracks: [] },
       outputConfig: { ...DEFAULT_OUTPUT_CONFIG },
       savedOutputConfig,
+      clipDiagnostics: [],
     }
     const entry: OutputEntry = {
       path: 'A/A1.png',
@@ -164,6 +165,7 @@ describe('runQuickExport', () => {
     expect(result).toEqual({
       outputDirectory: String.raw`C:\work\cut001\cut001`,
       entryCount: 1,
+      warnings: [],
     })
   })
 
