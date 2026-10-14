@@ -92,7 +92,7 @@ function VsMemberNode({
         ) : (
           <div className={styles.vsExpandPlaceholder} />
         )}
-        <button
+        <Tooltip content={visible ? '非表示にする' : '表示にする'}><button aria-label={visible ? '非表示にする' : '表示にする'} data-tooltip={visible ? '非表示にする' : '表示にする'}
           className={styles.vsVisibilityBtn}
           onMouseDown={e => {
             e.stopPropagation()
@@ -108,13 +108,12 @@ function VsMemberNode({
               onToggleVisibility(layer.id, vsVisibilityDrag.targetVisible, { recordHistory: false })
             }
           }}
-          title={visible ? '非表示にする' : '表示にする'}
         >
           {visible ? '👁' : ''}
-        </button>
-        <span className={styles.vsLayerName} title={layer.originalName}>
+        </button></Tooltip>
+        <Tooltip content={layer.originalName}><span data-tooltip={layer.originalName} className={styles.vsLayerName}>
           {layer.name || layer.originalName}
-        </span>
+        </span></Tooltip>
       </div>
       {layer.isFolder && isExpanded && layer.children.map(child => (
         <VsMemberNode
@@ -452,13 +451,12 @@ export function VirtualSetItem({ virtualSet, onPreviewOutput }: VirtualSetItemPr
     >
       <div className={styles.header}>
         {/* 折りたたみボタン */}
-        <button
+        <Tooltip content={collapsed ? '展開' : '折りたたむ'}><button aria-label={collapsed ? '展開' : '折りたたむ'} data-tooltip={collapsed ? '展開' : '折りたたむ'}
           className={styles.collapseBtn}
           onClick={e => { e.stopPropagation(); setCollapsed(c => !c) }}
-          title={collapsed ? '展開' : '折りたたむ'}
         >
           <Chevron open={!collapsed} />
-        </button>
+        </button></Tooltip>
         {/* ドラッグハンドル */}
         <Tooltip content={"右ペインのレイヤーにドラッグして挿入位置を設定\n※ タッチ操作の場合：レイヤータブでレイヤーを選択後、↑上 / ↓下 ボタンで設定"}>
           <div
@@ -488,8 +486,8 @@ export function VirtualSetItem({ virtualSet, onPreviewOutput }: VirtualSetItemPr
             ✕
           </button>
         </Tooltip>
-        <button className={styles.collapseBtn} aria-label="仮想セルをプレビュー" title="出力プレビューに表示"
-          onClick={event => { event.stopPropagation(); useAppStore.getState().selectOutputFile(virtualOutputId(virtualSet.id)); onPreviewOutput?.() }}>◧</button>
+        <Tooltip content="出力プレビューに表示"><button data-tooltip="出力プレビューに表示" className={styles.collapseBtn} aria-label="仮想セルをプレビュー"
+          onClick={event => { event.stopPropagation(); useAppStore.getState().selectOutputFile(virtualOutputId(virtualSet.id)); onPreviewOutput?.() }}>◧</button></Tooltip>
       </div>
 
       {!collapsed && (
@@ -500,7 +498,7 @@ export function VirtualSetItem({ virtualSet, onPreviewOutput }: VirtualSetItemPr
             {insertionText ? (
               <div className={styles.insertionInfo}>
                 <span className={styles.insertionText}>{insertionText}</span>
-                <button className={styles.clearBtn} onClick={e => { e.stopPropagation(); handleClearInsertion() }} title="クリア">✕</button>
+                <Tooltip content="クリア"><button aria-label="クリア" data-tooltip="クリア" className={styles.clearBtn} onClick={e => { e.stopPropagation(); handleClearInsertion() }}>✕</button></Tooltip>
               </div>
             ) : (
               <div className={styles.insertionHint}>{t.virtualSet.insertionHint}</div>
@@ -555,19 +553,18 @@ export function VirtualSetItem({ virtualSet, onPreviewOutput }: VirtualSetItemPr
 
                         {/* フォルダなら展開ボタン */}
                         {layer?.isFolder ? (
-                          <button
+                          <Tooltip content={isExpanded ? '折りたたむ' : '展開'}><button aria-label={isExpanded ? '折りたたむ' : '展開'} data-tooltip={isExpanded ? '折りたたむ' : '展開'}
                             className={styles.memberExpandBtn}
                             onClick={e => { e.stopPropagation(); toggleVsExpanded(member.layerId) }}
-                            title={isExpanded ? '折りたたむ' : '展開'}
                           >
                             <Chevron open={isExpanded} />
-                          </button>
+                          </button></Tooltip>
                         ) : (
                           <div className={styles.memberExpandPlaceholder} />
                         )}
 
                         {/* 可視性トグル */}
-                        <button
+                        <Tooltip content={visible ? '非表示にする' : '表示にする'}><button aria-label={visible ? '非表示にする' : '表示にする'} data-tooltip={visible ? '非表示にする' : '表示にする'}
                           className={styles.memberVisibilityBtn}
                           onMouseDown={e => {
                             e.stopPropagation()
@@ -583,10 +580,9 @@ export function VirtualSetItem({ virtualSet, onPreviewOutput }: VirtualSetItemPr
                               handleToggleVisibility(member.layerId, vsVisibilityDrag.targetVisible, { recordHistory: false })
                             }
                           }}
-                          title={visible ? '非表示にする' : '表示にする'}
                         >
                           {visible ? '👁' : ''}
-                        </button>
+                        </button></Tooltip>
 
                         <span className={styles.memberName}>{layer?.name ?? member.layerId}</span>
 

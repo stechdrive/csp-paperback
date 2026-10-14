@@ -22,6 +22,7 @@ import {
 import { resolveProcessBorderColor } from '../utils/process-color'
 import { normalizeProcessTable } from '../utils/process-table'
 import { ProcessColorPicker } from './ProcessColorPicker'
+import { Modal } from './Modal'
 import { processDisplayName } from '../utils/process-folder'
 
 interface SettingsDialogProps {
@@ -238,7 +239,7 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
   }
 
   return (
-    <div className={styles.overlay} onClick={e => { if (e.target === e.currentTarget) handleClose() }}>
+    <Modal className={styles.overlay} label="書き出し詳細設定" onClose={handleClose}>
       <div className={styles.dialog}>
         <div className={styles.header}>
           <span className={styles.title}>{t.settings.title}</span>
@@ -405,6 +406,6 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
           <button className={styles.doneBtn} onClick={handleClose}>{t.settings.done}</button>
         </div>
       </div>
-    </div>
+    </Modal>
   )
 }

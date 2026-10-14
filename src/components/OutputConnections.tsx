@@ -1,8 +1,10 @@
+import { Tooltip } from './Tooltip'
 import { useEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import { createPortal } from 'react-dom'
 import { useAppStore } from '../store'
 import { selectDraftOutputs, selectLayerTreeWithVisibility, selectOutputFiles } from '../store/selectors'
 import { useRenderedOutputs } from '../hooks/useRenderedOutputs'
+import { useDismissableLayer } from '../hooks/useDismissableLayer'
 import type { CspLayer } from '../types'
 import type { OutputFile } from '../utils/output-plan'
 import styles from './LayerTreePanel.module.css'
@@ -11,7 +13,7 @@ type Edge = 'above' | 'below'
 interface SourceRow { id: string; path: string; count: number; content: boolean }
 interface Endpoint { kind: 'sources' | 'output'; edge: Edge; x: number; y: number; width: number; height: number; sources: SourceRow[] }
 interface Connection { d: string; context: boolean; targetId?: string; edge?: Edge }
-interface Popup { file: OutputFile; edge: Edge; sources: SourceRow[]; trigger: HTMLButtonElement; left: number; top: number; width: number; maxHeight: number }
+interface Popup { file: OutputFile; edge: Edge; sources: SourceRow[]; trigger: HTMLButtonElement; left: number; top?: number; bottom?: number; width: number; maxHeight: number }
 const directionName = (edge: Edge) => edge === 'above' ? '上' : '下'
 const arrow = (edge: Edge) => edge === 'above' ? '↑' : '↓'
 
@@ -137,29 +139,12 @@ export function OutputConnections({ container, treeElement }: { container: RefOb
     return () => { clear(); cancelAnimationFrame(frame); observer.disconnect(); mutation.disconnect(); root.removeEventListener('scroll', schedule, true); root.removeEventListener('wheel', wheel); window.removeEventListener('resize', schedule) }
   }, [activeId, result, layerPaths, container, treeElement])
 
-  useEffect(() => {
-    if (!visiblePopup) return
-    popupRef.current?.querySelector('button')?.focus()
-    const close = (restore: boolean) => { setPopup(null); if (restore && visiblePopup.trigger.isConnected) visiblePopup.trigger.focus({ preventScroll: true }) }
-    const outside = (event: Event) => {
-      if (event.target instanceof Node && !popupRef.current?.contains(event.target) && !visiblePopup.trigger.contains(event.target)) close(false)
-    }
-    const key = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') { event.preventDefault(); event.stopImmediatePropagation(); close(true) }
-    }
-    const resize = () => close(false)
-    document.addEventListener('pointerdown', outside, true)
-    document.addEventListener('focusin', outside)
-    document.addEventListener('keydown', key, true)
-    window.addEventListener('scroll', outside, true)
-    window.addEventListener('resize', resize)
-    window.addEventListener('blur', resize)
-    return () => {
-      document.removeEventListener('pointerdown', outside, true); document.removeEventListener('focusin', outside)
-      document.removeEventListener('keydown', key, true); window.removeEventListener('scroll', outside, true)
-      window.removeEventListener('resize', resize); window.removeEventListener('blur', resize)
-    }
-  }, [visiblePopup])
+  useDismissableLayer({ open: !!visiblePopup, content: popupRef, trigger: { current: visiblePopup?.trigger ?? null },
+    closeOnScroll: true, closeOnResize: true, initialFocus: () => popupRef.current?.querySelector('button'),
+    onDismiss: reason => {
+      setPopup(null)
+      if (reason === 'escape' && visiblePopup?.trigger.isConnected) visiblePopup.trigger.focus({ preventScroll: true })
+    } })
 
   return <>
     <svg className={styles.connections} aria-hidden="true" data-testid="output-connections">
@@ -171,13 +156,12 @@ export function OutputConnections({ container, treeElement }: { container: RefOb
       if (!parent) return null
       // Keep the overlay inside its scroller in the DOM: native wheel events and
       // Shift+wheel navigation must behave exactly like the rows beneath it.
-      return createPortal(<button type="button"
+      return createPortal(<Tooltip content={endpoint.kind === 'sources' ? endpoint.sources.map(source => source.path).join('\n') : selected[0]?.relativePath}><button data-tooltip={endpoint.kind === 'sources' ? endpoint.sources.map(source => source.path).join('\n') : selected[0]?.relativePath} type="button"
       className={styles.connectionEndpoint} style={{ left: endpoint.x, top: endpoint.y, width: endpoint.width, height: endpoint.height }}
       data-connection-kind={endpoint.kind} data-connection-edge={endpoint.edge}
       aria-label={endpoint.kind === 'sources' ? `${directionName(endpoint.edge)}にある合成元${endpoint.sources.length}項目を表示` : '選択中の出力へ戻る'}
       aria-haspopup={endpoint.kind === 'sources' ? 'dialog' : undefined}
       aria-expanded={endpoint.kind === 'sources' ? visiblePopup?.edge === endpoint.edge : undefined}
-      title={endpoint.kind === 'sources' ? endpoint.sources.map(source => source.path).join('\n') : selected[0]?.relativePath}
       onClick={event => {
         if (endpoint.kind === 'output') {
           const row = [...container.current!.querySelectorAll<HTMLElement>('[data-output-id]')].find(row => row.dataset.outputId === activeId)
@@ -188,17 +172,21 @@ export function OutputConnections({ container, treeElement }: { container: RefOb
         if (visiblePopup?.edge === endpoint.edge) { setPopup(null); return }
         if (!selected[0]) return
         const rect = event.currentTarget.getBoundingClientRect()
-        const width = Math.min(420, window.innerWidth - 16), maxHeight = Math.min(320, window.innerHeight - 16)
+        const width = Math.min(420, window.innerWidth - 16)
+        const above = Math.max(0, rect.top - 14), below = Math.max(0, window.innerHeight - rect.bottom - 14)
+        const useBelow = below >= 320 || below > above
+        const maxHeight = Math.min(320, useBelow ? below : above)
         setPopup({ file: selected[0], edge: endpoint.edge, sources: endpoint.sources, trigger: event.currentTarget, width, maxHeight,
-          left: Math.max(8, Math.min(rect.left, window.innerWidth - width - 8)), top: Math.max(8, Math.min(rect.bottom + 6, window.innerHeight - maxHeight - 8)) })
+          left: Math.max(8, Math.min(rect.left, window.innerWidth - width - 8)),
+          ...(useBelow ? { top: rect.bottom + 6 } : { bottom: window.innerHeight - rect.top + 6 }) })
       }}>
       <span>{arrow(endpoint.edge)} {endpoint.kind === 'sources' ? `${endpoint.sources.length}項目` : '選択中'}</span>
       <span className={styles.endpointName}>{endpoint.kind === 'sources' ? endpoint.sources[endpoint.edge === 'above' ? endpoint.sources.length - 1 : 0]?.path : selected[0]?.relativePath}</span>
       {endpoint.kind === 'sources' && <span aria-hidden="true">⋯</span>}
-    </button>, parent, `${endpoint.kind}-${endpoint.edge}`)
+    </button></Tooltip>, parent, `${endpoint.kind}-${endpoint.edge}`)
     })}
     {visiblePopup && createPortal(<div ref={popupRef} role="dialog" aria-label="画面外の合成元" className={styles.sourcePopup}
-      style={{ left: visiblePopup.left, top: visiblePopup.top, width: visiblePopup.width, maxHeight: visiblePopup.maxHeight }}>
+      style={{ left: visiblePopup.left, top: visiblePopup.top, bottom: visiblePopup.bottom, width: visiblePopup.width, maxHeight: visiblePopup.maxHeight }}>
       <header><strong>{directionName(visiblePopup.edge)}にある合成元 · {visiblePopup.sources.length}項目</strong>
         <button type="button" aria-label="合成元の一覧を閉じる" onClick={() => { setPopup(null); visiblePopup.trigger.focus({ preventScroll: true }) }}>✕</button></header>
       <ul>{visiblePopup.sources.map(source => <li key={source.id}><button type="button" data-source-id={source.id}

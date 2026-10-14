@@ -1,5 +1,6 @@
+import { Tooltip } from './Tooltip'
 import { useEffect, useState } from 'react'
-import { createPortal } from 'react-dom'
+import { Modal } from './Modal'
 import { hexToRgb, normalizeHexColor, rgbToHex } from '../utils/process-color'
 import styles from './SettingsDialog.module.css'
 
@@ -19,15 +20,6 @@ export function ProcessColorPicker({ color, label, onChange }: ProcessColorPicke
     setHexDraft(normalizedColor.slice(1))
   }, [normalizedColor])
 
-  useEffect(() => {
-    if (!open) return
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false)
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [open])
-
   const updateRgb = (channel: 'r' | 'g' | 'b', rawValue: string) => {
     const parsed = Number.parseInt(rawValue, 10)
     const next = { ...rgb, [channel]: Number.isFinite(parsed) ? parsed : 0 }
@@ -43,26 +35,16 @@ export function ProcessColorPicker({ color, label, onChange }: ProcessColorPicke
 
   return (
     <>
-      <button
+      <Tooltip content={`${label}のフチ色 ${normalizedColor}`}><button data-tooltip={`${label}のフチ色 ${normalizedColor}`}
         type="button"
         className={styles.colorSwatchButton}
         style={{ backgroundColor: normalizedColor }}
         onClick={() => setOpen(true)}
         aria-label={`${label}のフチ色を変更`}
-        title={`${label}のフチ色 ${normalizedColor}`}
-      />
-      {open && createPortal(
-        <div
-          className={styles.colorPickerOverlay}
-          onMouseDown={event => {
-            if (event.target === event.currentTarget) setOpen(false)
-          }}
-        >
+      /></Tooltip>
+      {open && <Modal className={styles.colorPickerOverlay} label={`${label}のフチ色`} onClose={() => setOpen(false)}>
           <div
             className={styles.colorPickerDialog}
-            role="dialog"
-            aria-modal="true"
-            aria-label={`${label}のフチ色`}
           >
             <div className={styles.colorPickerHeader}>
               <div>
@@ -135,9 +117,7 @@ export function ProcessColorPicker({ color, label, onChange }: ProcessColorPicke
               onClick={() => setOpen(false)}
             >決定</button>
           </div>
-        </div>,
-        document.body,
-      )}
+      </Modal>}
     </>
   )
 }

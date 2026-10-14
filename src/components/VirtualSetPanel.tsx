@@ -75,14 +75,13 @@ export function VirtualSetPanel({ onClose, onPreviewOutput }: { onClose?: () => 
   return (
     <div className={styles.panel}>
       <div className={styles.header}>
-        {onClose && <button
+        {onClose && <Tooltip content="仮想セルを閉じる"><button data-tooltip="仮想セルを閉じる"
           className={styles.collapseBtn}
           onClick={onClose}
-          title="仮想セルを閉じる"
           aria-label="仮想セルを閉じる"
         >
           ‹
-        </button>}
+        </button></Tooltip>}
         <Tooltip
           content={'背景原図と任意のキャラのセルを組み合わせ、レイアウト画像を作れます。\n挿入位置はレイヤーツリーへのドラッグで指定できます。'}
           placement="bottom"

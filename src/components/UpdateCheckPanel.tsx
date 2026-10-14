@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocale } from '../i18n/locale'
+import { Modal } from './Modal'
 import { isDesktopRuntime } from '../platform/runtime'
 import { checkDesktopUpdate, type DesktopUpdateInfo } from '../platform/update-check'
 import { openDesktopReleasesPage } from '../platform/external-links'
@@ -119,8 +120,8 @@ export function UpdateCheckDialog({ onClose }: UpdateCheckDialogProps) {
   }, [handleCheck])
 
   return (
-    <div className={styles.overlay} onClick={e => { if (e.target === e.currentTarget) onClose() }}>
-      <div className={styles.dialog} role="dialog" aria-modal="true" aria-labelledby="update-check-title">
+    <Modal className={styles.overlay} labelledBy="update-check-title" onClose={onClose}>
+      <div className={styles.dialog}>
         <div className={styles.dialogHeader}>
           <span id="update-check-title" className={styles.dialogTitle}>{t.toolbar.updateCheck}</span>
           <button className={styles.closeButton} type="button" onClick={onClose} aria-label="閉じる">✕</button>
@@ -137,6 +138,6 @@ export function UpdateCheckDialog({ onClose }: UpdateCheckDialogProps) {
           )}
         </div>
       </div>
-    </div>
+    </Modal>
   )
 }

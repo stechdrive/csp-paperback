@@ -191,34 +191,31 @@ function VirtualSetBadge({ vs, indentWidth, onClear }: {
   }, [onDragStart])
 
   return (
-    <div
+    <Tooltip content={vs.name}><div data-tooltip={vs.name}
       className={styles.vsBadge}
       data-virtual-set-id={vs.id}
       onClick={e => { e.stopPropagation(); setSelectedVirtualSet(vs.id) }}
-      title={vs.name}
     >
       <div className={styles.vsBadgeIndent} style={{ width: indentWidth }} />
       {/* ドラッグハンドル：ドラッグして挿入位置を変更 */}
-      <span
+      <Tooltip content="ドラッグして挿入位置を変更"><span data-tooltip="ドラッグして挿入位置を変更"
         className={styles.vsBadgeDragHandle}
         draggable={draggable}
         onDragStart={handleDragStart}
         onDragEnd={onDragEnd}
         onPointerDown={onPointerDown}
-        title="ドラッグして挿入位置を変更"
       >
         ⠿
-      </span>
+      </span></Tooltip>
       <span className={styles.vsBadgeIcon}>⊞</span>
       <span className={styles.vsBadgeName}>{vs.name}</span>
-      <button
+      <Tooltip content="挿入位置をクリア"><button aria-label="挿入位置をクリア" data-tooltip="挿入位置をクリア"
         className={styles.vsBadgeClear}
         onClick={e => { e.stopPropagation(); onClear() }}
-        title="挿入位置をクリア"
       >
         ✕
-      </button>
-    </div>
+      </button></Tooltip>
+    </div></Tooltip>
   )
 }
 
@@ -498,9 +495,9 @@ export function LayerTreeNode({
 
         <span className={`${styles.typeIcon} ${isCell ? styles.typeIconCell : ''} ${isAutoProcessAnimFolder ? styles.typeIconAutoProcess : ''}`}>{typeIcon}</span>
 
-        <span className={nameClass} title={layer.originalName}>
+        <Tooltip content={layer.originalName}><span data-tooltip={layer.originalName} className={nameClass}>
           {(layer.autoMarked || isAutoProcessAnimFolder) ? layer.originalName : (layer.name || layer.originalName)}
-        </span>
+        </span></Tooltip>
 
         {!!outputStatus?.excluded && <Tooltip content={`出力対象の設定で ${outputStatus.excluded} / ${outputStatus.total} 件をOFFにしています。目玉の表示状態は変わりません。`}>
           <span className={styles.outputStatus} data-output-state={outputStatus.excluded === outputStatus.total ? 'off' : 'partial'}>

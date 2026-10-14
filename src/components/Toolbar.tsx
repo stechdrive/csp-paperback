@@ -1,4 +1,5 @@
-import { useRef, useState, useEffect } from 'react'
+import { useDismissableLayer } from '../hooks/useDismissableLayer'
+import { useRef, useState } from 'react'
 import { useAppStore } from '../store'
 import { useLocale } from '../i18n/locale'
 import { useExport } from '../hooks/useExport'
@@ -104,26 +105,12 @@ export function Toolbar({ onFiles, isLoading, error, notification, canUndo, canR
   const hasStatusDetails = Boolean(error || exportError || isLoading || isExporting || notification)
   if (openPopover === 'status' && !hasStatusDetails) setOpenPopover(null)
 
-  useEffect(() => {
-    if (!openPopover) return
-    const ref = openPopover === 'app' ? appMenuRef : openPopover === 'export' ? exportMenuRef : statusRef
-    const handleOutside = (event: Event) => {
-      if (ref.current && !ref.current.contains(event.target as Node)) setOpenPopover(null)
-    }
-    const handleKey = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return
+  const popoverRef = openPopover === 'app' ? appMenuRef : openPopover === 'export' ? exportMenuRef : statusRef
+  useDismissableLayer({ open: !!openPopover, content: popoverRef,
+    onDismiss: reason => {
       setOpenPopover(null)
-      ref.current?.querySelector<HTMLButtonElement>('button')?.focus()
-    }
-    document.addEventListener('pointerdown', handleOutside)
-    document.addEventListener('focusin', handleOutside)
-    document.addEventListener('keydown', handleKey)
-    return () => {
-      document.removeEventListener('pointerdown', handleOutside)
-      document.removeEventListener('focusin', handleOutside)
-      document.removeEventListener('keydown', handleKey)
-    }
-  }, [openPopover])
+      if (reason === 'escape') popoverRef.current?.querySelector<HTMLButtonElement>('button')?.focus({ preventScroll: true })
+    } })
 
   const handleOpenFiles = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files ?? [])
@@ -156,7 +143,7 @@ export function Toolbar({ onFiles, isLoading, error, notification, canUndo, canR
     <>
       <div className={styles.toolbar} aria-label="プレビューと出力の操作">
         <div className={styles.menuWrap} ref={appMenuRef}>
-          <button className={`${styles.btn} ${styles.iconBtn}`} onClick={() => setOpenPopover(openPopover === 'app' ? null : 'app')} aria-label="メニュー" title="CSP Paperback メニュー" aria-expanded={openPopover === 'app'} aria-controls="toolbar-app-menu"><Icon name="menu" /></button>
+          <Tooltip content="CSP Paperback メニュー"><button data-tooltip="CSP Paperback メニュー" className={`${styles.btn} ${styles.iconBtn}`} onClick={() => setOpenPopover(openPopover === 'app' ? null : 'app')} aria-label="メニュー" aria-expanded={openPopover === 'app'} aria-controls="toolbar-app-menu"><Icon name="menu" /></button></Tooltip>
           {openPopover === 'app' && (
             <div className={`${styles.popover} ${styles.appMenu}`} id="toolbar-app-menu">
               <div className={styles.appIdentity}><strong>CSP Paperback</strong><span>v{__APP_VERSION__}</span></div>
@@ -174,21 +161,21 @@ export function Toolbar({ onFiles, isLoading, error, notification, canUndo, canR
         </div>
 
         <Tooltip content={`${t.input.openTitle}\n${t.input.openHint}`} placement="bottom">
-          <button className={`${styles.btn} ${styles.iconBtn} ${styles.openButton}`} onClick={() => void handleOpenButtonClick()} disabled={isLoading} aria-label="ファイルを開く" title="ファイルを開く"><Icon name="open" /></button>
+          <button className={`${styles.btn} ${styles.iconBtn} ${styles.openButton}`} onClick={() => void handleOpenButtonClick()} disabled={isLoading} aria-label="ファイルを開く"><Icon name="open" /></button>
         </Tooltip>
         <input ref={openInputRef} type="file" accept=".clip,.psd,.xdts,.json,*/*" multiple hidden onChange={handleOpenFiles} />
 
         <div className={styles.historyButtons}>
-          <button className={`${styles.btn} ${styles.iconBtn}`} onClick={onUndo} disabled={!canUndo} aria-label="元に戻す" title="元に戻す (Ctrl+Z)"><Icon name="undo" /></button>
-          <button className={`${styles.btn} ${styles.iconBtn}`} onClick={onRedo} disabled={!canRedo} aria-label="やり直し" title="やり直し (Ctrl+Shift+Z)"><Icon name="redo" /></button>
+          <Tooltip content="元に戻す (Ctrl+Z)"><button data-tooltip="元に戻す (Ctrl+Z)" className={`${styles.btn} ${styles.iconBtn}`} onClick={onUndo} disabled={!canUndo} aria-label="元に戻す"><Icon name="undo" /></button></Tooltip>
+          <Tooltip content="やり直し (Ctrl+Shift+Z)"><button data-tooltip="やり直し (Ctrl+Shift+Z)" className={`${styles.btn} ${styles.iconBtn}`} onClick={onRedo} disabled={!canRedo} aria-label="やり直し"><Icon name="redo" /></button></Tooltip>
         </div>
 
         <div className={styles.viewSwitch} role="group" aria-label="メインプレビューの表示">
-          <button className={`${styles.btn} ${styles.viewButton} ${previewMode === 'output' ? styles.active : ''}`} aria-label="出力プレビュー" title="出力プレビュー" aria-pressed={previewMode === 'output'} onClick={() => onPreviewModeChange('output')}><Icon name="output" /><span className={styles.fullLabel}>出力プレビュー</span><span className={styles.shortLabel}>出力</span></button>
-          <button className={`${styles.btn} ${styles.viewButton} ${previewMode === 'navigator' ? styles.active : ''}`} aria-label="全体ナビゲーター" title="全体ナビゲーター" aria-pressed={previewMode === 'navigator'} onClick={() => onPreviewModeChange('navigator')}><Icon name="navigator" /><span className={styles.fullLabel}>全体ナビゲーター</span><span className={styles.shortLabel}>全体</span></button>
+          <Tooltip content="出力プレビュー"><button data-tooltip="出力プレビュー" className={`${styles.btn} ${styles.viewButton} ${previewMode === 'output' ? styles.active : ''}`} aria-label="出力プレビュー" aria-pressed={previewMode === 'output'} onClick={() => onPreviewModeChange('output')}><Icon name="output" /><span className={styles.fullLabel}>出力プレビュー</span><span className={styles.shortLabel}>出力</span></button></Tooltip>
+          <Tooltip content="全体ナビゲーター"><button data-tooltip="全体ナビゲーター" className={`${styles.btn} ${styles.viewButton} ${previewMode === 'navigator' ? styles.active : ''}`} aria-label="全体ナビゲーター" aria-pressed={previewMode === 'navigator'} onClick={() => onPreviewModeChange('navigator')}><Icon name="navigator" /><span className={styles.fullLabel}>全体ナビゲーター</span><span className={styles.shortLabel}>全体</span></button></Tooltip>
         </div>
 
-        <button className={`${styles.btn} ${styles.virtualButton} ${virtualPanelOpen ? styles.active : ''}`} onClick={onToggleVirtualPanel} aria-label="仮想セル" title="仮想セルの編集パネルを開閉" aria-expanded={virtualPanelOpen} aria-pressed={virtualPanelOpen}><Icon name="virtual" /><span className={styles.fullLabel}>仮想セル</span></button>
+        <Tooltip content="仮想セルの編集パネルを開閉"><button data-tooltip="仮想セルの編集パネルを開閉" className={`${styles.btn} ${styles.virtualButton} ${virtualPanelOpen ? styles.active : ''}`} onClick={onToggleVirtualPanel} aria-label="仮想セル" aria-expanded={virtualPanelOpen} aria-pressed={virtualPanelOpen}><Icon name="virtual" /><span className={styles.fullLabel}>仮想セル</span></button></Tooltip>
 
         <div className={styles.statusArea} ref={statusRef}>
           {hasStatus && (hasStatusDetails
@@ -208,13 +195,13 @@ export function Toolbar({ onFiles, isLoading, error, notification, canUndo, canR
         <ClipDiagnosticsControl />
 
         <div className={styles.utilityButtons}>
-          <button className={`${styles.btn} ${styles.iconBtn}`} onClick={() => menuAction(() => setShowHelp(true))} aria-label="ヘルプ" title="使い方ヘルプを表示"><Icon name="help" /></button>
-          <Tooltip content="書き出し詳細設定・工程フォルダリストの編集" placement="bottom"><button className={`${styles.btn} ${styles.iconBtn}`} onClick={() => menuAction(() => setShowSettings(true))} aria-label={t.toolbar.settings} title={t.toolbar.settings}><Icon name="settings" /></button></Tooltip>
+          <Tooltip content="使い方ヘルプを表示"><button data-tooltip="使い方ヘルプを表示" className={`${styles.btn} ${styles.iconBtn}`} onClick={() => menuAction(() => setShowHelp(true))} aria-label="ヘルプ"><Icon name="help" /></button></Tooltip>
+          <Tooltip content="書き出し詳細設定・工程フォルダリストの編集" placement="bottom"><button className={`${styles.btn} ${styles.iconBtn}`} onClick={() => menuAction(() => setShowSettings(true))} aria-label={t.toolbar.settings}><Icon name="settings" /></button></Tooltip>
         </div>
 
         <Tooltip content={canExportToDirectory ? desktopRuntime ? t.export.triggerHintChoiceDesktop : t.export.triggerHintChoiceBrowser : t.export.triggerHintZip} placement="bottom" disabled={openPopover === 'export'}>
           <div className={styles.menuWrap} ref={exportMenuRef}>
-            <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={() => canExportToDirectory ? setOpenPopover(openPopover === 'export' ? null : 'export') : void handleExportSelect('zip')} disabled={(!psdFileName && !clipFileName) || isExporting || isLoading} aria-label={isExporting ? t.export.exporting : t.toolbar.export} aria-haspopup={canExportToDirectory ? 'menu' : undefined} aria-expanded={canExportToDirectory ? openPopover === 'export' : undefined} title={t.toolbar.export}>
+            <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={() => canExportToDirectory ? setOpenPopover(openPopover === 'export' ? null : 'export') : void handleExportSelect('zip')} disabled={(!psdFileName && !clipFileName) || isExporting || isLoading} aria-label={isExporting ? t.export.exporting : t.toolbar.export} aria-haspopup={canExportToDirectory ? 'menu' : undefined} aria-expanded={canExportToDirectory ? openPopover === 'export' : undefined}>
               <Icon name="export" /><span>{t.toolbar.export}</span>{canExportToDirectory && <span className={styles.exportCaret}>▾</span>}
             </button>
             {canExportToDirectory && openPopover === 'export' && <div className={`${styles.popover} ${styles.exportMenu}`} role="menu">

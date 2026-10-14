@@ -1,3 +1,4 @@
+import { Tooltip } from './Tooltip'
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { BlendMode } from '../types'
 import styles from './BlendOpacityBar.module.css'
@@ -118,7 +119,7 @@ export function DragNumber({ value, min, max, disabled, onChangeStart, onChange 
   }
 
   return (
-    <button
+    <Tooltip content="左右にドラッグして変更 / クリックで数値入力"><button data-tooltip="左右にドラッグして変更 / クリックで数値入力"
       type="button"
       disabled={disabled}
       aria-label={`不透明度 ${value}%`}
@@ -132,14 +133,13 @@ export function DragNumber({ value, min, max, disabled, onChangeStart, onChange 
           handleClick()
         }
       }}
-      title="左右にドラッグして変更 / クリックで数値入力"
     >
       <span className={styles.opacityScrubberLabel}>不透明度</span>
       <span className={styles.opacityScrubberTrack}>
         <span className={styles.opacityScrubberFill} style={{ width: `${value}%` }} />
       </span>
       <span className={styles.opacityScrubberValue}>{value}%</span>
-    </button>
+    </button></Tooltip>
   )
 }
 

@@ -128,7 +128,7 @@ test('長いファイル名と複数出力は下端から確認でき、画像�
   await page.getByRole('option', { name: 'B_1.jpg', exact: true }).click()
   await page.getByRole('button', { name: '選択中の出力をツリーで表示' }).click()
   await page.getByRole('listbox', { name: '出力ファイル' }).getByRole('option', { name: 'B_1_s.jpg', exact: true }).click({ modifiers: ['Control'] })
-  await page.getByRole('button', { name: '選択項目を並べて表示' }).click()
+  await page.getByRole('button', { name: '選択項目を並べて比較' }).click()
   await expect(output.locator('canvas')).toHaveCount(2)
   const files = page.getByRole('button', { name: 'プレビュー中のファイル名（2件）', exact: true })
   await expect(files).toContainText('2件')
@@ -146,7 +146,7 @@ test('長いファイル名と複数出力は下端から確認でき、画像�
   await page.keyboard.press('Escape')
 
   const navigator = page.getByTestId('navigator-panel')
-  const resize = page.getByTitle('ナビゲーターの高さを変更')
+  const resize = page.locator('[data-tooltip="ナビゲーターの高さを変更"]')
   const handle = (await resize.boundingBox())!
   await page.mouse.move(handle.x + handle.width / 2, handle.y + handle.height / 2)
   await page.mouse.down()

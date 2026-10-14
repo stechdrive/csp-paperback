@@ -1,3 +1,5 @@
+import { useDismissableLayer } from '../hooks/useDismissableLayer'
+import { Tooltip } from './Tooltip'
 import { useEffect, useId, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useAppStore } from '../store'
@@ -25,47 +27,31 @@ function Diagnostics({ items }: { items: ClipDiagnostic[] }) {
   const [position, setPosition] = useState<ReturnType<typeof popupPosition> | null>(null)
   const open = position !== null
 
+  useDismissableLayer({ open, content: popup, trigger,
+    initialFocus: () => closeButton.current,
+    onDismiss: reason => { setPosition(null); if (reason === 'escape') trigger.current?.focus({ preventScroll: true }) } })
   useEffect(() => {
     if (!open) return
-    closeButton.current?.focus()
-    const outside = (event: Event) => {
-      if (event.target instanceof Node && !popup.current?.contains(event.target) && !trigger.current?.contains(event.target)) {
-        setPosition(null)
-      }
-    }
-    const escape = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return
-      event.preventDefault()
-      setPosition(null)
-      trigger.current?.focus()
-    }
     const reposition = () => {
       if (trigger.current) setPosition(popupPosition(trigger.current))
     }
     const observer = new ResizeObserver(reposition)
     if (trigger.current?.parentElement) observer.observe(trigger.current.parentElement)
-    document.addEventListener('pointerdown', outside)
-    document.addEventListener('focusin', outside)
-    document.addEventListener('keydown', escape)
     window.addEventListener('resize', reposition)
     window.addEventListener('scroll', reposition, true)
     return () => {
       observer.disconnect()
-      document.removeEventListener('pointerdown', outside)
-      document.removeEventListener('focusin', outside)
-      document.removeEventListener('keydown', escape)
       window.removeEventListener('resize', reposition)
       window.removeEventListener('scroll', reposition, true)
     }
   }, [open])
 
   return <>
-    <button
+    <Tooltip content={`再現状況 ${items.length}件`}><button data-tooltip={`再現状況 ${items.length}件`}
       ref={trigger}
       type="button"
       className={styles.trigger}
       aria-label={`再現状況 ${items.length}件`}
-      title={`再現状況 ${items.length}件`}
       aria-expanded={open}
       aria-controls={open ? id : undefined}
       aria-haspopup="dialog"
@@ -73,7 +59,7 @@ function Diagnostics({ items }: { items: ClipDiagnostic[] }) {
     >
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 7v6m0 3v1" /></svg>
       <span className={styles.triggerLabel}>再現状況 {items.length}件</span>
-    </button>
+    </button></Tooltip>
     {position && createPortal(
       <div ref={popup} id={id} className={styles.popup} style={position} role="dialog" aria-labelledby={`${id}-title`}>
         <div className={styles.popupHeader}>
@@ -106,14 +92,13 @@ export function ClipTimelineSelect() {
   if (!clip || clip.timelines.length <= 1) return null
 
   return <div className={styles.controls}>
-    {clip.timelines.length > 1 && <select
+    {clip.timelines.length > 1 && <Tooltip content="タイムライン"><select data-tooltip="タイムライン"
       className={styles.timeline}
       aria-label="タイムライン"
-      title="タイムライン"
       value={timelineId ?? ''}
       onChange={event => selectTimeline(Number(event.target.value))}
     >
       {clip.timelines.map(t => <option key={t.id} value={t.id}>{t.data.timeTableName || `タイムライン ${t.id}`}</option>)}
-    </select>}
+    </select></Tooltip>}
   </div>
 }

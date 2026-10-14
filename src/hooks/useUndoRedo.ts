@@ -16,6 +16,7 @@ export function useUndoRedo() {
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (!(e.ctrlKey || e.metaKey) || e.defaultPrevented || e.isComposing) return
+      if (document.querySelector('dialog[open]')) return
       if (e.target instanceof Element && e.target.closest('input, textarea, select, [contenteditable="true"], dialog')) return
       if (e.key === 'z' && !e.shiftKey) {
         e.preventDefault()

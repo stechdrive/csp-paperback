@@ -1,6 +1,6 @@
 .tooltip {
   position: fixed;
-  z-index: 9999;
+  z-index: 10020;
   background: var(--color-surface-tooltip);
   color: var(--color-text-primary);
   font-size: 0.72rem;
@@ -13,7 +13,7 @@
   max-width: min(40rem, calc(100vw - 16px));
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  pointer-events: none;
+  pointer-events: auto;
   animation: fadeIn 0.1s ease;
 }
 
@@ -67,12 +67,3 @@
   border-bottom-color: var(--color-surface-tooltip);
   z-index: 1;
 }
-
-/* モバイルではツールチップを非表示（hoverが不自然） */
-@media (pointer: coarse) and (max-width: 1024px) {
-  .tooltip {
-    display: none !important;
-  }
-}
-
-

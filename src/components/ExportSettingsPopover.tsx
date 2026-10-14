@@ -1,3 +1,4 @@
+import { useDismissableLayer } from '../hooks/useDismissableLayer'
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { ExportSettings } from './ExportSettings'
@@ -17,30 +18,17 @@ export function ExportSettingsPopover({ children }: { children?: ReactNode }) {
   const close = useRef<HTMLButtonElement>(null)
   const [position, setPosition] = useState<ReturnType<typeof positionFor> | null>(null)
   const open = position !== null
+  useDismissableLayer({ open, content: popup, trigger,
+    initialFocus: () => close.current,
+    onDismiss: reason => { setPosition(null); if (reason === 'escape') trigger.current?.focus({ preventScroll: true }) } })
   useEffect(() => {
     if (!open) return
-    close.current?.focus()
-    const outside = (event: Event) => {
-      if (event.target instanceof Node && !popup.current?.contains(event.target) && !trigger.current?.contains(event.target)) setPosition(null)
-    }
-    const escape = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return
-      event.preventDefault()
-      setPosition(null)
-      trigger.current?.focus()
-    }
     const reposition = () => { if (trigger.current) setPosition(positionFor(trigger.current)) }
     const observer = new ResizeObserver(reposition)
     if (trigger.current) observer.observe(trigger.current)
-    document.addEventListener('pointerdown', outside)
-    document.addEventListener('focusin', outside)
-    document.addEventListener('keydown', escape)
     window.addEventListener('resize', reposition)
     return () => {
       observer.disconnect()
-      document.removeEventListener('pointerdown', outside)
-      document.removeEventListener('focusin', outside)
-      document.removeEventListener('keydown', escape)
       window.removeEventListener('resize', reposition)
     }
   }, [open])

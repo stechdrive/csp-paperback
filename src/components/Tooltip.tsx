@@ -1,10 +1,20 @@
-import { useState, useRef, useCallback, useLayoutEffect, useEffect, type RefObject } from 'react'
+import { cloneElement, useId, useState, useRef, useCallback, useLayoutEffect, useEffect, type RefObject, type HTMLAttributes, type Ref, type ReactElement } from 'react'
 import { createPortal } from 'react-dom'
+import { useDismissableLayer } from '../hooks/useDismissableLayer'
 import styles from './Tooltip.module.css'
 
+function attachRef(ref: Ref<HTMLElement> | undefined, node: HTMLElement | null) {
+  if (typeof ref === 'function') {
+    const cleanup = ref(node)
+    return () => { if (typeof cleanup === 'function') cleanup(); else ref(null) }
+  }
+  if (ref) ref.current = node
+  return () => { if (ref) ref.current = null }
+}
+
 interface TooltipProps {
-  content: string
-  children: React.ReactElement
+  content: string | undefined
+  children: ReactElement<HTMLAttributes<HTMLElement> & { ref?: Ref<HTMLElement> }>
   /** 表示遅延 ms（デフォルト 300） */
   delay?: number
   /** ツールチップの配置（デフォルト top） */
@@ -13,39 +23,59 @@ interface TooltipProps {
   avoidRef?: RefObject<HTMLElement | null>
   /** true の間はツールチップを表示しない */
   disabled?: boolean
+  /** 警告など、タッチでも説明を開閉するボタン */
+  toggleOnClick?: boolean
 }
 
-export function Tooltip({ content, children, delay = 300, placement = 'top', avoidRef, disabled = false }: TooltipProps) {
-  const [visible, setVisible] = useState(false)
+export function Tooltip({ content, children, delay = 300, placement = 'top', avoidRef, disabled = false, toggleOnClick = false }: TooltipProps) {
+  const id = useId()
+  const [portal, setPortal] = useState<Element | null>(null)
   const timer = useRef<number>(0)
-  const wrapRef = useRef<HTMLSpanElement>(null)
+  const anchorRef = useRef<HTMLElement>(null)
   const tooltipRef = useRef<HTMLDivElement>(null)
+  const pinned = useRef(false)
+  const originalRef = children.props.ref
+  const setAnchor = useCallback((node: HTMLElement | null) => {
+    anchorRef.current = node
+    const detach = attachRef(originalRef, node)
+    return () => {
+      anchorRef.current = null
+      detach()
+    }
+  }, [originalRef])
 
+  const show = useCallback(() => setPortal(anchorRef.current?.closest('dialog[open]') ?? document.body), [])
   const handleEnter = useCallback(() => {
-    if (disabled) return
+    if (disabled || !content) return
     clearTimeout(timer.current)
-    timer.current = window.setTimeout(() => setVisible(true), delay)
-  }, [delay, disabled])
+    timer.current = window.setTimeout(show, delay)
+  }, [delay, disabled, content, show])
 
-  const handleLeave = useCallback(() => {
+  const close = useCallback(() => {
     clearTimeout(timer.current)
-    setVisible(false)
+    pinned.current = false
+    setPortal(null)
   }, [])
+  const handleLeave = () => {
+    clearTimeout(timer.current)
+    if (!pinned.current) timer.current = window.setTimeout(close, 100)
+  }
 
   useEffect(() => {
     if (!disabled) return
-    clearTimeout(timer.current)
-  }, [disabled])
+    close()
+  }, [disabled, close])
 
   useEffect(() => () => clearTimeout(timer.current), [])
 
-  const isTooltipVisible = visible && !disabled
+  const isTooltipVisible = !!portal && !disabled && !!content
+  useDismissableLayer({ open: isTooltipVisible, content: tooltipRef, trigger: anchorRef, tooltip: true,
+    closeOnScroll: true, closeOnResize: true, onDismiss: close })
 
   // 実寸で配置する。画面端で反転するときも出力例を避ける。
   useLayoutEffect(() => {
     const tip = tooltipRef.current
-    // display:contents のラッパー自身は box を持たない。
-    const anchor = wrapRef.current?.firstElementChild
+    const anchor = anchorRef.current
     if (!isTooltipVisible || !tip || !anchor) return
     const MARGIN = 8
     const position = () => {
@@ -86,19 +116,40 @@ export function Tooltip({ content, children, delay = 300, placement = 'top', avo
   }, [isTooltipVisible, placement, avoidRef, content])
 
   return (
-    <span ref={wrapRef} onMouseEnter={handleEnter} onMouseLeave={handleLeave} style={{ display: 'contents' }}>
-      {children}
-      {isTooltipVisible && createPortal(
+    <>
+      {/* cloneElement only forwards these ref/event callbacks; it does not call them during render. */}
+      {/* eslint-disable-next-line react-hooks/refs */}
+      {cloneElement(children, {
+        ref: setAnchor,
+        title: undefined,
+        'aria-describedby': [children.props['aria-describedby'], isTooltipVisible ? id : undefined].filter(Boolean).join(' ') || undefined,
+        onPointerEnter: event => { children.props.onPointerEnter?.(event); if (event.pointerType !== 'touch' && !event.buttons) handleEnter() },
+        onPointerLeave: event => { children.props.onPointerLeave?.(event); handleLeave() },
+        onFocus: event => { children.props.onFocus?.(event); if (toggleOnClick || event.target.matches(':focus-visible')) handleEnter() },
+        onBlur: event => { children.props.onBlur?.(event); if (!tooltipRef.current?.contains(event.relatedTarget)) close() },
+        onPointerDown: event => { if (!toggleOnClick) close(); children.props.onPointerDown?.(event) },
+        onClick: event => {
+          children.props.onClick?.(event)
+          if (toggleOnClick && !disabled) {
+            clearTimeout(timer.current)
+            if (pinned.current) close()
+            else { pinned.current = true; show() }
+          }
+        },
+      })}
+      {isTooltipVisible && portal && createPortal(
         <div
+          id={id}
           ref={tooltipRef}
           role="tooltip"
           className={styles.tooltip}
           style={{ visibility: 'hidden' }}
+          onMouseEnter={() => clearTimeout(timer.current)} onMouseLeave={handleLeave}
         >
           {content}
         </div>,
-        document.body
+        portal
       )}
-    </span>
+    </>
   )
 }

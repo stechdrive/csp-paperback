@@ -113,8 +113,8 @@ export function LayerTreePanel({ onPreviewOutput }: { onPreviewOutput?: () => vo
       </div>
       <div className={styles.contents}>
       <div className={styles.listHeading}><strong>素材レイヤー</strong>
-        <button type="button" disabled={!selectedLayer} aria-label="選択素材をクイックルック" title="素材単体を確認（Space）"
-          onClick={() => selectedLayerId && useAppStore.getState().openQuickLook(selectedLayerId)}>⌕</button>
+        <Tooltip content="素材単体を確認（Space）"><button data-tooltip="素材単体を確認（Space）" type="button" disabled={!selectedLayer} aria-label="選択素材をクイックルック"
+          onClick={() => selectedLayerId && useAppStore.getState().openQuickLook(selectedLayerId)}>⌕</button></Tooltip>
       </div>
       {/* 選択レイヤーの合成モード・不透明度コントロール */}
       <BlendOpacityBar
@@ -126,7 +126,7 @@ export function LayerTreePanel({ onPreviewOutput }: { onPreviewOutput?: () => vo
         onOpacityChangeStart={handleOpacityChangeStart}
         onOpacityChange={handleOpacityChange}
         actions={<Tooltip content="すべての表示/非表示を読み込み時に戻す（出力にも反映）">
-          <button className={styles.resetBtn} onClick={resetVisibility} aria-label={t.layerTree.resetVisibility} title="表示状態を初期状態に戻す">
+          <button className={styles.resetBtn} onClick={resetVisibility} aria-label={t.layerTree.resetVisibility}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M3 10a9 9 0 1 1 2.6 8.5M3 4v6h6" /></svg>
           </button>
         </Tooltip>}

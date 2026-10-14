@@ -1,3 +1,4 @@
+import { Tooltip } from './Tooltip'
 import { useRef, useState, type PointerEvent } from 'react'
 import { useAppStore } from '../store'
 import { usePreview } from '../hooks/usePreview'
@@ -45,6 +46,6 @@ export function NavigatorPanel({ enabled }: { enabled: boolean }) {
       <NavigatorCanvas enabled={enabled} />
       <TimelineSeekBar />
     </section>
-    <div className={styles.resizeHandle} onPointerDown={resize} title="ナビゲーターの高さを変更" />
+    <Tooltip content="ナビゲーターの高さを変更"><div data-tooltip="ナビゲーターの高さを変更" className={styles.resizeHandle} onPointerDown={resize} /></Tooltip>
   </>
 }

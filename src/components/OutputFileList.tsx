@@ -1,9 +1,11 @@
+import { Tooltip } from './Tooltip'
 import { memo, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useAppStore } from '../store'
 import { selectDraftOutputs, selectOutputFiles, selectOutputNavigation } from '../store/selectors'
 import { useRenderedOutputs } from '../hooks/useRenderedOutputs'
 import { useExport } from '../hooks/useExport'
+import { useDismissableLayer } from '../hooks/useDismissableLayer'
 import { supportsDirectoryExport } from '../utils/directory-builder'
 import type { OutputFile } from '../utils/output-plan'
 import styles from './LayerTreePanel.module.css'
@@ -28,7 +30,7 @@ const OutputThumbnail = memo(function OutputThumbnail({ file, active }: { file: 
     canvas.height = image?.height ?? 60
     if (image) canvas.getContext('2d')?.drawImage(image, 0, 0)
   }, [result])
-  return <canvas ref={ref} className={styles.outputThumbnail} aria-hidden="true" data-ready={!!result?.image} title={result?.error} />
+  return <Tooltip content={result?.error}><canvas data-tooltip={result?.error} ref={ref} className={styles.outputThumbnail} aria-hidden="true" data-ready={!!result?.image} /></Tooltip>
 })
 
 export function OutputFileList({ active = true, onShowTree, onPreview }: { active?: boolean; onShowTree: () => void; onPreview?: () => void }) {
@@ -42,6 +44,8 @@ export function OutputFileList({ active = true, onShowTree, onPreview }: { activ
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null)
   const { startExport, isExporting, error } = useExport()
   const menuRef = useRef<HTMLDivElement>(null)
+  const moreRef = useRef<HTMLButtonElement>(null)
+  const menuInvoker = useRef<HTMLElement | null>(null)
   const list = useRef<HTMLDivElement>(null)
   const id = useId()
   const query = normalize(search.trim())
@@ -92,28 +96,17 @@ export function OutputFileList({ active = true, onShowTree, onPreview }: { activ
     observer.observe(element)
     return () => observer.disconnect()
   }, [])
-  useEffect(() => {
-    if (!menu) return
-    menuRef.current?.querySelector('button')?.focus()
-    const close = () => { setMenu(null); list.current?.focus() }
-    const pointer = (event: PointerEvent) => { if (!menuRef.current?.contains(event.target as Node)) setMenu(null) }
-    const key = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') { event.preventDefault(); event.stopImmediatePropagation(); close() }
-      if (event.key === 'Tab') close()
-    }
-    const blur = () => setMenu(null)
-    document.addEventListener('pointerdown', pointer, true)
-    document.addEventListener('keydown', key, true)
-    window.addEventListener('blur', blur)
-    return () => { document.removeEventListener('pointerdown', pointer, true); document.removeEventListener('keydown', key, true); window.removeEventListener('blur', blur) }
-  }, [menu])
+  useDismissableLayer({ open: !!menu, content: menuRef, trigger: moreRef, closeOnTab: true, closeOnScroll: true, closeOnResize: true,
+    initialFocus: () => menuRef.current?.querySelector('button:not(:disabled)'),
+    onDismiss: reason => { setMenu(null); if (reason === 'escape' || reason === 'tab') menuInvoker.current?.focus({ preventScroll: true }) } })
   const openMenu = (file: OutputFile, x: number, y: number) => {
+    menuInvoker.current = list.current
     if (!useAppStore.getState().selectedOutputIds.has(file.outputId)) select(file)
     setMenu({ x: Math.max(4, Math.min(x, window.innerWidth - 230)), y: Math.max(4, Math.min(y, window.innerHeight - 150)) })
   }
   return <>
-    <div className={styles.listHeading}><strong title="Shift+スクロールで出力を切り替え">出力一覧</strong><span className={styles.fileCount}>{files.length}件</span>
-      <button type="button" onClick={onShowTree} disabled={!activeId} aria-label="選択中の出力をツリーで表示" title="選択中の出力をツリーで表示">↗</button></div>
+    <div className={styles.listHeading}><Tooltip content="Shift+スクロールで出力を切り替え"><strong data-tooltip="Shift+スクロールで出力を切り替え">出力一覧</strong></Tooltip><span className={styles.fileCount}>{files.length}件</span>
+      <Tooltip content="選択中の出力をツリーで表示"><button data-tooltip="選択中の出力をツリーで表示" type="button" onClick={onShowTree} disabled={!activeId} aria-label="選択中の出力をツリーで表示">↗</button></Tooltip></div>
     <div className={styles.listTools}>
       <input type="search" aria-label="出力ファイル名を検索" placeholder="ファイル名を検索" value={search} onChange={event => setSearch(event.target.value)} />
     </div>
@@ -130,21 +123,22 @@ export function OutputFileList({ active = true, onShowTree, onPreview }: { activ
       }}>
       {visible.map((file, index) => <div key={file.outputId}>
         {drafts.includes(file) && !drafts.includes(visible[index - 1]) && <div className={styles.draftHeading}>未配置の仮想セル · 書き出し対象外</div>}
-        <div id={`${id}-${index}`} role="option" aria-selected={selectedIds.has(file.outputId)} className={styles.fileRow}
-          data-output-id={file.outputId} data-output-source-id={file.sourceLayerId} data-active-output={file.outputId === activeId} title={file.relativePath}
+        <Tooltip content={file.relativePath}><div data-tooltip={file.relativePath} id={`${id}-${index}`} role="option" aria-selected={selectedIds.has(file.outputId)} className={styles.fileRow}
+          data-output-id={file.outputId} data-output-source-id={file.sourceLayerId} data-active-output={file.outputId === activeId}
           onClick={event => { list.current?.focus(); select(file, event.ctrlKey || event.metaKey, event.shiftKey) }}
           onContextMenu={event => { event.preventDefault(); openMenu(file, event.clientX, event.clientY) }}>
           <OutputThumbnail file={file} active={active} /><span>{file.relativePath}</span>
-        </div>
+        </div></Tooltip>
       </div>)}
       {!visible.length && <div className={styles.empty}>{query ? '一致するファイルはありません' : '現在の設定で出力されるファイルはありません'}</div>}
     </div>
     <div className={styles.selectionTools}>
       <span>{selectedIds.size}選択{hiddenSelected > 0 ? `（一覧外${hiddenSelected}）` : ''}</span>
-      <button type="button" aria-label="選択項目を並べて表示" title="8件まで縮小して並べます。1件を選ぶと原寸で確認できます。" aria-pressed={compare} disabled={selectedIds.size < 2 || selectedIds.size > 8}
-        onClick={() => { useAppStore.getState().setCompareOutputs(!compare); onPreview?.() }}>並べる</button>
-      <button type="button" aria-label="選択項目の操作" disabled={!exportIds.size} onClick={event => {
-        const rect = event.currentTarget.getBoundingClientRect(); setMenu({ x: Math.max(4, Math.min(rect.left, window.innerWidth - 230)), y: Math.max(4, rect.top - 144) })
+      <Tooltip content="8件まで縮小して並べます。1件を選ぶと原寸で確認できます。"><button data-tooltip="8件まで縮小して並べます。1件を選ぶと原寸で確認できます。" type="button" aria-label="選択項目を並べて比較" aria-pressed={compare} disabled={selectedIds.size < 2 || selectedIds.size > 8}
+        onClick={() => { useAppStore.getState().setCompareOutputs(!compare); onPreview?.() }}>並べて比較</button></Tooltip>
+      <button ref={moreRef} type="button" aria-label="選択項目の操作" aria-haspopup="menu" aria-expanded={!!menu} disabled={!exportIds.size} onClick={event => {
+        menuInvoker.current = event.currentTarget
+        const rect = event.currentTarget.getBoundingClientRect(); setMenu(menu ? null : { x: Math.max(4, Math.min(rect.left, window.innerWidth - 230)), y: Math.max(4, rect.top - 144) })
       }}>⋯</button>
     </div>
     {error && <div className={styles.exportError} role="alert">{error}</div>}

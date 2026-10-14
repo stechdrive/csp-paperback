@@ -390,7 +390,7 @@ test('素材選択では出力とフレームを変えず、目玉変更だけ�
   const timeline = page.getByTestId('navigator-panel').getByRole('slider')
   const frame = await timeline.getAttribute('aria-valuenow')
   for (const source of [process, processInk, bodyInk, row(page, 'memo')]) {
-    await source.locator('span[title]').click()
+    await source.locator('span[data-tooltip]').click()
     await expect(source).toHaveClass(/_rowSelected_/)
     await expect(previewNames(page)).toHaveText(['B_1_s.jpg'])
     await expect(timeline).toHaveAttribute('aria-valuenow', frame!)
@@ -417,7 +417,7 @@ test('非表示工程の素材を選んでも出力は変わらず、再表示�
   await visibility(process).click()
   await expect(previewNames(page)).toHaveCount(0)
   for (const selected of [process, processInk]) {
-    await selected.locator('span[title]').click()
+    await selected.locator('span[data-tooltip]').click()
     await expect(selected).toHaveClass(/_rowSelected_/)
     await expect(previewNames(page)).toHaveCount(0)
     await expect(page.getByTestId('output-view')).toContainText('現在の表示・書き出し設定では出力されません')

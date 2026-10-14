@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
+import { Modal } from './Modal'
 import { AboutGuide } from './help/AboutGuide'
 import { FeatureGuide } from './help/FeatureGuide'
 import { ABOUT_SECTIONS, FEATURE_SECTIONS } from './help/helpSections'
@@ -71,26 +72,10 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
     setActiveSection(current.dataset.helpSection ?? '')
   }, [])
 
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose()
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [onClose])
-
   return (
-    <div
-      className={styles.overlay}
-      onClick={event => {
-        if (event.target === event.currentTarget) onClose()
-      }}
-    >
+    <Modal className={styles.overlay} labelledBy="help-dialog-title" onClose={onClose}>
       <div
         className={styles.dialog}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="help-dialog-title"
       >
         <div className={styles.header}>
           <div className={styles.headerHeading}>
@@ -153,6 +138,6 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
           <button className={styles.doneBtn} onClick={onClose}>閉じる</button>
         </div>
       </div>
-    </div>
+    </Modal>
   )
 }
