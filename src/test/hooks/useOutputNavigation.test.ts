@@ -1,10 +1,10 @@
-import { act, cleanup, renderHook } from '@testing-library/react'
+import { act, cleanup, renderHook, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 import { buildLayerTree } from '../../engine/tree-builder'
 import { useOutputNavigation } from '../../hooks/useOutputNavigation'
 import { useOutputPreview } from '../../hooks/useOutputPreview'
 import { useAppStore } from '../../store'
-import { DEFAULT_OUTPUT_CONFIG, type TimelineData, type VirtualSet } from '../../types'
+import { type TimelineData, type VirtualSet } from '../../types'
 import { makeAnimationFolder, makeFolder, makeLayer, makePsd } from '../helpers/psd-factory'
 import { resetTestStore } from '../helpers/store-reset'
 
@@ -40,199 +40,118 @@ function navigationFixture() {
   return { tree, anim, first, second, firstProcess, secondProcess, bg, virtualSet }
 }
 
+import { selectOutputFiles } from '../../store/selectors'
+import { virtualOutputId } from '../../utils/output-identity'
+
 describe('output navigation selection', () => {
-  it.each(['process', 'process-content', 'body-content'] as const)('clicking hidden %s keeps its output owner and restores the same image when shown', kind => {
-    const { first, firstProcess } = navigationFixture()
-    const body = first.children.find(layer => layer.originalName.startsWith('body-'))!
-    const hiddenLayer = kind === 'body-content' ? body : firstProcess
-    const selected = kind === 'process-content' ? firstProcess.children[0] : hiddenLayer
-    const source = kind === 'body-content' ? first : firstProcess
-    const { result } = renderHook(() => useOutputPreview())
-    act(() => {
-      useAppStore.getState().toggleLayerVisibility(hiddenLayer.id)
-      useAppStore.getState().selectLayer(selected.id)
-    })
-    expect(useAppStore.getState().selectedLayerId).toBe(selected.id)
-    expect(useAppStore.getState().selectedOutputSourceId).toBe(source.id)
-    expect(result.current).toHaveLength(0)
-    act(() => useAppStore.getState().toggleLayerVisibility(hiddenLayer.id))
-    expect(useAppStore.getState().selectedLayerId).toBe(selected.id)
-    expect(result.current.map(entry => entry.flatName)).toEqual([kind === 'body-content' ? 'A_1.jpg' : 'A_1_s.jpg'])
-  })
-
-  it('keeps an untimed manual cel selected when another timeline track moves', () => {
-    const { tree } = navigationFixture()
-    const manual = buildLayerTree(makePsd({ children: [makeFolder('manual', [makeLayer({ name: '2' }), makeLayer({ name: '1' })])] }))[0]
-    useAppStore.setState({ layerTree: [...tree, manual], manualAnimFolderIds: new Set([manual.id]) })
-    const { result } = renderHook(() => ({ nav: useOutputNavigation(), preview: useOutputPreview() }))
-    act(() => result.current.nav.navigateTo(result.current.nav.entries.findIndex(entry => entry.id === manual.children[1].id)))
-    const preview = result.current.preview
-    act(() => useAppStore.getState().seekToFrame(4))
-    expect(useAppStore.getState().selectedCells.get(manual.id)).toBe(1)
-    expect(useAppStore.getState().selectedLayerId).toBe(manual.children[1].id)
-    expect(result.current.preview).toBe(preview)
-  })
-
-  it('shows only the body or process image at each stop, while ordinary cell clicks still show both', () => {
-    const tree = buildLayerTree(makePsd({ children: [makeAnimationFolder('A', [
-      makeLayer({ name: '1' }),
-      makeFolder('2', [makeFolder('_s', [makeLayer()]), makeLayer({ name: 'body' })]),
-    ])] }))
-    const anim = tree[0]
-    anim.isAnimationFolder = true
-    anim.animationFolder = { detectedBy: 'manual', trackName: 'A' }
-    const expanded = new Set<string>()
-    const collapsed = new Set([anim.id])
-    resetTestStore({ layerTree: tree, docWidth: 100, docHeight: 100, expandedFolders: expanded, userCollapsedFolders: collapsed })
-    const { result } = renderHook(() => ({ nav: useOutputNavigation(), preview: useOutputPreview() }))
-    expect(result.current.nav.entries).toHaveLength(3)
-    act(() => result.current.nav.navigate(1))
-    expect(result.current.preview.map(e => e.flatName)).toEqual(['A_2.jpg'])
-    expect(useAppStore.getState().selectedCells.get(anim.id)).toBe(0)
-    act(() => result.current.nav.navigate(1))
-    expect(result.current.preview.map(e => e.flatName)).toEqual(['A_2_s.jpg'])
-    act(() => result.current.nav.navigate(1))
-    expect(result.current.preview.map(e => e.flatName)).toEqual(['A_1.jpg'])
-    expect(useAppStore.getState().selectedCells.get(anim.id)).toBe(1)
-    expect(useAppStore.getState().expandedFolders).toBe(expanded)
-    expect(useAppStore.getState().userCollapsedFolders).toBe(collapsed)
-    // Direct clicks retain the existing multi-image preview.
-    act(() => useAppStore.getState().selectAnimCell(anim.id, 0))
-    expect(result.current.preview.map(e => e.flatName)).toEqual(['A_2.jpg', 'A_2_s.jpg'])
-    act(() => result.current.nav.navigateTo(0))
-    expect(result.current.preview.map(e => e.flatName)).toEqual(['A_2.jpg'])
-    act(() => useAppStore.setState({ outputConfig: { ...DEFAULT_OUTPUT_CONFIG, excludedProcessSuffixes: ['_s'] } }))
-    expect(result.current.nav.entries).toHaveLength(2)
-    act(() => result.current.nav.navigate(1))
-    expect(result.current.preview.map(e => e.flatName)).toEqual(['A_1.jpg'])
-  })
-
-  it('reads the latest selection for consecutive wheel events before React rerenders', () => {
-    const tree = buildLayerTree(makePsd({ children: ['3', '2', '1'].map(name => makeFolder(`_${name}`, [makeLayer()])) }))
-    resetTestStore({ layerTree: tree })
+  it('keeps source selection, virtual-cell editor and timeline independent from output selection', () => {
+    const { first, firstProcess, second, virtualSet } = navigationFixture()
+    const state = useAppStore.getState()
+    state.selectLayer(first.id)
+    state.setSelectedVirtualSet(virtualSet.id)
     const { result } = renderHook(() => useOutputNavigation())
-    act(() => { result.current.navigate(1); result.current.navigate(1); result.current.navigate(1) })
-    expect(useAppStore.getState().selectedLayerId).toBe(tree[2].id)
-    act(() => result.current.navigate(-1))
-    expect(useAppStore.getState().selectedLayerId).toBe(tree[1].id)
-  })
-
-  it('rechecks output visibility between consecutive actions before React rerenders', () => {
-    const tree = buildLayerTree(makePsd({ children: ['3', '2', '1'].map(name => makeFolder(`_${name}`, [makeLayer()])) }))
-    resetTestStore({ layerTree: tree })
-    const { result } = renderHook(() => useOutputNavigation())
-    const beforeRender = result.current
-    expect(beforeRender.entries.map(entry => entry.id)).toEqual(tree.map(layer => layer.id))
-    act(() => {
-      beforeRender.navigate(1)
-      useAppStore.getState().toggleLayerVisibility(tree[1].id)
-      // This callback and its exposed entries still belong to the previous render.
-      expect(beforeRender.entries[1].id).toBe(tree[1].id)
-      expect(beforeRender.navigate(1)?.id).toBe(tree[2].id)
-      expect(useAppStore.getState().selectedOutputSourceId).toBe(tree[2].id)
-    })
-    expect(result.current.entries.map(entry => entry.id)).toEqual([tree[0].id, tree[2].id])
-    expect(result.current.currentIdx).toBe(1)
-  })
-
-  it('publishes a single consistent selection when navigation changes the output and cel', () => {
-    const { anim, first, second, secondProcess, virtualSet } = navigationFixture()
-    useAppStore.setState({ selectedCells: new Map([[anim.id, 0]]), selectedLayerId: first.id,
-      selectedVirtualSetId: virtualSet.id })
-    const { result } = renderHook(() => useOutputNavigation())
-    const snapshots: Array<{
-      layer: string | null; source: string | null; virtualSet: string | null;
-      focus: string | null; cell: number | undefined; frame: number; revealed: string[];
-    }> = []
-    const unsubscribe = useAppStore.subscribe(state => snapshots.push({
-      layer: state.selectedLayerId, source: state.selectedOutputSourceId,
-      virtualSet: state.selectedVirtualSetId, focus: state.focusedAnimFolderId,
-      cell: state.selectedCells.get(anim.id), frame: state.currentFrame,
-      revealed: [...state.transientExpandedFolders],
-    }))
-    try {
-      act(() => result.current.navigateTo(result.current.entries.findIndex(entry => entry.id === secondProcess.id)))
-    } finally {
-      unsubscribe()
-    }
+    const snapshots: ReturnType<typeof useAppStore.getState>[] = []
+    const unsubscribe = useAppStore.subscribe(state => snapshots.push(state))
+    act(() => result.current.navigateTo(result.current.entries.findIndex(entry => entry.id === firstProcess.id)))
+    unsubscribe()
     expect(snapshots).toHaveLength(1)
-    expect(snapshots[0]).toMatchObject({ layer: secondProcess.id, source: secondProcess.id,
-      virtualSet: null, focus: anim.id, cell: 1, frame: 4 })
-    expect(snapshots[0].revealed).toEqual(expect.arrayContaining([anim.id, second.id]))
-    expect(snapshots[0].revealed).not.toContain(first.id)
-    expect(snapshots[0].revealed).not.toContain(secondProcess.id)
+    expect(snapshots[0]).toMatchObject({ selectedLayerId: first.id, selectedVirtualSetId: virtualSet.id, selectedOutputSourceId: firstProcess.id, currentFrame: 0 })
+    const active = snapshots[0].activeOutputId
+    act(() => state.selectLayer(second.id))
+    expect(useAppStore.getState()).toMatchObject({ activeOutputId: active, currentFrame: 0, selectedLayerId: second.id })
   })
 
-  it('ordinary source selections clear virtual or animation focus and direct cel clicks show all cel outputs', () => {
-    const { anim, second, firstProcess, bg, virtualSet } = navigationFixture()
-    const { result } = renderHook(() => ({ nav: useOutputNavigation(), preview: useOutputPreview() }))
-    act(() => result.current.nav.navigateTo(result.current.nav.entries.findIndex(entry => entry.id === firstProcess.id)))
-    expect(useAppStore.getState().focusedAnimFolderId).toBe(anim.id)
-    act(() => useAppStore.getState().setSelectedVirtualSet(virtualSet.id))
-    expect(useAppStore.getState().selectedVirtualSetId).toBe(virtualSet.id)
-    act(() => useAppStore.getState().selectLayer(second.id))
-    const cellState = useAppStore.getState()
-    expect(cellState.selectedLayerId).toBe(second.id)
-    expect(cellState.selectedCells.get(anim.id)).toBe(1)
-    expect(cellState.focusedAnimFolderId).toBe(anim.id)
-    expect(cellState.selectedVirtualSetId).toBeNull()
-    expect(cellState.selectedOutputSourceId).toBeNull()
-    expect(result.current.preview.map(entry => entry.flatName)).toEqual(['A_2.jpg', 'A_2_s.jpg'])
-
-    act(() => useAppStore.getState().selectLayer(bg.id))
-    expect(useAppStore.getState().focusedAnimFolderId).toBeNull()
-    expect(useAppStore.getState().selectedOutputSourceId).toBeNull()
-    expect(result.current.preview.map(entry => entry.flatName)).toEqual(['_BG.jpg'])
-    act(() => useAppStore.getState().setSelectedVirtualSet(virtualSet.id))
-    act(() => useAppStore.getState().selectLayer(bg.id))
-    expect(useAppStore.getState().selectedVirtualSetId).toBeNull()
-    expect(result.current.preview.map(entry => entry.flatName)).toEqual(['_BG.jpg'])
-  })
-
-  it.each(['body', 'process'] as const)('timeline seeking keeps the %s output, tree selection, and preview on the same cel', (kind) => {
+  it.each(['body', 'process'] as const)('timeline seeking changes the %s output and preserves the source editor selection', async kind => {
     const { anim, first, second, firstProcess, secondProcess } = navigationFixture()
-    const initialSource = kind === 'body' ? first : firstProcess
-    const nextSource = kind === 'body' ? second : secondProcess
+    const initial = kind === 'body' ? first : firstProcess, next = kind === 'body' ? second : secondProcess
+    useAppStore.getState().selectLayer(firstProcess.children[0].id)
     const { result } = renderHook(() => ({ nav: useOutputNavigation(), preview: useOutputPreview() }))
-    act(() => result.current.nav.navigateTo(result.current.nav.entries.findIndex(entry => entry.id === initialSource.id)))
-    expect(useAppStore.getState().currentFrame).toBe(0)
+    act(() => result.current.nav.navigateTo(result.current.nav.entries.findIndex(entry => entry.id === initial.id)))
     act(() => useAppStore.getState().seekToFrame(4))
-    const afterSeek = useAppStore.getState()
-    expect(afterSeek.currentFrame).toBe(4)
-    expect(afterSeek.selectedLayerId).toBe(nextSource.id)
-    expect(afterSeek.selectedOutputSourceId).toBe(nextSource.id)
-    expect(afterSeek.focusedAnimFolderId).toBe(anim.id)
-    expect(afterSeek.selectedCells.get(anim.id)).toBe(1)
-    expect(afterSeek.transientExpandedFolders.has(first.id)).toBe(false)
-    expect(afterSeek.transientExpandedFolders.has(second.id)).toBe(true)
-    expect(result.current.nav.entries[result.current.nav.currentIdx].id).toBe(nextSource.id)
-    expect(result.current.preview.map(entry => entry.flatName)).toEqual([kind === 'body' ? 'A_2.jpg' : 'A_2_s.jpg'])
+    expect(useAppStore.getState()).toMatchObject({ currentFrame: 4, selectedLayerId: firstProcess.children[0].id, selectedOutputSourceId: next.id })
+    expect(useAppStore.getState().selectedCells.get(anim.id)).toBe(1)
+    await waitFor(() => expect(result.current.preview.map(entry => entry.flatName)).toEqual([kind === 'body' ? 'A_2.jpg' : 'A_2_s.jpg']))
+    const before = useAppStore.getState()
     act(() => useAppStore.getState().seekToFrame(5))
-    expect(useAppStore.getState().selectedCells).toBe(afterSeek.selectedCells)
-    expect(useAppStore.getState().selectedOutputSourceId).toBe(nextSource.id)
+    expect(useAppStore.getState().selectedCells).toBe(before.selectedCells)
+    expect(useAppStore.getState().activeOutputId).toBe(before.activeOutputId)
   })
 
-  it('a held cel keeps the clicked internal row and manual collapse without replacing them with the output source', () => {
-    const { anim, first, firstProcess } = navigationFixture()
-    const content = firstProcess.children[0]
+  it('reads fresh output selection and visibility for a rapid wheel burst', () => {
+    const tree = buildLayerTree(makePsd({ children: ['3', '2', '1'].map(name => makeFolder('_' + name, [makeLayer()])) }))
+    resetTestStore({ layerTree: tree })
+    const { result } = renderHook(() => useOutputNavigation())
+    act(() => {
+      result.current.navigate(1)
+      useAppStore.getState().toggleLayerVisibility(tree[1].id)
+      expect(result.current.navigate(1)?.id).toBe(tree[2].id)
+      result.current.navigate(-1)
+    })
+    expect(useAppStore.getState().selectedOutputSourceId).toBe(tree[0].id)
+    expect(useAppStore.getState().selectedLayerId).toBeNull()
+    expect(result.current.entries.map(entry => entry.id)).toEqual([tree[0].id, tree[2].id])
+  })
+
+  it('does not switch to another output when hidden, and undo restores the selected output', async () => {
+    const { firstProcess } = navigationFixture()
+    const file = selectOutputFiles(useAppStore.getState()).find(file => file.sourceLayerId === firstProcess.id)!
+    useAppStore.getState().selectOutputFile(file.outputId)
     const { result } = renderHook(() => ({ nav: useOutputNavigation(), preview: useOutputPreview() }))
-    act(() => useAppStore.getState().selectLayer(content.id))
-    expect(useAppStore.getState().selectedLayerId).toBe(content.id)
-    expect(useAppStore.getState().selectedOutputSourceId).toBe(firstProcess.id)
-    expect(useAppStore.getState().selectedCells.get(anim.id)).toBe(0)
+    await waitFor(() => expect(result.current.preview).toHaveLength(1))
+    act(() => useAppStore.getState().toggleLayerVisibility(firstProcess.id))
+    expect(result.current.preview).toEqual([])
+    expect(result.current.nav.currentIdx).toBe(-1)
+    expect(useAppStore.getState().activeOutputId).toBe(file.outputId)
+    act(() => useAppStore.getState().undo())
+    await waitFor(() => expect(result.current.preview).toHaveLength(1))
+    expect(result.current.preview[0].outputId).toBe(file.outputId)
+  })
+
+  it('range and modifier selection use output IDs, with an independent active preview', () => {
+    navigationFixture()
+    const files = selectOutputFiles(useAppStore.getState()), ids = files.map(file => file.outputId)
+    useAppStore.getState().selectOutputFile(ids[0])
+    useAppStore.getState().selectOutputFile(ids[2], { range: true, orderedIds: ids })
+    expect([...useAppStore.getState().selectedOutputIds]).toEqual(ids.slice(0, 3))
+    useAppStore.getState().selectOutputFile(ids[1], { toggle: true })
+    expect([...useAppStore.getState().selectedOutputIds]).toEqual([ids[0], ids[2]])
+    expect(useAppStore.getState().activeOutputId).toBe(ids[1])
+  })
+
+  it('placing and unplacing a virtual cell retains its preview identity', () => {
+    const { virtualSet } = navigationFixture()
+    const id = virtualOutputId(virtualSet.id)
+    useAppStore.getState().selectOutputFile(id)
+    useAppStore.setState({ virtualSets: [{ ...virtualSet, insertionLayerId: null }] })
+    expect(useAppStore.getState().activeOutputId).toBe(id)
+    expect(selectOutputFiles(useAppStore.getState()).some(file => file.outputId === id)).toBe(false)
+    useAppStore.getState().selectOutputFile(id)
+    useAppStore.setState({ virtualSets: [virtualSet] })
+    expect(useAppStore.getState().activeOutputId).toBe(id)
+    expect(selectOutputFiles(useAppStore.getState()).some(file => file.outputId === id)).toBe(true)
+  })
+
+  it('retains manual expansion and preserves a held timeline cell when revealing its source', () => {
+    const { firstProcess, first } = navigationFixture()
+    const { result } = renderHook(() => useOutputNavigation())
+    act(() => result.current.navigateTo(result.current.entries.findIndex(entry => entry.id === firstProcess.id)))
     act(() => useAppStore.getState().setFolderExpanded(first.id, false))
-    const beforeSeek = useAppStore.getState()
-    expect(beforeSeek.transientExpandedFolders.has(first.id)).toBe(false)
+    const folders = useAppStore.getState().expandedFolders
     act(() => useAppStore.getState().seekToFrame(2))
-    const afterSeek = useAppStore.getState()
-    expect(afterSeek.currentFrame).toBe(2)
-    expect(afterSeek.selectedLayerId).toBe(content.id)
-    expect(afterSeek.selectedOutputSourceId).toBe(firstProcess.id)
-    expect(afterSeek.selectedCells).toBe(beforeSeek.selectedCells)
-    expect(afterSeek.expandedFolders).toBe(beforeSeek.expandedFolders)
-    expect(afterSeek.userCollapsedFolders).toBe(beforeSeek.userCollapsedFolders)
-    expect(afterSeek.transientExpandedFolders).toBe(beforeSeek.transientExpandedFolders)
-    expect(result.current.nav.entries[result.current.nav.currentIdx].id).toBe(firstProcess.id)
-    expect(result.current.preview.map(entry => entry.flatName)).toEqual(['A_1_s.jpg'])
+    expect(useAppStore.getState().transientExpandedFolders.has(first.id)).toBe(false)
+    act(() => result.current.revealCurrent())
+    expect(useAppStore.getState().currentFrame).toBe(2)
+    expect(useAppStore.getState().transientExpandedFolders.has(first.id)).toBe(true)
+    expect(useAppStore.getState().expandedFolders).toBe(folders)
+  })
+
+  it('resetting a document clears output, batch and quick-look selection together', () => {
+    const { first } = navigationFixture()
+    const file = selectOutputFiles(useAppStore.getState())[0]
+    useAppStore.getState().selectOutputFile(file.outputId)
+    useAppStore.getState().openQuickLook(first.id)
+    useAppStore.getState().resetProject()
+    expect(useAppStore.getState()).toMatchObject({ activeOutputId: null, quickLookTarget: null })
+    expect(useAppStore.getState().selectedOutputIds.size).toBe(0)
   })
 })

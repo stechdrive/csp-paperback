@@ -1,4 +1,4 @@
-import { useRef, useState, type PointerEvent } from 'react'
+import { useRef, useState, type PointerEvent, type CSSProperties } from 'react'
 import { VirtualSetPanel } from './VirtualSetPanel'
 import { PreviewPanel, type PreviewMode } from './PreviewPanel'
 import { NavigatorPanel } from './NavigatorPanel'
@@ -17,7 +17,7 @@ interface MainLayoutProps {
 }
 export function MainLayout({ previewMode, onPreviewModeChange, virtualPanelOpen, onCloseVirtualPanel, activeTab, onActiveTabChange }: MainLayoutProps) {
   const [leftWidth, setLeftWidth] = useState(240)
-  const [rightWidth, setRightWidth] = useState(300)
+  const [rightWidth, setRightWidth] = useState(520)
   const layoutRef = useRef<HTMLDivElement>(null)
   const isMobile = useIsMobile()
   const resize = (event: PointerEvent<HTMLDivElement>, side: 'left' | 'right') => {
@@ -43,9 +43,9 @@ export function MainLayout({ previewMode, onPreviewModeChange, virtualPanelOpen,
     handle.addEventListener('pointercancel', onUp)
   }
   return (
-    <div ref={layoutRef} className={styles.layout} data-mobile-tab={activeTab}>
+    <div ref={layoutRef} className={styles.layout} data-mobile-tab={activeTab} style={{ '--virtual-pane-width': `${virtualPanelOpen ? leftWidth : 0}px` } as CSSProperties}>
       <div className={styles.leftPane} style={{ width: leftWidth }} hidden={!virtualPanelOpen} data-testid="virtual-panel">
-        <VirtualSetPanel onClose={onCloseVirtualPanel} />
+        <VirtualSetPanel onClose={onCloseVirtualPanel} onPreviewOutput={() => onPreviewModeChange('output')} />
       </div>
       {virtualPanelOpen && <div className={styles.resizeHandle} onPointerDown={event => resize(event, 'left')} />}
       <div className={styles.centerPane}>

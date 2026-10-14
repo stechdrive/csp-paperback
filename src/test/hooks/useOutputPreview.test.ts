@@ -1,13 +1,12 @@
-import { act, cleanup, renderHook } from '@testing-library/react'
+import { act, cleanup, renderHook, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import * as cellExtractor from '../../engine/cell-extractor'
 import { useOutputPreview } from '../../hooks/useOutputPreview'
 import { useAppStore } from '../../store'
 import { buildLayerTree, detectAnimationFoldersByXdts } from '../../engine/tree-builder'
 import { DEFAULT_OUTPUT_CONFIG, DEFAULT_PROJECT_SETTINGS, type XdtsData } from '../../types'
 import { makeAnimationFolder, makeFolder, makeLayer, makePsd } from '../helpers/psd-factory'
 import { resetTestStore } from '../helpers/store-reset'
-import { selectOutputFiles } from '../../store/selectors'
+import { selectOutputFiles, selectDraftOutputs } from '../../store/selectors'
 
 function detectAnim(tree: ReturnType<typeof buildLayerTree>, trackName: string) {
   const xdts: XdtsData = {
@@ -41,6 +40,16 @@ afterEach(() => {
   resetTestStore()
 })
 
+function selectFixtureOutput() {
+  const state = useAppStore.getState()
+  const files = selectOutputFiles(state)
+  const selected = files.find(file => file.sourceLayerId === (state.selectedVirtualSetId ?? state.selectedOutputSourceId ?? state.selectedLayerId))
+    ?? files.find(file => file.animFolderId === state.focusedAnimFolderId && (!state.selectedCells.has(state.focusedAnimFolderId!) || file.sourceCellId === state.layerTree.flatMap(layer => [layer, ...layer.children]).find(layer => layer.id === state.focusedAnimFolderId)?.children[state.selectedCells.get(state.focusedAnimFolderId!)!]?.id))
+    ?? files[0]
+  if (selected) state.selectOutputFile(selected.outputId)
+}
+async function ready(result: { current: unknown[] }, count = 1) { await waitFor(() => expect(result.current).toHaveLength(count)) }
+
 describe('useOutputPreview', () => {
   function processTree() {
     const tree = buildLayerTree(makePsd({ children: [makeAnimationFolder('A', [
@@ -60,127 +69,117 @@ describe('useOutputPreview', () => {
       selectedCells: new Map([[anim.id, 0]]), focusedAnimFolderId: anim.id,
       selectedLayerId: process.id, selectedOutputSourceId: process.id,
     })
+    selectFixtureOutput()
     return { tree, anim, cell, process }
   }
 
-  it('巡回対象の工程だけを表示し、除外された工程を本体へすり替えない', () => {
+
+  it('keeps output identity when disabled and restores the same output', async () => {
     processTree()
     const { result } = renderHook(() => useOutputPreview())
+    await ready(result)
     expect(result.current.map(entry => entry.flatName)).toEqual(['A_2_e.jpg'])
+    const id = useAppStore.getState().activeOutputId
     act(() => useAppStore.setState({ outputConfig: { ...DEFAULT_OUTPUT_CONFIG, excludedProcessSuffixes: ['_e'] } }))
     expect(result.current).toEqual([])
+    expect(useAppStore.getState().activeOutputId).toBe(id)
+    act(() => useAppStore.setState({ outputConfig: DEFAULT_OUTPUT_CONFIG }))
+    await ready(result)
+    expect(result.current[0].outputId).toBe(id)
   })
 
-  it('合成は選択した出力だけを行い、一覧と同じ衝突解決済みの名前を使う', () => {
-    const { process } = processTree()
+  it('renders only the selected output and reuses it across editor selection and unrelated frames', async () => {
+    const { process, cell } = processTree()
     const plans = selectOutputFiles(useAppStore.getState())
-    const renderers = plans.map(plan => vi.spyOn(plan, 'renderCanvas'))
-    try {
-      const { result } = renderHook(() => useOutputPreview())
-      expect(result.current[0].flatName).toBe(plans.find(plan => plan.sourceLayerId === process.id)!.names.flatName)
-      renderers.forEach((render, index) => expect(render).toHaveBeenCalledTimes(plans[index].sourceLayerId === process.id ? 1 : 0))
-    } finally { renderers.forEach(render => render.mockRestore()) }
+    const spies = plans.map(plan => vi.spyOn(plan, 'renderCanvas'))
+    const { result } = renderHook(() => useOutputPreview())
+    await ready(result)
+    const image = result.current[0].canvas, frame = useAppStore.getState().currentFrame
+    act(() => { useAppStore.getState().selectLayer(cell.id); useAppStore.setState({ selectedCells: new Map([['other', 3]]) }) })
+    expect(result.current[0].canvas).toBe(image)
+    expect(useAppStore.getState().currentFrame).toBe(frame)
+    spies.forEach((spy, i) => expect(spy).toHaveBeenCalledTimes(plans[i].sourceLayerId === process.id ? 1 : 0))
+    spies.forEach(spy => spy.mockRestore())
   })
 
-  it('単体出力と仮想セルの重複名も、一覧と実出力と同じ連番で表示する', () => {
-    const tree = buildLayerTree(makePsd({ children: [makeFolder('_A?1', [makeLayer()])] }))
-    useAppStore.setState({ layerTree: tree, docWidth: 100, docHeight: 100, selectedVirtualSetId: 'vs',
-      virtualSets: [{ id: 'vs', name: '_A?1', insertionLayerId: tree[0].id, insertionPosition: 'above',
-        members: [{ layerId: tree[0].id, opacity: null, blendMode: null }],
-        expandToAnimationCells: false, visibilityOverrides: {} }],
-    })
+  it('keeps the merged process identity when the first alias becomes hidden', async () => {
+    const { process } = processTree()
     const { result } = renderHook(() => useOutputPreview())
-    expect(result.current[0].flatName).toBe('_A_1_2.jpg')
-    expect(result.current[0].flatName).toBe(selectOutputFiles(useAppStore.getState())[1].relativePath)
-    act(() => useAppStore.setState({ outputConfig: { ...DEFAULT_OUTPUT_CONFIG, format: 'png', excludeAutoMarked: true } }))
-    expect(result.current[0].flatName).toBe('_A_1.png')
-    expect(result.current[0].flatName).toBe(selectOutputFiles(useAppStore.getState())[0].relativePath)
+    await ready(result)
+    const id = result.current[0].outputId, image = result.current[0].canvas
+    act(() => useAppStore.getState().toggleLayerVisibility(process.id))
+    await ready(result)
+    expect(result.current[0].outputId).toBe(id)
+    expect(result.current[0].canvas).not.toBe(image)
+    expect(result.current[0].sources!.all.has(process.id)).toBe(false)
   })
 
-  it('巡回のsourceが現在セルに存在しなければ別セルへフォールバックしない', () => {
-    const { anim } = processTree()
+  it('hiding a cel or its ancestor clears the preview without switching outputs', async () => {
+    const { cell, anim } = processTree()
     const { result } = renderHook(() => useOutputPreview())
-    expect(result.current).toHaveLength(1)
-    act(() => useAppStore.setState({ selectedCells: new Map([[anim.id, 1]]) }))
-    expect(result.current).toEqual([])
-  })
-
-  it('巡回対象セルや祖先の目玉を閉じると出力も消え、再表示で戻る', () => {
-    const { anim, cell } = processTree()
-    const { result } = renderHook(() => useOutputPreview())
+    await ready(result)
     act(() => useAppStore.getState().toggleLayerVisibility(cell.id))
     expect(result.current).toEqual([])
     act(() => useAppStore.getState().toggleLayerVisibility(cell.id))
-    expect(result.current).toHaveLength(1)
+    await ready(result)
     act(() => useAppStore.getState().toggleLayerVisibility(anim.id))
     expect(result.current).toEqual([])
   })
 
-  it('通常の素材クリックは本体だけ、統合工程の後続フォルダ内クリックはその工程だけを表示する', () => {
-    const { cell } = processTree()
-    const body = cell.children.find(layer => layer.originalName === 'body1')!
-    const laterProcess = cell.children.find(layer => layer.originalName === '演出')!
-    useAppStore.setState({ focusedAnimFolderId: null, selectedOutputSourceId: null, selectedLayerId: body.id })
-    const { result } = renderHook(() => useOutputPreview())
-    expect(result.current.map(entry => entry.flatName)).toEqual(['A_2.jpg'])
-    act(() => useAppStore.setState({ selectedLayerId: laterProcess.children[0].id }))
-    expect(result.current.map(entry => entry.flatName)).toEqual(['A_2_e.jpg'])
-  })
-
-  it('通常セルクリックの複数出力も実際の工程除外設定に従う', () => {
+  it('compares explicit output selections and filters disabled images', async () => {
     processTree()
-    useAppStore.setState({ selectedOutputSourceId: null, outputConfig: { ...DEFAULT_OUTPUT_CONFIG, excludedProcessSuffixes: ['_e'] } })
+    const files = selectOutputFiles(useAppStore.getState()).slice(0, 2)
+    useAppStore.setState({ selectedOutputIds: new Set(files.map(file => file.outputId)), compareOutputs: true })
     const { result } = renderHook(() => useOutputPreview())
-    expect(result.current.map(entry => entry.flatName)).toEqual(['A_2.jpg'])
+    await ready(result, 2)
+    act(() => useAppStore.setState({ outputConfig: { ...DEFAULT_OUTPUT_CONFIG, excludedProcessSuffixes: ['_e'] } }))
+    await ready(result)
+    expect(result.current[0].flatName).toBe('A_2.jpg')
   })
 
-  it('自動マーク出力の除外をプレビューへ反映し、手動マークでは除外を解除する', () => {
-    const tree = buildLayerTree(makePsd({ children: [makeFolder('_BG', [makeLayer()])] }))
-    useAppStore.setState({ layerTree: tree, docWidth: 100, docHeight: 100, selectedLayerId: tree[0].id,
-      outputConfig: { ...DEFAULT_OUTPUT_CONFIG, excludeAutoMarked: true } })
+  it('uses collision-resolved names for virtual cells and does not couple editor selection', async () => {
+    const tree = buildLayerTree(makePsd({ children: [makeFolder('_A?1', [makeLayer()])] }))
+    useAppStore.setState({ layerTree: tree, docWidth: 100, docHeight: 100, virtualSets: [{ id: 'vs', name: '_A?1',
+      insertionLayerId: tree[0].id, insertionPosition: 'above', members: [{ layerId: tree[0].id, opacity: null, blendMode: null }],
+      expandToAnimationCells: false, visibilityOverrides: {} }] })
+    useAppStore.getState().selectOutputFile(selectOutputFiles(useAppStore.getState())[1].outputId)
     const { result } = renderHook(() => useOutputPreview())
+    await ready(result)
+    expect(result.current[0].flatName).toBe('_A_1_2.jpg')
+    act(() => useAppStore.getState().selectLayer(tree[0].id))
+    expect(result.current[0].flatName).toBe('_A_1_2.jpg')
+    act(() => useAppStore.setState({ outputConfig: { ...DEFAULT_OUTPUT_CONFIG, format: 'png', excludeAutoMarked: true } }))
+    await ready(result)
+    expect(result.current[0].flatName).toBe('_A_1.png')
+  })
+
+  it('previews unplaced virtual cells separately from the export manifest', async () => {
+    const { cell } = processTree()
+    useAppStore.setState({ virtualSets: [{ id: 'draft', name: 'draft', insertionLayerId: null, insertionPosition: 'above',
+      members: [{ layerId: cell.id, opacity: null, blendMode: null }], expandToAnimationCells: false, visibilityOverrides: {} }] })
+    const draft = selectDraftOutputs(useAppStore.getState())[0]
+    useAppStore.getState().selectOutputFile(draft.outputId)
+    const { result } = renderHook(() => useOutputPreview())
+    await ready(result)
+    expect(result.current[0].flatName).toBe('draft')
+    expect(selectOutputFiles(useAppStore.getState()).some(file => file.outputId === draft.outputId)).toBe(false)
+  })
+
+  it('does no work while disabled and cancels the obsolete recipe after a rapid selection', async () => {
+    processTree()
+    const plans = selectOutputFiles(useAppStore.getState())
+    const spies = plans.map(plan => vi.spyOn(plan, 'renderCanvas'))
+    const { result, rerender } = renderHook(({ enabled }) => useOutputPreview(enabled), { initialProps: { enabled: false } })
     expect(result.current).toEqual([])
-    act(() => useAppStore.getState().toggleSingleMark(tree[0].id))
-    expect(result.current).toHaveLength(1)
+    act(() => useAppStore.getState().selectOutputFile(plans.at(-1)!.outputId))
+    rerender({ enabled: true })
+    await ready(result)
+    expect(result.current[0].outputId).toBe(plans.at(-1)!.outputId)
+    spies.forEach((spy, i) => expect(spy).toHaveBeenCalledTimes(i === plans.length - 1 ? 1 : 0))
+    spies.forEach(spy => spy.mockRestore())
   })
 
-  it('非表示中は出力画像を合成せず、表示時に最新セルを描画する', () => {
-    const tree = buildLayerTree(makePsd({ children: [makeAnimationFolder('A', [makeLayer({ name: '1' }), makeLayer({ name: '2' })])] }))
-    detectAnim(tree, 'A')
-    useAppStore.setState({ layerTree: tree, docWidth: 100, docHeight: 100, focusedAnimFolderId: tree[0].id })
-    const extract = vi.spyOn(cellExtractor, 'renderOutputPlans')
-    try {
-      const { result, rerender } = renderHook(({ enabled }) => useOutputPreview(enabled), { initialProps: { enabled: false } })
-      expect(result.current).toEqual([])
-      expect(extract).not.toHaveBeenCalled()
-      act(() => useAppStore.setState({ selectedCells: new Map([[tree[0].id, 1]]) }))
-      expect(extract).not.toHaveBeenCalled()
-      rerender({ enabled: true })
-      expect(result.current).toHaveLength(1)
-      expect(result.current[0].flatName).toBe('A_1.jpg')
-      expect(extract).toHaveBeenCalledTimes(1)
-    } finally {
-      extract.mockRestore()
-    }
-  })
-
-  it('別トラックだけのセル変更では選択中の出力を再合成しない', () => {
-    const tree = buildLayerTree(makePsd({ children: [makeAnimationFolder('A', [makeLayer({ name: '1' })])] }))
-    detectAnim(tree, 'A')
-    useAppStore.setState({ layerTree: tree, docWidth: 100, docHeight: 100, focusedAnimFolderId: tree[0].id })
-    const extract = vi.spyOn(cellExtractor, 'renderOutputPlans')
-    try {
-      const { result } = renderHook(() => useOutputPreview())
-      const entries = result.current
-      act(() => useAppStore.setState({ selectedCells: new Map([['another-track', 3]]) }))
-      expect(result.current).toBe(entries)
-      expect(extract).toHaveBeenCalledTimes(1)
-    } finally {
-      extract.mockRestore()
-    }
-  })
-
-  it('親工程名の末尾空白を無視してプレビューにも工程サフィックスを付ける', () => {
+  it('親工程名の末尾空白を無視してプレビューにも工程サフィックスを付ける', async () => {
     const tree = buildLayerTree(makePsd({
       children: [makeFolder('作監 \u3000', [makeAnimationFolder('A', [makeLayer({ name: '1' })])])],
     }))
@@ -193,14 +192,16 @@ describe('useOutputPreview', () => {
       focusedAnimFolderId: tree[0].children[0].id,
     })
 
+    selectFixtureOutput()
     const { result } = renderHook(() => useOutputPreview())
+    await ready(result)
 
     expect(result.current).toHaveLength(1)
     expect(result.current[0].flatName).toBe('A_1_s.png')
     expect(result.current[0].path).toBe('A/A_1_s.png')
   })
 
-  it('PNG選択時はアニメセルのプレビュー名を.pngで返す', () => {
+  it('PNG選択時はアニメセルのプレビュー名を.pngで返す', async () => {
     const animFolder = makeAnimationFolder('A', [makeLayer({ name: '1' })])
     const tree = buildLayerTree(makePsd({ children: [animFolder] }))
     detectAnim(tree, 'A')
@@ -213,14 +214,16 @@ describe('useOutputPreview', () => {
       focusedAnimFolderId: tree[0].id,
     })
 
+    selectFixtureOutput()
     const { result } = renderHook(() => useOutputPreview())
+    await ready(result)
 
     expect(result.current).toHaveLength(1)
     expect(result.current[0].flatName).toBe('A_1.png')
     expect(result.current[0].path).toBe('A/A_1.png')
   })
 
-  it('連番セル名モードではプレビュー名にもセル名を付加する', () => {
+  it('連番セル名モードではプレビュー名にもセル名を付加する', async () => {
     const animFolder = makeAnimationFolder('A', [makeLayer({ name: 'ア' })])
     const tree = buildLayerTree(makePsd({ children: [animFolder] }))
     detectAnim(tree, 'A')
@@ -234,14 +237,16 @@ describe('useOutputPreview', () => {
       focusedAnimFolderId: tree[0].id,
     })
 
+    selectFixtureOutput()
     const { result } = renderHook(() => useOutputPreview())
+    await ready(result)
 
     expect(result.current).toHaveLength(1)
     expect(result.current[0].flatName).toBe('A_1_ア.png')
     expect(result.current[0].path).toBe('A/A_1_ア.png')
   })
 
-  it('最大可視セル数に合わせた連番桁数をプレビュー名にも使う', () => {
+  it('最大可視セル数に合わせた連番桁数をプレビュー名にも使う', async () => {
     const targetAnim = makeAnimationFolder('A', [makeFolder('1', [makeLayer()])])
     const longAnim = makeAnimationFolder('B', makeNumberedCellFolders(100))
     const tree = buildLayerTree(makePsd({ children: [targetAnim, longAnim] }))
@@ -259,14 +264,16 @@ describe('useOutputPreview', () => {
       focusedAnimFolderId: target!.id,
     })
 
+    selectFixtureOutput()
     const { result } = renderHook(() => useOutputPreview())
+    await ready(result)
 
     expect(result.current).toHaveLength(1)
     expect(result.current[0].flatName).toBe('A_001_1.png')
     expect(result.current[0].path).toBe('A/A_001_1.png')
   })
 
-  it('4桁固定と連番区切りなしをプレビュー名にも反映する', () => {
+  it('4桁固定と連番区切りなしをプレビュー名にも反映する', async () => {
     const animFolder = makeAnimationFolder('A', [makeLayer({ name: '1' })])
     const tree = buildLayerTree(makePsd({ children: [animFolder] }))
     detectAnim(tree, 'A')
@@ -285,12 +292,14 @@ describe('useOutputPreview', () => {
       focusedAnimFolderId: tree[0].id,
     })
 
+    selectFixtureOutput()
     const { result } = renderHook(() => useOutputPreview())
+    await ready(result)
     expect(result.current[0].flatName).toBe('A0001.png')
     expect(result.current[0].path).toBe('A/A0001.png')
   })
 
-  it('セル名末尾と工程サフィックスが一致するプレビュー名を重複させない', () => {
+  it('セル名末尾と工程サフィックスが一致するプレビュー名を重複させない', async () => {
     const processFolder = makeFolder('_e', [makeLayer({ name: '修正' })])
     const cellFolder = makeFolder('B1_e', [processFolder])
     const animFolder = makeAnimationFolder('B', [cellFolder])
@@ -311,12 +320,14 @@ describe('useOutputPreview', () => {
       focusedAnimFolderId: tree[0].id,
     })
 
+    selectFixtureOutput()
     const { result } = renderHook(() => useOutputPreview())
+    await ready(result)
     expect(result.current).toHaveLength(1)
     expect(result.current[0].flatName).toBe('B1_e.jpg')
   })
 
-  it('セル名モードのXDTSフォルダ名省略をプレビューへ反映する', () => {
+  it('セル名モードのXDTSフォルダ名省略をプレビューへ反映する', async () => {
     const animFolder = makeAnimationFolder('A', [makeLayer({ name: '1' })])
     const tree = buildLayerTree(makePsd({ children: [animFolder] }))
     detectAnim(tree, 'A')
@@ -334,13 +345,15 @@ describe('useOutputPreview', () => {
       focusedAnimFolderId: tree[0].id,
     })
 
+    selectFixtureOutput()
     const { result } = renderHook(() => useOutputPreview())
+    await ready(result)
     expect(result.current).toHaveLength(1)
     expect(result.current[0].flatName).toBe('1.jpg')
     expect(result.current[0].path).toBe('A/1.jpg')
   })
 
-  it('セル名モードのフォルダ名との区切りをプレビューへ反映する', () => {
+  it('セル名モードのフォルダ名との区切りをプレビューへ反映する', async () => {
     const animFolder = makeAnimationFolder('A', [makeLayer({ name: '1' })])
     const tree = buildLayerTree(makePsd({ children: [animFolder] }))
     tree[0].isAnimationFolder = true
@@ -359,11 +372,13 @@ describe('useOutputPreview', () => {
       focusedAnimFolderId: tree[0].id,
     })
 
+    selectFixtureOutput()
     const { result } = renderHook(() => useOutputPreview())
+    await ready(result)
     expect(result.current[0].flatName).toBe('A1.jpg')
   })
 
-  it('PNG選択時はマーク済みレイヤーのプレビュー名も.pngで返す', () => {
+  it('PNG選択時はマーク済みレイヤーのプレビュー名も.pngで返す', async () => {
     const markedFolder = makeFolder('_撮影指示', [makeLayer({ name: 'body' })])
     const tree = buildLayerTree(makePsd({ children: [markedFolder] }))
 
@@ -375,14 +390,16 @@ describe('useOutputPreview', () => {
       selectedLayerId: tree[0].id,
     })
 
+    selectFixtureOutput()
     const { result } = renderHook(() => useOutputPreview())
+    await ready(result)
 
     expect(result.current).toHaveLength(1)
     expect(result.current[0].flatName).toBe('_撮影指示.png')
     expect(result.current[0].path).toBe('_撮影指示.png')
   })
 
-  it('hidden なセルを指したプレビューは別セルへ丸めず空になる', () => {
+  it('hidden なセルを指したプレビューは別セルへ丸めず空になる', async () => {
     const hiddenA = makeFolder('A', [makeLayer({ name: 'hidden-content' })])
     hiddenA.hidden = true
     const visibleA = makeFolder('A', [makeLayer({ name: 'visible-content' })])
@@ -404,8 +421,8 @@ describe('useOutputPreview', () => {
       selectedCells: new Map([[tree[0].id, hiddenAIndex]]),
     })
 
+    useAppStore.getState().selectAnimCell(tree[0].id, hiddenAIndex)
     const { result } = renderHook(() => useOutputPreview())
-
     expect(result.current).toHaveLength(0)
   })
 })

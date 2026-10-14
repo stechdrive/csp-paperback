@@ -41,7 +41,7 @@ describe('marks-slice - virtualSet', () => {
     expect(useAppStore.getState().virtualSets[0].visibilityOverrides[tree[0].id]).toBe(true)
   })
 
-  it('選択中の仮想セル削除ではプレビュー・メンバー選択・一時展開を残さない', () => {
+  it('仮想セル削除はメンバー選択を解除し、独立した素材選択・展開状態を保つ', () => {
     const tree = buildLayerTree(makePsd({ children: [makeFolder('_old-output', [makeLayer()])] }))
     useAppStore.setState({ layerTree: tree, selectedLayerId: tree[0].id })
     useAppStore.getState().addVirtualSet('layout')
@@ -50,8 +50,8 @@ describe('marks-slice - virtualSet', () => {
       transientExpandedFolders: new Set(['ancestor']) })
     useAppStore.getState().removeVirtualSet(id)
     expect(useAppStore.getState()).toMatchObject({ selectedVirtualSetId: null, selectedVsMemberSetId: null,
-      selectedVsMemberId: null, selectedLayerId: null, focusedAnimFolderId: null,
-      selectedOutputSourceId: null, transientExpandedFolders: new Set() })
+      selectedVsMemberId: null, selectedLayerId: tree[0].id, focusedAnimFolderId: null,
+      selectedOutputSourceId: null, transientExpandedFolders: new Set(['ancestor']) })
   })
 
   it('メンバーフォルダを削除したときは内部素材のコントロール選択も解除する', () => {

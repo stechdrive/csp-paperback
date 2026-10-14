@@ -38,6 +38,8 @@ export interface CspLayer {
 }
 
 export interface FlatLayer {
+  /** Pass-through containers traversed to reach this rendered layer. */
+  contributionIds?: string[]
   vectorWarning?: boolean
   unsupported3D?: boolean
   canvas: HTMLCanvasElement

@@ -15,9 +15,10 @@ export interface StreamedOutputEntry extends PreparedOutputEntry {
 }
 
 export function prepareOutputEntries(
-  entries: Pick<OutputEntry, 'path' | 'flatName'>[],
+  entries: Pick<OutputEntry, 'path' | 'flatName' | 'prepared'>[],
   config: OutputConfig,
 ): PreparedOutputEntry[] {
+  if (entries.every(entry => entry.prepared)) return entries.map(entry => entry.prepared!)
   const normalizedEntries = entries.map(e => ({
     ...e,
     path: sanitizeOutputPath(replaceExtension(e.path, config.format)),

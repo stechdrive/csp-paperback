@@ -19,16 +19,13 @@ import { RenderWarning } from './RenderWarning'
 import styles from './LayerTreeNode.module.css'
 import type { HistoryOptions } from '../store/history-slice'
 import { selectOutputRowStatuses } from '../store/selectors'
+import { visibilityDrag } from '../utils/visibility-gesture'
 
 // 目玉アイコンをなぞって一括トグルするためのモジュールレベルドラッグ状態
 // targetHidden: ドラッグ開始時に決定した「適用する非表示状態」
-const visibilityDrag = { active: false, targetHidden: false }
 type DropPlacement = VirtualSetInsertionPosition | 'inside'
 const FOLDER_INSIDE_ZONE_START = 0.35
 const FOLDER_INSIDE_ZONE_END = 0.65
-if (typeof window !== 'undefined') {
-  window.addEventListener('mouseup', () => { visibilityDrag.active = false })
-}
 
 interface LayerTreeNodeProps {
   layer: CspLayer

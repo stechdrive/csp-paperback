@@ -1,4 +1,5 @@
-import { useState, useCallback } from 'react'
+import { useCallback } from 'react'
+import { create } from 'zustand'
 import { useAppStore } from '../store'
 import type { OutputDestination } from '../types/output'
 import { buildZipStream, saveZipStream, makeZipFileName } from '../utils/zip-builder'
@@ -9,15 +10,20 @@ export interface UseExportResult {
   isExporting: boolean
   progress: number  // 0〜1
   error: string | null
-  startExport: (destination?: OutputDestination) => Promise<void>
+  startExport: (destination?: OutputDestination, selectedIds?: ReadonlySet<string>) => Promise<void>
 }
 
-export function useExport(): UseExportResult {
-  const [isExporting, setIsExporting] = useState(false)
-  const [progress, setProgress] = useState(0)
-  const [error, setError] = useState<string | null>(null)
+// One job across toolbar, output context menu and export dialog.
+const useExportJob = create(() => ({ isExporting: false, progress: 0, error: null as string | null }))
+const setIsExporting = (isExporting: boolean) => useExportJob.setState({ isExporting })
+const setProgress = (progress: number) => useExportJob.setState({ progress })
+const setError = (error: string | null) => useExportJob.setState({ error })
 
-  const startExport = useCallback(async (destination: OutputDestination = 'zip') => {
+export function useExport(): UseExportResult {
+  const { isExporting, progress, error } = useExportJob()
+
+  const startExport = useCallback(async (destination: OutputDestination = 'zip', selectedIds?: ReadonlySet<string>) => {
+    if (useExportJob.getState().isExporting) return
     const state = useAppStore.getState()
     const {
       docWidth,
@@ -45,7 +51,8 @@ export function useExport(): UseExportResult {
 
       // 全出力エントリを生成。displayName はツリー上に固定済みの XDTS trackNo
       // と手動指定分から計算される。
-      const entries = buildOutputEntriesFromState(state)
+      const entries = buildOutputEntriesFromState(state, outputConfig, selectedIds ? new Set(selectedIds) : undefined)
+      if (!entries.length) throw new Error('選択した項目に書き出せる画像がありません')
 
       setProgress(0.4)
 

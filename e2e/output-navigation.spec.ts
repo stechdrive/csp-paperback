@@ -76,7 +76,7 @@ async function loadSample(page: Page, collapsed = false) {
 async function expectSelectedOutput(page: Page, name: SampleLayer, imageName: string) {
   const selected = row(page, name)
   await expect(previewNames(page)).toHaveText([imageName])
-  await expect(selected).toHaveClass(/_rowSelected_/)
+  await expect(page.getByRole('listbox', { name: '出力ファイル' }).getByRole('option', { name: imageName, exact: true })).toHaveAttribute('data-active-output', 'true')
   await expect(selected).toBeVisible()
   await expect.poll(async () => {
     const layer = await selected.boundingBox(), tree = await page.getByTestId('layer-tree').boundingBox()
@@ -243,10 +243,10 @@ test('Shift+ホイールは実ZIPの画像を1枚ずつ巡回し、本体と工�
 
   await wheel(page, 700)
   await expect(previewNames(page)).toHaveText(['_PAN.jpg'])
-  const selected = page.getByTestId('layer-tree').locator('[data-layer-id][class*="_rowSelected_"]')
-  const selectedId = await selected.getAttribute('data-layer-id')
+  const selected = page.getByRole('listbox', { name: '出力ファイル' }).locator('[data-active-output="true"]')
+  const selectedId = await selected.getAttribute('data-output-source-id')
   await wheel(page, 300, false)
-  await expect(selected).toHaveAttribute('data-layer-id', selectedId!)
+  await expect(selected).toHaveAttribute('data-output-source-id', selectedId!)
   await expect(previewNames(page)).toHaveText(['_PAN.jpg'])
   await wheel(page, -700)
 
@@ -381,95 +381,52 @@ test('手動で開いた階層は保持し、手動で閉じた階層も次の�
   await expect(instructions).toHaveAttribute('aria-expanded', 'false')
 })
 
-test('一時展開中の通常選択と目の操作は選択を奪わず、内部レイヤーの出力へ同期する', async ({ page }) => {
-  await loadSample(page, true)
-  // A normal click must clear the sample's virtual-cell selection and old preview focus.
-  await row(page, 'memo').getByTitle('memo', { exact: true }).click()
-  await expect(row(page, 'memo')).toHaveClass(/_rowSelected_/)
-  await expect(previewNames(page)).toHaveCount(0)
-  await wheel(page, 120)
-  await expect(previewNames(page)).toHaveText(['仮想セルテスト.jpg'])
-  for (const name of sampleOutputs.slice(1, 5)) {
-    await wheel(page, 120)
-    await expect(previewNames(page)).toHaveText([name])
-  }
-  await expectSelectedOutput(page, 'bodyB', 'B_1.jpg')
-  const process = row(page, 'processB')
-  await expansion(process).click()
-  await expect(expansion(process)).toHaveAttribute('aria-expanded', 'true')
-  await process.getByTitle('_s', { exact: true }).click()
-  await expectSelectedOutput(page, 'processB', 'B_1_s.jpg')
-  const processInk = row(page, 'processInkB')
-  await processInk.locator('span[title]').click()
-  await expectSelectedOutput(page, 'processInkB', 'B_1_s.jpg')
 
-  // Clicking a different row's eye must not select that row through event bubbling.
-  const bodyInk = row(page, 'bodyInkB')
-  await visibility(bodyInk).click()
-  await expect(visibility(bodyInk)).toHaveAttribute('aria-pressed', 'false')
-  await expectSelectedOutput(page, 'processInkB', 'B_1_s.jpg')
-  await expect(bodyInk).not.toHaveClass(/_rowSelected_/)
-  // Hiding the selected content layer must not collapse away its selected row.
+test('素材選択では出力とフレームを変えず、目玉変更だけを合成へ反映する', async ({ page }) => {
+  await loadSample(page, true)
+  const files = page.getByRole('listbox', { name: '出力ファイル' })
+  await files.getByRole('option', { name: 'B_1_s.jpg', exact: true }).click()
+  await page.getByRole('button', { name: '選択中の出力をツリーで表示' }).click()
+  const process = row(page, 'processB'), processInk = row(page, 'processInkB'), bodyInk = row(page, 'bodyInkB')
+  await expansion(process).click()
+  const timeline = page.getByTestId('navigator-panel').getByRole('slider')
+  const frame = await timeline.getAttribute('aria-valuenow')
+  for (const source of [process, processInk, bodyInk, row(page, 'memo')]) {
+    await source.locator('span[title]').click()
+    await expect(source).toHaveClass(/_rowSelected_/)
+    await expect(previewNames(page)).toHaveText(['B_1_s.jpg'])
+    await expect(timeline).toHaveAttribute('aria-valuenow', frame!)
+  }
   const visiblePixels = await previewPixelHash(page)
+  await visibility(bodyInk).click()
+  await expect(previewNames(page)).toHaveText(['B_1_s.jpg'])
+  await expect.poll(() => previewPixelHash(page)).toBe(visiblePixels)
   await visibility(processInk).click()
-  await expect(visibility(processInk)).toHaveAttribute('aria-pressed', 'false')
-  await expectSelectedOutput(page, 'processInkB', 'B_1_s.jpg')
+  await expect(previewNames(page)).toHaveText(['B_1_s.jpg'])
   await expect.poll(() => previewPixelHash(page)).not.toBe(visiblePixels)
   await visibility(processInk).click()
-  await expect(visibility(processInk)).toHaveAttribute('aria-pressed', 'true')
+  await expect(previewNames(page)).toHaveText(['B_1_s.jpg'])
   await expect.poll(() => previewPixelHash(page)).toBe(visiblePixels)
-  await visibility(bodyInk).click()
-  await bodyInk.locator('span[title]').click()
-  await expectSelectedOutput(page, 'bodyInkB', 'B_1.jpg')
-
-  await wheel(page, 120)
-  await expectSelectedOutput(page, 'processB', 'B_1_s.jpg')
-  await wheel(page, 120)
-  await expectSelectedOutput(page, 'bodyA', 'A_1.jpg')
-  await wheel(page, -120)
-  await expectSelectedOutput(page, 'processB', 'B_1_s.jpg')
-  await expect(expansion(process)).toHaveAttribute('aria-expanded', 'true')
-  await expect(processInk).toBeVisible()
-  // A normal content click in another cell must replace the previous process focus.
-  await expansion(row(page, 'animationA')).click()
-  await expansion(row(page, 'bodyA')).click()
-  await row(page, 'bodyInkA').locator('span[title]').click()
-  await expectSelectedOutput(page, 'bodyInkA', 'A_1.jpg')
-  await row(page, 'memo').getByTitle('memo', { exact: true }).click()
-  await expect(row(page, 'memo')).toHaveClass(/_rowSelected_/)
-  await expect(previewNames(page)).toHaveCount(0)
-  await expect(expansion(row(page, 'layout'))).toHaveAttribute('aria-expanded', 'false')
 })
 
-test('非表示工程とその内部を選んでも別の出力へ切り替わらず、再表示で工程の画像へ戻る', async ({ page }) => {
+test('非表示工程の素材を選んでも出力は変わらず、再表示で同じ工程へ戻る', async ({ page }) => {
   await loadSample(page, true)
-  for (const name of sampleOutputs.slice(1, 5)) {
-    await wheel(page, 120)
-    await expect(previewNames(page)).toHaveText([name])
-  }
-  await expectSelectedOutput(page, 'bodyB', 'B_1.jpg')
-  const process = row(page, 'processB')
-  const processInk = row(page, 'processInkB')
+  const file = page.getByRole('listbox', { name: '出力ファイル' }).getByRole('option', { name: 'B_1_s.jpg', exact: true })
+  await file.click()
+  await page.getByRole('button', { name: '選択中の出力をツリーで表示' }).click()
+  const process = row(page, 'processB'), processInk = row(page, 'processInkB')
   await expansion(process).click()
   await visibility(process).click()
-  await expect(visibility(process)).toHaveAttribute('aria-pressed', 'false')
-  await expectSelectedOutput(page, 'bodyB', 'B_1.jpg')
-
-  // Both the hidden output folder and its artwork still belong to the same output.
-  // Selecting either must not fall back to the cell's visible body image.
+  await expect(previewNames(page)).toHaveCount(0)
   for (const selected of [process, processInk]) {
     await selected.locator('span[title]').click()
     await expect(selected).toHaveClass(/_rowSelected_/)
-    await expect(selected).toBeVisible()
     await expect(previewNames(page)).toHaveCount(0)
-    await expect(page.getByTestId('output-view').locator('canvas')).toHaveCount(0)
+    await expect(page.getByTestId('output-view')).toContainText('現在の表示・書き出し設定では出力されません')
     await visibility(process).click()
-    await expect(visibility(process)).toHaveAttribute('aria-pressed', 'true')
     await expect(previewNames(page)).toHaveText(['B_1_s.jpg'])
-    await expect(page.getByTestId('output-view').locator('canvas')).toHaveCount(1)
-    await expect(selected).toHaveClass(/_rowSelected_/)
+    await expect(file).toHaveAttribute('data-active-output', 'true')
     await visibility(process).click()
-    await expect(visibility(process)).toHaveAttribute('aria-pressed', 'false')
     await expect(previewNames(page)).toHaveCount(0)
   }
 })

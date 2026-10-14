@@ -8,6 +8,17 @@ import type { AppStore } from './index'
 import { collectOutputNavigation, type OutputNavigation } from '../utils/output-navigation'
 import { buildOutputPlan, type OutputFile } from '../utils/output-plan'
 import { isOutputTargetExcluded } from '../utils/output-target'
+import { buildDraftOutputs } from '../utils/draft-output'
+
+let draftCache: { inputs: unknown[]; result: OutputFile[] } | undefined
+export function selectDraftOutputs(state: AppStore): OutputFile[] {
+  const tree = selectLayerTreeWithVisibility(state)
+  const inputs = [tree, state.virtualSets, state.docWidth, state.docHeight, state.outputConfig, state.projectSettings]
+  if (draftCache && inputs.every((v, i) => v === draftCache!.inputs[i])) return draftCache.result
+  const result = buildDraftOutputs(tree, state)
+  draftCache = { inputs, result }
+  return result
+}
 
 let outputPlanCache: {
   inputs: readonly unknown[]

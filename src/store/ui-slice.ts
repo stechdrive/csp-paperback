@@ -4,8 +4,7 @@ import type { TimelineTrack } from '../types/timeline'
 import { findFirstFrameOfCell, resolveCellsAtFrameByTrackNo } from '../utils/xdts-parser'
 import { buildDefaultVisibilityOverrides } from '../utils/default-visibility'
 import { DEFAULT_MOBILE_UI_SCALE, clampMobileUiScale } from '../utils/mobile-ui-scale'
-import { selectLayerTreeWithVisibility, selectOutputNavigation } from './selectors'
-import { collectCellOutputUnits } from '../engine/cell-output-units'
+import { selectLayerTreeWithVisibility, selectOutputNavigation, selectOutputFiles } from './selectors'
 import { collectOutputRevealFolders, type OutputNavigationEntry } from '../utils/output-navigation'
 import { findLayerPath } from '../utils/layerNavigation'
 import { findTimelineCellChildIndex } from '../utils/anim-cell-selection'
@@ -13,18 +12,30 @@ import type { AppTheme } from '../theme'
 import { DEFAULT_APP_THEME } from '../theme'
 import type { AppStore } from './index'
 import type { HistoryOptions } from './history-slice'
+import { emptyOutputSelection, outputSelectionPatch, type OutputSelectionOptions } from './output-selection'
+import { cellOutputId, virtualOutputId } from '../utils/output-identity'
 
 export interface UiSlice {
+  activeOutputId: string | null
+  activeOutputLabel: string
+  selectedOutputIds: Set<string>
+  outputSelectionAnchor: string | null
+  compareOutputs: boolean
+  quickLookTarget: { layerId: string; virtualSetId?: string } | null
+  selectOutputFile: (id: string, options?: OutputSelectionOptions) => void
+  setCompareOutputs: (compare: boolean) => void
+  openQuickLook: (layerId: string, virtualSetId?: string) => void
+  closeQuickLook: () => void
   mobileUiScale: number
   activeTheme: AppTheme
   selectedLayerId: string | null
-  /** Exact image selected by output navigation; null for ordinary row selection. */
+  /** Current output's source, retained for timeline navigation. Not the editor row. */
   selectedOutputSourceId: string | null
   /** animFolderId → 選択中のセルインデックス。未登録は先頭（0）扱い。-1 はカラ（何も表示しない） */
   selectedCells: Map<string, number>
   /** 出力プレビューに表示するアニメーションフォルダのID */
   focusedAnimFolderId: string | null
-  /** 出力プレビューに表示する仮想セットのID（focusedAnimFolderIdと排他） */
+  /** 仮想セルの編集対象。出力選択・タイムラインとは独立。 */
   selectedVirtualSetId: string | null
   /** 仮想セットパネルでコントロール対象のメンバー */
   selectedVsMemberSetId: string | null
@@ -45,7 +56,7 @@ export interface UiSlice {
   setActiveTheme: (theme: AppTheme) => void
   resetMobileUiScale: () => void
   selectLayer: (layerId: string | null) => void
-  selectOutputEntry: (entry: OutputNavigationEntry, options?: { preserveTimeline?: boolean }) => OutputNavigationEntry | undefined
+  selectOutputEntry: (entry: OutputNavigationEntry, options?: OutputSelectionOptions) => OutputNavigationEntry | undefined
   setSelectedVsMember: (setId: string | null, memberId: string | null) => void
   /**
    * アニメーションフォルダの選択セルを変更する。
@@ -148,7 +159,6 @@ function animationSelection(state: AppStore, animFolderId: string, cellIndex: nu
   const update: Partial<AppStore> = {
     selectedCells: sameSelectedCells(selectedCells, newSelectedCells) ? selectedCells : newSelectedCells,
     focusedAnimFolderId: animFolderId,
-    selectedVirtualSetId: null,
   }
   if (resolvedFrame >= 0) update.currentFrame = resolvedFrame
   return update
@@ -157,6 +167,21 @@ function animationSelection(state: AppStore, animFolderId: string, cellIndex: nu
 // -------------------------------------------------------
 
 export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get) => ({
+  ...emptyOutputSelection(),
+  selectOutputFile: (id, options) => {
+    const state = get()
+    const file = selectOutputFiles(state).find(file => file.outputId === id)
+    if (file) {
+      const entry = selectOutputNavigation(state).entries.find(entry => entry.id === file.sourceLayerId)
+      if (entry) state.selectOutputEntry(entry, options)
+    } else {
+      const draft = state.virtualSets.find(vs => !vs.insertionLayerId && virtualOutputId(vs.id) === id)
+      if (draft) set(outputSelectionPatch(state, id, draft.name, options))
+    }
+  },
+  setCompareOutputs: compareOutputs => set({ compareOutputs: compareOutputs && get().selectedOutputIds.size <= 8 }),
+  openQuickLook: (layerId, virtualSetId) => set({ quickLookTarget: { layerId, virtualSetId } }),
+  closeQuickLook: () => set({ quickLookTarget: null }),
   mobileUiScale: DEFAULT_MOBILE_UI_SCALE,
   activeTheme: DEFAULT_APP_THEME,
   selectedLayerId: null,
@@ -187,26 +212,8 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
 
   selectLayer: (layerId) => {
     const state = get()
-    const tree = selectLayerTreeWithVisibility(state)
-    const path = layerId ? findLayerPath(tree, layerId) : []
-    const layer = path.at(-1)
-    const animIndex = path.findIndex(item => item.isAnimationFolder)
-    const anim = path[animIndex]
-    const cell = path[animIndex + 1]
-    const update = anim && cell
-      ? animationSelection(state, anim.id, anim.children.findIndex(item => item.id === cell.id))
-      : {}
-    const selectedLayerId = layer?.id ?? null
-    const findOwner = (includeHidden: boolean) => anim && cell && cell.id !== selectedLayerId
-      ? collectCellOutputUnits(anim, state.projectSettings.processTable, { includeHidden }).find(candidate =>
-        candidate.cell.id === cell.id && candidate.layers.some(member => path.some(item => item.id === member.id)))
-      : undefined
-    // Hidden rows remain clickable. Retain their structural owner so toggling
-    // visibility cannot turn an internal-row selection into an all-cel preview.
-    const unit = findOwner(false) ?? findOwner(true)
-    set({ ...update, selectedLayerId, selectedOutputSourceId: unit?.sourceLayerId ?? null, selectedVirtualSetId: null,
-      focusedAnimFolderId: layer?.isAnimationFolder ? layer.id : (anim && cell ? anim.id : null),
-      transientExpandedFolders: collectOutputRevealFolders(tree, selectOutputNavigation(state), selectedLayerId) })
+    const layer = layerId ? findLayerPath(state.layerTree, layerId).at(-1) : null
+    set({ selectedLayerId: layer?.id ?? null })
   },
 
   selectOutputEntry: (requested, options) => {
@@ -214,16 +221,19 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
     const navigation = selectOutputNavigation(state)
     const entry = navigation.entries.find(item => item.id === requested.id && item.kind === requested.kind)
     if (!entry) return
-    const tree = selectLayerTreeWithVisibility(state)
+    const file = selectOutputFiles(state).find(file => file.sourceLayerId === entry.id)
+    if (!file) return
+    const outputSelection = outputSelectionPatch(state, file.outputId, file.relativePath, options)
+    outputSelection.transientExpandedFolders = options?.reveal
+      ? collectOutputRevealFolders(selectLayerTreeWithVisibility(state), navigation, entry.kind === 'layer' ? entry.id : null, entry.kind === 'virtualSet' ? entry.id : null)
+      : new Set()
     if (entry.kind === 'virtualSet') {
-      set({ selectedVirtualSetId: entry.id, selectedOutputSourceId: null, focusedAnimFolderId: null,
-        transientExpandedFolders: collectOutputRevealFolders(tree, navigation, null, entry.id) })
+      set({ ...outputSelection, selectedOutputSourceId: entry.id, focusedAnimFolderId: null })
     } else {
       const update = !options?.preserveTimeline && entry.animFolderId !== undefined && entry.cellIndex !== undefined
         ? animationSelection(state, entry.animFolderId, entry.cellIndex) : {}
-      set({ ...update, selectedLayerId: entry.id, selectedOutputSourceId: entry.id,
-        focusedAnimFolderId: entry.animFolderId ?? null, selectedVirtualSetId: null,
-        transientExpandedFolders: collectOutputRevealFolders(tree, navigation, entry.id) })
+      set({ ...update, ...outputSelection, selectedOutputSourceId: entry.id,
+        focusedAnimFolderId: entry.animFolderId ?? null })
     }
     return entry
   },
@@ -237,9 +247,10 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
     const tree = selectLayerTreeWithVisibility(state)
     const folder = findLayerById(tree, animFolderId)
     if (!folder?.isAnimationFolder) return
-    const selectedLayerId = folder.children[cellIndex]?.id ?? folder.id
-    set({ ...animationSelection(state, animFolderId, cellIndex), selectedLayerId, selectedOutputSourceId: null,
-      transientExpandedFolders: collectOutputRevealFolders(tree, selectOutputNavigation(state), selectedLayerId) })
+    const file = selectOutputFiles(state).find(file => file.animFolderId === animFolderId && file.sourceCellId === folder.children[cellIndex]?.id)
+    set({ ...animationSelection(state, animFolderId, cellIndex),
+      ...outputSelectionPatch(state, file?.outputId ?? cellOutputId(animFolderId, folder.children[cellIndex]?.id ?? ''), file?.relativePath ?? 'カラセル'),
+      selectedOutputSourceId: file?.sourceLayerId ?? null })
   },
 
   seekToFrame: (frameIndex) => {
@@ -268,36 +279,25 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
       selectedCells.get(focus) !== newSelectedCells.get(focus)) {
       const nextIndex = newSelectedCells.get(focus)!
       const nextCell = folder.children[nextIndex]
-      const previousSource = get().selectedOutputSourceId
-      let selectedLayerId = nextCell?.id ?? folder.id
-      let selectedOutputSourceId: string | null = null
-      if (nextCell && previousSource) {
-        const units = collectCellOutputUnits(folder, get().projectSettings.processTable)
-        const previous = units.find(unit => unit.sourceLayerId === previousSource)
-        const nextUnits = units.filter(unit => unit.cellIndex === nextIndex)
-        const nextUnit = nextUnits.find(unit => unit.processSuffix === previous?.processSuffix) ?? nextUnits[0]
-        selectedLayerId = nextUnit?.sourceLayerId ?? nextCell.id
-        selectedOutputSourceId = selectedLayerId
-      }
-      if (selectedLayerId !== get().selectedLayerId || selectedOutputSourceId !== previousSource) {
-        Object.assign(selection, { selectedLayerId, selectedOutputSourceId,
-          transientExpandedFolders: collectOutputRevealFolders(tree, selectOutputNavigation(get()), selectedLayerId) })
-      }
+      const previous = get().activeOutputId ? JSON.parse(get().activeOutputId!) as string[] : []
+      const id = cellOutputId(focus, nextCell?.id ?? '', previous[0] === 'cell' && previous[3] === 'process' ? previous[4] : undefined)
+      const file = selectOutputFiles(get()).find(file => file.outputId === id)
+      Object.assign(selection, outputSelectionPatch(get(), id, file?.relativePath ?? (nextCell?.name ?? 'カラセル')),
+        { selectedOutputSourceId: file?.sourceLayerId ?? null })
     }
     set({ ...selection, currentFrame: clamped,
       selectedCells: sameSelectedCells(selectedCells, newSelectedCells) ? selectedCells : newSelectedCells })
   },
 
   setFocusedAnimFolder: (id) => {
-    if (id) get().selectLayer(id)
-    else set({ focusedAnimFolderId: null, selectedOutputSourceId: null, selectedVirtualSetId: null })
+    if (id) get().selectAnimCell(id, get().selectedCells.get(id) ?? 0)
+    else set({ focusedAnimFolderId: null })
   },
 
   setSelectedVirtualSet: (id) => {
     const state = get()
     const selectedVirtualSetId = state.virtualSets.some(vs => vs.id === id) ? id : null
-    set({ selectedVirtualSetId, focusedAnimFolderId: null, selectedOutputSourceId: null,
-      transientExpandedFolders: collectOutputRevealFolders(selectLayerTreeWithVisibility(state), selectOutputNavigation(state), null, selectedVirtualSetId) })
+    set({ selectedVirtualSetId })
   },
 
   toggleLayerVisibility: (layerId, options) => {

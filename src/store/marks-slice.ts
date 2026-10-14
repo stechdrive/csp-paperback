@@ -138,9 +138,6 @@ export const createMarksSlice: StateCreator<AppStore, [], [], MarksSlice> = (set
     set({
       virtualSets: [...get().virtualSets, newSet],
       selectedVirtualSetId: newSet.id,
-      focusedAnimFolderId: null,
-      selectedOutputSourceId: null,
-      transientExpandedFolders: new Set(),
     })
   },
 
@@ -161,10 +158,6 @@ export const createMarksSlice: StateCreator<AppStore, [], [], MarksSlice> = (set
       virtualSets: state.virtualSets.filter(vs => vs.id !== id),
       ...(state.selectedVirtualSetId === id ? {
         selectedVirtualSetId: null,
-        selectedLayerId: null,
-        focusedAnimFolderId: null,
-        selectedOutputSourceId: null,
-        transientExpandedFolders: new Set<string>(),
       } : {}),
       ...(state.selectedVsMemberSetId === id ? { selectedVsMemberSetId: null, selectedVsMemberId: null } : {}),
     })

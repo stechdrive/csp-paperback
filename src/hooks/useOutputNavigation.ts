@@ -1,36 +1,35 @@
 import { useCallback } from 'react'
 import { useAppStore } from '../store'
-import { selectOutputNavigation } from '../store/selectors'
-import { findOutputNavigationIndex, nextOutputNavigationIndex } from '../utils/output-navigation'
+import { selectLayerTreeWithVisibility, selectOutputFiles, selectOutputNavigation } from '../store/selectors'
+import { collectOutputRevealFolders } from '../utils/output-navigation'
 
-/** Shared final-image navigation for the layer tree and mobile seek bar. */
 export function useOutputNavigation() {
-  const selectedLayerId = useAppStore(s => s.selectedLayerId)
-  const selectedVirtualSetId = useAppStore(s => s.selectedVirtualSetId)
+  const activeId = useAppStore(s => s.activeOutputId)
+  const files = useAppStore(selectOutputFiles)
   const navigation = useAppStore(selectOutputNavigation)
-  const currentIdx = findOutputNavigationIndex(navigation.entries, selectedLayerId, selectedVirtualSetId)
-
+  const currentSource = files.find(file => file.outputId === activeId)?.sourceLayerId
+  const currentIdx = navigation.entries.findIndex(entry => entry.id === currentSource)
   const navigateTo = useCallback((index: number) => {
     const state = useAppStore.getState()
     const entry = selectOutputNavigation(state).entries[index]
-    return entry ? state.selectOutputEntry(entry) : undefined
+    return entry ? state.selectOutputEntry(entry, { reveal: true }) : undefined
   }, [])
-
   const navigate = useCallback((direction: 1 | -1) => {
     const state = useAppStore.getState()
-    const currentNavigation = selectOutputNavigation(state)
-    const index = nextOutputNavigationIndex(currentNavigation, state.selectedLayerId, state.selectedVirtualSetId, direction)
-    const entry = currentNavigation.entries[index]
-    return entry ? state.selectOutputEntry(entry) : undefined
+    const entries = selectOutputNavigation(state).entries
+    const source = selectOutputFiles(state).find(file => file.outputId === state.activeOutputId)?.sourceLayerId
+    const index = entries.findIndex(entry => entry.id === source)
+    const next = index < 0 ? (direction > 0 ? 0 : entries.length - 1) : Math.max(0, Math.min(entries.length - 1, index + direction))
+    return entries[next] ? state.selectOutputEntry(entries[next], { reveal: true }) : undefined
   }, [])
-
   const revealCurrent = useCallback(() => {
     const state = useAppStore.getState()
-    const entries = selectOutputNavigation(state).entries
-    const index = findOutputNavigationIndex(entries, state.selectedOutputSourceId ?? state.selectedLayerId, state.selectedVirtualSetId)
-    const entry = entries[index]
-    return entry ? state.selectOutputEntry(entry, { preserveTimeline: true }) : undefined
+    const file = selectOutputFiles(state).find(file => file.outputId === state.activeOutputId)
+    const navigation = selectOutputNavigation(state)
+    const entry = navigation.entries.find(entry => entry.id === file?.sourceLayerId)
+    if (entry) useAppStore.setState({ transientExpandedFolders: collectOutputRevealFolders(selectLayerTreeWithVisibility(state), navigation,
+      entry.kind === 'layer' ? entry.id : null, entry.kind === 'virtualSet' ? entry.id : null) })
+    return entry
   }, [])
-
   return { entries: navigation.entries, currentIdx, navigateTo, navigate, revealCurrent }
 }

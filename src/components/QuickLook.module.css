@@ -1,0 +1,8 @@
+.dialog { width: min(85vw, 960px); max-height: 88vh; padding: 0; border: 1px solid var(--color-border-strong); border-radius: 8px; background: var(--color-surface-1); color: var(--color-text-primary); }
+.dialog::backdrop { background: #0008; }
+.dialog header { display: flex; align-items: center; gap: 12px; padding: 10px 14px; }
+.dialog strong { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.dialog button { background: transparent; color: inherit; border: 0; min-width: 32px; height: 32px; cursor: pointer; }
+.dialog p { font-size: .75rem; color: var(--color-text-secondary); margin: 8px 14px; }
+.image { display: flex; justify-content: center; align-items: center; min-height: 120px; background: repeating-conic-gradient(#9992 0% 25%, transparent 0% 50%) 0 0 / 16px 16px; }
+.image canvas { max-width: 100%; max-height: 65vh; object-fit: contain; }

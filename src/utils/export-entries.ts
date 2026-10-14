@@ -8,10 +8,12 @@ import { applyRevisionBorders } from './revision-border'
 export function buildOutputEntriesFromState(
   state: AppStore,
   outputConfig: OutputConfig = state.outputConfig,
+  selectedIds?: ReadonlySet<string>,
 ): OutputEntry[] {
   const plans = outputConfig === state.outputConfig
     ? selectOutputFiles(state)
     : buildOutputPlan(selectLayerTreeWithVisibility(state), state, outputConfig)
-  return applyRevisionBorders(renderOutputPlans(plans), state.projectSettings.processTable,
-    outputConfig.revisionBorderEnabled)
+  const selected = selectedIds ? plans.filter(plan => selectedIds.has(plan.outputId)) : plans
+  return applyRevisionBorders(renderOutputPlans(selected), state.projectSettings.processTable,
+    outputConfig.revisionBorderEnabled).map((entry, index) => ({ ...entry, prepared: selected[index] }))
 }

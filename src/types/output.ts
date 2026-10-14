@@ -31,6 +31,8 @@ export const DEFAULT_OUTPUT_CONFIG: OutputConfig = {
 }
 
 export interface OutputEntry {
+  /** Names resolved against the complete export plan, before subset selection. */
+  prepared?: import('../utils/output-builder').PreparedOutputEntry
   path: string              // 階層保持モード用のパス（例: 'A/A0001.jpg'）
   flatName: string          // フラット展開モード用のファイル名
   canvas: HTMLCanvasElement

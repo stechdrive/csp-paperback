@@ -68,6 +68,25 @@ beforeEach(() => {
 afterEach(cleanup)
 
 describe('useExport', () => {
+  it('shares a synchronous job lock across toolbar and subset export and snapshots the selection', async () => {
+    const state = makeLoadedState()
+    mockedGetState.mockReturnValue(state as never)
+    mockedBuildEntries.mockReturnValue([makeEntry()])
+    mockedBuildZipStream.mockReturnValue(new ReadableStream<Uint8Array>())
+    let finish!: () => void
+    mockedSaveZipStream.mockImplementationOnce(() => new Promise<void>(resolve => { finish = resolve }))
+    const a = renderHook(() => useExport()), b = renderHook(() => useExport())
+    const selected = new Set(['stable-output-id'])
+    let job!: Promise<void>
+    act(() => { job = a.result.current.startExport('zip', selected); void b.result.current.startExport('zip') })
+    expect(b.result.current.isExporting).toBe(true)
+    expect(mockedBuildEntries).toHaveBeenCalledTimes(1)
+    selected.clear()
+    expect(mockedBuildEntries.mock.calls[0][2]).toEqual(new Set(['stable-output-id']))
+    await act(async () => { finish(); await job })
+    expect(a.result.current.isExporting).toBe(false)
+    expect(b.result.current.isExporting).toBe(false)
+  })
   it('現在の設定でエントリを組み立て、ZIPへ保存する', async () => {
     const state = makeLoadedState()
     const entries = [makeEntry()]
@@ -82,7 +101,7 @@ describe('useExport', () => {
       await result.current.startExport('zip')
     })
 
-    expect(mockedBuildEntries).toHaveBeenCalledWith(state)
+    expect(mockedBuildEntries).toHaveBeenCalledWith(state, state.outputConfig, undefined)
     expect(mockedBuildZipStream).toHaveBeenCalledWith(
       entries,
       state.outputConfig,

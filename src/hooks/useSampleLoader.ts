@@ -2,6 +2,7 @@ import { loadProjectFiles } from '../utils/project-loader'
 import { useState, useCallback } from 'react'
 import { useAppStore } from '../store'
 import { buildC001VirtualSets } from '../sample/c001-virtual-set'
+import { virtualOutputId } from '../utils/output-identity'
 
 const BASE = import.meta.env.BASE_URL
 
@@ -21,6 +22,7 @@ export function useSampleLoader() {
         selectedLayerId: null,
       })
       useAppStore.getState().setSelectedVirtualSet(virtualSets[0]?.id ?? null)
+      if (virtualSets[0]) useAppStore.getState().selectOutputFile(virtualOutputId(virtualSets[0].id))
     } finally {
       setLoading(false)
     }

@@ -8,6 +8,8 @@ import { selectOutputNavigation } from '../../store/selectors'
 
 beforeEach(() => {
   useAppStore.setState({
+    selectedLayerId: null,
+    activeOutputId: null,
     rawPsd: null,
     psdFileName: null,
     layerTree: [],
@@ -63,7 +65,7 @@ describe('ui-slice XDTS timeline sync', () => {
     }
 
     const selected = useAppStore.getState()
-    expect(selected.selectedLayerId).toBe(animA.children[0].id)
+    expect(selected.selectedLayerId).toBeNull()
     expect(selected.selectedCells.get(animA.id)).toBe(0)
     expect(selected.selectedCells.get(animB.id)).toBe(0)
     expect(selected.currentFrame).toBe(5)
@@ -74,7 +76,7 @@ describe('ui-slice XDTS timeline sync', () => {
     useAppStore.getState().seekToFrame(6)
     expect(useAppStore.getState().selectedCells.get(animA.id)).toBe(1)
     expect(useAppStore.getState().selectedCells.get(animB.id)).toBe(0)
-    expect(useAppStore.getState().selectedLayerId).toBe(animA.children[1].id)
+    expect(useAppStore.getState().selectedLayerId).toBeNull()
     expect(useAppStore.getState().currentFrame).toBe(6)
   })
 

@@ -47,6 +47,7 @@ const AUTO_SCROLL_MIN_SPEED_PX = 2
 const DRAGGING_BODY_CLASS = 'is-csp-dragging'
 const internalDropTargets = new Map<HTMLElement, InternalDropTarget>()
 let activeInternalDropTarget: HTMLElement | null = null
+let cancelInternalDrag: (() => void) | undefined
 
 export function isInternalPointerDragEnabled(): boolean {
   return isDesktopRuntime()
@@ -93,24 +94,31 @@ function setDraggingBodyClass(enabled: boolean): void {
   document.body.classList.toggle(DRAGGING_BODY_CLASS, enabled)
 }
 
-export function startInternalPointerDrag(payload: DragPayload, e: React.PointerEvent): void {
+export function startInternalPointerDrag(payload: DragPayload, e: React.PointerEvent): (() => void) | undefined {
   if (!isInternalPointerDragEnabled()) return
   if (e.button !== 0) return
+  if (e.target !== e.currentTarget && e.target instanceof Element && e.target.closest('button, input, select, textarea, a, [contenteditable="true"]')) return
+  cancelInternalDrag?.()
 
   const pointerId = e.pointerId
   const startX = e.clientX
   const startY = e.clientY
   let dragging = false
+  let finished = false
 
   const cleanup = () => {
+    if (finished) return
+    finished = true
     document.removeEventListener('pointermove', handlePointerMove, true)
     document.removeEventListener('pointerup', handlePointerUp, true)
     document.removeEventListener('pointercancel', handlePointerCancel, true)
+    window.removeEventListener('blur', handleBlur)
     if (activeInternalDropTarget) {
       internalDropTargets.get(activeInternalDropTarget)?.onDragLeave?.()
       activeInternalDropTarget = null
     }
     _activeDragPayload = null
+    cancelInternalDrag = undefined
   }
 
   const beginDragIfNeeded = (event: PointerEvent) => {
@@ -151,10 +159,14 @@ export function startInternalPointerDrag(payload: DragPayload, e: React.PointerE
     setDraggingBodyClass(false)
     cleanup()
   }
+  const handleBlur = () => { if (finished) return; setDraggingBodyClass(false); cleanup() }
 
   document.addEventListener('pointermove', handlePointerMove, true)
   document.addEventListener('pointerup', handlePointerUp, true)
   document.addEventListener('pointercancel', handlePointerCancel, true)
+  window.addEventListener('blur', handleBlur)
+  cancelInternalDrag = handleBlur
+  return handleBlur
 }
 
 export function useInternalDropTarget(target: InternalDropTarget): {
@@ -324,12 +336,14 @@ export function useDragAutoScroll<T extends HTMLElement>(
     window.addEventListener('drop', stopAutoScroll, true)
     window.addEventListener('pointerup', stopAutoScroll, true)
     window.addEventListener('pointercancel', stopAutoScroll, true)
+    window.addEventListener('blur', stopAutoScroll, true)
 
     return () => {
       window.removeEventListener('dragend', stopAutoScroll, true)
       window.removeEventListener('drop', stopAutoScroll, true)
       window.removeEventListener('pointerup', stopAutoScroll, true)
       window.removeEventListener('pointercancel', stopAutoScroll, true)
+      window.removeEventListener('blur', stopAutoScroll, true)
       stopAutoScroll()
     }
   }, [stopAutoScroll])
@@ -350,6 +364,8 @@ export function useDragAutoScroll<T extends HTMLElement>(
  * ドラッグ元として使うフック
  */
 export function useDragSource(payload: DragPayload): DragHandlers & { isDragging: boolean } {
+  const cancelPointerDrag = useRef<(() => void) | undefined>(undefined)
+  useEffect(() => () => cancelPointerDrag.current?.(), [])
   const [isDragging, setIsDragging] = useState(false)
   const nativeDraggable = !isInternalPointerDragEnabled()
 
@@ -372,7 +388,8 @@ export function useDragSource(payload: DragPayload): DragHandlers & { isDragging
   }, [])
 
   const onPointerDown = useCallback((e: React.PointerEvent) => {
-    startInternalPointerDrag(payload, e)
+    cancelPointerDrag.current?.()
+    cancelPointerDrag.current = startInternalPointerDrag(payload, e)
   }, [payload])
 
   return { draggable: nativeDraggable, onDragStart, onDragEnd, onPointerDown, isDragging }

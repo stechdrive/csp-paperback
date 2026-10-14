@@ -1,4 +1,5 @@
 import { applyMaterialEffects } from './material-effects'
+import { includeContainer } from './render-sources'
 import type { CspLayer, FlatLayer } from '../types'
 import { collectAnimFolderAncestorIds } from './tree-builder'
 import { applyLayerMask, compositeGroup, compositeStack, createCanvas } from './compositor'
@@ -72,7 +73,7 @@ export function flattenTree(
       for (const child of [...layer.children].reverse()) {
         childFlats.push(...flattenLayer(child))
       }
-      return childFlats
+      return includeContainer(childFlats, layer.id)
     }
 
     // 通常フォルダ（アニメ子孫なし）
@@ -87,7 +88,7 @@ export function flattenTree(
       if (layer.blendMode === 'pass through' && !layer.materialEffects) {
         // Pass Through: 子をそのまま親のスタックに展開（中間キャンバスなし）
         // フォルダマスクはPass Throughでは子ごとに適用できないためスキップ（v1制限）
-        return childFlats
+        return includeContainer(childFlats, layer.id)
       } else {
         // 非Pass Through: 子を合成して1枚のFlatLayerに
         const rawCanvas = applyMaterialEffects(compositeGroup(childFlats, docWidth, docHeight), 0, 0, layer.materialEffects, docWidth, docHeight)

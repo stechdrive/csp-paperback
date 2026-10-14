@@ -75,5 +75,6 @@ export function applyMaterialEffects(canvas: HTMLCanvasElement, left: number, to
     }
   }
   ctx.putImageData(image, 0, 0)
-  return result
+  return copyRenderSources(result, canvas)
 }
+import { copyRenderSources } from './render-sources'

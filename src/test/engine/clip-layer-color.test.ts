@@ -1,5 +1,6 @@
+import { selectOutputFiles } from '../../store/selectors'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
-import { cleanup, renderHook } from '@testing-library/react'
+import { cleanup, renderHook, waitFor } from '@testing-library/react'
 import { readFileSync } from 'node:fs'
 import { gunzipSync } from 'node:zlib'
 import { createCanvas, loadImage } from '@napi-rs/canvas'
@@ -173,7 +174,7 @@ describe('output and preview scope', () => {
     return treeFor(documentFor([layer('outside', { pixels: solid([255, 255, 0, 255], 1, 3) }), parent,
       layer('paper', { pixels: solid([240, 240, 240, 255], 4) })]))
   }
-  it('colors only the selected branch, preserving external paper and excluding other cels/tracks', () => {
+  it('colors only the selected branch, preserving external paper and excluding other cels/tracks', async () => {
     const tree = scene(), entry = extractAllEntries(tree, settings, 4, 1)[0]
     expect([0, 1, 2, 3].map(x => pixel(entry.canvas, x))).toEqual([
       [120, 100, 70, 255], [30, 200, 80, 255], [240, 240, 240, 255], [255, 255, 0, 255],
@@ -182,11 +183,13 @@ describe('output and preview scope', () => {
       outputConfig: { ...DEFAULT_OUTPUT_CONFIG, revisionBorderEnabled: false }, timelineData: null,
       focusedAnimFolderId: 'clip:A', selectedLayerId: null, selectedVirtualSetId: null,
       selectedCells: new Map([['clip:A', 0]]), visibilityOverrides: new Map(), manualAnimFolderIds: new Set(), singleMarks: new Map() })
+    useAppStore.getState().selectOutputFile(selectOutputFiles(useAppStore.getState())[0].outputId)
     const { result } = renderHook(() => useOutputPreview())
+    await waitFor(() => expect(result.current).toHaveLength(1))
     expect([...data(result.current[0].canvas)]).toEqual([...data(entry.canvas)])
   })
 
-  it('applies folder colors to marked outputs and virtual insertion, with artwork opacity and masks', () => {
+  it('applies folder colors to marked outputs and virtual insertion, with artwork opacity and masks', async () => {
     const target = layer('target', { pixels: solid([0, 0, 0, 255], 2), opacity: 0.5 })
     const doc = documentFor([group('parent', [target], { effects: green, mask: solid([255, 255, 255, 255]), opacity: 0.5 })])
     const tree = treeFor(doc), child = tree[0].children[0]
@@ -204,7 +207,9 @@ describe('output and preview scope', () => {
       outputConfig: { ...DEFAULT_OUTPUT_CONFIG, background: 'transparent' }, timelineData: null,
       focusedAnimFolderId: null, selectedLayerId: child.id, selectedVirtualSetId: null,
       visibilityOverrides: new Map(), manualAnimFolderIds: new Set(), singleMarks: new Map() })
+    useAppStore.getState().selectOutputFile(selectOutputFiles(useAppStore.getState())[0].outputId)
     const { result } = renderHook(() => useOutputPreview())
+    await waitFor(() => expect(result.current).toHaveLength(1))
     expect([...data(result.current[0].canvas)]).toEqual([...data(expected)])
   })
 

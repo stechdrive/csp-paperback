@@ -8,6 +8,8 @@ import { buildDefaultVisibilityOverrides } from '../utils/default-visibility'
 import type { AppStore } from './index'
 import type { HistoryOptions } from './history-slice'
 import { nativeBlendOverride } from '../utils/clip/blend'
+import { emptyOutputSelection } from './output-selection'
+import { outputRenderQueue } from '../utils/output-render-queue'
 
 export interface PsdSlice {
   rawPsd: Psd | null
@@ -94,6 +96,7 @@ export const createPsdSlice: StateCreator<AppStore, [], [], PsdSlice> = (set, ge
   docDpiY: 0,
 
   loadPsd: (buffer, fileName, sourceDirectory) => {
+    outputRenderQueue.clear()
     const psd = readPsdFile(buffer)
     if (get().clipDocument) {
       get().attachClipPsd({ psd, name: fileName, sourceDirectory })
@@ -134,6 +137,7 @@ export const createPsdSlice: StateCreator<AppStore, [], [], PsdSlice> = (set, ge
     const manualAnimFolderIds = sanitizeManualAnimFolderIds(tree, get().manualAnimFolderIds)
 
     set({
+      ...emptyOutputSelection(),
       rawPsd: psd,
       psdFileName: fileName,
       psdSourceDirectory: sourceDirectory ?? null,
@@ -177,7 +181,9 @@ export const createPsdSlice: StateCreator<AppStore, [], [], PsdSlice> = (set, ge
   },
 
   resetProject: () => {
+    outputRenderQueue.clear()
     set({
+      ...emptyOutputSelection(),
       clipDocument: null,
       clipFileName: null,
       clipSourceDirectory: null,

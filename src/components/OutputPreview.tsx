@@ -1,5 +1,7 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react'
 import { useAppStore } from '../store'
+import { selectOutputFiles, selectDraftOutputs } from '../store/selectors'
+import { outputRenderQueue } from '../utils/output-render-queue'
 import { useZoomPan } from '../hooks/useZoomPan'
 import { useOutputNavigation } from '../hooks/useOutputNavigation'
 import type { OutputPreviewEntry } from '../hooks/useOutputPreview'
@@ -127,13 +129,17 @@ interface OutputPreviewProps {
   zoomPan: ZoomPanReturn
 }
 
-export function OutputPreview({ entries, focusedAnimFolderId, zoomPan }: OutputPreviewProps) {
+export function OutputPreview({ entries, zoomPan }: OutputPreviewProps) {
   const outputConfig = useAppStore(s => s.outputConfig)
-  const selectedVirtualSetId = useAppStore(s => s.selectedVirtualSetId)
+  const activeId = useAppStore(s => s.activeOutputId)
+  const activeLabel = useAppStore(s => s.activeOutputLabel)
+  const files = useAppStore(selectOutputFiles), drafts = useAppStore(selectDraftOutputs)
+  const file = [...files, ...drafts].find(file => file.outputId === activeId)
+  const error = file ? outputRenderQueue.get(file, 'full')?.error : undefined
   const transparent = outputConfig.format === 'png' && outputConfig.background === 'transparent'
   const { containerRef, contentStyle, containerStyle, onMouseDown } = zoomPan
 
-  const isEmpty = !focusedAnimFolderId && !selectedVirtualSetId && entries.length === 0
+  const isEmpty = !activeId && entries.length === 0
   const hasNoEntries = !isEmpty && entries.length === 0
 
   return (
@@ -146,12 +152,13 @@ export function OutputPreview({ entries, focusedAnimFolderId, zoomPan }: OutputP
       >
         {isEmpty && (
           <div className={styles.empty}>
-            レイヤーツリーのアニメフォルダでセルを選択するか<br />左ペインの仮想セットをクリックすると<br />出力プレビューを表示します
+            出力一覧で画像を選択すると<br />ここに書き出し結果を表示します。<br />素材単体の確認はツリー選択後にSpace。
           </div>
         )}
         {hasNoEntries && (
           <div className={styles.empty}>
-            出力するセルがありません
+            {activeLabel && <><strong>{activeLabel}</strong><br /></>}
+            {error ?? (file ? '合成中…' : '現在の表示・書き出し設定では出力されません。目玉・工程チェック、または素材の削除を確認してください。')}
           </div>
         )}
         {entries.length > 0 && (

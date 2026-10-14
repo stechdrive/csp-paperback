@@ -14,9 +14,12 @@ import { Tooltip } from './Tooltip'
 import type { HistoryOptions } from '../store/history-slice'
 import type { CspLayer, VirtualSet } from '../types'
 import styles from './VirtualSetItem.module.css'
+import { virtualOutputId } from '../utils/output-identity'
+import { vsVisibilityDrag } from '../utils/visibility-gesture'
 
 interface VirtualSetItemProps {
   virtualSet: VirtualSet
+  onPreviewOutput?: () => void
 }
 
 // モジュールレベルのDnD状態
@@ -24,10 +27,6 @@ let _draggingMemberInfo: { setId: string; layerIds: string[] } | null = null
 
 // 目玉アイコンなぞり一括トグル用ドラッグ状態（右ツリーと同じパターン）
 // targetVisible: ドラッグ開始時に決定した「適用する表示状態」
-const vsVisibilityDrag = { active: false, targetVisible: true }
-if (typeof window !== 'undefined') {
-  window.addEventListener('mouseup', () => { vsVisibilityDrag.active = false })
-}
 
 function Chevron({ open }: { open: boolean }) {
   return (
@@ -138,7 +137,9 @@ function VsMemberNode({
 // =========================================================
 // メインコンポーネント
 // =========================================================
-export function VirtualSetItem({ virtualSet }: VirtualSetItemProps) {
+export function VirtualSetItem({ virtualSet, onPreviewOutput }: VirtualSetItemProps) {
+  const cancelMemberDrag = useRef<(() => void) | undefined>(undefined)
+  useEffect(() => () => cancelMemberDrag.current?.(), [])
   const updateVirtualSet = useAppStore(s => s.updateVirtualSet)
   const removeVirtualSet = useAppStore(s => s.removeVirtualSet)
   const addVirtualSetMember = useAppStore(s => s.addVirtualSetMember)
@@ -319,7 +320,8 @@ export function VirtualSetItem({ virtualSet }: VirtualSetItemProps) {
 
   const handleMemberPointerDown = useCallback((e: React.PointerEvent, layerId: string) => {
     e.stopPropagation()
-    startInternalPointerDrag(makeMemberDragPayload(layerId), e)
+    cancelMemberDrag.current?.()
+    cancelMemberDrag.current = startInternalPointerDrag(makeMemberDragPayload(layerId), e)
   }, [makeMemberDragPayload])
 
   const handleMemberDragEnd = useCallback(() => {
@@ -486,6 +488,8 @@ export function VirtualSetItem({ virtualSet }: VirtualSetItemProps) {
             ✕
           </button>
         </Tooltip>
+        <button className={styles.collapseBtn} aria-label="仮想セルをプレビュー" title="出力プレビューに表示"
+          onClick={event => { event.stopPropagation(); useAppStore.getState().selectOutputFile(virtualOutputId(virtualSet.id)); onPreviewOutput?.() }}>◧</button>
       </div>
 
       {!collapsed && (

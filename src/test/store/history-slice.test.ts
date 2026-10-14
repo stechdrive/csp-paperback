@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { useAppStore } from '../../store'
-import { selectLayerById } from '../../store/selectors'
+import { selectLayerById, selectOutputFiles } from '../../store/selectors'
 import { buildLayerTree } from '../../engine/tree-builder'
 import { makeFolder, makeLayer, makePsd } from '../helpers/psd-factory'
 import { DEFAULT_OUTPUT_CONFIG, DEFAULT_PROJECT_SETTINGS } from '../../types'
@@ -63,17 +63,20 @@ describe('history-slice', () => {
     expect(useAppStore.getState().selectedVsMemberId).toBeNull()
   })
 
-  it('仮想セル作成をUndoしたときは存在しない巡回選択と一時展開を解除する', () => {
+  it('仮想セル作成をUndoしても素材と出力の選択・一時展開は維持する', () => {
     const tree = buildLayerTree(makePsd({ children: [makeFolder('_old-output', [makeLayer()])] }))
     useAppStore.setState({ layerTree: tree, selectedLayerId: tree[0].id })
+    const output = selectOutputFiles(useAppStore.getState())[0]
+    useAppStore.getState().selectOutputFile(output.outputId)
     useAppStore.getState().addVirtualSet('layout')
     useAppStore.setState({ transientExpandedFolders: new Set(['ancestor']) })
     useAppStore.getState().undo()
     expect(useAppStore.getState().selectedVirtualSetId).toBeNull()
-    expect(useAppStore.getState().selectedLayerId).toBeNull()
+    expect(useAppStore.getState().selectedLayerId).toBe(tree[0].id)
     expect(useAppStore.getState().focusedAnimFolderId).toBeNull()
-    expect(useAppStore.getState().selectedOutputSourceId).toBeNull()
-    expect(useAppStore.getState().transientExpandedFolders.size).toBe(0)
+    expect(useAppStore.getState().selectedOutputSourceId).toBe(output.sourceLayerId)
+    expect(useAppStore.getState().activeOutputId).toBe(output.outputId)
+    expect(useAppStore.getState().transientExpandedFolders).toEqual(new Set(['ancestor']))
   })
 
   it('Undo後も存在する仮想セル内の子孫選択は維持する', () => {

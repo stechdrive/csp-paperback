@@ -22,7 +22,7 @@
 
 .rightPane {
   flex-shrink: 0;
-  max-width: 45%;
+  max-width: min(52%, calc(100% - var(--virtual-pane-width, 0px) - 308px));
   overflow: hidden;
   display: flex;
   flex-direction: column;

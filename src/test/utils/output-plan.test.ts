@@ -31,6 +31,17 @@ function fixture() {
 }
 
 describe('output file plan', () => {
+  it.each(['flat', 'hierarchy'] as const)('preserves complete-plan collision names when exporting a subset (%s)', structure => {
+    fixture()
+    useAppStore.setState({ outputConfig: { ...DEFAULT_OUTPUT_CONFIG, structure } })
+    const state = useAppStore.getState(), files = selectOutputFiles(state)
+    const full = prepareOutputEntries(buildOutputEntriesFromState(state), state.outputConfig)
+    const selected = files.at(-1)!
+    const subset = buildOutputEntriesFromState(state, state.outputConfig, new Set([selected.outputId]))
+    expect(prepareOutputEntries(subset, state.outputConfig)).toEqual([full.at(-1)])
+    expect(subset).toHaveLength(1)
+    expect(subset[0].canvas).not.toBe(buildOutputEntriesFromState(state)[0].canvas)
+  })
   it('lists real outputs without creating canvases, including sanitized collisions and virtual cells', () => {
     fixture()
     const create = vi.spyOn(document, 'createElement')

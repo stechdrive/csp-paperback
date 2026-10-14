@@ -1,4 +1,5 @@
 import { applyMaterialEffects } from '../engine/material-effects'
+import { includeContainer } from '../engine/render-sources'
 import { nativeBlendOverride } from './clip/blend'
 import { compositeGroup, applyLayerMask, createCanvas } from '../engine/compositor'
 import { collectAnimFolderAncestorIds } from '../engine/tree-builder'
@@ -118,7 +119,7 @@ function flattenTreeWithCompositeOverrides(
       for (const child of [...layer.children].reverse()) {
         childFlats.push(...flattenLayer(child))
       }
-      return childFlats
+      return includeContainer(childFlats, layer.id)
     }
 
     if (layer.isFolder) {
@@ -129,7 +130,7 @@ function flattenTreeWithCompositeOverrides(
       if (childFlats.length === 0) return []
 
       if (!layer.materialEffects && !shouldIsolateFolderForComposite(effectiveBlendMode, effectiveOpacity, hasOverride)) {
-        return childFlats
+        return includeContainer(childFlats, layer.id)
       }
 
       const rawCanvas = applyMaterialEffects(compositeGroup(childFlats, docWidth, docHeight), 0, 0, layer.materialEffects, docWidth, docHeight)

@@ -23,7 +23,8 @@ for (const viewport of [{ width: 960, height: 640 }, { width: 1280, height: 820 
     const navBefore = await page.getByTestId('navigator-panel').boundingBox()
     expect(navBefore!.height).toBe(200)
     const treeBounds = (await page.getByTestId('layer-tree').boundingBox())!
-    expect(treeBounds.height).toBeGreaterThan(viewport.height - 340)
+    // The persistent output/source headings add one compact row.
+    expect(treeBounds.height).toBeGreaterThan(viewport.height - 370)
     const layerFooter = (await page.getByTestId('layer-panel-footer').boundingBox())!
     const switchBounds = (await page.getByRole('group', { name: 'レイヤーパネルの表示' }).boundingBox())!
     expect(Math.abs(switchBounds.y + switchBounds.height / 2 - layerFooter.y - layerFooter.height / 2)).toBeLessThan(1)
@@ -56,8 +57,8 @@ for (const viewport of [{ width: 960, height: 640 }, { width: 1280, height: 820 
     await page.getByRole('button', { name: '仮想セル', exact: true }).click()
     const virtual = page.getByTestId('virtual-panel')
     await expect(virtual).toBeVisible()
-    expect(await source.boundingBox()).toEqual(sourceBefore)
-    expect((await mainNav.boundingBox())!.width).toBeGreaterThan(300)
+    expect((await source.boundingBox())!.width).toBeLessThanOrEqual(sourceBefore!.width)
+    expect((await mainNav.boundingBox())!.width).toBeGreaterThanOrEqual(300)
     await virtual.getByRole('textbox', { name: '新規仮想セル' }).click()
     const memo = source.locator('[data-layer-id]').filter({ has: page.getByText('memo', { exact: true }) }).first()
     await memo.dragTo(virtual.getByText('＋ レイヤーをドロップして追加', { exact: true }))
@@ -129,7 +130,8 @@ test('長いファイル名と複数出力は下端から確認でき、画像�
   await mode.getByRole('button', { name: '出力一覧', exact: true }).click()
   await page.getByRole('option', { name: 'B_1.jpg', exact: true }).click()
   await page.getByRole('button', { name: '選択中の出力をツリーで表示' }).click()
-  await page.getByTestId('layer-tree').locator('[data-layer-id="clip:8153c34b3f3b4003bf3c435c415681d2"] span[title]').click()
+  await page.getByRole('listbox', { name: '出力ファイル' }).getByRole('option', { name: 'B_1_s.jpg', exact: true }).click({ modifiers: ['Control'] })
+  await page.getByRole('button', { name: '選択項目を並べて表示' }).click()
   await expect(output.locator('canvas')).toHaveCount(2)
   const files = page.getByRole('button', { name: 'プレビュー中のファイル名（2件）', exact: true })
   await expect(files).toContainText('2件')

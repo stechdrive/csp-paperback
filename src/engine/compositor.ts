@@ -77,6 +77,7 @@ export function compositeStack(
 
   // ベースレイヤーの追跡（クリッピングマスク用）
   let baseLayer: FlatLayer | null = null
+  const participating: FlatLayer[] = []
 
   for (let i = 0; i < layers.length; i++) {
     const layer = layers[i]
@@ -95,9 +96,10 @@ export function compositeStack(
       const clippedFlat: FlatLayer = { ...layer, canvas: clipped, clipping: false, top: 0, left: 0 }
       drawLayer(ctx, clippedFlat)
     }
+    participating.push(layer)
   }
 
-  return output
+  return recordComposite(output, participating)
 }
 
 /**
@@ -215,7 +217,7 @@ export function applyLayerMask(
   ctx.putImageData(resultData, 0, 0)
   copyRenderWarnings(result, layerCanvas)
 
-  return result
+  return copyRenderSources(result, layerCanvas)
 }
 
 /**
@@ -228,3 +230,4 @@ export function compositeGroup(
 ): HTMLCanvasElement {
   return compositeStack(layers, width, height, 'transparent')
 }
+import { copyRenderSources, recordComposite } from './render-sources'

@@ -1,7 +1,8 @@
-import { useCallback } from 'react'
+import { useCallback, useEffect } from 'react'
 import { useAppStore } from '../store'
 import { useLocale } from '../i18n/locale'
 import { VirtualSetItem } from './VirtualSetItem'
+import { cancelVirtualVisibilityDrag } from '../utils/visibility-gesture'
 import { BlendOpacityBar } from './BlendOpacityBar'
 import { Tooltip } from './Tooltip'
 import { selectLayerById } from '../store/selectors'
@@ -13,7 +14,9 @@ function containsLayerId(layer: CspLayer, layerId: string): boolean {
   return layer.children.some(child => containsLayerId(child, layerId))
 }
 
-export function VirtualSetPanel({ onClose }: { onClose?: () => void }) {
+export function VirtualSetPanel({ onClose, onPreviewOutput }: { onClose?: () => void; onPreviewOutput?: () => void }) {
+  const documentTree = useAppStore(s => s.layerTree)
+  useEffect(() => cancelVirtualVisibilityDrag, [documentTree])
   const virtualSets = useAppStore(s => s.virtualSets)
   const addVirtualSet = useAppStore(s => s.addVirtualSet)
   const selectedVsMemberSetId = useAppStore(s => s.selectedVsMemberSetId)
@@ -103,6 +106,8 @@ export function VirtualSetPanel({ onClose }: { onClose?: () => void }) {
         onBlendModeChange={handleBlendModeChange}
         onOpacityChangeStart={handleOpacityChangeStart}
         onOpacityChange={handleOpacityChange}
+        actions={<button disabled={!selectedVirtualLayer} aria-label="仮想セルの選択素材をクイックルック"
+          onClick={() => selectedVirtualLayer && useAppStore.getState().openQuickLook(selectedVirtualLayer.layer.id, selectedVirtualLayer.vs.id)}>⌕</button>}
       />
 
       <div className={styles.list}>
@@ -114,7 +119,7 @@ export function VirtualSetPanel({ onClose }: { onClose?: () => void }) {
           </div>
         ) : (
           virtualSets.map(vs => (
-            <VirtualSetItem key={vs.id} virtualSet={vs} />
+            <VirtualSetItem key={vs.id} virtualSet={vs} onPreviewOutput={onPreviewOutput} />
           ))
         )}
       </div>

@@ -1,4 +1,6 @@
 import { applyMaterialEffects } from './material-effects'
+import { recordOutputSources } from './render-sources'
+import { cellOutputId, layerOutputId, virtualOutputId } from '../utils/output-identity'
 import {
   DEFAULT_PROJECT_SETTINGS,
   resolveCellPrefixSeparator,
@@ -41,6 +43,7 @@ interface OutputContext {
 type ContextFactory = (cache: OutputRenderCache) => OutputContext
 export type OutputRenderCache = Map<ContextFactory, OutputContext>
 export interface PlannedOutputEntry extends Omit<OutputEntry, 'canvas'> {
+  outputId: string
   animFolderId?: string
   outputTarget?: OutputTarget
   renderCanvas: (cache: OutputRenderCache) => HTMLCanvasElement
@@ -164,7 +167,7 @@ function planCells(
       const { lower, upper, material } = context(cache)
       const rawFlats = flattenCellContent(unit.layers, docWidth, docHeight, unit.ignoreOpacityIds)
       const cellFlats = applyContainerEffects(rawFlats, cell, animFolder, docWidth, docHeight)
-      return compositeWithContext(cellFlats, lower, upper, docWidth, docHeight, background, material)
+      return recordOutputSources(compositeWithContext(cellFlats, lower, upper, docWidth, docHeight, background, material), rawFlats, [cell.id, animFolder.id])
     }
     const fileName = makeCellFileName({
       trackName,
@@ -178,6 +181,7 @@ function planCells(
       suppressDuplicateProcessSuffix,
     })
     entries.push({
+      outputId: cellOutputId(animFolder.id, cell.id, unit.processSuffix),
       path: `${folderName}/${fileName}`,
       flatName: fileName,
       renderCanvas,
@@ -622,11 +626,11 @@ export function planVirtualSetEntries(
         sourceId: vs.id,
         clipping: false,
       }]
-      return compositeWithContext(vsAsFolder, lower, upper, docWidth, docHeight, background,
-        collectMaterialOutputContext(insertionLayerId, tree, docWidth, docHeight, vs.insertionPosition))
+      return recordOutputSources(compositeWithContext(vsAsFolder, lower, upper, docWidth, docHeight, background,
+        collectMaterialOutputContext(insertionLayerId, tree, docWidth, docHeight, vs.insertionPosition)), vsFlats)
     }
     const fileName = `${vs.name}.jpg`
-    entries.push({ path: fileName, flatName: fileName, renderCanvas, sourceLayerId: vs.id })
+    entries.push({ outputId: virtualOutputId(vs.id), path: fileName, flatName: fileName, renderCanvas, sourceLayerId: vs.id })
   }
   resolveFlatNameCollisions(entries)
   return entries
@@ -981,11 +985,11 @@ export function planAllEntries(
         const renderCanvas = () => {
           const { lower, upper } = collectMarkedLayerContext(layer.id, tree, docWidth, docHeight)
           const layerFlats = flattenTree([layer], docWidth, docHeight)
-          return compositeWithContext(layerFlats, lower, upper, docWidth, docHeight, background,
-            collectMaterialOutputContext(layer.id, tree, docWidth, docHeight))
+          return recordOutputSources(compositeWithContext(layerFlats, lower, upper, docWidth, docHeight, background,
+            collectMaterialOutputContext(layer.id, tree, docWidth, docHeight)), layerFlats)
         }
         const fileName = `${layer.originalName}.jpg`
-        entries.push({ path: fileName, flatName: fileName, renderCanvas, sourceLayerId: layer.id,
+        entries.push({ outputId: layerOutputId(layer.id), path: fileName, flatName: fileName, renderCanvas, sourceLayerId: layer.id,
           outputTarget: individualOutputTarget(layer, projectSettings.processTable) })
 
         // フォルダなら子も走査して内包マーク済みレイヤーを出力する。

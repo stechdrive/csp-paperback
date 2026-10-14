@@ -1,5 +1,5 @@
 import type { AppStore } from './index'
-import { selectLayerTreeWithVisibility } from './selectors'
+import { selectLayerTreeWithVisibility, selectOutputFiles } from './selectors'
 import { findLayerById, findLayerPath } from '../utils/layerNavigation'
 
 /**
@@ -15,12 +15,13 @@ export function normalizePreviewSelection(state: AppStore): Partial<AppStore> {
     !findLayerById(tree, state.focusedAnimFolderId)?.isAnimationFolder
   const rowMissing = selectedLayerId !== state.selectedLayerId
   if (!rowMissing && !sourceMissing && !focusInvalid) return {}
+  const output = selectOutputFiles(state).find(file => file.outputId === state.activeOutputId)
 
   return {
     selectedLayerId,
-    // Clearing only the source would show all images of the old focused cell.
-    focusedAnimFolderId: focusInvalid || sourceMissing || rowMissing ? null : state.focusedAnimFolderId,
-    selectedOutputSourceId: focusInvalid || sourceMissing || rowMissing ? null : state.selectedOutputSourceId,
+    // Losing an editor row must not detach a still-valid output from its timeline.
+    focusedAnimFolderId: output ? output.animFolderId ?? null : focusInvalid || sourceMissing || rowMissing ? null : state.focusedAnimFolderId,
+    selectedOutputSourceId: output ? output.sourceLayerId : focusInvalid || sourceMissing || rowMissing ? null : state.selectedOutputSourceId,
     transientExpandedFolders: new Set(selectedPath.slice(0, -1)
       .filter(layer => layer.isFolder && !state.expandedFolders.has(layer.id))
       .map(layer => layer.id)),

@@ -153,12 +153,6 @@ function restoreSnapshot(
     selectedVirtualSetId,
     selectedVsMemberSetId,
     selectedVsMemberId: selectedVsMemberSetId ? current.selectedVsMemberId : null,
-    ...(current.selectedVirtualSetId && !selectedVirtualSetId ? {
-      selectedLayerId: null,
-      focusedAnimFolderId: null,
-      selectedOutputSourceId: null,
-      transientExpandedFolders: new Set<string>(),
-    } : {}),
     ...historyState,
   }
   set({ ...nextState, ...normalizePreviewSelection({ ...current, ...nextState }) })
