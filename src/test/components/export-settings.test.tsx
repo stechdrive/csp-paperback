@@ -83,7 +83,7 @@ describe('ExportSettings naming controls', () => {
     const direction = within(targets).getByRole('button', { name: '演出 _e' })
     const autoMarked = within(targets).getByRole('button', { name: 'SL 個別書き出し' })
     expect(within(targets).queryByRole('button', { name: '作監 _s' })).not.toBeInTheDocument()
-    expect(within(targets).queryByRole('button', { name: '作画（本体）' })).not.toBeInTheDocument()
+    expect(within(targets).queryByRole('button', { name: '作画' })).not.toBeInTheDocument()
     expect(direction).toHaveAttribute('aria-pressed', 'true')
 
     fireEvent.click(direction)

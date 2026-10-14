@@ -3,6 +3,7 @@ import { useAppStore } from '../store'
 import { selectOutputCandidates } from '../store/selectors'
 import type { OutputConfigTarget } from '../store/output-slice'
 import { processDisplayName } from '../utils/process-folder'
+import { resolveProcessBorderColor } from '../utils/process-color'
 import { individualOutputKey, isIndividualOutputEnabled, type OutputTarget } from '../utils/output-target'
 import { Tooltip } from './Tooltip'
 import styles from './ExportSettings.module.css'
@@ -37,7 +38,7 @@ export function OutputTargetControls({ configTarget = 'current', avoidRef }: {
       {hasBody && <Tooltip content="修正工程に属さないセル画像をまとめて切り替えます。OFFにしても、同じセル内の修正画像は残ります。目玉の表示状態は変えません。" avoidRef={avoidRef}>
         <button type="button" className={styles.chip} aria-pressed={!config.excludeBody}
           onClick={() => setExcludeBody(!config.excludeBody, configTarget)}>
-          <span className={styles.checkMark} aria-hidden="true">{!config.excludeBody ? '✓' : ''}</span>作画（本体）
+          <span className={styles.checkMark} aria-hidden="true">{!config.excludeBody ? '✓' : ''}</span>作画
         </button>
       </Tooltip>}
       {processes.map(entry => {
@@ -52,6 +53,7 @@ export function OutputTargetControls({ configTarget = 'current', avoidRef }: {
           <button type="button" className={styles.chip} aria-label={name === entry.suffix ? name : `${name} ${entry.suffix}`}
             aria-pressed={mixed ? 'mixed' : enabled} onClick={() => setProcess(entry.suffix, !enabled, legacyNames, configTarget)}>
             <span className={styles.checkMark} aria-hidden="true">{mixed ? '−' : enabled ? '✓' : ''}</span>
+            <span className={styles.processColorSwatch} style={{ backgroundColor: resolveProcessBorderColor(entry) }} aria-hidden="true" />
             <span className={styles.chipName}>{name}</span>{name !== entry.suffix && <span className={styles.suffix}>{entry.suffix}</span>}
           </button>
         </Tooltip>

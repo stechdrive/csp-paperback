@@ -49,7 +49,7 @@ export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
     { displayName: '演出', suffix: '_e', folderNames: ['_e', '演出'], revisionBorderColor: '#FBECE6' },
     { displayName: '監督', suffix: '_k',  folderNames: ['_k',  '監督'], revisionBorderColor: '#DCE4F1' },
     { displayName: '作監', suffix: '_s',  folderNames: ['_s',  '作監'], revisionBorderColor: '#FCF9CF' },
-    { displayName: '料理作監', suffix: '_y',  folderNames: ['_y',  '料理作監'], revisionBorderColor: '#FFDDAA' },
+    { displayName: 'その他修正', suffix: '_y',  folderNames: ['_y',  '料理作監'], revisionBorderColor: '#FFDDAA' },
     { displayName: '総作監', suffix: '_ss', folderNames: ['_ss', '総作監'], revisionBorderColor: '#EAF6D5' },
   ],
   cellNamingMode: 'cellname',

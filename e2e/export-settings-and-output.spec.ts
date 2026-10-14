@@ -191,7 +191,7 @@ test('工程名の編集と個別書き出しの設定を通常幅と狭幅で�
   await page.evaluate(() => document.fonts.ready)
   await page.getByRole('button', { name: '書き出し設定', exact: true }).click()
   const outputSettings = page.getByRole('dialog', { name: '書き出し設定', exact: true })
-  await expect(outputSettings.getByRole('button', { name: '作画（本体）', exact: true })).toBeVisible()
+  await expect(outputSettings.getByRole('button', { name: '作画', exact: true })).toBeVisible()
   await expect(outputSettings.getByRole('button', { name: 'SL 個別書き出し', exact: true })).toBeVisible()
   await page.mouse.move(0, 0)
   await page.screenshot({ path: testInfo.outputPath('help-export-settings.png') })

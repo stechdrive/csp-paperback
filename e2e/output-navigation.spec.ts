@@ -276,7 +276,7 @@ test('作画本体をOFFにしても目玉と修正を保持し、状態表示�
   await page.getByRole('button', { name: '書き出し設定', exact: true }).click()
   const settings = page.getByRole('dialog', { name: '書き出し設定', exact: true })
   await expect(settings.getByRole('button', { name: '監督 _k', exact: true })).toHaveCount(0)
-  const body = settings.getByRole('button', { name: '作画（本体）', exact: true })
+  const body = settings.getByRole('button', { name: '作画', exact: true })
   await body.click()
   await expect(body).toHaveAttribute('aria-pressed', 'false')
   await page.keyboard.press('Escape')
@@ -286,7 +286,7 @@ test('作画本体をOFFにしても目玉と修正を保持し、状態表示�
   expect((await exportedImageNames(page)).sort()).toEqual([...included].sort())
   await walkOutputs(page, included)
   await page.getByRole('button', { name: '書き出し設定', exact: true }).click()
-  await expect(settings.getByRole('button', { name: '作画（本体）', exact: true })).toHaveAttribute('aria-pressed', 'false')
+  await expect(settings.getByRole('button', { name: '作画', exact: true })).toHaveAttribute('aria-pressed', 'false')
   await page.screenshot({ path: testInfo.outputPath('output-targets.png') })
 })
 
