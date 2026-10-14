@@ -23,13 +23,17 @@ export function usePreview(canvasRef: React.RefObject<HTMLCanvasElement | null>,
   const lastRenderTimeRef = useRef(0)
 
   useEffect(() => {
-    if (!enabled) return
+    if (!enabled) {
+      const canvas = canvasRef.current
+      if (canvas) { canvas.width = 1; canvas.height = 1 }
+      return
+    }
     activeViews++
     return () => {
       activeViews--
       if (activeViews === 0) previewCache.clear()
     }
-  }, [enabled])
+  }, [enabled, canvasRef])
 
   const render = useCallback(() => {
     const canvas = canvasRef.current

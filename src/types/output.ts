@@ -40,3 +40,11 @@ export interface OutputEntry {
   sourceCellId?: string     // アニメセル由来のエントリの場合、その直接セルレイヤー/フォルダID
   processSuffixes?: string[] // 工程由来のエントリ判定用（親工程 + セル内工程）
 }
+
+/** Lazy entries own their rendered canvas; the encoder releases it after each file. */
+export type ExportEntry = OutputEntry | (Omit<OutputEntry, 'canvas'> & { createCanvas: () => HTMLCanvasElement })
+export interface ExportProgressDetail {
+  phase: 'rendering' | 'encoding' | 'writing'
+  path: string
+}
+export type ExportProgressCallback = (done: number, total: number, detail?: ExportProgressDetail) => void

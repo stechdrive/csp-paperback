@@ -25,7 +25,9 @@ import { parseXdts } from '../../utils/xdts-parser'
 import { buildLayerTree, detectAnimationFoldersByXdts } from '../../engine/tree-builder'
 import { extractAllEntries, extractVirtualSetEntries } from '../../engine/cell-extractor'
 import { selectLayerTreeWithVisibility } from '../../store/selectors'
-import { DEFAULT_PROJECT_SETTINGS } from '../../types'
+import { DEFAULT_PROJECT_SETTINGS, DEFAULT_OUTPUT_CONFIG } from '../../types'
+import { useAppStore } from '../../store'
+import { planExportEntriesFromState } from '../../utils/export-entries'
 import { Blob as NodeBlob } from 'node:buffer'
 import initSqlJs from 'sql.js'
 import { parseClipDocument } from '../../utils/clip/parser'
@@ -133,6 +135,21 @@ describe.each(['PSD + XDTS', 'CLIP + PSD', 'CLIP standalone'])('c001 golden (ima
         toBuffer: (mime: 'image/png') => Buffer
       }
       rendered.set(pngName, c.toBuffer('image/png'))
+    }
+
+    // The normal window's lazy path must preserve the eager/quick-export pixels,
+    // including virtual cels, even as each completed canvas is released.
+    const lazy = planExportEntriesFromState({
+      ...useAppStore.getInitialState(), layerTree: baseTree, virtualSets,
+      projectSettings: GOLDEN_PROJECT_SETTINGS, docWidth: psd.width, docHeight: psd.height,
+      outputConfig: { ...DEFAULT_OUTPUT_CONFIG, format: 'png', background: 'transparent', revisionBorderEnabled: false },
+    })
+    expect(lazy.map(entry => entry.prepared!.names.flatName).sort()).toEqual([...rendered.keys()].sort())
+    for (const entry of lazy) {
+      const canvas = 'createCanvas' in entry ? entry.createCanvas() : entry.canvas
+      const png = (canvas as unknown as { toBuffer: (mime: 'image/png') => Buffer }).toBuffer('image/png')
+      expect(png.equals(rendered.get(entry.prepared!.names.flatName)!)).toBe(true)
+      canvas.width = 1; canvas.height = 1
     }
 
     // golden 読み込み

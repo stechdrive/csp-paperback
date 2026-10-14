@@ -147,3 +147,14 @@
 }
 
 
+
+.gallery { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+.galleryToolbar { display: flex; align-items: center; gap: .75rem; padding: .3rem .65rem; font-size: .7rem; color: var(--color-text-muted); }
+.galleryToolbar > :first-child { margin-right: auto; }
+.galleryToolbar button { border: 1px solid var(--color-border-subtle); border-radius: 4px; background: var(--color-surface-1); color: var(--color-text-primary); font: inherit; padding: .15rem .4rem; cursor: pointer; }
+.galleryViewport { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; }
+.galleryGrid { display: grid; width: max-content; min-width: 100%; justify-content: center; align-content: start; padding: 12px; }
+.galleryItem { min-width: 0; margin: 0; }
+.galleryItem .thumbnail { padding: 0; border: 0; align-items: stretch; }
+.galleryItem .thumbCanvas { width: 100%; }
+.galleryItem figcaption { font-size: 12px; line-height: 26px; height: 26px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--color-text-secondary); }

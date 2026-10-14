@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useAppStore } from '../store'
+import { isExportInProgress } from '../store/export-job'
 
 /**
  * Undo/Redo のキーボードショートカットを登録し、状態を返す。
@@ -15,6 +16,7 @@ export function useUndoRedo() {
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
+      if (isExportInProgress()) return
       if (!(e.ctrlKey || e.metaKey) || e.defaultPrevented || e.isComposing) return
       if (document.querySelector('dialog[open]')) return
       if (e.target instanceof Element && e.target.closest('input, textarea, select, [contenteditable="true"], dialog')) return

@@ -61,9 +61,8 @@ for (const device of [
       await page.evaluate(() => document.fonts.ready)
       const before = await previewBounds(page)
       expect(before.main!.height).toBeGreaterThan(50)
-      expect(before.output!.height).toBeGreaterThan(50)
-      if (!device.touch) expect(before.navigator!.height).toBeGreaterThan(50)
-      else expect(before.navigator).toBeNull()
+      expect(before.output).toBeNull()
+      expect(before.navigator!.height).toBeGreaterThan(50)
 
       await trigger.click()
       await expect(trigger).toHaveAttribute('aria-expanded', 'true')
@@ -95,13 +94,18 @@ for (const device of [
       await popup.getByRole('button', { name: '再現状況を閉じる' }).click()
       await expect(trigger).toBeFocused()
       await trigger.click()
+      if (device.width < 500) {
+        const whole = page.getByTestId('navigator-view')
+        await whole.tap({ position: { x: 10, y: (await whole.boundingBox())!.height - 60 } })
+        await expect(popup).toHaveCount(0)
+      }
       const heading = page.getByRole('button', { name: '出力プレビュー', exact: true })
       if (device.touch) await heading.tap()
       else await heading.click()
       await expect(popup).toHaveCount(0)
 
       // The selector uses the parsed CLIP timelines, including their distinct durations.
-      if (device.touch) await page.getByRole('button', { name: '全体ナビゲーター', exact: true }).click()
+      await page.getByRole('button', { name: '全体プレビュー', exact: true }).click()
       const timelineBounds = await previewBounds(page)
       expect(timelineBounds.navigator!.height).toBeGreaterThan(50)
       // The navigator is also mounted in the hidden mobile layer panel.

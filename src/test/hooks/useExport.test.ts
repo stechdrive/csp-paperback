@@ -7,7 +7,7 @@ vi.mock('../../store', () => ({
 }))
 
 vi.mock('../../utils/export-entries', () => ({
-  buildOutputEntriesFromState: vi.fn(),
+  planExportEntriesFromState: vi.fn(),
 }))
 
 vi.mock('../../utils/zip-builder', () => ({
@@ -23,12 +23,12 @@ vi.mock('../../utils/directory-builder', () => ({
 
 import { useAppStore } from '../../store'
 import { useExport } from '../../hooks/useExport'
-import { buildOutputEntriesFromState } from '../../utils/export-entries'
+import { planExportEntriesFromState } from '../../utils/export-entries'
 import { buildZipStream, saveZipStream } from '../../utils/zip-builder'
 import { saveEntriesToDirectory, supportsDirectoryExport } from '../../utils/directory-builder'
 
 const mockedGetState = vi.mocked(useAppStore.getState)
-const mockedBuildEntries = vi.mocked(buildOutputEntriesFromState)
+const mockedBuildEntries = vi.mocked(planExportEntriesFromState)
 const mockedBuildZipStream = vi.mocked(buildZipStream)
 const mockedSaveZipStream = vi.mocked(saveZipStream)
 const mockedSaveDirectory = vi.mocked(saveEntriesToDirectory)

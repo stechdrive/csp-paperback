@@ -7,6 +7,7 @@ import { useRenderedOutputs } from '../hooks/useRenderedOutputs'
 import { useExport } from '../hooks/useExport'
 import { useDismissableLayer } from '../hooks/useDismissableLayer'
 import { supportsDirectoryExport } from '../utils/directory-builder'
+import { observePreviewVisibility } from '../utils/preview-visibility'
 import type { OutputFile } from '../utils/output-plan'
 import styles from './LayerTreePanel.module.css'
 
@@ -16,19 +17,17 @@ const OutputThumbnail = memo(function OutputThumbnail({ file, active }: { file: 
   const ref = useRef<HTMLCanvasElement>(null)
   const [visible, setVisible] = useState(false)
   useEffect(() => {
-    if (!ref.current || typeof IntersectionObserver === 'undefined') return
-    const observer = new IntersectionObserver(([entry]) => setVisible(entry.isIntersecting), { rootMargin: '96px' })
-    observer.observe(ref.current)
-    return () => observer.disconnect()
+    if (ref.current) return observePreviewVisibility(ref.current, setVisible)
   }, [])
   const files = useMemo(() => [file], [file])
   const [result] = useRenderedOutputs(files, 'thumbnail', active && visible)
   useEffect(() => {
     const canvas = ref.current, image = result?.image?.canvas
     if (!canvas) return
-    canvas.width = image?.width ?? 80
-    canvas.height = image?.height ?? 60
+    canvas.width = image?.width ?? 1
+    canvas.height = image?.height ?? 1
     if (image) canvas.getContext('2d')?.drawImage(image, 0, 0)
+    return () => { canvas.width = 1; canvas.height = 1 }
   }, [result])
   return <Tooltip content={result?.error}><canvas data-tooltip={result?.error} ref={ref} className={styles.outputThumbnail} aria-hidden="true" data-ready={!!result?.image} /></Tooltip>
 })
@@ -42,7 +41,7 @@ export function OutputFileList({ active = true, onShowTree, onPreview }: { activ
   const compare = useAppStore(s => s.compareOutputs)
   const [search, setSearch] = useState('')
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null)
-  const { startExport, isExporting, error } = useExport()
+  const { startExport, isExporting, error } = useExport(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const moreRef = useRef<HTMLButtonElement>(null)
   const menuInvoker = useRef<HTMLElement | null>(null)
@@ -134,8 +133,8 @@ export function OutputFileList({ active = true, onShowTree, onPreview }: { activ
     </div>
     <div className={styles.selectionTools}>
       <span>{selectedIds.size}選択{hiddenSelected > 0 ? `（一覧外${hiddenSelected}）` : ''}</span>
-      <Tooltip content="8件まで縮小して並べます。1件を選ぶと原寸で確認できます。"><button data-tooltip="8件まで縮小して並べます。1件を選ぶと原寸で確認できます。" type="button" aria-label="選択項目を並べて比較" aria-pressed={compare} disabled={selectedIds.size < 2 || selectedIds.size > 8}
-        onClick={() => { useAppStore.getState().setCompareOutputs(!compare); onPreview?.() }}>並べて比較</button></Tooltip>
+      <Tooltip content="8件まで、ズームと表示幅に合わせて並べます。1件を選ぶと原寸で確認できます。"><button data-tooltip="8件まで、ズームと表示幅に合わせて並べます。1件を選ぶと原寸で確認できます。" type="button" aria-label="選択項目を並べて表示" aria-pressed={compare} disabled={selectedIds.size < 2 || selectedIds.size > 8}
+        onClick={() => { useAppStore.getState().setCompareOutputs(!compare); onPreview?.() }}>並べて表示</button></Tooltip>
       <button ref={moreRef} type="button" aria-label="選択項目の操作" aria-haspopup="menu" aria-expanded={!!menu} disabled={!exportIds.size} onClick={event => {
         menuInvoker.current = event.currentTarget
         const rect = event.currentTarget.getBoundingClientRect(); setMenu(menu ? null : { x: Math.max(4, Math.min(rect.left, window.innerWidth - 230)), y: Math.max(4, rect.top - 144) })

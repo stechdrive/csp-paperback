@@ -8,6 +8,7 @@ const popup = (page: Page) => page.getByRole('dialog', { name: '画面外の合�
 async function loadSample(page: Page) {
   await page.goto('./')
   await page.getByRole('button', { name: 'サンプルデータで試す', exact: true }).click()
+  await page.getByRole('button', { name: '出力プレビュー', exact: true }).click()
   await expect(page.getByTestId('preview-file-name')).toHaveText('仮想セルテスト.jpg')
 }
 
@@ -76,6 +77,9 @@ test('画面外の接続先を名前で確認して移動でき、スクロー�
   await expectConnectedEndpoint(page, 'below')
 
   // Both sides scroll independently. The selected output remains an explicit origin.
+  // The taller pane now fits the sample at 640px; constrain the window to exercise overflow.
+  await page.setViewportSize({ width: 960, height: 400 })
+  await expect.poll(() => files(page).evaluate(element => element.scrollHeight > element.clientHeight)).toBe(true)
   await files(page).getByRole('option', { name: '仮想セルテスト.jpg', exact: true }).click()
   await files(page).evaluate(element => { element.scrollTop = element.scrollHeight })
   const origin = page.getByRole('button', { name: '選択中の出力へ戻る' })
@@ -92,7 +96,8 @@ test('画面外の接続先を名前で確認して移動でき、スクロー�
   await endpoint(page, 'below').click()
   await page.setViewportSize({ width: 1280, height: 820 })
   await expect(popup(page)).toHaveCount(0)
-  await expectConnectedEndpoint(page, 'below')
+  await tree(page).evaluate(element => { element.scrollTop = element.scrollHeight })
+  await expectConnectedEndpoint(page, 'above')
   expect(errors).toEqual([])
 })
 

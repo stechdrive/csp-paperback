@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, type ReactNode, type DragEvent } from
 import { useLocale } from '../i18n/locale'
 import { loadableFilesFromPaths, type LoadableFile } from '../platform/files'
 import { isDesktopRuntime } from '../platform/runtime'
+import { isExportInProgress } from '../store/export-job'
 import styles from './FileDropZone.module.css'
 
 interface FileDropZoneProps {
@@ -24,6 +25,7 @@ export function FileDropZone({ onFiles, children }: FileDropZoneProps) {
     void (async () => {
       const { getCurrentWebview } = await import('@tauri-apps/api/webview')
       unlisten = await getCurrentWebview().onDragDropEvent(event => {
+        if (isExportInProgress()) return
         const payload = event.payload
         if (payload.type === 'enter' || payload.type === 'over') {
           setDragCounter(1)
@@ -67,6 +69,7 @@ export function FileDropZone({ onFiles, children }: FileDropZoneProps) {
   const handleDragEnter = useCallback((e: DragEvent) => {
     if (!isFileDrag(e)) return
     e.preventDefault()
+    if (isExportInProgress()) return
     setDragCounter(c => c + 1)
     setIsDragging(true)
   }, [isFileDrag])
@@ -91,7 +94,7 @@ export function FileDropZone({ onFiles, children }: FileDropZoneProps) {
     e.preventDefault()
     setIsDragging(false)
     setDragCounter(0)
-
+    if (isExportInProgress()) return
     await onFiles(Array.from(e.dataTransfer.files))
   }, [isFileDrag, onFiles])
 

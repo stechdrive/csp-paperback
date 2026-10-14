@@ -1,7 +1,6 @@
 import { useRef, useState, type PointerEvent, type CSSProperties } from 'react'
 import { VirtualSetPanel } from './VirtualSetPanel'
 import { PreviewPanel, type PreviewMode } from './PreviewPanel'
-import { NavigatorPanel } from './NavigatorPanel'
 import { LayerTreePanel } from './LayerTreePanel'
 import { useIsMobile } from '../hooks/useIsMobile'
 import styles from './MainLayout.module.css'
@@ -49,12 +48,11 @@ export function MainLayout({ previewMode, onPreviewModeChange, virtualPanelOpen,
       </div>
       {virtualPanelOpen && <div className={styles.resizeHandle} onPointerDown={event => resize(event, 'left')} />}
       <div className={styles.centerPane}>
-        <PreviewPanel mode={previewMode} active={!isMobile || activeTab === 'preview'} />
+        <PreviewPanel mode={previewMode} onModeChange={onPreviewModeChange} active={!isMobile || activeTab === 'preview'} />
       </div>
       <div className={styles.resizeHandle} onPointerDown={event => resize(event, 'right')} />
       <div className={styles.rightPane} style={{ width: rightWidth }} data-testid="source-panel">
-        <NavigatorPanel enabled={!isMobile || activeTab === 'layer'} />
-        <div className={styles.layerPane}><LayerTreePanel onPreviewOutput={() => onPreviewModeChange('output')} /></div>
+        <div className={styles.layerPane}><LayerTreePanel active={!isMobile || activeTab === 'layer'} onPreviewOutput={() => onPreviewModeChange('output')} /></div>
       </div>
       <nav className={styles.mobileTabBar} aria-label="作業パネル">
         {([

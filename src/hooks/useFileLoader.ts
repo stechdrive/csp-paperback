@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import type { LoadableFile } from '../platform/files'
 import { loadProjectFiles } from '../utils/project-loader'
+import { isExportInProgress } from '../store/export-job'
 
 export interface UseFileLoaderResult {
   isLoading: boolean
@@ -25,8 +26,9 @@ export function useFileLoader(): UseFileLoaderResult {
   }, [notification])
 
   const loadFiles = useCallback((files: LoadableFile[]) => {
+    if (isExportInProgress()) return Promise.resolve()
     const job = queue.current.then(async () => {
-      if (files.length === 0) return
+      if (files.length === 0 || isExportInProgress()) return
 
       setIsLoading(true)
       setError(null)

@@ -1,5 +1,5 @@
 import { makeZip } from 'client-zip'
-import type { OutputEntry, OutputConfig } from '../types'
+import type { ExportEntry, OutputConfig, ExportProgressCallback } from '../types/output'
 import { createAbortError, isDesktopRuntime } from '../platform/runtime'
 import { prepareOutputEntries, streamOutputEntries } from './output-builder'
 
@@ -21,22 +21,22 @@ import { prepareOutputEntries, streamOutputEntries } from './output-builder'
  */
 
 /**
- * OutputEntry[] から ZIP の ReadableStream を返す。
+ * ExportEntry[] から ZIP の ReadableStream を返す。
  *
  * 生成は遅延評価で、下流(pipeTo や Response)が読んだタイミングで
  * エントリ 1 枚ずつ canvas → Blob 変換 → zip chunk 生成が進む。
  * メモリピークは「1 枚の canvas + client-zip 内部バッファ」程度に抑えられる。
  */
 export function buildZipStream(
-  entries: OutputEntry[],
+  entries: ExportEntry[],
   config: OutputConfig,
   dpiX = 0,
   dpiY = 0,
-  onProgress?: (done: number, total: number) => void,
+  onProgress?: ExportProgressCallback,
 ): ReadableStream<Uint8Array> {
   const preparedEntries = prepareOutputEntries(entries, config)
 
-  return makeZip((async function* () {
+  const generate = async function* () {
     for await (const entry of streamOutputEntries(
       preparedEntries,
       entries,
@@ -47,7 +47,17 @@ export function buildZipStream(
     )) {
       yield { name: entry.relativePath, input: entry.input }
     }
-  })())
+  }
+  let reader: ReadableStreamDefaultReader<Uint8Array> | undefined
+  return new ReadableStream<Uint8Array>({
+    async pull(controller) {
+      reader ??= makeZip(generate()).getReader()
+      const { done, value } = await reader.read()
+      if (done) { reader.releaseLock(); controller.close() }
+      else controller.enqueue(value)
+    },
+    async cancel(reason) { await reader?.cancel(reason) },
+  }, { highWaterMark: 0 })
 }
 
 /**
@@ -76,7 +86,7 @@ export async function saveZipStream(
       defaultPath,
       filters: [{ name: 'ZIP archive', extensions: ['zip'] }],
     })
-    if (path === null) throw createAbortError()
+    if (path === null) { await stream.cancel(); throw createAbortError() }
 
     await writeFile(path, stream)
     return
@@ -104,6 +114,7 @@ export async function saveZipStream(
       return
     } catch (e) {
       // ユーザキャンセルはそのまま呼び出し側に伝播(呼び出し側が silent 扱いする)
+      if (!stream.locked) await stream.cancel().catch(() => {})
       if (e instanceof DOMException && e.name === 'AbortError') throw e
       // その他のエラーはそのまま伝播(stream が consume 済みの可能性があり安全に fallback 不可)
       throw e

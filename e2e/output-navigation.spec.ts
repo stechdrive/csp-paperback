@@ -70,6 +70,7 @@ async function loadSample(page: Page, collapsed = false) {
     await page.route('**/sample/c001.clip', route => route.fulfill({ body, contentType: 'application/octet-stream' }))
   }
   await page.getByRole('button', { name: 'サンプルデータで試す', exact: true }).click()
+  await page.getByRole('button', { name: '出力プレビュー', exact: true }).click()
   await expect(previewNames(page)).toHaveText([sampleOutputs[0]], { timeout: 30000 })
 }
 
@@ -114,6 +115,9 @@ async function exportedImageNames(page: Page) {
   await page.getByRole('button', { name: '出力', exact: true }).click()
   const download = await downloading
   expect(download.suggestedFilename()).toBe('c001.zip')
+  await expect(page.getByTestId('export-status')).toHaveAttribute('data-phase', 'done')
+  await page.getByRole('button', { name: '書き出し状況を閉じる' }).click()
+  await expect(page.getByTestId('export-status')).toHaveCount(0)
   return zipImageNames(await readFile((await download.path())!))
 }
 
@@ -170,12 +174,13 @@ test('出力一覧は実ZIPと一致し、検索・選択・ツリー復帰・�
   await loadSample(page, true)
   const errors: string[] = []
   page.on('pageerror', error => errors.push(error.message))
-  const navigator = page.getByTestId('navigator-panel')
+  await page.getByRole('button', { name: '全体プレビュー', exact: true }).click()
+  const navigator = page.getByTestId('navigator-view')
   const navigatorBefore = await navigator.boundingBox()
   const viewport = await navigator.locator('[class*="_navigatorViewport_"]').boundingBox()
   expect(viewport!.height).toBeGreaterThan(navigatorBefore!.height * 0.7)
-  await expect(navigator.getByText('全体ナビゲーター', { exact: true })).toHaveCount(0)
-  await expect(navigator.getByRole('button', { name: '全体ナビゲーターを中央で大きく表示' })).toHaveCount(0)
+  await expect(navigator.getByText('全体プレビュー', { exact: true })).toHaveCount(0)
+  await expect(navigator.getByRole('button', { name: '全体プレビューを中央で大きく表示' })).toHaveCount(0)
   await expect(navigator.getByRole('slider')).toBeVisible()
   const seekHeight = (await navigator.getByTestId('timeline-seek-bar').boundingBox())!.height
   expect(seekHeight).toBeGreaterThanOrEqual(24)
@@ -188,7 +193,7 @@ test('出力一覧は実ZIPと一致し、検索・選択・ツリー復帰・�
   expect((await exportedImageNames(page)).sort()).toEqual((await files.getByRole('option').allTextContents()).sort())
   expect(await navigator.boundingBox()).toEqual(navigatorBefore)
 
-  await page.getByRole('button', { name: '全体ナビゲーター', exact: true }).click()
+  await page.getByRole('button', { name: '全体プレビュー', exact: true }).click()
   await files.getByRole('option', { name: 'B_1.jpg', exact: true }).click()
   await expect(previewNames(page)).toHaveText(['B_1.jpg'])
   await expect(page.getByTestId('output-view')).toBeVisible()
@@ -227,6 +232,7 @@ test('出力一覧は実ZIPと一致し、検索・選択・ツリー復帰・�
   await expect(files.getByRole('option', { selected: true })).toHaveText('B/B_1_s.png')
   await expect(previewNames(page)).toHaveText(['B/B_1_s.png'])
   expect((await exportedImageNames(page)).sort()).toEqual((await files.getByRole('option').allTextContents()).sort())
+  await page.getByRole('button', { name: '全体プレビュー', exact: true }).click()
   expect(await navigator.boundingBox()).toEqual(navigatorBefore)
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
   expect(errors).toEqual([])
@@ -387,7 +393,7 @@ test('素材選択では出力とフレームを変えず、目玉変更だけ�
   await page.getByRole('button', { name: '選択中の出力をツリーで表示' }).click()
   const process = row(page, 'processB'), processInk = row(page, 'processInkB'), bodyInk = row(page, 'bodyInkB')
   await expansion(process).click()
-  const timeline = page.getByTestId('navigator-panel').getByRole('slider')
+  const timeline = page.getByTestId('navigator-view').getByRole('slider', { includeHidden: true })
   const frame = await timeline.getAttribute('aria-valuenow')
   for (const source of [process, processInk, bodyInk, row(page, 'memo')]) {
     await source.locator('span[data-tooltip]').click()

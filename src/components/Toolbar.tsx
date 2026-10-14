@@ -79,13 +79,11 @@ interface ToolbarProps {
   canRedo: boolean
   onUndo: () => void
   onRedo: () => void
-  previewMode: 'output' | 'navigator'
-  onPreviewModeChange: (mode: 'output' | 'navigator') => void
   virtualPanelOpen: boolean
   onToggleVirtualPanel: () => void
 }
 
-export function Toolbar({ onFiles, isLoading, error, notification, canUndo, canRedo, onUndo, onRedo, previewMode, onPreviewModeChange, virtualPanelOpen, onToggleVirtualPanel }: ToolbarProps) {
+export function Toolbar({ onFiles, isLoading, error, notification, canUndo, canRedo, onUndo, onRedo, virtualPanelOpen, onToggleVirtualPanel }: ToolbarProps) {
   const psdFileName = useAppStore(s => s.psdFileName)
   const clipFileName = useAppStore(s => s.clipFileName)
   const xdtsFileName = useAppStore(s => s.xdtsFileName)
@@ -168,11 +166,6 @@ export function Toolbar({ onFiles, isLoading, error, notification, canUndo, canR
         <div className={styles.historyButtons}>
           <Tooltip content="元に戻す (Ctrl+Z)"><button data-tooltip="元に戻す (Ctrl+Z)" className={`${styles.btn} ${styles.iconBtn}`} onClick={onUndo} disabled={!canUndo} aria-label="元に戻す"><Icon name="undo" /></button></Tooltip>
           <Tooltip content="やり直し (Ctrl+Shift+Z)"><button data-tooltip="やり直し (Ctrl+Shift+Z)" className={`${styles.btn} ${styles.iconBtn}`} onClick={onRedo} disabled={!canRedo} aria-label="やり直し"><Icon name="redo" /></button></Tooltip>
-        </div>
-
-        <div className={styles.viewSwitch} role="group" aria-label="メインプレビューの表示">
-          <Tooltip content="出力プレビュー"><button data-tooltip="出力プレビュー" className={`${styles.btn} ${styles.viewButton} ${previewMode === 'output' ? styles.active : ''}`} aria-label="出力プレビュー" aria-pressed={previewMode === 'output'} onClick={() => onPreviewModeChange('output')}><Icon name="output" /><span className={styles.fullLabel}>出力プレビュー</span><span className={styles.shortLabel}>出力</span></button></Tooltip>
-          <Tooltip content="全体ナビゲーター"><button data-tooltip="全体ナビゲーター" className={`${styles.btn} ${styles.viewButton} ${previewMode === 'navigator' ? styles.active : ''}`} aria-label="全体ナビゲーター" aria-pressed={previewMode === 'navigator'} onClick={() => onPreviewModeChange('navigator')}><Icon name="navigator" /><span className={styles.fullLabel}>全体ナビゲーター</span><span className={styles.shortLabel}>全体</span></button></Tooltip>
         </div>
 
         <Tooltip content="仮想セルの編集パネルを開閉"><button data-tooltip="仮想セルの編集パネルを開閉" className={`${styles.btn} ${styles.virtualButton} ${virtualPanelOpen ? styles.active : ''}`} onClick={onToggleVirtualPanel} aria-label="仮想セル" aria-expanded={virtualPanelOpen} aria-pressed={virtualPanelOpen}><Icon name="virtual" /><span className={styles.fullLabel}>仮想セル</span></button></Tooltip>

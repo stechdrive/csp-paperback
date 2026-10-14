@@ -274,10 +274,10 @@ describe('ExportSettings naming controls', () => {
 
     for (const [name, hint] of cases) {
       const control = screen.getByRole('button', { name })
-      fireEvent.mouseEnter(control)
+      fireEvent.pointerEnter(control, { pointerType: 'mouse' })
       act(() => vi.advanceTimersByTime(300))
       expect(screen.getByText(hint)).toBeInTheDocument()
-      fireEvent.mouseLeave(control)
+      fireEvent.pointerLeave(control, { pointerType: 'mouse' })
     }
 
     const switchCases = [
@@ -289,17 +289,17 @@ describe('ExportSettings naming controls', () => {
 
     for (const [name, hint] of switchCases) {
       const control = screen.getByRole('switch', { name })
-      fireEvent.mouseEnter(control)
+      fireEvent.pointerEnter(control, { pointerType: 'mouse' })
       act(() => vi.advanceTimersByTime(300))
       expect(screen.getByText(hint)).toBeInTheDocument()
-      fireEvent.mouseLeave(control)
+      fireEvent.pointerLeave(control, { pointerType: 'mouse' })
     }
 
     fireEvent.click(screen.getByRole('button', { name: 'セル名' }))
     const unavailableAuto = screen.getByRole('button', { name: '自動' })
-    fireEvent.mouseEnter(unavailableAuto)
+    fireEvent.pointerEnter(unavailableAuto, { pointerType: 'mouse' })
     act(() => vi.advanceTimersByTime(300))
     expect(screen.getByText('セル名出力ではクリスタで付けた番号や名前を使うため、連番桁数は適用されません。連番・連番＋セル名・連番（シート合わせ）で使えます。')).toBeInTheDocument()
-    fireEvent.mouseLeave(unavailableAuto)
+    fireEvent.pointerLeave(unavailableAuto, { pointerType: 'mouse' })
   })
 })

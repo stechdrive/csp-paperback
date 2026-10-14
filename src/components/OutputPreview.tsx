@@ -1,32 +1,13 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react'
+import React, { useRef, useState, useCallback } from 'react'
 import { useAppStore } from '../store'
 import { selectOutputFiles, selectDraftOutputs } from '../store/selectors'
 import { outputRenderQueue } from '../utils/output-render-queue'
 import { useZoomPan } from '../hooks/useZoomPan'
 import { useOutputNavigation } from '../hooks/useOutputNavigation'
 import type { OutputPreviewEntry } from '../hooks/useOutputPreview'
+import { OutputPreviewImage } from './OutputPreviewImage'
+import { TiledOutputPreview } from './TiledOutputPreview'
 import styles from './OutputPreview.module.css'
-
-function Thumbnail({ entry, transparent }: { entry: OutputPreviewEntry; transparent: boolean }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-
-  useEffect(() => {
-    const el = canvasRef.current
-    if (!el) return
-    el.width = entry.canvas.width
-    el.height = entry.canvas.height
-    const ctx = el.getContext('2d')
-    ctx?.drawImage(entry.canvas, 0, 0)
-  }, [entry.canvas])
-
-  return (
-    <div className={styles.thumbnail}>
-      <div className={transparent ? styles.thumbCheckerboard : styles.thumbDark}>
-        <canvas ref={canvasRef} className={styles.thumbCanvas} />
-      </div>
-    </div>
-  )
-}
 
 /** モバイル用縦シークバー — レイヤーツリーのShift+スクロールと同等の操作 */
 function LayerSeekBar() {
@@ -131,6 +112,7 @@ interface OutputPreviewProps {
 
 export function OutputPreview({ entries, zoomPan }: OutputPreviewProps) {
   const outputConfig = useAppStore(s => s.outputConfig)
+  const tiled = useAppStore(s => s.compareOutputs)
   const activeId = useAppStore(s => s.activeOutputId)
   const activeLabel = useAppStore(s => s.activeOutputLabel)
   const files = useAppStore(selectOutputFiles), drafts = useAppStore(selectDraftOutputs)
@@ -141,6 +123,8 @@ export function OutputPreview({ entries, zoomPan }: OutputPreviewProps) {
 
   const isEmpty = !activeId && entries.length === 0
   const hasNoEntries = !isEmpty && entries.length === 0
+
+  if (tiled) return <TiledOutputPreview entries={entries} transparent={transparent} />
 
   return (
     <div className={styles.outputWrapper}>
@@ -165,7 +149,7 @@ export function OutputPreview({ entries, zoomPan }: OutputPreviewProps) {
           <div style={contentStyle}>
             <div className={styles.list}>
               {entries.map((e, i) => (
-                <Thumbnail key={`${e.flatName}-${i}`} entry={e} transparent={transparent} />
+                <OutputPreviewImage key={`${e.flatName}-${i}`} entry={e} transparent={transparent} />
               ))}
             </div>
           </div>

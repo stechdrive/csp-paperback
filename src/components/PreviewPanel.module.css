@@ -17,18 +17,6 @@
   display: none;
 }
 
-.navigatorSection {
-  flex-shrink: 0;
-  max-height: 48%;
-  min-height: 150px;
-  padding: .2rem .5rem;
-  background: var(--color-bg-app);
-  display: flex;
-  flex-direction: column;
-  gap: .15rem;
-  overflow: hidden;
-}
-
 .navigatorImage {
   flex: 1;
   min-height: 0;
@@ -72,18 +60,6 @@
   padding: .05rem .3rem;
   font-variant-numeric: tabular-nums;
   flex-shrink: 0;
-}
-
-.resizeHandle {
-  height: 4px;
-  flex-shrink: 0;
-  touch-action: none;
-  cursor: ns-resize;
-  background: var(--color-border-subtle);
-}
-
-.resizeHandle:hover {
-  background: var(--color-accent);
 }
 
 .iconButton {
@@ -389,12 +365,6 @@
 }
 
 @media (max-width: 735px), (pointer: coarse) and (max-width: 1024px) {
-  .navigatorSection {
-    max-height: 45%;
-  }
-  .resizeHandle {
-    display: none;
-  }
   .seekBar {
     height: 2.25rem;
     min-height: 36px;
@@ -411,3 +381,26 @@
   .settingsFooter { height: 2.5rem; }
   .settingsToggle, .fileNameButton { height: 2rem; }
 }
+
+.previewToolbar {
+  display: flex;
+  flex-shrink: 0;
+  gap: .2rem;
+  padding: .25rem .5rem;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+.previewToolbar button {
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-text-muted);
+  padding: .2rem .85rem;
+  font: inherit;
+  font-size: .75rem;
+  cursor: pointer;
+}
+.previewToolbar button[aria-pressed='true'] {
+  background: var(--color-surface-hover-strong);
+  color: var(--color-text-primary);
+}
+.previewToolbar button:focus-visible { outline: 2px solid var(--color-accent); }

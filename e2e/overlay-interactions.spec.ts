@@ -8,6 +8,7 @@ const more = (page: Page) => page.getByRole('button', { name: '選択項目の�
 async function load(page: Page) {
   await page.goto('./')
   await page.getByRole('button', { name: 'サンプルデータで試す', exact: true }).click()
+  await page.getByRole('button', { name: '出力プレビュー', exact: true }).click()
   await expect(page.getByTestId('preview-file-name')).toHaveText('仮想セルテスト.jpg')
 }
 async function canvasClick(page: Page) {
@@ -25,7 +26,7 @@ test('無効なボタンもマウスでは説明を表示できる', async ({ pa
   await expect(page.getByRole('tooltip')).toHaveCount(0)
 })
 
-test('出力の操作は再クリック・Esc・外側フォーカス・スクロールで閉じ、選択と比較を保つ', async ({ page }) => {
+test('出力の操作は再クリック・Esc・外側フォーカス・スクロールで閉じ、選択と並べて表示を保つ', async ({ page }) => {
   await load(page)
   const first = files(page).getByRole('option', { name: 'B_1.jpg', exact: true })
   const second = files(page).getByRole('option', { name: 'B_1_s.jpg', exact: true })
@@ -39,7 +40,7 @@ test('出力の操作は再クリック・Esc・外側フォーカス・スク�
   await expect(more(page)).toBeFocused()
   await more(page).click(); await page.getByRole('searchbox').focus()
   await expect(menu(page)).toHaveCount(0)
-  await more(page).click(); await files(page).evaluate(el => { el.scrollTop = el.scrollHeight })
+  await more(page).click(); await tree(page).evaluate(el => { el.scrollTop = el.scrollHeight })
   await expect(menu(page)).toHaveCount(0)
   await more(page).click(); await second.click({ modifiers: ['Control'] })
   await expect(menu(page)).toHaveCount(0)
@@ -48,7 +49,7 @@ test('出力の操作は再クリック・Esc・外側フォーカス・スク�
   await expect(menu(page)).toContainText('2件を書き出し')
   await page.keyboard.press('Escape'); await expect(files(page)).toBeFocused()
   const names = await files(page).getByRole('option').allTextContents()
-  await page.getByRole('button', { name: '選択項目を並べて比較' }).click()
+  await page.getByRole('button', { name: '選択項目を並べて表示' }).click()
   await expect(page.getByTestId('output-view').locator('canvas')).toHaveCount(2)
   expect(await files(page).getByRole('option').allTextContents()).toEqual(names)
 })
@@ -119,6 +120,8 @@ test('ツールチップはキーボードでも表示し、警告のポータ�
   await page.keyboard.press('Escape'); await expect(tip).toHaveCount(0)
   await expect(page.locator('button[title], span[title], div[title]')).toHaveCount(0)
   await page.locator('input[type=file][multiple]').setInputFiles({ name: 'c001.clip', mimeType: 'application/octet-stream', buffer: await clipVectorFixture() })
+  await expect(page.getByTestId('navigator-view')).toBeVisible()
+  await page.getByRole('button', { name: '出力プレビュー', exact: true }).click()
   await expect(page.getByTestId('preview-files').getByRole('button', { name: 'ベクター描画の制限' })).toBeVisible()
   await page.getByRole('button', { name: /^プレビュー中のファイル名/ }).click()
   const names = page.getByRole('dialog', { name: 'プレビュー中のファイル名', exact: true })
@@ -138,7 +141,8 @@ for (const viewport of [{ width: 960, height: 640 }, { width: 1280, height: 820 
     await page.setViewportSize(viewport)
     await load(page)
     await files(page).getByRole('option', { name: 'B_1_s.jpg', exact: true }).click()
-    const trigger = page.locator('[data-connection-kind="sources"][data-connection-edge="below"]')
+    await tree(page).evaluate(element => { element.scrollTop = element.scrollHeight })
+    const trigger = page.locator('[data-connection-kind="sources"][data-connection-edge="above"]')
     await trigger.click()
     const popup = page.getByRole('dialog', { name: '画面外の合成元' })
     await expect(popup).toBeVisible()

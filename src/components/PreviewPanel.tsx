@@ -1,7 +1,6 @@
 import { useAppStore } from '../store'
 import { useOutputPreview } from '../hooks/useOutputPreview'
 import { useZoomPan } from '../hooks/useZoomPan'
-import { useIsMobile } from '../hooks/useIsMobile'
 import { OutputPreview } from './OutputPreview'
 import { ExportSettings } from './ExportSettings'
 import { ExportSettingsPopover } from './ExportSettingsPopover'
@@ -35,14 +34,14 @@ function StartupExportSettings() {
   </section>
 }
 
-export function PreviewPanel({ mode = 'output', active = true }: { mode?: PreviewMode; active?: boolean }) {
+export function PreviewPanel({ mode = 'navigator', onModeChange, active = true }: { mode?: PreviewMode; onModeChange?: (mode: PreviewMode) => void; active?: boolean }) {
   const clipFileName = useAppStore(s => s.clipFileName)
   const docWidth = useAppStore(s => s.docWidth)
   const timelineData = useAppStore(s => s.timelineData)
   const xdtsFileName = useAppStore(s => s.xdtsFileName)
   const focusedAnimFolderId = useAppStore(s => s.focusedAnimFolderId)
   const structure = useAppStore(s => s.outputConfig.structure)
-  const isMobile = useIsMobile()
+  const tiled = useAppStore(s => s.compareOutputs)
   const entries = useOutputPreview(active && mode === 'output')
   const outputZoomPan = useZoomPan()
   if (docWidth === 0) {
@@ -55,17 +54,21 @@ export function PreviewPanel({ mode = 'output', active = true }: { mode?: Previe
     </div>
   }
   return <div className={styles.panel} data-testid="main-preview" data-preview-mode={mode}>
-    {isMobile && <ClipTimelineSelect />}
+    <div className={styles.previewToolbar} role="group" aria-label="メインプレビューの表示">
+      <button type="button" aria-label="全体プレビュー" aria-pressed={mode === 'navigator'} onClick={() => onModeChange?.('navigator')}>全体</button>
+      <button type="button" aria-label="出力プレビュー" aria-pressed={mode === 'output'} onClick={() => onModeChange?.('output')}>出力</button>
+    </div>
     {!timelineData && !clipFileName && <div className={styles.noXdtsBanner}>対応するCLIPを追加すると、アニメーションフォルダとタイムラインを読み込めます。</div>}
     <div className={styles.view} hidden={mode !== 'output'} data-testid="output-view">
       <div className={styles.outputSection}>
         <OutputPreview entries={entries} focusedAnimFolderId={focusedAnimFolderId} zoomPan={outputZoomPan} />
-        {outputZoomPan.zoom !== 1 && <span className={styles.zoomBadge}>{Math.round(outputZoomPan.zoom * 100)}%</span>}
+        {!tiled && outputZoomPan.zoom !== 1 && <span className={styles.zoomBadge}>{Math.round(outputZoomPan.zoom * 100)}%</span>}
       </div>
     </div>
     <div className={styles.view} hidden={mode !== 'navigator'} data-testid="navigator-view">
+      <ClipTimelineSelect />
       <NavigatorCanvas enabled={active && mode === 'navigator'} />
-      {isMobile && <TimelineSeekBar />}
+      <TimelineSeekBar />
     </div>
     <ExportSettingsPopover>
       {mode === 'output' && entries.length > 0 && <OutputPreviewFiles entries={entries} structure={structure} />}

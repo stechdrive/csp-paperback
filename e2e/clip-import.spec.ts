@@ -31,6 +31,7 @@ test('サンプルボタンはCLIPだけを取得し、仮想セルを含む出�
   page.on('request', request => { if (/\.(clip|psd|xdts)(?:\?|$)/.test(request.url())) files.push(new URL(request.url()).pathname) })
   await page.goto('./')
   await page.getByRole('button', { name: 'サンプルデータで試す', exact: true }).click()
+  await page.getByRole('button', { name: '出力プレビュー', exact: true }).click()
   await expectLoadedFiles(page, ['c001.clip'])
   await expect(page.getByText('CLIPから読み込み', { exact: true })).toHaveCount(0)
   const virtualToggle = page.getByRole('button', { name: '仮想セル', exact: true })

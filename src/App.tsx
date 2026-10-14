@@ -6,6 +6,8 @@ import { FileDropZone } from './components/FileDropZone'
 import { Toolbar } from './components/Toolbar'
 import { MainLayout } from './components/MainLayout'
 import { QuickExportDialog } from './components/QuickExportDialog'
+import { ExportStatus } from './components/ExportStatus'
+import { useExportJob } from './store/export-job'
 import { useAppStore } from './store'
 import { getQuickExportLaunchPaths } from './platform/launch'
 import './App.css'
@@ -13,11 +15,17 @@ import './App.css'
 function NormalApp() {
   const { isLoading, error, notification, loadFiles } = useFileLoader()
   const { canUndo, canRedo, undo, redo } = useUndoRedo()
-  const [previewMode, setPreviewMode] = useState<'output' | 'navigator'>('output')
+  const document = useAppStore(s => s.clipDocument ?? s.rawPsd)
+  const [preview, setPreview] = useState({ document, mode: 'navigator' as 'output' | 'navigator' })
+  const isExporting = useExportJob(s => s.isExporting)
   const [virtualPanelOpen, setVirtualPanelOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<'virtual' | 'preview' | 'layer'>('preview')
+  if (preview.document !== document) {
+    setPreview({ document, mode: 'navigator' })
+    setActiveTab('preview')
+  }
   const changePreviewMode = (mode: 'output' | 'navigator') => {
-    setPreviewMode(mode)
+    setPreview({ document, mode })
     setActiveTab('preview')
   }
   const toggleVirtualPanel = () => {
@@ -28,6 +36,7 @@ function NormalApp() {
   return (
     <FileDropZone onFiles={loadFiles}>
       <div className="app-shell">
+        <div className="app-workspace" inert={isExporting} aria-busy={isExporting}>
         <Toolbar
           onFiles={loadFiles}
           isLoading={isLoading}
@@ -37,14 +46,12 @@ function NormalApp() {
           canRedo={canRedo}
           onUndo={undo}
           onRedo={redo}
-          previewMode={previewMode}
-          onPreviewModeChange={changePreviewMode}
           virtualPanelOpen={virtualPanelOpen}
           onToggleVirtualPanel={toggleVirtualPanel}
         />
         <div className="app-main">
           <MainLayout
-            previewMode={previewMode}
+            previewMode={preview.mode}
             onPreviewModeChange={changePreviewMode}
             virtualPanelOpen={virtualPanelOpen}
             onCloseVirtualPanel={() => { setVirtualPanelOpen(false); setActiveTab('preview') }}
@@ -52,6 +59,8 @@ function NormalApp() {
             onActiveTabChange={tab => { setActiveTab(tab); if (tab === 'virtual') setVirtualPanelOpen(true) }}
           />
         </div>
+        </div>
+        <ExportStatus />
       </div>
     </FileDropZone>
   )

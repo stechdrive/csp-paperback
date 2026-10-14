@@ -15,7 +15,7 @@ import type { BlendMode } from '../types'
 import { mergeExpandedFolders } from '../utils/layerNavigation'
 import styles from './LayerTreePanel.module.css'
 
-export function LayerTreePanel({ onPreviewOutput }: { onPreviewOutput?: () => void }) {
+export function LayerTreePanel({ active = true, onPreviewOutput }: { active?: boolean; onPreviewOutput?: () => void }) {
   const relationshipRef = useRef<HTMLDivElement>(null)
   const documentTree = useAppStore(s => s.layerTree)
   useEffect(() => cancelLayerVisibilityDrag, [documentTree])
@@ -102,7 +102,7 @@ export function LayerTreePanel({ onPreviewOutput }: { onPreviewOutput?: () => vo
     <div className={styles.panel}>
       <div ref={relationshipRef} className={styles.relationship}>
       <div className={styles.outputs}>
-        <OutputFileList onPreview={onPreviewOutput} onShowTree={() => {
+        <OutputFileList active={active} onPreview={onPreviewOutput} onShowTree={() => {
           const entry = revealCurrent()
           requestAnimationFrame(() => {
             if (!entry) return
@@ -172,7 +172,7 @@ export function LayerTreePanel({ onPreviewOutput }: { onPreviewOutput?: () => vo
       </div>
       </div>
 
-      <OutputConnections container={relationshipRef} treeElement={treeRef} />
+      <OutputConnections active={active} container={relationshipRef} treeElement={treeRef} />
       </div>
 
       <QuickLook />

@@ -17,13 +17,13 @@ interface Popup { file: OutputFile; edge: Edge; sources: SourceRow[]; trigger: H
 const directionName = (edge: Edge) => edge === 'above' ? '上' : '下'
 const arrow = (edge: Edge) => edge === 'above' ? '↑' : '↓'
 
-export function OutputConnections({ container, treeElement }: { container: RefObject<HTMLDivElement | null>; treeElement: RefObject<HTMLDivElement | null> }) {
+export function OutputConnections({ container, treeElement, active = true }: { container: RefObject<HTMLDivElement | null>; treeElement: RefObject<HTMLDivElement | null>; active?: boolean }) {
   const files = useAppStore(selectOutputFiles)
   const drafts = useAppStore(selectDraftOutputs)
   const tree = useAppStore(selectLayerTreeWithVisibility)
   const activeId = useAppStore(s => s.activeOutputId)
   const selected = useMemo(() => [...files, ...drafts].filter(file => file.outputId === activeId), [files, drafts, activeId])
-  const [result] = useRenderedOutputs(selected, 'full')
+  const [result] = useRenderedOutputs(selected, 'thumbnail', active)
   const [geometry, setGeometry] = useState<{ paths: Connection[]; endpoints: Endpoint[] }>({ paths: [], endpoints: [] })
   const [popup, setPopup] = useState<Popup | null>(null)
   const popupRef = useRef<HTMLDivElement>(null)

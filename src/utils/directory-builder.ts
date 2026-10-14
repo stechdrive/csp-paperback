@@ -1,4 +1,4 @@
-import type { OutputConfig, OutputEntry } from '../types'
+import type { OutputConfig, ExportEntry, ExportProgressCallback } from '../types/output'
 import { createAbortError, isDesktopRuntime } from '../platform/runtime'
 import { makeExportBaseName, prepareOutputEntries, streamOutputEntries } from './output-builder'
 
@@ -17,12 +17,12 @@ export function supportsDirectoryExport(): boolean {
 }
 
 export async function saveEntriesToDirectory(
-  entries: OutputEntry[],
+  entries: ExportEntry[],
   config: OutputConfig,
   psdFileName: string,
   dpiX = 0,
   dpiY = 0,
-  onProgress?: (done: number, total: number) => void,
+  onProgress?: ExportProgressCallback,
   defaultDirectory?: string,
 ): Promise<string> {
   if (isDesktopRuntime()) {
@@ -68,13 +68,13 @@ export async function saveEntriesToDirectory(
 }
 
 export async function saveEntriesToDirectoryPath(
-  entries: OutputEntry[],
+  entries: ExportEntry[],
   config: OutputConfig,
   psdFileName: string,
   parentDirectory: string,
   dpiX = 0,
   dpiY = 0,
-  onProgress?: (done: number, total: number) => void,
+  onProgress?: ExportProgressCallback,
 ): Promise<string> {
   if (!isDesktopRuntime()) {
     throw new Error('クイック書き出しはデスクトップ版でのみ利用できます')
@@ -94,12 +94,12 @@ export async function saveEntriesToDirectoryPath(
 }
 
 async function saveEntriesToTauriDirectory(
-  entries: OutputEntry[],
+  entries: ExportEntry[],
   config: OutputConfig,
   psdFileName: string,
   dpiX = 0,
   dpiY = 0,
-  onProgress?: (done: number, total: number) => void,
+  onProgress?: ExportProgressCallback,
   defaultDirectory?: string,
 ): Promise<string> {
   const { open } = await import('@tauri-apps/plugin-dialog')
@@ -121,12 +121,12 @@ async function saveEntriesToTauriDirectory(
 }
 
 async function writeEntriesToTauriDirectory(
-  entries: OutputEntry[],
+  entries: ExportEntry[],
   config: OutputConfig,
   exportRootPath: string,
   dpiX = 0,
   dpiY = 0,
-  onProgress?: (done: number, total: number) => void,
+  onProgress?: ExportProgressCallback,
 ): Promise<void> {
   const { writeFile } = await import('@tauri-apps/plugin-fs')
   const { join } = await import('@tauri-apps/api/path')

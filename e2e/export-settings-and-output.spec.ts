@@ -73,6 +73,7 @@ test('保存設定を再読込とサンプル読込へ引き継ぎ、実ZIPを�
     .toHaveAttribute('aria-checked', 'true')
 
   await page.getByRole('button', { name: 'サンプルデータで試す', exact: true }).click()
+  await page.getByRole('button', { name: '出力プレビュー', exact: true }).click()
   await expectSampleLoaded(page)
   await expect(page.getByText('CLIPから読み込み', { exact: true })).toHaveCount(0)
   await page.getByRole('button', { name: '書き出し設定', exact: true }).click()
@@ -106,6 +107,7 @@ test.describe('タッチ端末', () => {
       .toBe(true)
 
     await page.getByRole('button', { name: 'サンプルデータで試す', exact: true }).click()
+    await page.getByRole('button', { name: '出力プレビュー', exact: true }).click()
     const drawerToggle = page.getByRole('button', { name: '書き出し設定', exact: true })
     await expect(drawerToggle).toBeVisible()
     await expect(drawerToggle).toHaveAttribute('aria-expanded', 'false')
@@ -165,6 +167,7 @@ test('設定と出力名の対応を示し、修正ラベルの切り替えで�
   await expect(sample).toHaveCSS('border-top-color', 'rgb(252, 249, 207)')
   await settings.screenshot({ path: testInfo.outputPath('export-settings.png') })
   await page.getByRole('button', { name: 'サンプルデータで試す', exact: true }).click()
+  await page.getByRole('button', { name: '出力プレビュー', exact: true }).click()
   const output = page.locator('[class*="_outputSection_"]')
   await expect(output).toBeVisible()
   const before = await output.boundingBox()
@@ -187,6 +190,7 @@ test('工程名の編集と個別書き出しの設定を通常幅と狭幅で�
   const startupSettingsRegion = await page.getByTestId('startup-export-settings').boundingBox()
   await page.screenshot({ path: testInfo.outputPath('help-startup-guide.png') })
   await page.getByRole('button', { name: 'サンプルデータで試す', exact: true }).click()
+  await page.getByRole('button', { name: '出力プレビュー', exact: true }).click()
   await expectSampleLoaded(page)
   await page.evaluate(() => document.fonts.ready)
   await page.getByRole('button', { name: '書き出し設定', exact: true }).click()
@@ -253,6 +257,7 @@ for (const viewport of [{ width: 1440, height: 1000 }, { width: 1000, height: 70
     for (const phase of ['startup', 'loaded']) {
       if (phase === 'loaded') {
         await page.getByRole('button', { name: 'サンプルデータで試す', exact: true }).click()
+        await page.getByRole('button', { name: '出力プレビュー', exact: true }).click()
         await expectSampleLoaded(page)
         const drawer = page.getByRole('button', { name: '書き出し設定', exact: true })
         await drawer.click()
