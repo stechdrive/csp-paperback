@@ -73,7 +73,7 @@ export function StudioTemplateGuide() {
       </h3>
       <p className={styles.paragraph}>
         アニメーションフォルダではない静止画素材をまとめる親フォルダに、
-        スタジオ独自の名称を使っている場合は「単体出力の自動マーク」へ追加します。
+        スタジオ独自の名称を使っている場合は「個別に書き出すフォルダ名」へ追加します。
       </p>
 
       <div className={styles.compareGrid}>
@@ -92,7 +92,7 @@ export function StudioTemplateGuide() {
       </div>
 
       <div className={styles.callout}>
-        この場合は「単体出力の自動マーク」へ<code>CAMERA</code>を追加します。
+        この場合は「個別に書き出すフォルダ名」へ<code>CAMERA</code>を追加します。
         <code>CAMERA</code>は静止画素材をまとめる親フォルダとして扱われ、
         配下の<code>_PAN</code>と<code>_SL</code>がそれぞれ静止画として出力されます。
       </div>
@@ -112,8 +112,8 @@ export function StudioTemplateGuide() {
       </div>
 
       <div className={styles.callout}>
-        JSONには、出力名、連番、工程フォルダリスト、自動マークするフォルダ名、
-        自動マークの除外リストが保存されます。
+        JSONには、出力名、連番、工程フォルダリスト、個別に書き出すフォルダ名、
+        名前による指定の除外リストが保存されます。
       </div>
     </section>
   )

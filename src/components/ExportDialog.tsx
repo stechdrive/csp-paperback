@@ -1,21 +1,9 @@
-import { useMemo } from 'react'
 import { useAppStore } from '../store'
-import { selectLayerTreeWithVisibility } from '../store/selectors'
 import { useExport } from '../hooks/useExport'
 import { useLocale } from '../i18n/locale'
 import { Tooltip } from './Tooltip'
-import type { CspLayer } from '../types'
-import { isAutoMarkedOutputTarget } from '../utils/auto-marked-container'
+import { OutputTargetControls } from './OutputTargetControls'
 import styles from './ExportDialog.module.css'
-
-function collectAutoMarkedNames(layers: CspLayer[]): string[] {
-  const names: string[] = []
-  for (const l of layers) {
-    if (isAutoMarkedOutputTarget(l)) names.push(l.originalName)
-    if (l.isFolder && !l.isAnimationFolder) names.push(...collectAutoMarkedNames(l.children))
-  }
-  return names
-}
 
 interface ExportDialogProps {
   onClose: () => void
@@ -24,18 +12,14 @@ interface ExportDialogProps {
 export function ExportDialog({ onClose }: ExportDialogProps) {
   const outputConfig = useAppStore(s => s.outputConfig)
   const projectSettings = useAppStore(s => s.projectSettings)
-  const layerTree = useAppStore(selectLayerTreeWithVisibility)
   const setFormat = useAppStore(s => s.setFormat)
   const setBackground = useAppStore(s => s.setBackground)
   const setStructure = useAppStore(s => s.setStructure)
   const setProcessSuffixPosition = useAppStore(s => s.setProcessSuffixPosition)
   const setSharedCutMode = useAppStore(s => s.setSharedCutMode)
-  const toggleProcessSuffixExclusion = useAppStore(s => s.toggleProcessSuffixExclusion)
-  const setExcludeAutoMarked = useAppStore(s => s.setExcludeAutoMarked)
   // const setJpgQuality = useAppStore(s => s.setJpgQuality)  // JPG品質UI復活時に有効化
   const { t } = useLocale()
 
-  const autoMarkedNames = useMemo(() => collectAutoMarkedNames(layerTree), [layerTree])
 
   const { isExporting, progress, error, startExport } = useExport()
 
@@ -142,30 +126,7 @@ export function ExportDialog({ onClose }: ExportDialogProps) {
         <div className={styles.section}>
           <div className={styles.label}>{t.export.outputTarget}</div>
           <div className={styles.chipRow}>
-            <div className={styles.chipGroup} role="group" aria-label={t.export.outputTarget}>
-              {projectSettings.processTable.map(entry => {
-                const excluded = outputConfig.excludedProcessSuffixes.includes(entry.suffix)
-                return (
-                  <Tooltip key={entry.suffix} content={entry.folderNames.join(', ')} placement="bottom">
-                    <button
-                      className={`${styles.chip} ${!excluded ? styles.chipIncluded : ''}`}
-                      aria-pressed={!excluded}
-                      onClick={() => toggleProcessSuffixExclusion(entry.suffix)}
-                    >{entry.suffix}</button>
-                  </Tooltip>
-                )
-              })}
-              <Tooltip
-                content={autoMarkedNames.length > 0 ? autoMarkedNames.join(', ') : t.export.autoMarkNone}
-                placement="bottom"
-              >
-                <button
-                  className={`${styles.chip} ${!outputConfig.excludeAutoMarked ? styles.chipIncluded : ''}`}
-                  aria-pressed={!outputConfig.excludeAutoMarked}
-                  onClick={() => setExcludeAutoMarked(!outputConfig.excludeAutoMarked)}
-                >{t.export.autoMark}</button>
-              </Tooltip>
-            </div>
+            <OutputTargetControls />
           </div>
         </div>
 

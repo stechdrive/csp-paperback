@@ -1,4 +1,6 @@
 export interface ProcessFolderEntry {
+  /** UI表示用。未設定の旧JSONでは登録フォルダ名から補完する */
+  displayName?: string
   suffix: string           // 例: '_en'
   folderNames: string[]    // 例: ['EN', '演出修正', 'ens', '演修']
   /** 修正工程フチに使う色。旧設定JSONとの互換のため省略を許可する */
@@ -34,6 +36,8 @@ export interface ProjectSettings {
   includeXdtsTrackPrefixInCellName?: boolean
   /** 兼用カット: XDTS未使用セルを初期OFFにせず、XDTS検出アニメフォルダ自体を表示ONにする */
   sharedCutMode?: boolean
+  /** 個別書き出し対象の非表示フォルダを、読み込み時に表示ONにする */
+  showIndividualFoldersOnLoad?: boolean
   /** _プレフィックス以外に単体出力として自動マークするフォルダ名（完全一致） */
   autoMarkFolderNames: string[]
   /** 自動マーク・自動表示から除外するパターン（前方一致）。デフォルト: ['_old', '_pool'] */
@@ -42,11 +46,11 @@ export interface ProjectSettings {
 
 export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
   processTable: [
-    { suffix: '_e', folderNames: ['_e', '演出'], revisionBorderColor: '#FBECE6' },
-    { suffix: '_k',  folderNames: ['_k',  '監督'], revisionBorderColor: '#DCE4F1' },
-    { suffix: '_s',  folderNames: ['_s',  '作監'], revisionBorderColor: '#FCF9CF' },
-    { suffix: '_y',  folderNames: ['_y',  '料理作監'], revisionBorderColor: '#FFDDAA' },
-    { suffix: '_ss', folderNames: ['_ss', '総作監'], revisionBorderColor: '#EAF6D5' },
+    { displayName: '演出', suffix: '_e', folderNames: ['_e', '演出'], revisionBorderColor: '#FBECE6' },
+    { displayName: '監督', suffix: '_k',  folderNames: ['_k',  '監督'], revisionBorderColor: '#DCE4F1' },
+    { displayName: '作監', suffix: '_s',  folderNames: ['_s',  '作監'], revisionBorderColor: '#FCF9CF' },
+    { displayName: '料理作監', suffix: '_y',  folderNames: ['_y',  '料理作監'], revisionBorderColor: '#FFDDAA' },
+    { displayName: '総作監', suffix: '_ss', folderNames: ['_ss', '総作監'], revisionBorderColor: '#EAF6D5' },
   ],
   cellNamingMode: 'cellname',
   sequenceDigitMode: 'auto',
@@ -54,6 +58,7 @@ export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
   animationSequenceSeparator: 'underscore',
   includeXdtsTrackPrefixInCellName: true,
   sharedCutMode: false,
+  showIndividualFoldersOnLoad: true,
   autoMarkFolderNames: ['撮影指示', '原図'],
   archivePatterns: ['_old', '_pool'],
 }

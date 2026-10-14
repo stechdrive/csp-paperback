@@ -2,6 +2,7 @@ import { planAllEntries, planVirtualSetEntries, type PlannedOutputEntry } from '
 import type { AppStore } from '../store'
 import type { CspLayer, OutputConfig } from '../types'
 import { prepareOutputEntries, type PreparedOutputEntry } from './output-builder'
+import { isOutputTargetExcluded } from './output-target'
 
 export type OutputFile = PlannedOutputEntry & PreparedOutputEntry
 
@@ -11,11 +12,10 @@ export function buildOutputPlan(
   state: Pick<AppStore, 'projectSettings' | 'docWidth' | 'docHeight' | 'virtualSets' | 'timelineData' | 'outputConfig'>,
   config: OutputConfig = state.outputConfig,
 ): OutputFile[] {
-  const excluded = new Set(config.excludedProcessSuffixes)
   const plans = [
     ...planAllEntries(tree, state.projectSettings, state.docWidth, state.docHeight,
-      config.background, config.excludeAutoMarked, config.processSuffixPosition, state.timelineData)
-      .filter(entry => !entry.processSuffixes?.some(suffix => excluded.has(suffix))),
+      config.background, false, config.processSuffixPosition, state.timelineData)
+      .filter(entry => !isOutputTargetExcluded(entry.outputTarget, config)),
     ...planVirtualSetEntries(tree, state.virtualSets, state.docWidth, state.docHeight, config.background),
   ]
   const names = prepareOutputEntries(plans, config)

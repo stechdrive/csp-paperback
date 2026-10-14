@@ -18,6 +18,7 @@ import { Tooltip } from './Tooltip'
 import { RenderWarning } from './RenderWarning'
 import styles from './LayerTreeNode.module.css'
 import type { HistoryOptions } from '../store/history-slice'
+import { selectOutputRowStatuses } from '../store/selectors'
 
 // 目玉アイコンをなぞって一括トグルするためのモジュールレベルドラッグ状態
 // targetHidden: ドラッグ開始時に決定した「適用する非表示状態」
@@ -239,6 +240,7 @@ export function LayerTreeNode({
   isCell = false,
   animParentId,
 }: LayerTreeNodeProps) {
+  const outputStatus = useAppStore(s => selectOutputRowStatuses(s).get(layer.id))
   const singleMarks = useAppStore(s => s.singleMarks)
   const manualAnimFolderIds = useAppStore(s => s.manualAnimFolderIds)
   const selectedCells = useAppStore(s => s.selectedCells)
@@ -503,6 +505,15 @@ export function LayerTreeNode({
           {(layer.autoMarked || isAutoProcessAnimFolder) ? layer.originalName : (layer.name || layer.originalName)}
         </span>
 
+        {!!outputStatus?.excluded && <Tooltip content={`出力対象の設定で ${outputStatus.excluded} / ${outputStatus.total} 件をOFFにしています。目玉の表示状態は変わりません。`}>
+          <span className={styles.outputStatus} data-output-state={outputStatus.excluded === outputStatus.total ? 'off' : 'partial'}>
+            {outputStatus.excluded === outputStatus.total ? '出力OFF' : '一部OFF'}
+          </span>
+        </Tooltip>}
+        {layer.individualOutputExcludedBy && <Tooltip content={`除外リスト「${layer.individualOutputExcludedBy}」に一致するため、名前による個別書き出しの指定と自動表示を行いません。書き出し禁止ではなく、手動指定や表示中の共通素材としての合成は可能です。`}>
+          <span className={styles.outputStatus} data-output-state="name-excluded">名前指定の対象外</span>
+        </Tooltip>}
+
         {(layer.vectorRendering || layer.unsupported3D) && <RenderWarning vector={!!layer.vectorRendering} unavailable={layer.vectorRendering === 'unavailable'} unsupported3D={layer.unsupported3D} />}
         {canToggleManualAnimFolder && (
           <Tooltip content={isManualAnimFolder
@@ -520,8 +531,8 @@ export function LayerTreeNode({
 
         {!isOutputAutoMarked && !layer.isAnimationFolder && (
           <Tooltip content={isMarked
-            ? '単体書き出しのマークを解除する'
-            : 'このレイヤーを単体書き出し対象にマークする\nタイムライン登録なしでも出力される'
+            ? 'この素材の個別書き出しを解除する'
+            : 'この素材を別画像として書き出す\nタイムライン登録なしでも出力される'
           }>
             <button
               className={`${styles.markBtn} ${isMarked ? styles.markBtnActive : ''}`}

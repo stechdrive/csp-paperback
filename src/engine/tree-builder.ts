@@ -92,6 +92,10 @@ function convertLayer(
     archivePatterns,
     autoMarkFolderNames,
   )
+  const individualOutputExcludedBy = !animFolderContext && folder &&
+    matchesAutoMarkFolderName(originalName, [], autoMarkFolderNames)
+    ? archivePatterns.find(pattern => pattern.length > 0 && originalName.startsWith(pattern))
+    : undefined
 
   const top = layer.top ?? 0
   const left = layer.left ?? 0
@@ -127,6 +131,7 @@ function convertLayer(
     animationFolder: null, // detectAnimationFoldersで後から設定
     singleMark: false,
     autoMarked,
+    individualOutputExcludedBy,
     virtualSetMembership: [],
     uiHidden: false,
     expanded: layer.sectionDivider?.type === 1, // OpenFolder(1)=展開, ClosedFolder(2)=折りたたみ

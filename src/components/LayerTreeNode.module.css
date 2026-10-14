@@ -216,7 +216,6 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
 .nameAnim {
   color: var(--color-cyan);
 }
@@ -516,4 +515,14 @@
     opacity: 1;
     padding: 0.2rem;
   }
+}
+.outputStatus {
+  flex: 0 0 auto;
+  font-size: 0.65rem;
+  line-height: 1.35;
+  padding: 0.05rem 0.25rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 3px;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
 }

@@ -8,6 +8,7 @@ import type {
 } from '../types'
 import { DEFAULT_OUTPUT_CONFIG } from '../types'
 import type { AppStore } from './index'
+import { individualOutputKey } from '../utils/output-target'
 
 export type OutputConfigTarget = 'current' | 'saved'
 
@@ -20,8 +21,11 @@ export interface OutputSlice {
   setProcessSuffixPosition: (position: ProcessSuffixPosition, target?: OutputConfigTarget) => void
   setJpgQuality: (quality: number, target?: OutputConfigTarget) => void
   toggleProcessSuffixExclusion: (suffix: string, target?: OutputConfigTarget) => void
+  setProcessOutputEnabled: (suffix: string, enabled: boolean, legacyIndividualNames: string[], target?: OutputConfigTarget) => void
   setAllProcessSuffixExclusions: (suffixes: string[], target?: OutputConfigTarget) => void
   setExcludeAutoMarked: (exclude: boolean, target?: OutputConfigTarget) => void
+  setExcludeBody: (exclude: boolean, target?: OutputConfigTarget) => void
+  setIndividualOutputEnabled: (name: string, enabled: boolean, target?: OutputConfigTarget) => void
   setRevisionBorderEnabled: (enabled: boolean, target?: OutputConfigTarget) => void
 }
 
@@ -95,8 +99,31 @@ export const createOutputSlice: StateCreator<AppStore, [], [], OutputSlice> = (s
       }))
     },
 
+    setProcessOutputEnabled: (suffix, enabled, legacyIndividualNames, target = 'current') => {
+      updateTargetConfig(target, current => ({
+        ...current,
+        excludedProcessSuffixes: enabled
+          ? current.excludedProcessSuffixes.filter(entry => entry !== suffix)
+          : [...new Set([...current.excludedProcessSuffixes, suffix])],
+        individualOutputOverrides: {
+          ...current.individualOutputOverrides,
+          ...Object.fromEntries(legacyIndividualNames.map(name => [individualOutputKey(name), enabled])),
+        },
+      }))
+    },
+
     setExcludeAutoMarked: (excludeAutoMarked, target = 'current') => {
       updateTargetConfig(target, current => ({ ...current, excludeAutoMarked }))
+    },
+
+    setExcludeBody: (excludeBody, target = 'current') => {
+      updateTargetConfig(target, current => ({ ...current, excludeBody }))
+    },
+
+    setIndividualOutputEnabled: (name, enabled, target = 'current') => {
+      updateTargetConfig(target, current => ({ ...current, individualOutputOverrides: {
+        ...current.individualOutputOverrides, [individualOutputKey(name)]: enabled,
+      } }))
     },
 
     setRevisionBorderEnabled: (revisionBorderEnabled, target = 'current') => {

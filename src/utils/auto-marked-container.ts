@@ -16,15 +16,17 @@ function isDirectOutputUnit(layer: CspLayer): boolean {
  * autoMarked 自体は合成コンテキスト除外などにも使うため消さず、
  * 出力対象・プレビュー対象からだけ外す。
  */
-export function isAutoMarkedContainerOutputSuppressed(layer: CspLayer): boolean {
+export function isAutoMarkedContainerOutputSuppressed(layer: CspLayer, includeHidden = false): boolean {
   if (!layer.isFolder) return false
   if (!layer.autoMarked || layer.singleMark || layer.isAnimationFolder) return false
-  if (!isVisible(layer)) return false
+  if (!includeHidden && !isVisible(layer)) return false
 
-  const visibleChildren = layer.children.filter(isVisible)
+  const visibleChildren = includeHidden ? layer.children : layer.children.filter(isVisible)
   if (visibleChildren.length === 0) return false
 
-  return visibleChildren.every(isDirectOutputUnit)
+  return visibleChildren.every(child => includeHidden
+    ? child.isAnimationFolder || child.autoMarked || child.singleMark
+    : isDirectOutputUnit(child))
 }
 
 export function isAutoMarkedOutputTarget(layer: CspLayer): boolean {

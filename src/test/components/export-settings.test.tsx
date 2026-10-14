@@ -2,7 +2,10 @@ import { act, cleanup, fireEvent, render, screen, within } from '@testing-librar
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ExportSettings } from '../../components/ExportSettings'
 import { useAppStore } from '../../store'
+import { selectOutputFiles, selectOutputNavigation } from '../../store/selectors'
 import { DEFAULT_OUTPUT_CONFIG, DEFAULT_PROJECT_SETTINGS } from '../../types'
+import { buildLayerTree } from '../../engine/tree-builder'
+import { makeFolder, makeLayer, makePsd } from '../helpers/psd-factory'
 
 beforeEach(() => {
   useAppStore.setState({
@@ -68,18 +71,26 @@ describe('ExportSettings naming controls', () => {
     expect(screen.getByTestId('revision-label-sample')).toHaveAttribute('data-enabled', 'false')
   })
 
-  it('出力対象は工程と自動マークを個別に選び、修正ラベルと独立して切り替える', () => {
+  it('検出した工程と素材を個別に選び、OFF後も選択肢が残り、修正ラベルと独立する', () => {
+    const tree = buildLayerTree(makePsd({ children: [
+      makeFolder('演出', [makeFolder('A', [makeLayer({ name: '001' })])]),
+      makeFolder('_SL', [makeLayer()]),
+    ] }))
+    const anim = tree.find(l => l.originalName === '演出')!.children[0]
+    useAppStore.setState({ layerTree: tree, manualAnimFolderIds: new Set([anim.id]) })
     render(<ExportSettings />)
     const targets = screen.getByRole('group', { name: '出力対象' })
     const direction = within(targets).getByRole('button', { name: '演出 _e' })
-    const autoMarked = within(targets).getByRole('button', { name: '自動マーク' })
+    const autoMarked = within(targets).getByRole('button', { name: 'SL 個別書き出し' })
+    expect(within(targets).queryByRole('button', { name: '作監 _s' })).not.toBeInTheDocument()
+    expect(within(targets).queryByRole('button', { name: '作画（本体）' })).not.toBeInTheDocument()
     expect(direction).toHaveAttribute('aria-pressed', 'true')
 
     fireEvent.click(direction)
     fireEvent.click(autoMarked)
     expect(direction).toHaveAttribute('aria-pressed', 'false')
     expect(useAppStore.getState().outputConfig.excludedProcessSuffixes).toEqual(['_e'])
-    expect(useAppStore.getState().outputConfig.excludeAutoMarked).toBe(true)
+    expect(useAppStore.getState().outputConfig.individualOutputOverrides).toEqual({ sl: false })
     expect(screen.getByRole('switch', { name: '修正ラベル' })).toHaveAttribute('aria-checked', 'true')
 
     fireEvent.click(screen.getByRole('switch', { name: '修正ラベル' }))
@@ -87,6 +98,40 @@ describe('ExportSettings naming controls', () => {
     expect(autoMarked).toHaveAttribute('aria-pressed', 'false')
     expect(screen.queryByRole('button', { name: '全ON' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '全OFF' })).not.toBeInTheDocument()
+  })
+
+  it('旧設定で除外した工程名の個別素材を復元し、工程チェックからまとめて再開できる', () => {
+    const tree = buildLayerTree(makePsd({ children: [
+      makeFolder('_e', [makeLayer()]),
+      makeFolder('演出', [makeFolder('A', [makeLayer({ name: '001' })])]),
+      makeFolder('_SL', [makeLayer()]),
+    ] }))
+    const anim = tree.find(layer => layer.originalName === '演出')!.children[0]
+    const oldMaterial = tree.find(layer => layer.originalName === '_e')!
+    useAppStore.setState({ layerTree: tree, docWidth: 100, docHeight: 100,
+      manualAnimFolderIds: new Set([anim.id]), singleMarks: new Map(), visibilityOverrides: new Map(),
+      outputConfig: { ...DEFAULT_OUTPUT_CONFIG, excludeAutoMarked: true } })
+    render(<ExportSettings />)
+    const direction = screen.getByRole('button', { name: '演出 _e' })
+    const files = () => selectOutputFiles(useAppStore.getState())
+    expect(direction).toHaveAttribute('aria-pressed', 'mixed')
+    expect(files().some(file => file.sourceLayerId === oldMaterial.id)).toBe(false)
+    expect(files()).toHaveLength(1)
+
+    fireEvent.click(direction)
+    expect(direction).toHaveAttribute('aria-pressed', 'true')
+    expect(files().some(file => file.sourceLayerId === oldMaterial.id)).toBe(true)
+    expect(files()).toHaveLength(2)
+    expect(screen.getByRole('button', { name: 'SL 個別書き出し' })).toHaveAttribute('aria-pressed', 'false')
+    expect(selectOutputNavigation(useAppStore.getState()).entries.map(entry => entry.id).sort())
+      .toEqual(files().map(file => file.sourceLayerId).sort())
+    act(() => useAppStore.getState().undo())
+    expect(direction).toHaveAttribute('aria-pressed', 'mixed')
+    expect(files()).toHaveLength(1)
+    fireEvent.click(direction)
+    fireEvent.click(direction)
+    expect(direction).toHaveAttribute('aria-pressed', 'false')
+    expect(files()).toHaveLength(0)
   })
 
   it('セル名・フォルダ名付加・区切りありを初期選択し、連番へ切り替えると桁数を選べる', () => {

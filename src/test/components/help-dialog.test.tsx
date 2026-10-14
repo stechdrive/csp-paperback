@@ -40,7 +40,7 @@ describe('HelpDialog information architecture', () => {
     expect(screen.queryByText('CSPアニメーションセル出力の課題')).not.toBeInTheDocument()
   })
 
-  it('各社テンプレート向けに工程名・サフィックス・自動マーク・設定共有を案内する', () => {
+  it('各社テンプレート向けに工程名・サフィックス・個別書き出し・設定共有を案内する', () => {
     render(<HelpDialog onClose={vi.fn()} />)
     fireEvent.click(screen.getByRole('tab', { name: /各社テンプレートへの対応/ }))
 
@@ -52,11 +52,11 @@ describe('HelpDialog information architecture', () => {
     expect(text).toContain('工程登録なし／サフィックスなし')
     expect(text).toContain('フォルダ名「作画」／_l')
     expect(text).toContain('A1_l.jpg')
-    expect(text).toContain('「単体出力の自動マーク」へCAMERAを追加')
+    expect(text).toContain('「個別に書き出すフォルダ名」へCAMERAを追加')
     expect(text).toContain('_PANと_SLがそれぞれ静止画として出力')
     expect(text).toContain('設定を書き出す')
     expect(text).toContain('設定を読み込む')
-    expect(text).toContain('工程フォルダリスト、自動マークするフォルダ名')
+    expect(text).toContain('工程フォルダリスト、個別に書き出すフォルダ名')
     expect(text).not.toContain('CAMERA.jpg')
     expect(text).not.toContain('撮影指示.jpg')
     expect(text).not.toContain('-DIR')

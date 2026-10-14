@@ -21,6 +21,7 @@ import {
 } from '../utils/naming'
 import { normalizeProcessTableColors, resolveProcessBorderColor } from '../utils/process-color'
 import { ProcessColorPicker } from './ProcessColorPicker'
+import { processDisplayName } from '../utils/process-folder'
 
 interface SettingsDialogProps {
   onClose: () => void
@@ -51,6 +52,7 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
   const updateProcessTable = useAppStore(s => s.updateProcessTable)
   const updateAutoMarkFolderNames = useAppStore(s => s.updateAutoMarkFolderNames)
   const updateArchivePatterns = useAppStore(s => s.updateArchivePatterns)
+  const setShowIndividualFoldersOnLoad = useAppStore(s => s.setShowIndividualFoldersOnLoad)
   const importSettings = useAppStore(s => s.importSettings)
   const exportSettings = useAppStore(s => s.exportSettings)
   const setActiveTheme = useAppStore(s => s.setActiveTheme)
@@ -97,6 +99,12 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
 
   const handleSuffixChange = (i: number, value: string) => {
     const next = tableRows.map((r, idx) => idx === i ? { ...r, suffix: value } : r)
+    setTableRows(next)
+    updateProcessTable(next)
+  }
+
+  const handleDisplayNameChange = (i: number, displayName: string) => {
+    const next = tableRows.map((row, index) => index === i ? { ...row, displayName } : row)
     setTableRows(next)
     updateProcessTable(next)
   }
@@ -269,6 +277,7 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
             <div className={styles.sectionTitle}>{t.settings.processTable}</div>
             <div className={styles.processTableGrid} data-testid="process-table-grid">
               <div className={styles.tableHeader}>
+                <span>{t.settings.colDisplayName}</span>
                 <span>{t.settings.colSuffix}</span>
                 <span>{t.settings.colFolderNames}</span>
                 <span>{t.settings.colBorderColor}</span>
@@ -278,7 +287,15 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
               {tableRows.map((row, i) => (
                 <div key={i} className={styles.tableRow} data-process-table-row>
                   <input
+                    className={`${styles.tableInput} ${styles.processNameInput}`}
+                    aria-label={`工程名（表示用） ${i + 1}`}
+                    value={row.displayName ?? ''}
+                    onChange={e => handleDisplayNameChange(i, e.target.value)}
+                    placeholder={processDisplayName(row)}
+                  />
+                  <input
                     className={styles.tableInput}
+                    aria-label={`出力名に付ける文字 ${i + 1}`}
                     value={row.suffix}
                     onChange={e => handleSuffixChange(i, e.target.value)}
                     placeholder="_en"
@@ -286,18 +303,14 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
                   <input
                     className={styles.tableInput}
                     value={row.folderNames.join(', ')}
+                    aria-label={`対応するフォルダ名 ${i + 1}`}
                     onChange={e => handleFolderNamesChange(i, e.target.value)}
                     placeholder="EN, 演出修正, ens"
                   />
                   <div className={styles.colorCell}>
                     <ProcessColorPicker
                       color={resolveProcessBorderColor(row)}
-                      label={
-                        row.folderNames.find(name => name.trim() && !name.trim().startsWith('_'))
-                        || row.folderNames.find(Boolean)
-                        || row.suffix
-                        || `工程${i + 1}`
-                      }
+                      label={processDisplayName(row)}
                       onChange={color => handleBorderColorChange(i, color)}
                     />
                     <code>{resolveProcessBorderColor(row).slice(1)}</code>
@@ -332,10 +345,16 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
             <button className={styles.addRowBtn} onClick={addRow}>{t.settings.addRow}</button>
           </div>
 
-          {/* 単体出力の自動マーク */}
+          {/* 個別書き出しの名前指定と読み込み時の表示 */}
           <div className={styles.section}>
             <div className={styles.sectionTitle}>{t.settings.autoMarkFolders}</div>
             <div className={styles.hint}>{t.settings.autoMarkFolderHint}</div>
+            <label className={styles.radioLabel}>
+              <input type="checkbox" checked={projectSettings.showIndividualFoldersOnLoad !== false}
+                onChange={e => setShowIndividualFoldersOnLoad(e.target.checked)} />
+              {t.settings.showIndividualFoldersOnLoad}
+            </label>
+            <div className={styles.hint}>{t.settings.showIndividualFoldersOnLoadHint}</div>
             {autoMarkRows.map((name, i) => (
               <div key={i} className={styles.patternRow}>
                 <input
@@ -351,7 +370,7 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
             <div className={styles.hint}>{t.settings.autoMarkReloadHint}</div>
           </div>
 
-          {/* 自動マークの除外リスト */}
+          {/* 名前による指定の除外リスト */}
           <div className={styles.section}>
             <div className={styles.sectionTitle}>{t.settings.archivePatterns}</div>
             <div className={styles.hint}>{t.settings.archivePatternHint}</div>

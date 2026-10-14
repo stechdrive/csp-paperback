@@ -54,7 +54,8 @@ export const createClipSlice: StateCreator<AppStore, [], [], ClipSlice> = (set, 
       layerTree: tree, docWidth: clip.width, docHeight: clip.height, docDpiX: clip.dpi, docDpiY: clip.dpi,
       // Shared timeline representation. xdtsFileName remains null for a native timeline.
       timelineData: timeline?.data ?? null,
-      visibilityOverrides: buildDefaultVisibilityOverrides(tree, timeline?.data, !!projectSettings.sharedCutMode),
+      visibilityOverrides: buildDefaultVisibilityOverrides(tree, timeline?.data, !!projectSettings.sharedCutMode,
+        projectSettings.showIndividualFoldersOnLoad !== false),
       expandedFolders: new Set(all.filter(l => l.isFolder && l.expanded).map(l => l.id)),
       focusedAnimFolderId: all.find(l => l.isAnimationFolder)?.id ?? null,
     })
@@ -86,7 +87,8 @@ export const createClipSlice: StateCreator<AppStore, [], [], ClipSlice> = (set, 
     const tree = bind(state.layerTree)
     set({ layerTree: tree, timelineData: timeline.data, clipTimelineId: id,
       clipDiagnostics: [...clip.diagnostics.filter(d => !state.psdFileName || d.scope !== 'raster'), ...timeline.diagnostics],
-      visibilityOverrides: retainManualVisibility(buildDefaultVisibilityOverrides(tree, timeline.data, !!state.projectSettings.sharedCutMode), state.visibilityOverrides, state.manualVisibilityIds),
+      visibilityOverrides: retainManualVisibility(buildDefaultVisibilityOverrides(tree, timeline.data, !!state.projectSettings.sharedCutMode,
+        state.projectSettings.showIndividualFoldersOnLoad !== false), state.visibilityOverrides, state.manualVisibilityIds),
       selectedCells: new Map(), currentFrame: 0,
       _past: [], _future: [], canUndo: false, canRedo: false })
     get().seekToFrame(0)

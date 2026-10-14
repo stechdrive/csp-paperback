@@ -7,6 +7,7 @@ import { normalizeProcessFolderName } from '../utils/process-folder'
 import type { AppStore } from './index'
 import { collectOutputNavigation, type OutputNavigation } from '../utils/output-navigation'
 import { buildOutputPlan, type OutputFile } from '../utils/output-plan'
+import { isOutputTargetExcluded } from '../utils/output-target'
 
 let outputPlanCache: {
   inputs: readonly unknown[]
@@ -33,6 +34,38 @@ let outputNavigationCache: {
   virtualSets: AppStore['virtualSets']
   result: OutputNavigation
 } | null = null
+
+let candidateCache: { tree: CspLayer[]; settings: AppStore['projectSettings']; virtualSets: AppStore['virtualSets']; result: OutputNavigation['entries'] } | null = null
+
+/** Keep detected choices present when an eye or output checkbox is turned off. */
+export function selectOutputCandidates(state: AppStore): OutputNavigation['entries'] {
+  const tree = selectLayerTreeWithVisibility(state)
+  if (candidateCache?.tree === tree && candidateCache.settings === state.projectSettings && candidateCache.virtualSets === state.virtualSets) return candidateCache.result
+  const result = collectOutputNavigation(tree, state.projectSettings, state.outputConfig, state.virtualSets,
+    { includeHidden: true, includeExcluded: true }).entries
+  candidateCache = { tree, settings: state.projectSettings, virtualSets: state.virtualSets, result }
+  return result
+}
+
+export interface OutputRowStatus { total: number; excluded: number }
+let statusCache: { candidates: OutputNavigation['entries']; config: AppStore['outputConfig']; result: Map<string, OutputRowStatus> } | null = null
+
+export function selectOutputRowStatuses(state: AppStore): Map<string, OutputRowStatus> {
+  const candidates = selectOutputCandidates(state)
+  if (statusCache?.candidates === candidates && statusCache.config === state.outputConfig) return statusCache.result
+  const result = new Map<string, OutputRowStatus>()
+  for (const entry of candidates) {
+    const excluded = isOutputTargetExcluded(entry.outputTarget, state.outputConfig)
+    for (const id of new Set([entry.id, ...entry.ancestorIds, ...entry.memberIds])) {
+      const status = result.get(id) ?? { total: 0, excluded: 0 }
+      status.total++
+      if (excluded) status.excluded++
+      result.set(id, status)
+    }
+  }
+  statusCache = { candidates, config: state.outputConfig, result }
+  return result
+}
 
 /** Shared by event handlers and views, so rapid events always use current outputs. */
 export function selectOutputNavigation(state: AppStore): OutputNavigation {

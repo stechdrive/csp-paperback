@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { useAppStore } from '../../store'
 import { DEFAULT_PROJECT_SETTINGS } from '../../types'
+import { processDisplayName } from '../../utils/process-folder'
 
 beforeEach(() => {
   useAppStore.setState({
@@ -21,6 +22,18 @@ beforeEach(() => {
 })
 
 describe('project-slice - auto mark folder names', () => {
+  it('表示名と読み込み設定のない旧JSONを互換で読み、新設定を共有できる', () => {
+    useAppStore.getState().importSettings(JSON.stringify({ processTable: [{ suffix: '_e', folderNames: ['_e', '演出修正'] }] }))
+    expect(processDisplayName(useAppStore.getState().projectSettings.processTable[0])).toBe('演出修正')
+    expect(useAppStore.getState().projectSettings.showIndividualFoldersOnLoad).toBe(true)
+    useAppStore.getState().setShowIndividualFoldersOnLoad(false)
+    useAppStore.getState().updateProcessTable([{ displayName: '演出', suffix: '_e', folderNames: ['_e', '演出修正'] }])
+    const json = useAppStore.getState().exportSettings()
+    useAppStore.getState().importSettings('{}')
+    useAppStore.getState().importSettings(json)
+    expect(processDisplayName(useAppStore.getState().projectSettings.processTable[0])).toBe('演出')
+    expect(useAppStore.getState().projectSettings.showIndividualFoldersOnLoad).toBe(false)
+  })
   it('セル名・アニメーションフォルダ名付加・区切りありをデフォルトにする', () => {
     expect(useAppStore.getState().projectSettings.cellNamingMode).toBe('cellname')
     expect(useAppStore.getState().projectSettings.sequenceDigitMode).toBe('auto')

@@ -48,8 +48,8 @@ const sampleLayerRows: Array<{
   { depth: 0, kind: 'normal', name: 'memo', note: '目ON・通常レイヤー：各画像へ重なる' },
   { depth: 0, kind: 'normal', name: 'Frame', note: '目ON・通常フォルダ：各画像へ重なる' },
   { depth: 0, kind: 'normal', name: '_撮影指示', note: '整理用フォルダ' },
-  { depth: 1, kind: 'single', name: '_PAN', note: '単体出力' },
-  { depth: 1, kind: 'single', name: '_SL', note: '単体出力' },
+  { depth: 1, kind: 'single', name: '_PAN', note: '個別書き出し' },
+  { depth: 1, kind: 'single', name: '_SL', note: '個別書き出し' },
   { depth: 0, kind: 'normal', name: 'LO', note: '整理用フォルダ' },
   { depth: 1, kind: 'process', name: '演出', note: '工程フォルダ：_e' },
   { depth: 2, kind: 'animation', name: 'A', note: 'タイムライントラックA' },
@@ -63,8 +63,8 @@ const sampleLayerRows: Array<{
   { depth: 2, kind: 'animation', name: 'A', note: 'タイムライントラックA' },
   { depth: 3, kind: 'normal', name: '1', note: 'A1本体' },
   { depth: 0, kind: 'normal', name: '_原図', note: '整理用フォルダ' },
-  { depth: 1, kind: 'single', name: '_BOOK1', note: '単体出力' },
-  { depth: 1, kind: 'single', name: '_BG', note: '単体出力' },
+  { depth: 1, kind: 'single', name: '_BOOK1', note: '個別書き出し' },
+  { depth: 1, kind: 'single', name: '_BG', note: '個別書き出し' },
   { depth: 0, kind: 'hidden', name: '_pool', note: '目OFF：どの画像にも入らない' },
   { depth: 0, kind: 'hidden', name: '用紙', note: '目OFF：どの画像にも入らない' },
 ]
@@ -73,7 +73,7 @@ const sampleLayerKindLabels: Record<SampleLayerKind, string> = {
   normal: '通常',
   animation: 'アニメ',
   process: '工程',
-  single: '単体',
+  single: '個別',
   hidden: '非表示',
 }
 
@@ -129,7 +129,7 @@ export function AboutGuide() {
           出力ファイル名を柔軟に設定できます。
         </p>
         <p className={styles.paragraph}>
-          作画・演出・作監修正の工程別出力、背景原図・BOOK・撮影指示の単独出力、
+          作画・演出・作監修正の工程別出力、背景原図・BOOK・撮影指示の個別書き出し、
           共通のフレームの重ね合わせ、選んだレイヤーを組み合わせた出力など、
           クリスタ標準のアニメーションセル書き出しでは扱いにくい素材構成に対応します。
           以下では、実際のレイヤー名とファイル名で説明します。
@@ -181,7 +181,7 @@ export function AboutGuide() {
             <tbody>
               <tr>
                 <td>フレームはセルへ重ね、撮影指示は別にする</td>
-                <td>フレームは通常レイヤー、撮影指示は単体出力</td>
+                <td>フレームは通常レイヤー、撮影指示は個別書き出し</td>
                 <td><code>A1.jpg</code>と<code>_PAN.jpg</code>を別々に生成</td>
               </tr>
               <tr>
@@ -207,7 +207,7 @@ export function AboutGuide() {
       <Section id="features" title="2. CSP Paperbackでできること">
         <ul className={styles.list}>
           <li>
-            <strong>単体出力</strong>：
+            <strong>個別書き出し</strong>：
             アニメーションしないBG、BOOK、撮影指示をタイムラインへ登録せず、独立した静止画として出力します。
           </li>
           <li>
@@ -258,7 +258,7 @@ export function AboutGuide() {
           <OutputExample
             filename="A1.jpg"
             formula={<>memo ＋ Frame ＋ LO/作画/A/1</>}
-            note={<>通常の作画セル。単体出力の<code>_BG</code>や<code>_PAN</code>は入りません。</>}
+            note={<>通常の作画セル。個別書き出しの<code>_BG</code>や<code>_PAN</code>は入りません。</>}
           />
           <OutputExample
             filename="B1.jpg"

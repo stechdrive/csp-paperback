@@ -22,6 +22,7 @@ import { isAutoMarkedContainerOutputSuppressed } from '../utils/auto-marked-cont
 import { normalizeProcessFolderName } from '../utils/process-folder'
 import { hasDefaultFlattenedContent } from '../utils/flattened-content'
 import { buildFolderNameToSuffixMap, collectCellOutputUnits } from './cell-output-units'
+import { cellOutputTarget, individualOutputTarget, type OutputTarget } from '../utils/output-target'
 import {
   makeCellFileName,
   makeCellLabel,
@@ -41,6 +42,7 @@ type ContextFactory = (cache: OutputRenderCache) => OutputContext
 export type OutputRenderCache = Map<ContextFactory, OutputContext>
 export interface PlannedOutputEntry extends Omit<OutputEntry, 'canvas'> {
   animFolderId?: string
+  outputTarget?: OutputTarget
   renderCanvas: (cache: OutputRenderCache) => HTMLCanvasElement
 }
 
@@ -116,6 +118,7 @@ function planCells(
   processSuffixPosition: ProcessSuffixPosition = 'after-cell',
   sequenceDigits?: number,
   sheetSequenceNumbers?: Map<string, number>,
+  parentProcessSuffix?: string,
 ): PlannedOutputEntry[] {
   if (!animFolder.isAnimationFolder) return []
 
@@ -181,6 +184,7 @@ function planCells(
       sourceLayerId: unit.sourceLayerId,
       sourceCellId: cell.id,
       animFolderId: animFolder.id,
+      outputTarget: cellOutputTarget(animFolder, unit, projectSettings.processTable, parentProcessSuffix ?? (parentSuffix || undefined)),
       processSuffixes: collectProcessSuffixes(parentSuffix, unit.processSuffix ?? ''),
     })
   }
@@ -950,6 +954,7 @@ export function planAllEntries(
           processSuffixPosition,
           sequenceNamingPlan.digits,
           sequenceNamingPlan.sheetSequenceNumbers,
+          animParentSuffixMap.get(layer.id),
         )
         entries.push(...cellEntries)
         continue
@@ -980,7 +985,8 @@ export function planAllEntries(
             collectMaterialOutputContext(layer.id, tree, docWidth, docHeight))
         }
         const fileName = `${layer.originalName}.jpg`
-        entries.push({ path: fileName, flatName: fileName, renderCanvas, sourceLayerId: layer.id })
+        entries.push({ path: fileName, flatName: fileName, renderCanvas, sourceLayerId: layer.id,
+          outputTarget: individualOutputTarget(layer, projectSettings.processTable) })
 
         // フォルダなら子も走査して内包マーク済みレイヤーを出力する。
         // 各子マーク済みレイヤーは独立して collectMarkedLayerContext を呼ぶが、

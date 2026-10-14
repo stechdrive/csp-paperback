@@ -26,6 +26,7 @@ export interface ProjectSlice {
   setAnimationSequenceSeparator: (separator: AnimationSequenceSeparator) => void
   setIncludeXdtsTrackPrefixInCellName: (enabled: boolean) => void
   setSharedCutMode: (enabled: boolean) => void
+  setShowIndividualFoldersOnLoad: (enabled: boolean) => void
   updateAutoMarkFolderNames: (names: string[]) => void
   updateArchivePatterns: (patterns: string[]) => void
   importSettings: (json: string) => void
@@ -96,7 +97,8 @@ export const createProjectSlice: StateCreator<AppStore, [], [], ProjectSlice> = 
     const nextState: Partial<AppStore> = { projectSettings: nextSettings }
 
     if (layerTree.length > 0) {
-      nextState.visibilityOverrides = retainManualVisibility(buildDefaultVisibilityOverrides(layerTree, timelineData, enabled), get().visibilityOverrides, get().manualVisibilityIds)
+      nextState.visibilityOverrides = retainManualVisibility(buildDefaultVisibilityOverrides(layerTree, timelineData, enabled,
+        projectSettings.showIndividualFoldersOnLoad !== false), get().visibilityOverrides, get().manualVisibilityIds)
     }
 
     set(nextState as AppStore)
@@ -105,6 +107,11 @@ export const createProjectSlice: StateCreator<AppStore, [], [], ProjectSlice> = 
   updateAutoMarkFolderNames: (names) => {
     get().pushHistory()
     set({ projectSettings: { ...get().projectSettings, autoMarkFolderNames: names } })
+  },
+
+  setShowIndividualFoldersOnLoad: (showIndividualFoldersOnLoad) => {
+    get().pushHistory()
+    set({ projectSettings: { ...get().projectSettings, showIndividualFoldersOnLoad } })
   },
 
   updateArchivePatterns: (patterns) => {

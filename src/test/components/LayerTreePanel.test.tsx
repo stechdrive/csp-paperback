@@ -59,6 +59,26 @@ function wheel({ deltaY = 100, deltaX = 0, shiftKey = true } = {}) {
 }
 
 describe('LayerTreePanel output navigation', () => {
+  it('出力OFFと一部OFFを目玉とは独立して示し、OFFでも行を操作できる', () => {
+    const { anim, body, process } = renderTree({ manualOpen: true })
+    act(() => useAppStore.getState().setExcludeBody(true))
+    expect(row(anim.id)!.querySelector('[data-output-state="partial"]')).toHaveTextContent('一部OFF')
+    expect(row(body.id)!.querySelector('[data-output-state="off"]')).toHaveTextContent('出力OFF')
+    expect(row(body.id)!.querySelector('button[aria-pressed]')).toHaveAttribute('aria-pressed', 'true')
+    expect(row(process.id)!.querySelector('[data-output-state]')).toBeNull()
+    act(() => useAppStore.getState().toggleProcessSuffixExclusion('_s'))
+    expect(row(anim.id)!.querySelector('[data-output-state="off"]')).toHaveTextContent('出力OFF')
+    fireEvent.click(row(process.id)!)
+    expect(useAppStore.getState().selectedLayerId).toBe(process.id)
+  })
+
+  it('辞書で名前指定から外れたフォルダには禁止と区別した理由を示す', () => {
+    const tree = buildLayerTree(makePsd({ children: [makeFolder('_old_01', [makeLayer()])] }), undefined, ['_old'])
+    resetTestStore({ layerTree: tree, docWidth: 100, docHeight: 100 })
+    render(<LayerTreePanel />)
+    expect(row(tree[0].id)!.querySelector('[data-output-state="name-excluded"]')).toHaveTextContent('名前指定の対象外')
+    expect(row(tree[0].id)!.querySelector('button[aria-pressed]')).toHaveAttribute('aria-pressed', 'true')
+  })
   it('shares list, search and tree selection while preserving manual folder state', () => {
     const { cell, process, expanded, collapsed } = renderTree({ manualOpen: true })
     fireEvent.click(screen.getByRole('button', { name: '出力一覧' }))

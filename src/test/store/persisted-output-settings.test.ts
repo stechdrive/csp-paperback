@@ -9,6 +9,21 @@ beforeEach(resetTestStore)
 afterEach(resetTestStore)
 
 describe('persisted output settings', () => {
+  it('本体と素材名の選択、および工程表示名・読み込み表示設定を保存して復元する', async () => {
+    useAppStore.getState().setExcludeBody(true)
+    useAppStore.getState().setIndividualOutputEnabled('SL', false)
+    useAppStore.getState().setShowIndividualFoldersOnLoad(false)
+    useAppStore.getState().updateProcessTable([{ displayName: '演出チェック', suffix: '_e', folderNames: ['演出', '_e'] }])
+    const saved = localStorage.getItem(STORAGE_KEY)!
+    resetTestStore()
+    localStorage.setItem(STORAGE_KEY, saved)
+    await useAppStore.persist.rehydrate()
+    useAppStore.getState().resetProject()
+    expect(useAppStore.getState().outputConfig).toMatchObject({ excludeBody: true, individualOutputOverrides: { sl: false } })
+    expect(useAppStore.getState().projectSettings).toMatchObject({ showIndividualFoldersOnLoad: false,
+      processTable: [{ displayName: '演出チェック', suffix: '_e', folderNames: ['演出', '_e'] }] })
+  })
+
   it('旧クイック書き出し設定を保存済み書き出し設定として引き継ぐ', async () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
       version: 1,

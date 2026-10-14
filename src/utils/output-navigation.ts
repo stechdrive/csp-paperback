@@ -3,6 +3,7 @@ import { buildParentSuffixMap, hasVirtualSetOutput } from '../engine/cell-extrac
 import { collectCellOutputUnits } from '../engine/cell-output-units'
 import { isAutoMarkedContainerOutputSuppressed } from './auto-marked-container'
 import { findLayerPath } from './layerNavigation'
+import { cellOutputTarget, individualOutputTarget, isOutputTargetExcluded, type OutputTarget } from './output-target'
 
 export interface OutputNavigationEntry {
   id: string
@@ -13,6 +14,7 @@ export interface OutputNavigationEntry {
   cellIndex?: number
   /** Layers that belong to this image, including merged process folders. */
   memberIds: Set<string>
+  outputTarget?: OutputTarget
 }
 
 export interface OutputNavigation {
@@ -34,6 +36,7 @@ export function collectOutputNavigation(
   projectSettings: ProjectSettings,
   outputConfig: OutputConfig,
   virtualSets: VirtualSet[],
+  options: { includeHidden?: boolean; includeExcluded?: boolean } = {},
 ): OutputNavigation {
   const rowPositions = new Map<string, number>()
   const ancestors = new Map<string, string[]>()
@@ -57,16 +60,13 @@ export function collectOutputNavigation(
 
   const entries: OutputNavigationEntry[] = []
   const parentSuffixes = buildParentSuffixMap(tree, projectSettings.processTable)
-  const excluded = new Set(outputConfig.excludedProcessSuffixes)
-  // The exporter only records non-empty suffixes as process exclusions.
-  const isExcluded = (suffix: string | undefined) => !!suffix && excluded.has(suffix)
   const walk = (layers: CspLayer[]) => {
     for (const layer of layers) {
-      if (layer.hidden || layer.uiHidden) continue
+      if (!options.includeHidden && (layer.hidden || layer.uiHidden)) continue
       if (layer.isAnimationFolder) {
-        if (isExcluded(parentSuffixes.get(layer.id))) continue
-        for (const unit of collectCellOutputUnits(layer, projectSettings.processTable)) {
-          if (isExcluded(unit.processSuffix)) continue
+        for (const unit of collectCellOutputUnits(layer, projectSettings.processTable, options)) {
+          const outputTarget = cellOutputTarget(layer, unit, projectSettings.processTable, parentSuffixes.get(layer.id))
+          if (!options.includeExcluded && isOutputTargetExcluded(outputTarget, outputConfig)) continue
           const label = `${layer.name} / ${unit.cell.name}${unit.processSuffix !== undefined ? ` / ${unit.layers.map(l => l.name).join(' + ')}` : ''}`
           entries.push({
             id: unit.sourceLayerId,
@@ -76,14 +76,18 @@ export function collectOutputNavigation(
             animFolderId: layer.id,
             cellIndex: unit.cellIndex,
             memberIds: collectIds(unit.layers),
+            outputTarget,
           })
         }
         continue
       }
-      if ((layer.singleMark || (layer.autoMarked && !outputConfig.excludeAutoMarked)) &&
-        !isAutoMarkedContainerOutputSuppressed(layer)) {
-        entries.push({ id: layer.id, kind: 'layer', label: layer.name,
-          ancestorIds: ancestors.get(layer.id) ?? [], memberIds: collectIds([layer]) })
+      if ((layer.singleMark || layer.autoMarked) &&
+        !isAutoMarkedContainerOutputSuppressed(layer, options.includeHidden)) {
+        const outputTarget = individualOutputTarget(layer, projectSettings.processTable)
+        if (options.includeExcluded || !isOutputTargetExcluded(outputTarget, outputConfig)) {
+          entries.push({ id: layer.id, kind: 'layer', label: layer.name, outputTarget,
+            ancestorIds: ancestors.get(layer.id) ?? [], memberIds: collectIds([layer]) })
+        }
       }
       walk(layer.children)
     }

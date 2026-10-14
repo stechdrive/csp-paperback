@@ -168,7 +168,7 @@ export function LayerTreePanel({ onPreviewOutput }: { onPreviewOutput?: () => vo
             <span className={styles.viewLabel}>出力一覧</span>
           </button>
         </div>
-        <Tooltip content={"Shift+スクロールでプレビュー切替\n書き出される画像ごとに、セル本体・工程別画像・単体出力・仮想セルを巡回します\n出力行まで一時展開し、離れると元に戻します。手動で開いたフォルダは維持します"}>
+        <Tooltip content={"Shift+スクロールでプレビュー切替\n書き出される画像ごとに、セル本体・工程別画像・個別書き出し・仮想セルを巡回します\n出力行まで一時展開し、離れると元に戻します。手動で開いたフォルダは維持します"}>
           <span className={styles.footerHint}>Shift+スクロール<span className={styles.hintAction}>で切替</span></span>
         </Tooltip>
       </div>

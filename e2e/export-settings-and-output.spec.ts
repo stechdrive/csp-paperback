@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises'
+import { readFile, writeFile } from 'node:fs/promises'
 import { expect, test, type Page } from '@playwright/test'
 
 async function expectSampleLoaded(page: Page) {
@@ -178,6 +178,52 @@ test('設定と出力名の対応を示し、修正ラベルの切り替えで�
   await page.keyboard.press('Escape')
   expect(await output.boundingBox()).toEqual(before)
   await page.screenshot({ path: testInfo.outputPath('loaded.png') })
+})
+
+test('工程名の編集と個別書き出しの設定を通常幅と狭幅で操作できる', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 1440, height: 1000 })
+  await page.goto('./')
+  await page.evaluate(() => document.fonts.ready)
+  const startupSettingsRegion = await page.getByTestId('startup-export-settings').boundingBox()
+  await page.screenshot({ path: testInfo.outputPath('help-startup-guide.png') })
+  await page.getByRole('button', { name: 'サンプルデータで試す', exact: true }).click()
+  await expectSampleLoaded(page)
+  await page.evaluate(() => document.fonts.ready)
+  await page.getByRole('button', { name: '書き出し設定', exact: true }).click()
+  const outputSettings = page.getByRole('dialog', { name: '書き出し設定', exact: true })
+  await expect(outputSettings.getByRole('button', { name: '作画（本体）', exact: true })).toBeVisible()
+  await expect(outputSettings.getByRole('button', { name: 'SL 個別書き出し', exact: true })).toBeVisible()
+  await page.mouse.move(0, 0)
+  await page.screenshot({ path: testInfo.outputPath('help-export-settings.png') })
+  const exportSettingsRegion = await outputSettings.boundingBox()
+  await page.keyboard.press('Escape')
+  await page.getByRole('button', { name: '設定', exact: true }).click()
+  const dialog = page.locator('[class*="_dialog_"]').filter({ has: page.getByText('書き出し詳細設定', { exact: true }) })
+  const processSection = dialog.getByTestId('process-table-grid').locator('..')
+  await expect(dialog.getByLabel('工程名（表示用） 1', { exact: true })).toBeVisible()
+  await expect(dialog.getByLabel('対象フォルダを非表示でも表示して読み込む', { exact: true })).toBeVisible()
+  await page.screenshot({ path: testInfo.outputPath('help-settings-dialog.png') })
+  await writeFile(testInfo.outputPath('help-regions.json'), JSON.stringify({
+    startupSettings: startupSettingsRegion,
+    exportSettings: exportSettingsRegion,
+    settingsDialog: await dialog.boundingBox(),
+    processSettings: await processSection.boundingBox(),
+  }, null, 2))
+
+  for (const viewport of [{ width: 960, height: 640 }, { width: 700, height: 900 }]) {
+    await page.setViewportSize(viewport)
+    const name = dialog.getByLabel('工程名（表示用） 1', { exact: true })
+    await name.scrollIntoViewIfNeeded()
+    await expect(name).toBeVisible()
+    await expect(dialog.getByLabel('対応するフォルダ名 1', { exact: true })).toBeVisible()
+    expect(await dialog.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true)
+    expect(await dialog.locator('[class*="_body_"]').evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true)
+    await page.screenshot({ path: testInfo.outputPath(`process-settings-${viewport.width}.png`) })
+  }
+  await dialog.getByLabel('工程名（表示用） 1', { exact: true }).fill('演出チェック')
+  await dialog.locator('[class*="_header_"]').getByRole('button', { name: '✕', exact: true }).click()
+  await page.getByRole('button', { name: '書き出し設定', exact: true }).click()
+  await expect(outputSettings.getByRole('button', { name: '演出チェック _e', exact: true })).toBeVisible()
 })
 
 for (const viewport of [{ width: 1440, height: 1000 }, { width: 1000, height: 700 }, { width: 700, height: 700 }]) {

@@ -37,8 +37,8 @@ function visibility(layer: Locator) {
   return layer.locator('button[aria-pressed]')
 }
 
-/** Change only CSP's saved folder-open flag; keep the sample's real artwork and hierarchy. */
-async function closedSample() {
+/** Change saved folder visibility or expansion; keep the sample's artwork and hierarchy. */
+async function closedSample(hideInstructions = false) {
   const bytes = await readFile('public/sample/c001.clip')
   const SQL = await initSqlJs()
   for (let offset = 24; offset < bytes.length;) {
@@ -46,7 +46,11 @@ async function closedSample() {
     if (bytes.toString('ascii', offset, offset + 8) === 'CHNKSQLi') {
       const db = new SQL.Database(bytes.subarray(offset + 16, end))
       try {
-        db.run('UPDATE Layer SET LayerFolder = LayerFolder | 16 WHERE (LayerFolder & 1) = 1')
+        if (hideInstructions) {
+          db.run("UPDATE Layer SET LayerVisibility = 0 WHERE LayerName = '_撮影指示'")
+        } else {
+          db.run('UPDATE Layer SET LayerFolder = LayerFolder | 16 WHERE (LayerFolder & 1) = 1')
+        }
         const database = Buffer.from(db.export())
         const header = Buffer.from(bytes.subarray(offset, offset + 16))
         header.writeBigUInt64BE(BigInt(database.length), 8)
@@ -251,11 +255,11 @@ test('Shift+ホイールは実ZIPの画像を1枚ずつ巡回し、本体と工�
   expect(errors).toEqual([])
 })
 
-test('工程と自動マークを出力対象から外すとShift巡回も実ZIPと同じ対象へ絞られる', async ({ page }) => {
+test('工程と個別素材を出力対象から外すとShift巡回も実ZIPと同じ対象へ絞られる', async ({ page }) => {
   await loadSample(page)
   await page.getByRole('button', { name: '書き出し設定', exact: true }).click()
   const settings = page.getByRole('dialog', { name: '書き出し設定', exact: true })
-  for (const name of ['演出 _e', '作監 _s', '自動マーク']) {
+  for (const name of ['演出 _e', '作監 _s', 'PAN 個別書き出し', 'SL 個別書き出し', 'BG 個別書き出し', 'BOOK1 個別書き出し']) {
     const toggle = settings.getByRole('button', { name, exact: true })
     await expect(toggle).toHaveAttribute('aria-pressed', 'true')
     await toggle.click()
@@ -265,6 +269,40 @@ test('工程と自動マークを出力対象から外すとShift巡回も実ZIP
   const included = ['仮想セルテスト.jpg', 'B_1.jpg', 'A_1.jpg']
   expect((await exportedImageNames(page)).sort()).toEqual([...included].sort())
   await walkOutputs(page, included)
+})
+
+test('作画本体をOFFにしても目玉と修正を保持し、状態表示と実ZIPが一致する', async ({ page }, testInfo) => {
+  await loadSample(page)
+  await page.getByRole('button', { name: '書き出し設定', exact: true }).click()
+  const settings = page.getByRole('dialog', { name: '書き出し設定', exact: true })
+  await expect(settings.getByRole('button', { name: '監督 _k', exact: true })).toHaveCount(0)
+  const body = settings.getByRole('button', { name: '作画（本体）', exact: true })
+  await body.click()
+  await expect(body).toHaveAttribute('aria-pressed', 'false')
+  await page.keyboard.press('Escape')
+  await expect(visibility(row(page, 'animationB'))).toHaveAttribute('aria-pressed', 'true')
+  await expect(row(page, 'animationB').locator('[data-output-state="partial"]')).toHaveText('一部OFF')
+  const included = sampleOutputs.filter(name => !['A_1.jpg', 'B_1.jpg'].includes(name))
+  expect((await exportedImageNames(page)).sort()).toEqual([...included].sort())
+  await walkOutputs(page, included)
+  await page.getByRole('button', { name: '書き出し設定', exact: true }).click()
+  await expect(settings.getByRole('button', { name: '作画（本体）', exact: true })).toHaveAttribute('aria-pressed', 'false')
+  await page.screenshot({ path: testInfo.outputPath('output-targets.png') })
+})
+
+test('非表示の個別対象は読み込み設定に従って目玉をONにし、設定OFFなら元の表示を保つ', async ({ page }) => {
+  const body = await closedSample(true)
+  await page.route('**/sample/c001.clip', route => route.fulfill({ body, contentType: 'application/octet-stream' }))
+  await loadSample(page)
+  await expect(visibility(row(page, 'instructions'))).toHaveAttribute('aria-pressed', 'true')
+  await page.getByRole('button', { name: '設定', exact: true }).click()
+  const toggle = page.getByRole('checkbox', { name: '対象フォルダを非表示でも表示して読み込む', exact: true })
+  await toggle.uncheck()
+  await expect(visibility(row(page, 'instructions'))).toHaveAttribute('aria-pressed', 'true')
+  await page.reload()
+  await loadSample(page)
+  await expect(visibility(row(page, 'instructions'))).toHaveAttribute('aria-pressed', 'false')
+  expect(await exportedImageNames(page)).not.toContain('_PAN.jpg')
 })
 
 test('初期状態で閉じた階層は出力行まで一時展開し、巡回で離れると元に戻る', async ({ page }) => {

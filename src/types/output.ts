@@ -11,7 +11,9 @@ export interface OutputConfig {
   structure: StructureMode
   processSuffixPosition: ProcessSuffixPosition // 工程サフィックスの挿入位置
   excludedProcessSuffixes: string[]  // 出力から除外する工程サフィックス
-  excludeAutoMarked: boolean         // _プレフィックス自動マークレイヤーを除外
+  excludeAutoMarked: boolean         // 旧設定互換: 名前で指定された個別書き出しの既定値
+  excludeBody?: boolean              // 修正工程に属さない作画本体だけを除外
+  individualOutputOverrides?: Record<string, boolean> // 正規化した素材名 → 出力ON/OFF
   revisionBorderEnabled: boolean     // 修正工程画像の外周に確認用フチを合成
 }
 
@@ -23,6 +25,8 @@ export const DEFAULT_OUTPUT_CONFIG: OutputConfig = {
   processSuffixPosition: 'after-cell',
   excludedProcessSuffixes: [],
   excludeAutoMarked: false,
+  excludeBody: false,
+  individualOutputOverrides: {},
   revisionBorderEnabled: true,
 }
 

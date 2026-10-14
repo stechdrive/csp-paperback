@@ -8,16 +8,17 @@ import type { CspLayer, TimelineData, TimelineTrack } from '../types'
  * - false = UI上で表示
  * 仮想セットの visibilityOverrides（visible=true/false）とは意味が逆なので注意。
  *
- * - PSD 上で非表示の自動マークフォルダは、出力対象として扱うため初期表示ONにする
+ * - 設定がONなら、個別書き出し対象の非表示フォルダ本体を初期表示ONにする
  * - XDTS で検出したアニメーションフォルダでは、タイムラインから到達できないセルを初期表示OFFにする
  */
 export function buildDefaultVisibilityOverrides(
   layers: CspLayer[],
   xdts?: TimelineData | null,
   sharedCutMode = false,
+  showIndividualFoldersOnLoad = true,
 ): Map<string, boolean> {
   const overrides = new Map<string, boolean>()
-  addAutoMarkedShowOverrides(layers, overrides)
+  if (showIndividualFoldersOnLoad) addAutoMarkedShowOverrides(layers, overrides)
   if (xdts) {
     if (sharedCutMode) {
       addXdtsAnimationFolderShowOverrides(layers, overrides)

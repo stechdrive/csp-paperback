@@ -4,8 +4,8 @@ import { useLocale } from '../i18n/locale'
 import { selectLayerTreeWithVisibility } from '../store/selectors'
 import { Tooltip } from './Tooltip'
 import { UnmatchedTracksWarning } from './UnmatchedTracksWarning'
-import { resolveCellPrefixSeparator, resolveIncludeXdtsTrackPrefixInCellName, type CspLayer } from '../types'
-import { isAutoMarkedOutputTarget } from '../utils/auto-marked-container'
+import { resolveCellPrefixSeparator, resolveIncludeXdtsTrackPrefixInCellName } from '../types'
+import { OutputTargetControls } from './OutputTargetControls'
 import { getMaxSequenceNumberForAnimationFolders } from '../engine/cell-extractor'
 import type { OutputConfigTarget } from '../store/output-slice'
 import { normalizeProcessFolderName } from '../utils/process-folder'
@@ -18,13 +18,6 @@ import {
 import styles from './ExportSettings.module.css'
 
 type NamePart = CellFileNamePart['kind'] | 'directory'
-
-function collectAutoMarkedNames(layers: CspLayer[]): string[] {
-  return layers.flatMap(layer => [
-    ...(isAutoMarkedOutputTarget(layer) ? [layer.originalName] : []),
-    ...(layer.isFolder && !layer.isAnimationFolder ? collectAutoMarkedNames(layer.children) : []),
-  ])
-}
 
 function Choice<T extends string>({ label, value, options, disabled, onChange, avoidRef }: {
   label: string
@@ -73,8 +66,6 @@ export function ExportSettings({ configTarget = 'current' }: { configTarget?: Ou
   const setCellPrefixSeparator = useAppStore(s => s.setCellPrefixSeparator)
   const setIncludeXdtsTrackPrefixInCellName = useAppStore(s => s.setIncludeXdtsTrackPrefixInCellName)
   const setSharedCutMode = useAppStore(s => s.setSharedCutMode)
-  const toggleProcessSuffixExclusion = useAppStore(s => s.toggleProcessSuffixExclusion)
-  const setExcludeAutoMarked = useAppStore(s => s.setExcludeAutoMarked)
   const setRevisionBorderEnabled = useAppStore(s => s.setRevisionBorderEnabled)
   const { t } = useLocale()
   const root = useRef<HTMLDivElement>(null)
@@ -87,9 +78,7 @@ export function ExportSettings({ configTarget = 'current' }: { configTarget?: Ou
 
   useEffect(() => () => clearTimeout(highlightTimer.current), [])
 
-  const autoMarkedNames = useMemo(() => collectAutoMarkedNames(layerTree), [layerTree])
   const maxSequenceNumber = useMemo(() => getMaxSequenceNumberForAnimationFolders(layerTree), [layerTree])
-  const excludedSet = new Set(outputConfig.excludedProcessSuffixes)
   const isSequenceMode = isSequenceNamingMode(projectSettings.cellNamingMode)
   const isCellNameMode = projectSettings.cellNamingMode === 'cellname'
   const separator = resolveCellPrefixSeparator(projectSettings)
@@ -255,22 +244,7 @@ export function ExportSettings({ configTarget = 'current' }: { configTarget?: Ou
     <section className={styles.section} aria-label={t.export.outputTarget}>
       <Tooltip content={t.export.outputTargetHint} avoidRef={nameSampleRef}><span className={styles.sectionLabel}>{t.export.outputTarget}</span></Tooltip>
       <div className={styles.row}>
-        <div className={styles.chipGroup} role="group" aria-label={t.export.outputTarget}>
-          {projectSettings.processTable.map(entry => {
-            const name = entry.folderNames.find(name => name.trim() && !name.trim().startsWith('_'))?.trim() ?? entry.suffix
-            return <Tooltip key={entry.suffix} content={entry.folderNames.join(', ')} avoidRef={nameSampleRef}>
-              <button type="button" className={styles.chip} aria-label={name === entry.suffix ? name : `${name} ${entry.suffix}`} aria-pressed={!excludedSet.has(entry.suffix)} onClick={() => toggleProcessSuffixExclusion(entry.suffix, configTarget)}>
-                <span className={styles.checkMark} aria-hidden="true">{!excludedSet.has(entry.suffix) ? '✓' : ''}</span>
-                <span className={styles.chipName}>{name}</span>{name !== entry.suffix && <span className={styles.suffix}>{entry.suffix}</span>}
-              </button>
-            </Tooltip>
-          })}
-          <Tooltip content={autoMarkedNames.length > 0 ? autoMarkedNames.join(', ') : t.export.autoMarkNone} avoidRef={nameSampleRef}>
-            <button type="button" className={styles.chip} aria-pressed={!outputConfig.excludeAutoMarked} onClick={() => setExcludeAutoMarked(!outputConfig.excludeAutoMarked, configTarget)}>
-              <span className={styles.checkMark} aria-hidden="true">{!outputConfig.excludeAutoMarked ? '✓' : ''}</span>{t.export.autoMark}
-            </button>
-          </Tooltip>
-        </div>
+        <OutputTargetControls configTarget={configTarget} avoidRef={nameSampleRef} />
         <CheckOption avoidRef={nameSampleRef} label={t.export.sharedCut} hint={t.export.sharedCutHint} checked={!!projectSettings.sharedCutMode} onChange={setSharedCutMode} />
       </div>
     </section>

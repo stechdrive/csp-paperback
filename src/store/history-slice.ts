@@ -67,7 +67,8 @@ function snapshot(s: AppStore): UndoableState {
     },
     visibilityOverrides: new Map(s.visibilityOverrides),
     manualVisibilityIds: new Set(s.manualVisibilityIds),
-    outputConfig: { ...s.outputConfig },
+    outputConfig: { ...s.outputConfig, excludedProcessSuffixes: [...s.outputConfig.excludedProcessSuffixes],
+      individualOutputOverrides: { ...s.outputConfig.individualOutputOverrides } },
     layerAppearances: collectLayerAppearances(s.layerTree),
   }
 }

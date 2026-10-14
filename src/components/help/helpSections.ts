@@ -5,7 +5,7 @@ export const FEATURE_SECTIONS = [
   { id: 'output-settings', label: '書き出し設定' },
   { id: 'export', label: 'ZIP・フォルダ出力' },
   { id: 'layer-tree', label: 'レイヤー操作' },
-  { id: 'single-output', label: '単体出力' },
+  { id: 'single-output', label: '個別書き出し' },
   { id: 'animation-folders', label: 'アニメフォルダ' },
   { id: 'process', label: '工程フォルダ' },
   { id: 'virtual-cels', label: '仮想セル' },

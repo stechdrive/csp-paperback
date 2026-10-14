@@ -190,6 +190,10 @@
   gap: 0.3rem;
   min-width: 0;
 }
+
+.targetControls { min-width: 0; flex: 1; }
+.targetHint { display: block; font-size: 0.72rem; color: var(--color-text-secondary); margin-top: 0.3rem; }
+.chip[aria-pressed='mixed'] { border-style: dashed; }
 .chip {
   display: inline-flex;
   align-items: center;
