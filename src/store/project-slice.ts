@@ -13,7 +13,7 @@ import {
   resolveIncludeXdtsTrackPrefixInCellName,
 } from '../types'
 import { buildDefaultVisibilityOverrides, retainManualVisibility } from '../utils/default-visibility'
-import { normalizeProcessTableColors } from '../utils/process-color'
+import { normalizeProcessTable } from '../utils/process-table'
 import type { AppStore } from './index'
 
 export interface ProjectSlice {
@@ -41,7 +41,7 @@ export const createProjectSlice: StateCreator<AppStore, [], [], ProjectSlice> = 
     set({
       projectSettings: {
         ...get().projectSettings,
-        processTable: normalizeProcessTableColors(table),
+        processTable: normalizeProcessTable(table),
       },
     })
   },
@@ -132,7 +132,7 @@ export const createProjectSlice: StateCreator<AppStore, [], [], ProjectSlice> = 
           animationSequenceSeparator: cellPrefixSeparator,
           includeXdtsTrackPrefixInCellName:
             resolveIncludeXdtsTrackPrefixInCellName(parsed),
-          processTable: normalizeProcessTableColors(
+          processTable: normalizeProcessTable(
             Array.isArray(parsed.processTable)
               ? parsed.processTable
               : DEFAULT_PROJECT_SETTINGS.processTable,

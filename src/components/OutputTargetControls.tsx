@@ -50,11 +50,11 @@ export function OutputTargetControls({ configTarget = 'current', avoidRef }: {
         const mixed = !excluded && !enabled && states.some(Boolean)
         const legacyNames = group.flatMap(target => target.legacyIndividualName === undefined ? [] : [target.legacyIndividualName])
         return <Tooltip key={entry.suffix} content={`対象フォルダ名: ${entry.folderNames.join(', ')}\n目玉を変えず、この工程の画像を書き出すか切り替えます。`} avoidRef={avoidRef}>
-          <button type="button" className={styles.chip} aria-label={name === entry.suffix ? name : `${name} ${entry.suffix}`}
+          <button type="button" className={styles.chip} aria-label={name}
             aria-pressed={mixed ? 'mixed' : enabled} onClick={() => setProcess(entry.suffix, !enabled, legacyNames, configTarget)}>
             <span className={styles.checkMark} aria-hidden="true">{mixed ? '−' : enabled ? '✓' : ''}</span>
             <span className={styles.processColorSwatch} style={{ backgroundColor: resolveProcessBorderColor(entry) }} aria-hidden="true" />
-            <span className={styles.chipName}>{name}</span>{name !== entry.suffix && <span className={styles.suffix}>{entry.suffix}</span>}
+            <span className={styles.chipName}>{name}</span>
           </button>
         </Tooltip>
       })}

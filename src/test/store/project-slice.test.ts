@@ -24,7 +24,7 @@ beforeEach(() => {
 describe('project-slice - auto mark folder names', () => {
   it('表示名と読み込み設定のない旧JSONを互換で読み、新設定を共有できる', () => {
     useAppStore.getState().importSettings(JSON.stringify({ processTable: [{ suffix: '_e', folderNames: ['_e', '演出修正'] }] }))
-    expect(processDisplayName(useAppStore.getState().projectSettings.processTable[0])).toBe('演出修正')
+    expect(processDisplayName(useAppStore.getState().projectSettings.processTable[0])).toBe('演出')
     expect(useAppStore.getState().projectSettings.showIndividualFoldersOnLoad).toBe(true)
     useAppStore.getState().setShowIndividualFoldersOnLoad(false)
     useAppStore.getState().updateProcessTable([{ displayName: '演出', suffix: '_e', folderNames: ['_e', '演出修正'] }])
@@ -33,6 +33,23 @@ describe('project-slice - auto mark folder names', () => {
     useAppStore.getState().importSettings(json)
     expect(processDisplayName(useAppStore.getState().projectSettings.processTable[0])).toBe('演出')
     expect(useAppStore.getState().projectSettings.showIndividualFoldersOnLoad).toBe(false)
+  })
+
+  it('旧独自工程の名称を補完し、照合名と出力サフィックスの変更から独立して保存する', () => {
+    useAppStore.getState().importSettings(JSON.stringify({ processTable: [
+      { suffix: '_fx', folderNames: ['_fx', 'エフェクト修正'], revisionBorderColor: '#123456' },
+      { suffix: '_only', folderNames: ['_予備'] },
+      { suffix: '_empty', folderNames: [] },
+    ] }))
+    const table = useAppStore.getState().projectSettings.processTable
+    expect(table.map(entry => entry.displayName)).toEqual(['エフェクト修正', '予備', '修正工程 3'])
+    useAppStore.getState().updateProcessTable(table.map((entry, index) => index === 0
+      ? { ...entry, suffix: '_effect', folderNames: ['効果修正'] } : entry))
+    const exported = JSON.parse(useAppStore.getState().exportSettings())
+    useAppStore.getState().importSettings(JSON.stringify(exported))
+    expect(useAppStore.getState().projectSettings.processTable[0]).toEqual({
+      displayName: 'エフェクト修正', suffix: '_effect', folderNames: ['効果修正'], revisionBorderColor: '#123456',
+    })
   })
   it('セル名・アニメーションフォルダ名付加・区切りありをデフォルトにする', () => {
     expect(useAppStore.getState().projectSettings.cellNamingMode).toBe('cellname')

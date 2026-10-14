@@ -80,9 +80,9 @@ describe('ExportSettings naming controls', () => {
     useAppStore.setState({ layerTree: tree, manualAnimFolderIds: new Set([anim.id]) })
     render(<ExportSettings />)
     const targets = screen.getByRole('group', { name: '出力対象' })
-    const direction = within(targets).getByRole('button', { name: '演出 _e' })
+    const direction = within(targets).getByRole('button', { name: '演出' })
     const autoMarked = within(targets).getByRole('button', { name: 'SL 個別書き出し' })
-    expect(within(targets).queryByRole('button', { name: '作監 _s' })).not.toBeInTheDocument()
+    expect(within(targets).queryByRole('button', { name: '作監' })).not.toBeInTheDocument()
     expect(within(targets).queryByRole('button', { name: '作画' })).not.toBeInTheDocument()
     expect(direction).toHaveAttribute('aria-pressed', 'true')
 
@@ -112,7 +112,7 @@ describe('ExportSettings naming controls', () => {
       manualAnimFolderIds: new Set([anim.id]), singleMarks: new Map(), visibilityOverrides: new Map(),
       outputConfig: { ...DEFAULT_OUTPUT_CONFIG, excludeAutoMarked: true } })
     render(<ExportSettings />)
-    const direction = screen.getByRole('button', { name: '演出 _e' })
+    const direction = screen.getByRole('button', { name: '演出' })
     const files = () => selectOutputFiles(useAppStore.getState())
     expect(direction).toHaveAttribute('aria-pressed', 'mixed')
     expect(files().some(file => file.sourceLayerId === oldMaterial.id)).toBe(false)

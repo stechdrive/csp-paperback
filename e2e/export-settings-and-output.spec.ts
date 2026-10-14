@@ -200,7 +200,7 @@ test('工程名の編集と個別書き出しの設定を通常幅と狭幅で�
   await page.getByRole('button', { name: '設定', exact: true }).click()
   const dialog = page.locator('[class*="_dialog_"]').filter({ has: page.getByText('書き出し詳細設定', { exact: true }) })
   const processSection = dialog.getByTestId('process-table-grid').locator('..')
-  await expect(dialog.getByLabel('工程名（表示用） 1', { exact: true })).toBeVisible()
+  await expect(dialog.getByLabel('グループ名 1', { exact: true })).toBeVisible()
   await expect(dialog.getByLabel('対象フォルダを非表示でも表示して読み込む', { exact: true })).toBeVisible()
   await page.screenshot({ path: testInfo.outputPath('help-settings-dialog.png') })
   await writeFile(testInfo.outputPath('help-regions.json'), JSON.stringify({
@@ -212,7 +212,7 @@ test('工程名の編集と個別書き出しの設定を通常幅と狭幅で�
 
   for (const viewport of [{ width: 960, height: 640 }, { width: 700, height: 900 }]) {
     await page.setViewportSize(viewport)
-    const name = dialog.getByLabel('工程名（表示用） 1', { exact: true })
+    const name = dialog.getByLabel('グループ名 1', { exact: true })
     await name.scrollIntoViewIfNeeded()
     await expect(name).toBeVisible()
     await expect(dialog.getByLabel('対応するフォルダ名 1', { exact: true })).toBeVisible()
@@ -220,10 +220,10 @@ test('工程名の編集と個別書き出しの設定を通常幅と狭幅で�
     expect(await dialog.locator('[class*="_body_"]').evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true)
     await page.screenshot({ path: testInfo.outputPath(`process-settings-${viewport.width}.png`) })
   }
-  await dialog.getByLabel('工程名（表示用） 1', { exact: true }).fill('演出チェック')
+  await dialog.getByLabel('グループ名 1', { exact: true }).fill('演出チェック')
   await dialog.locator('[class*="_header_"]').getByRole('button', { name: '✕', exact: true }).click()
   await page.getByRole('button', { name: '書き出し設定', exact: true }).click()
-  await expect(outputSettings.getByRole('button', { name: '演出チェック _e', exact: true })).toBeVisible()
+  await expect(outputSettings.getByRole('button', { name: '演出チェック', exact: true })).toBeVisible()
 })
 
 for (const viewport of [{ width: 1440, height: 1000 }, { width: 1000, height: 700 }, { width: 700, height: 700 }]) {
@@ -248,7 +248,7 @@ for (const viewport of [{ width: 1440, height: 1000 }, { width: 1000, height: 70
       settings.getByRole('switch', { name: 'フォルダ分け', exact: true }),
       settings.getByRole('switch', { name: '修正ラベル', exact: true }),
       settings.getByRole('switch', { name: '兼用カット', exact: true }),
-      settings.getByRole('button', { name: '演出 _e', exact: true }),
+      settings.getByRole('button', { name: '演出', exact: true }),
     ]
     for (const phase of ['startup', 'loaded']) {
       if (phase === 'loaded') {

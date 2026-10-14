@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { useAppStore } from '../../store'
-import { DEFAULT_OUTPUT_CONFIG } from '../../types'
+import { DEFAULT_OUTPUT_CONFIG, DEFAULT_PROJECT_SETTINGS } from '../../types'
 import { resetTestStore } from '../helpers/store-reset'
 
 const STORAGE_KEY = 'csp-paperback:settings'
@@ -9,6 +9,31 @@ beforeEach(resetTestStore)
 afterEach(resetTestStore)
 
 describe('persisted output settings', () => {
+  it('旧設定のグループ名を補完して書き戻し、設定済み名称・照合名・色・出力選択を保持する', async () => {
+    const legacyTable = DEFAULT_PROJECT_SETTINGS.processTable.map(entry => ({
+      suffix: entry.suffix, folderNames: [...entry.folderNames], revisionBorderColor: entry.revisionBorderColor,
+    }))
+    const custom = { displayName: '作品専用', suffix: '_extra', folderNames: ['追加修正'], revisionBorderColor: '#123456' }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, state: {
+      projectSettings: { processTable: [...legacyTable, custom] },
+      savedOutputConfig: { ...DEFAULT_OUTPUT_CONFIG, excludedProcessSuffixes: ['_y'] },
+    } }))
+
+    await useAppStore.persist.rehydrate()
+
+    const table = useAppStore.getState().projectSettings.processTable
+    expect(table.map(entry => entry.displayName)).toEqual(['演出', '監督', '作監', 'その他修正', '総作監', '作品専用'])
+    expect(table.slice(0, 5).map(({ suffix, folderNames, revisionBorderColor }) => ({ suffix, folderNames, revisionBorderColor })))
+      .toEqual(legacyTable)
+    expect(table[5]).toEqual(custom)
+    const persisted = JSON.parse(localStorage.getItem(STORAGE_KEY)!)
+    expect(persisted.version).toBe(2)
+    expect(persisted.state.projectSettings.processTable).toEqual(table)
+    expect(persisted.state.savedOutputConfig.excludedProcessSuffixes).toEqual(['_y'])
+    await useAppStore.persist.rehydrate()
+    expect(useAppStore.getState().projectSettings.processTable).toEqual(table)
+  })
+
   it('本体と素材名の選択、および工程表示名・読み込み表示設定を保存して復元する', async () => {
     useAppStore.getState().setExcludeBody(true)
     useAppStore.getState().setIndividualOutputEnabled('SL', false)

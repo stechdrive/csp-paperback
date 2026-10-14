@@ -10,8 +10,5 @@ export function normalizeProcessFolderName(name: string): string {
 
 /** The display name never changes matching aliases or output filenames. */
 export function processDisplayName(entry: ProcessFolderEntry): string {
-  return entry.displayName?.trim()
-    || entry.folderNames.find(name => name.trim() && !name.trim().startsWith('_'))?.trim()
-    || entry.suffix
-    || '工程'
+  return entry.displayName?.trim() || '修正工程'
 }

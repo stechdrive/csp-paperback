@@ -30,7 +30,7 @@ describe('SettingsDialog process table grid', () => {
   it('工程の表示名だけを編集して、設定JSONへ保存し、Undoできる', () => {
     render(<SettingsDialog onClose={vi.fn()} />)
     const original = useAppStore.getState().projectSettings.processTable[0]
-    fireEvent.change(screen.getByLabelText('工程名（表示用） 1'), { target: { value: '演出チェック' } })
+    fireEvent.change(screen.getByLabelText('グループ名 1'), { target: { value: '演出チェック' } })
     const updated = useAppStore.getState().projectSettings.processTable[0]
     expect(updated).toEqual({ ...original, displayName: '演出チェック' })
     expect(JSON.parse(useAppStore.getState().exportSettings()).processTable[0].displayName).toBe('演出チェック')

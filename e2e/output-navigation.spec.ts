@@ -223,7 +223,7 @@ test('出力一覧は実ZIPと一致し、検索・選択・ツリー復帰・�
   const settings = page.getByRole('dialog', { name: '書き出し設定', exact: true })
   await settings.getByRole('button', { name: 'PNG', exact: true }).click()
   await settings.getByRole('switch', { name: 'フォルダ分け', exact: true }).click()
-  await settings.getByRole('button', { name: '演出 _e', exact: true }).click()
+  await settings.getByRole('button', { name: '演出', exact: true }).click()
   await page.keyboard.press('Escape')
   await expect(files.getByRole('option')).toHaveCount(8)
   await expect(files.getByRole('option', { selected: true })).toHaveText('B/B_1_s.png')
@@ -259,7 +259,7 @@ test('工程と個別素材を出力対象から外すとShift巡回も実ZIPと
   await loadSample(page)
   await page.getByRole('button', { name: '書き出し設定', exact: true }).click()
   const settings = page.getByRole('dialog', { name: '書き出し設定', exact: true })
-  for (const name of ['演出 _e', '作監 _s', 'PAN 個別書き出し', 'SL 個別書き出し', 'BG 個別書き出し', 'BOOK1 個別書き出し']) {
+  for (const name of ['演出', '作監', 'PAN 個別書き出し', 'SL 個別書き出し', 'BG 個別書き出し', 'BOOK1 個別書き出し']) {
     const toggle = settings.getByRole('button', { name, exact: true })
     await expect(toggle).toHaveAttribute('aria-pressed', 'true')
     await toggle.click()
@@ -275,7 +275,7 @@ test('作画本体をOFFにしても目玉と修正を保持し、状態表示�
   await loadSample(page)
   await page.getByRole('button', { name: '書き出し設定', exact: true }).click()
   const settings = page.getByRole('dialog', { name: '書き出し設定', exact: true })
-  await expect(settings.getByRole('button', { name: '監督 _k', exact: true })).toHaveCount(0)
+  await expect(settings.getByRole('button', { name: '監督', exact: true })).toHaveCount(0)
   const body = settings.getByRole('button', { name: '作画', exact: true })
   await body.click()
   await expect(body).toHaveAttribute('aria-pressed', 'false')

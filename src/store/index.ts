@@ -17,7 +17,7 @@ import { createUiSlice, type UiSlice } from './ui-slice'
 import { createHistorySlice, type HistorySlice } from './history-slice'
 import { DEFAULT_MOBILE_UI_SCALE, clampMobileUiScale } from '../utils/mobile-ui-scale'
 import { DEFAULT_APP_THEME, isAppTheme } from '../theme'
-import { normalizeProcessTableColors } from '../utils/process-color'
+import { normalizeProcessTable } from '../utils/process-table'
 
 export type AppStore =
   PsdSlice &
@@ -29,6 +29,14 @@ export type AppStore =
   OutputSlice &
   UiSlice &
   HistorySlice
+
+type PersistedSettings = {
+  projectSettings?: Partial<typeof DEFAULT_PROJECT_SETTINGS>
+  savedOutputConfig?: typeof DEFAULT_OUTPUT_CONFIG
+  quickExportConfig?: typeof DEFAULT_OUTPUT_CONFIG
+  mobileUiScale?: number
+  activeTheme?: unknown
+}
 
 export const useAppStore = create<AppStore>()(
   persist(
@@ -45,21 +53,17 @@ export const useAppStore = create<AppStore>()(
     }),
     {
       name: 'csp-paperback:settings',
-      version: 1,
-      partialize: (state) => ({
+      version: 2,
+      // merge normalizes legacy names; a migration also writes them back to storage.
+      migrate: persisted => persisted as PersistedSettings,
+      partialize: (state): PersistedSettings => ({
         projectSettings: state.projectSettings,
         savedOutputConfig: state.savedOutputConfig,
         mobileUiScale: state.mobileUiScale,
         activeTheme: state.activeTheme,
       }),
       merge: (persisted, current) => {
-        const p = persisted as {
-          projectSettings?: Partial<typeof DEFAULT_PROJECT_SETTINGS>
-          savedOutputConfig?: typeof DEFAULT_OUTPUT_CONFIG
-          quickExportConfig?: typeof DEFAULT_OUTPUT_CONFIG
-          mobileUiScale?: number
-          activeTheme?: unknown
-        } | undefined
+        const p = persisted as PersistedSettings | undefined
         const persistedTheme = p?.activeTheme
         const persistedProjectSettings = p?.projectSettings
         const persistedOutputConfig = p?.savedOutputConfig ?? p?.quickExportConfig
@@ -73,7 +77,7 @@ export const useAppStore = create<AppStore>()(
             animationSequenceSeparator: cellPrefixSeparator,
             includeXdtsTrackPrefixInCellName:
               resolveIncludeXdtsTrackPrefixInCellName(persistedProjectSettings ?? {}),
-            processTable: normalizeProcessTableColors(
+            processTable: normalizeProcessTable(
               persistedProjectSettings?.processTable ?? DEFAULT_PROJECT_SETTINGS.processTable,
             ),
           },

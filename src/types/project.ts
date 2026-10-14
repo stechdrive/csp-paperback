@@ -1,5 +1,5 @@
 export interface ProcessFolderEntry {
-  /** UI表示用。未設定の旧JSONでは登録フォルダ名から補完する */
+  /** 工程グループ名。未設定の旧JSONでは読み込み時に補完して保存する */
   displayName?: string
   suffix: string           // 例: '_en'
   folderNames: string[]    // 例: ['EN', '演出修正', 'ens', '演修']

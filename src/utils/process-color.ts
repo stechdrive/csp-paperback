@@ -35,16 +35,6 @@ export function resolveProcessBorderColor(entry: ProcessFolderEntry): string {
     ?? DEFAULT_REVISION_BORDER_COLOR
 }
 
-export function normalizeProcessTableColors(
-  table: ProcessFolderEntry[],
-): ProcessFolderEntry[] {
-  return table.map(entry => ({
-    ...entry,
-    folderNames: [...entry.folderNames],
-    revisionBorderColor: resolveProcessBorderColor(entry),
-  }))
-}
-
 export function hexToRgb(hex: string): { r: number; g: number; b: number } {
   const normalized = normalizeHexColor(hex) ?? DEFAULT_REVISION_BORDER_COLOR
   return {

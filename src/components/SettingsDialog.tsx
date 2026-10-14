@@ -19,7 +19,8 @@ import {
   resolveSequenceDigits,
   resolveTrackPrefixMode,
 } from '../utils/naming'
-import { normalizeProcessTableColors, resolveProcessBorderColor } from '../utils/process-color'
+import { resolveProcessBorderColor } from '../utils/process-color'
+import { normalizeProcessTable } from '../utils/process-table'
 import { ProcessColorPicker } from './ProcessColorPicker'
 import { processDisplayName } from '../utils/process-folder'
 
@@ -59,7 +60,7 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
   const { t } = useLocale()
 
   const [tableRows, setTableRows] = useState<ProcessFolderEntry[]>(
-    normalizeProcessTableColors(projectSettings.processTable)
+    normalizeProcessTable(projectSettings.processTable)
   )
   const [autoMarkRows, setAutoMarkRows] = useState<string[]>(
     projectSettings.autoMarkFolderNames ?? DEFAULT_PROJECT_SETTINGS.autoMarkFolderNames
@@ -126,6 +127,7 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
 
   const addRow = () => {
     const next = [...tableRows, {
+      displayName: '修正工程',
       suffix: '',
       folderNames: [],
       revisionBorderColor: '#FBECE6',
@@ -194,7 +196,7 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
       const text = await file.text()
       importSettings(text)
       const s = useAppStore.getState().projectSettings
-      setTableRows(normalizeProcessTableColors(s.processTable))
+      setTableRows(normalizeProcessTable(s.processTable))
       setAutoMarkRows(s.autoMarkFolderNames ?? DEFAULT_PROJECT_SETTINGS.autoMarkFolderNames)
       setArchiveRows(s.archivePatterns ?? DEFAULT_PROJECT_SETTINGS.archivePatterns)
       return
@@ -209,7 +211,7 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
       const text = await file.text()
       importSettings(text)
       const s = useAppStore.getState().projectSettings
-      setTableRows(normalizeProcessTableColors(s.processTable))
+      setTableRows(normalizeProcessTable(s.processTable))
       setAutoMarkRows(s.autoMarkFolderNames ?? DEFAULT_PROJECT_SETTINGS.autoMarkFolderNames)
       setArchiveRows(s.archivePatterns ?? DEFAULT_PROJECT_SETTINGS.archivePatterns)
     }
@@ -288,7 +290,7 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
                 <div key={i} className={styles.tableRow} data-process-table-row>
                   <input
                     className={`${styles.tableInput} ${styles.processNameInput}`}
-                    aria-label={`工程名（表示用） ${i + 1}`}
+                    aria-label={`${t.settings.colDisplayName} ${i + 1}`}
                     value={row.displayName ?? ''}
                     onChange={e => handleDisplayNameChange(i, e.target.value)}
                     placeholder={processDisplayName(row)}

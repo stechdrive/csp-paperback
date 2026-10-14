@@ -68,7 +68,7 @@ export const ja = {
     themePaper: 'ペーパー',
     themePaperHint: '明るい背景のライトテーマ。文字コントラストを高めています。',
     processTable: '工程フォルダリスト',
-    colDisplayName: '工程名（表示用）',
+    colDisplayName: 'グループ名',
     colSuffix: '出力名に付ける文字',
     colFolderNames: 'フォルダ名（カンマ区切り）',
     colBorderColor: 'フチ色',
