@@ -4,6 +4,7 @@ import {
   applyRevisionBorders,
   createRevisionBorderCanvas,
   REVISION_BORDER_OPACITY,
+  REVISION_BORDER_TOP_WIDTH,
   REVISION_BORDER_WIDTH,
 } from '../../utils/revision-border'
 
@@ -34,7 +35,7 @@ const PROCESS_TABLE: ProcessFolderEntry[] = [
 ]
 
 describe('revision border', () => {
-  it('70px・乗算・不透明度80%のフチ用キャンバスを生成する', () => {
+  it('上30px・左右下70px・乗算・不透明度80%のフチ用キャンバスを生成する', () => {
     const result = createRevisionBorderCanvas(makeCanvas(), '#FBECE6')
     const ctx = result.getContext('2d')!
     const events = (ctx as unknown as {
@@ -44,6 +45,7 @@ describe('revision border', () => {
     expect(result.width).toBe(300)
     expect(result.height).toBe(240)
     expect(REVISION_BORDER_WIDTH).toBe(70)
+    expect(REVISION_BORDER_TOP_WIDTH).toBe(30)
     expect(REVISION_BORDER_OPACITY).toBe(0.8)
     expect(events.some(event =>
       event.type === 'globalCompositeOperation'
@@ -88,7 +90,7 @@ describe('revision border', () => {
     )).toBe(true)
   })
 
-  it('短辺が140px以下なら重複を避けて全面を1回だけ塗る', () => {
+  it('幅が140px以下なら重複を避けて全面を1回だけ塗る', () => {
     const result = createRevisionBorderCanvas(makeCanvas(120, 300), '#FBECE6')
     const events = (result.getContext('2d') as unknown as {
       __getEvents: () => Array<{ type: string; props: Record<string, unknown> }>

@@ -4,11 +4,13 @@ import { copyRenderWarnings } from '../engine/render-warning'
 import { resolveProcessBorderColor } from './process-color'
 
 export const REVISION_BORDER_WIDTH = 70
+export const REVISION_BORDER_TOP_WIDTH = 30
 export const REVISION_BORDER_OPACITY = 0.8
 
 /**
- * 合成済み画像の内側外周へ、70px・乗算・不透明度80%の矩形フチを重ねる。
- * 画像が140px以下の辺を持つ場合は重複塗りを避けるため全面を1回だけ塗る。
+ * 合成済み画像の内側外周へ、上30px・左右下70px・乗算80%の矩形フチを重ねる。
+ * 上辺はタップ穴画像にかかりにくい幅に抑える。
+ * 幅140px以下または高さ100px以下では重複塗りを避けて全面を1回だけ塗る。
  */
 export function createRevisionBorderCanvas(
   source: HTMLCanvasElement,
@@ -28,22 +30,22 @@ export function createRevisionBorderCanvas(
 
   if (
     source.width <= REVISION_BORDER_WIDTH * 2
-    || source.height <= REVISION_BORDER_WIDTH * 2
+    || source.height <= REVISION_BORDER_TOP_WIDTH + REVISION_BORDER_WIDTH
   ) {
     ctx.fillRect(0, 0, source.width, source.height)
   } else {
-    const middleHeight = source.height - REVISION_BORDER_WIDTH * 2
-    ctx.fillRect(0, 0, source.width, REVISION_BORDER_WIDTH)
+    const middleHeight = source.height - REVISION_BORDER_TOP_WIDTH - REVISION_BORDER_WIDTH
+    ctx.fillRect(0, 0, source.width, REVISION_BORDER_TOP_WIDTH)
     ctx.fillRect(
       0,
       source.height - REVISION_BORDER_WIDTH,
       source.width,
       REVISION_BORDER_WIDTH,
     )
-    ctx.fillRect(0, REVISION_BORDER_WIDTH, REVISION_BORDER_WIDTH, middleHeight)
+    ctx.fillRect(0, REVISION_BORDER_TOP_WIDTH, REVISION_BORDER_WIDTH, middleHeight)
     ctx.fillRect(
       source.width - REVISION_BORDER_WIDTH,
-      REVISION_BORDER_WIDTH,
+      REVISION_BORDER_TOP_WIDTH,
       REVISION_BORDER_WIDTH,
       middleHeight,
     )

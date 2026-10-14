@@ -114,6 +114,7 @@
   height: 18px;
   background: #fff;
   border: 5px solid var(--revision-color);
+  border-top-width: 2px;
   box-shadow: 0 0 0 1px var(--color-border-strong);
 }
 .revisionSample::after {
