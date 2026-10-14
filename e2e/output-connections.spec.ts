@@ -1,0 +1,166 @@
+import { expect, test, type Locator, type Page } from '@playwright/test'
+
+const tree = (page: Page) => page.getByTestId('layer-tree')
+const files = (page: Page) => page.getByRole('listbox', { name: '出力ファイル' })
+const endpoint = (page: Page, edge: 'above' | 'below') => page.locator(`[data-connection-kind="sources"][data-connection-edge="${edge}"]`)
+const popup = (page: Page) => page.getByRole('dialog', { name: '画面外の合成元' })
+
+async function loadSample(page: Page) {
+  await page.goto('./')
+  await page.getByRole('button', { name: 'サンプルデータで試す', exact: true }).click()
+  await expect(page.getByTestId('preview-file-name')).toHaveText('仮想セルテスト.jpg')
+}
+
+async function expectConnectedEndpoint(page: Page, edge: 'above' | 'below') {
+  await expect(endpoint(page, edge)).toBeVisible()
+  await expect.poll(async () => {
+    return page.getByTestId('output-connections').evaluate((svg, edge) => {
+      const path = svg.querySelector<SVGPathElement>(`path[data-offscreen-edge="${edge}"]`)
+      const button = svg.parentElement?.querySelector(`[data-connection-kind="sources"][data-connection-edge="${edge}"]`)
+      if (!path || !button) return false
+      const end = path.getPointAtLength(path.getTotalLength()), bounds = svg.getBoundingClientRect(), target = button.getBoundingClientRect()
+      return Math.abs(bounds.left + end.x - target.left) < 1 && Math.abs(bounds.top + end.y - (target.top + target.height / 2)) < 1
+    }, edge)
+  }).toBe(true)
+}
+
+async function expectRowConnected(page: Page, row: Locator) {
+  const id = await row.getAttribute('data-layer-id')
+  await expect(page.getByTestId('output-connections').locator(`path[data-target-layer-id="${id}"]`)).toBeVisible()
+  const viewport = (await tree(page).boundingBox())!, rect = (await row.boundingBox())!
+  expect(rect.y + rect.height / 2).toBeGreaterThan(viewport.y)
+  expect(rect.y + rect.height / 2).toBeLessThan(viewport.y + viewport.height)
+}
+
+test('画面外の接続先を名前で確認して移動でき、スクロール・開閉・リサイズ後も線がつながる', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 960, height: 640 })
+  const errors: string[] = []
+  page.on('pageerror', error => errors.push(error.message))
+  await loadSample(page)
+  await expect(page.getByRole('group', { name: 'レイヤーパネルの表示' })).toHaveCount(0)
+  await files(page).getByRole('option', { name: 'B_1_s.jpg', exact: true }).click()
+  const eyes = await tree(page).locator('button[aria-pressed]').evaluateAll(buttons => buttons.map(button => button.getAttribute('aria-pressed')))
+  await expectConnectedEndpoint(page, 'below')
+  await page.screenshot({ path: testInfo.outputPath('offscreen-below.png') })
+  await endpoint(page, 'below').click()
+  await expect(popup(page)).toBeVisible()
+  const target = popup(page).locator('[data-source-id]').last()
+  const targetId = await target.getAttribute('data-source-id')
+  await expect(target).toContainText('/')
+  await page.screenshot({ path: testInfo.outputPath('source-names.png') })
+  await page.keyboard.press('Escape')
+  await expect(popup(page)).toHaveCount(0)
+  await expect(endpoint(page, 'below')).toBeFocused()
+  await endpoint(page, 'below').click()
+  await popup(page).locator(`[data-source-id="${targetId}"]`).click()
+  await expect(popup(page)).toHaveCount(0)
+  await expectRowConnected(page, tree(page).locator(`[data-layer-id="${targetId}"]`))
+  await expect(tree(page)).toBeFocused()
+  await expectConnectedEndpoint(page, 'above')
+  await expect(page.getByTestId('preview-file-name')).toHaveText('B_1_s.jpg')
+  expect(await tree(page).locator('button[aria-pressed]').evaluateAll(buttons => buttons.map(button => button.getAttribute('aria-pressed')))).toEqual(eyes)
+
+  await endpoint(page, 'above').click()
+  await files(page).focus()
+  await expect(popup(page)).toHaveCount(0)
+  await tree(page).evaluate(element => { element.scrollTop = 0 })
+  await expectConnectedEndpoint(page, 'below')
+  const frame = tree(page).locator('[data-layer-id]').filter({ has: page.getByTitle('Frame', { exact: true }) }).first()
+  const child = tree(page).getByTitle('タップ', { exact: true })
+  await frame.getByRole('button', { name: 'Frameを折りたたむ', exact: true }).click()
+  await expect(child).toHaveCount(0)
+  await expect(frame).toHaveAttribute('data-contribution-count', /要素/)
+  await expectRowConnected(page, frame)
+  await frame.getByRole('button', { name: 'Frameを展開する', exact: true }).click()
+  await expect(child).toBeVisible()
+  await expectConnectedEndpoint(page, 'below')
+
+  // Both sides scroll independently. The selected output remains an explicit origin.
+  await files(page).getByRole('option', { name: '仮想セルテスト.jpg', exact: true }).click()
+  await files(page).evaluate(element => { element.scrollTop = element.scrollHeight })
+  const origin = page.getByRole('button', { name: '選択中の出力へ戻る' })
+  await expect(origin).toBeVisible()
+  await expect(origin).toContainText('仮想セルテスト.jpg')
+  const outputScroll = await files(page).evaluate(element => element.scrollTop)
+  await origin.hover()
+  await page.mouse.wheel(0, -20)
+  await expect.poll(() => files(page).evaluate(element => element.scrollTop)).toBeLessThan(outputScroll)
+  await origin.click()
+  await expect(origin).toHaveCount(0)
+  await expect(files(page).getByRole('option', { name: '仮想セルテスト.jpg', exact: true })).toBeInViewport()
+  await expectConnectedEndpoint(page, 'below')
+  await endpoint(page, 'below').click()
+  await page.setViewportSize({ width: 1280, height: 820 })
+  await expect(popup(page)).toHaveCount(0)
+  await expectConnectedEndpoint(page, 'below')
+  expect(errors).toEqual([])
+})
+
+test.describe('タッチと上下配置', () => {
+  test.use({ hasTouch: true, isMobile: true, viewport: { width: 390, height: 844 } })
+  test('狭い画面でも接続先の一覧と移動を使え、ポップアップが画面内に収まる', async ({ page }, testInfo) => {
+    await loadSample(page)
+    await page.getByRole('navigation', { name: '作業パネル' }).getByRole('button', { name: 'レイヤー' }).tap()
+    await expect(files(page)).toBeVisible()
+    await expect(tree(page)).toBeVisible()
+    await expectConnectedEndpoint(page, 'below')
+    await endpoint(page, 'below').tap()
+    const bounds = (await popup(page).boundingBox())!
+    expect(bounds.x).toBeGreaterThanOrEqual(0)
+    expect(bounds.x + bounds.width).toBeLessThanOrEqual(390)
+    expect(bounds.y + bounds.height).toBeLessThanOrEqual(844)
+    await page.screenshot({ path: testInfo.outputPath('touch-sources.png') })
+    const target = popup(page).locator('[data-source-id]').last()
+    const targetId = await target.getAttribute('data-source-id')
+    await target.tap()
+    await expectRowConnected(page, tree(page).locator(`[data-layer-id="${targetId}"]`))
+    await expectConnectedEndpoint(page, 'above')
+    await expect(tree(page)).toBeVisible()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+  })
+})
+
+test('端の接続表示もホイールと仮想セルのドラッグを妨げず、検索後に古い線を残さない', async ({ page }) => {
+  await page.setViewportSize({ width: 960, height: 640 })
+  await loadSample(page)
+  await files(page).getByRole('option', { name: 'B_1_s.jpg', exact: true }).click()
+  await expectConnectedEndpoint(page, 'below')
+  const before = await tree(page).evaluate(element => element.scrollTop)
+  await endpoint(page, 'below').hover()
+  await page.mouse.wheel(0, 240)
+  await expect.poll(() => tree(page).evaluate(element => element.scrollTop)).toBeGreaterThan(before)
+  await expect(page.getByTestId('preview-file-name')).toHaveText('B_1_s.jpg')
+  const scrolled = await tree(page).evaluate(element => element.scrollTop)
+  await endpoint(page, 'above').hover()
+  await page.mouse.wheel(0, -60)
+  await expect.poll(() => tree(page).evaluate(element => element.scrollTop)).toBeLessThan(scrolled)
+  await expect(page.getByTestId('preview-file-name')).toHaveText('B_1_s.jpg')
+  await endpoint(page, 'above').hover()
+  await page.keyboard.down('Shift')
+  await page.mouse.wheel(0, 120)
+  await page.keyboard.up('Shift')
+  await expect(page.getByTestId('preview-file-name')).toHaveText('A_1.jpg')
+
+  await page.getByRole('searchbox').fill('no-such-output')
+  await expect(page.getByTestId('output-connections').locator('path')).toHaveCount(0)
+  await expect(page.locator('[data-connection-kind]')).toHaveCount(0)
+  await page.getByRole('searchbox').fill('')
+  await expect.poll(() => page.getByTestId('output-connections').locator('path').count()).toBeGreaterThan(0)
+
+  await page.getByRole('button', { name: '仮想セル', exact: true }).click()
+  await tree(page).evaluate(element => { element.scrollTop = 0 })
+  await expectConnectedEndpoint(page, 'below')
+  const marker = (await endpoint(page, 'below').boundingBox())!
+  const handle = page.getByTestId('virtual-panel').locator('[class*="_dragHandle_"]').first()
+  const source = (await handle.boundingBox())!
+  await page.mouse.move(source.x + source.width / 2, source.y + source.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(source.x + source.width / 2 + 10, source.y + source.height / 2, { steps: 3 })
+  await page.mouse.move(marker.x + marker.width / 2, marker.y + marker.height / 2, { steps: 10 })
+  await expect(page.locator('body')).toHaveClass(/is-csp-dragging/)
+  await expect.poll(() => tree(page).evaluate(element => element.scrollTop)).toBeGreaterThan(0)
+  await page.keyboard.press('Escape')
+  await page.mouse.up()
+  await expect(page.locator('body')).not.toHaveClass(/is-csp-dragging/)
+  await expect(popup(page)).toHaveCount(0)
+})

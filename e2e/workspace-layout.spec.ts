@@ -25,10 +25,9 @@ for (const viewport of [{ width: 960, height: 640 }, { width: 1280, height: 820 
     const treeBounds = (await page.getByTestId('layer-tree').boundingBox())!
     // The persistent output/source headings add one compact row.
     expect(treeBounds.height).toBeGreaterThan(viewport.height - 370)
-    const layerFooter = (await page.getByTestId('layer-panel-footer').boundingBox())!
-    const switchBounds = (await page.getByRole('group', { name: 'レイヤーパネルの表示' }).boundingBox())!
-    expect(Math.abs(switchBounds.y + switchBounds.height / 2 - layerFooter.y - layerFooter.height / 2)).toBeLessThan(1)
-    await expect(source.getByText('Shift+スクロールで切替', { exact: true })).toBeVisible()
+    await expect(page.getByTestId('layer-panel-footer')).toHaveCount(0)
+    await expect(page.getByRole('group', { name: 'レイヤーパネルの表示' })).toHaveCount(0)
+    await expect(page.getByRole('listbox', { name: '出力ファイル' })).toBeVisible()
     const previewBounds = (await output.boundingBox())!
     expect((await page.locator('[class*="_outputSection_"]').boundingBox())!.y).toBe(previewBounds.y)
     const timeline = source.getByRole('slider', { name: 'タイムラインのフレーム' })
@@ -126,8 +125,6 @@ test('長いファイル名と複数出力は下端から確認でき、画像�
   await expect(names).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'プレビュー中のファイル名（1件）', exact: true })).toBeFocused()
 
-  const mode = page.getByRole('group', { name: 'レイヤーパネルの表示' })
-  await mode.getByRole('button', { name: '出力一覧', exact: true }).click()
   await page.getByRole('option', { name: 'B_1.jpg', exact: true }).click()
   await page.getByRole('button', { name: '選択中の出力をツリーで表示' }).click()
   await page.getByRole('listbox', { name: '出力ファイル' }).getByRole('option', { name: 'B_1_s.jpg', exact: true }).click({ modifiers: ['Control'] })
@@ -191,10 +188,7 @@ test.describe('幅320pxの操作', () => {
     const valueBox = (await opacity.getByText('100%', { exact: true }).boundingBox())!
     const opacityBox = (await opacity.boundingBox())!
     expect(valueBox.x + valueBox.width).toBeLessThanOrEqual(opacityBox.x + opacityBox.width)
-    const switcher = page.getByTestId('layer-panel-footer').getByRole('group', { name: 'レイヤーパネルの表示' })
-    await switcher.getByRole('button', { name: '出力一覧', exact: true }).tap()
     await expect(page.getByRole('listbox', { name: '出力ファイル' })).toBeVisible()
-    await switcher.getByRole('button', { name: 'レイヤー', exact: true }).tap()
     await expect(page.getByTestId('layer-tree')).toBeVisible()
     await page.getByRole('button', { name: '出力プレビュー', exact: true }).click()
     const previewBefore = await page.getByTestId('output-view').boundingBox()

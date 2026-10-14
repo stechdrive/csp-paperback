@@ -183,8 +183,6 @@ test('出力一覧は実ZIPと一致し、検索・選択・ツリー復帰・�
 
   // Keep a manually opened branch while exploring a different branch in the list.
   await expansion(row(page, 'instructions')).click()
-  const mode = page.getByRole('group', { name: 'レイヤーパネルの表示' })
-  await mode.getByRole('button', { name: '出力一覧', exact: true }).click()
   const files = page.getByRole('listbox', { name: '出力ファイル' })
   await expect(files.getByRole('option')).toHaveText(sampleOutputs)
   expect((await exportedImageNames(page)).sort()).toEqual((await files.getByRole('option').allTextContents()).sort())
@@ -212,7 +210,7 @@ test('出力一覧は実ZIPと一致し、検索・選択・ツリー復帰・�
   await expectSelectedOutput(page, 'processB', 'B_1_s.jpg')
   await expect(expansion(row(page, 'instructions'))).toHaveAttribute('aria-expanded', 'true')
   await visibility(row(page, 'processB')).click()
-  await mode.getByRole('button', { name: '出力一覧', exact: true }).click()
+  await files.focus()
   await expect(files.getByRole('option')).toHaveCount(8)
   await expect(files.getByRole('option', { selected: true })).toHaveCount(0)
   await expect(previewNames(page)).toHaveCount(0)

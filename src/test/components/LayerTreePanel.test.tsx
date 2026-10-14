@@ -81,7 +81,7 @@ describe('LayerTreePanel output navigation', () => {
   })
   it('shares list, search and tree selection while preserving manual folder state', () => {
     const { cell, process, expanded, collapsed } = renderTree({ manualOpen: true })
-    fireEvent.click(screen.getByRole('button', { name: '出力一覧' }))
+    expect(screen.queryByRole('group', { name: 'レイヤーパネルの表示' })).not.toBeInTheDocument()
     const files = screen.getByRole('listbox', { name: '出力ファイル' })
     expect(within(screen.getByRole('listbox', { name: '出力ファイル' })).getAllByRole('option').map(option => option.textContent)).toEqual(['A_1.jpg', 'A_1_s.jpg'])
     fireEvent.click(screen.getByRole('option', { name: 'A_1_s.jpg' }))
@@ -101,7 +101,6 @@ describe('LayerTreePanel output navigation', () => {
 
   it('drops hidden or excluded list rows without selecting a different output, and restores them on undo', () => {
     const { process } = renderTree()
-    fireEvent.click(screen.getByRole('button', { name: '出力一覧' }))
     fireEvent.click(screen.getByRole('option', { name: 'A_1_s.jpg' }))
     act(() => useAppStore.getState().toggleLayerVisibility(process.id))
     expect(screen.queryByRole('option', { name: 'A_1_s.jpg' })).not.toBeInTheDocument()
@@ -120,7 +119,6 @@ describe('LayerTreePanel output navigation', () => {
     wheel()
     act(() => useAppStore.getState().seekToFrame(3))
     const cells = useAppStore.getState().selectedCells
-    fireEvent.click(screen.getByRole('button', { name: '出力一覧' }))
     fireEvent.click(screen.getByRole('button', { name: '選択中の出力をツリーで表示' }))
     expect(useAppStore.getState().currentFrame).toBe(3)
     expect(useAppStore.getState().selectedCells).toBe(cells)

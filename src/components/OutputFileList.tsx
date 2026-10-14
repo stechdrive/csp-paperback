@@ -112,7 +112,7 @@ export function OutputFileList({ active = true, onShowTree, onPreview }: { activ
     setMenu({ x: Math.max(4, Math.min(x, window.innerWidth - 230)), y: Math.max(4, Math.min(y, window.innerHeight - 150)) })
   }
   return <>
-    <div className={styles.listHeading}><strong>出力一覧</strong><span className={styles.fileCount}>{files.length}件</span>
+    <div className={styles.listHeading}><strong title="Shift+スクロールで出力を切り替え">出力一覧</strong><span className={styles.fileCount}>{files.length}件</span>
       <button type="button" onClick={onShowTree} disabled={!activeId} aria-label="選択中の出力をツリーで表示" title="選択中の出力をツリーで表示">↗</button></div>
     <div className={styles.listTools}>
       <input type="search" aria-label="出力ファイル名を検索" placeholder="ファイル名を検索" value={search} onChange={event => setSearch(event.target.value)} />

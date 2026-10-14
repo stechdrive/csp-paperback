@@ -175,21 +175,6 @@ export function LayerTreePanel({ onPreviewOutput }: { onPreviewOutput?: () => vo
       <OutputConnections container={relationshipRef} treeElement={treeRef} />
       </div>
 
-      <div className={styles.footer} data-testid="layer-panel-footer">
-        <div className={styles.viewSwitch} role="group" aria-label="レイヤーパネルの表示">
-          <button type="button" aria-label="レイヤー" title="素材レイヤーにフォーカス" onClick={() => treeRef.current?.focus()}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="m12 3 10 5-10 5L2 8Zm-10 9 10 5 10-5M2 16l10 5 10-5" /></svg>
-            <span className={styles.viewLabel}>レイヤー</span>
-          </button>
-          <button type="button" aria-label="出力一覧" title="出力一覧にフォーカス" onClick={() => relationshipRef.current?.querySelector<HTMLElement>('[role="listbox"]')?.focus()}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M8 5h13M8 12h13M8 19h13M3 5h1M3 12h1M3 19h1" /></svg>
-            <span className={styles.viewLabel}>出力一覧</span>
-          </button>
-        </div>
-        <Tooltip content={"Shift+スクロールで出力を切替\n実線は出力の素材、点線は一緒に合成する用紙・指示など\n素材選択後、Spaceで単体を確認できます"}>
-          <span className={styles.footerHint}>Shift+スクロール<span className={styles.hintAction}>で切替</span></span>
-        </Tooltip>
-      </div>
       <QuickLook />
     </div>
   )
