@@ -1,0 +1,1 @@
+import{r as e}from"./index-ky3-OHrw.js";async function t(t,n){await e(`plugin:opener|open_url`,{url:t,with:n})}export{t as openUrl};
