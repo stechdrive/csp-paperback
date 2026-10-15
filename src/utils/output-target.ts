@@ -13,6 +13,12 @@ export interface OutputTarget {
   legacyIndividualName?: string
 }
 
+/** Archive branches stay available as artwork and for explicit user marks. */
+export function isAutomaticOutputSuppressed(layer: CspLayer): boolean {
+  return layer.individualOutputExcludedBy !== undefined
+    && !layer.singleMark && layer.animationFolder?.detectedBy !== 'manual'
+}
+
 export function individualOutputName(name: string): string {
   return name.trim().replace(/^_/, '') || name
 }

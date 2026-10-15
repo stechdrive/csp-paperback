@@ -25,7 +25,7 @@ export interface CspLayer {
   animationFolder: AnimationFolderInfo | null
   singleMark: boolean
   autoMarked: boolean      // _プレフィックスによる自動マーク
-  individualOutputExcludedBy?: string // 読み込み時に一致した名前指定の除外パターン
+  individualOutputExcludedBy?: string // 読み込み時に自身または祖先フォルダで一致した除外パターン
   virtualSetMembership: string[]
   uiHidden: boolean        // UI上の表示切替（一時的、プロジェクト非永続）
   expanded: boolean        // レイヤーツリーUI展開状態

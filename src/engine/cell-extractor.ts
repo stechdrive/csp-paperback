@@ -24,7 +24,7 @@ import { isAutoMarkedContainerOutputSuppressed } from '../utils/auto-marked-cont
 import { normalizeProcessFolderName } from '../utils/process-folder'
 import { hasDefaultFlattenedContent } from '../utils/flattened-content'
 import { buildFolderNameToSuffixMap, collectCellOutputUnits } from './cell-output-units'
-import { cellOutputTarget, individualOutputTarget, type OutputTarget } from '../utils/output-target'
+import { cellOutputTarget, individualOutputTarget, isAutomaticOutputSuppressed, type OutputTarget } from '../utils/output-target'
 import {
   makeCellFileName,
   makeCellLabel,
@@ -936,6 +936,11 @@ export function planAllEntries(
     for (let i = 0; i < layers.length; i++) {
       const layer = layers[i]
       if (layer.hidden || layer.uiHidden) continue
+
+      if (isAutomaticOutputSuppressed(layer)) {
+        walkMarkedOrRegularFolderChildren(layers, i, layer, inherited)
+        continue
+      }
 
       if (layer.isAnimationFolder) {
         // XDTS/手動指定済みのアニメフォルダ: セルを抽出して出力。

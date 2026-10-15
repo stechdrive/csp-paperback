@@ -40,7 +40,7 @@ export interface ProjectSettings {
   showIndividualFoldersOnLoad?: boolean
   /** _プレフィックス以外に単体出力として自動マークするフォルダ名（完全一致） */
   autoMarkFolderNames: string[]
-  /** 自動マーク・自動表示から除外するパターン（前方一致）。デフォルト: ['_old', '_pool'] */
+  /** 自動出力検出・自動表示から配下ごと除外するパターン（前方一致）。デフォルト: ['_old', '_pool'] */
   archivePatterns: string[]
 }
 

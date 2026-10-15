@@ -100,6 +100,27 @@ describe('ExportSettings naming controls', () => {
     expect(screen.queryByRole('button', { name: '全OFF' })).not.toBeInTheDocument()
   })
 
+  it('除外フォルダ配下だけにある工程は出さず、外側の非表示工程はOFF後も残す', () => {
+    const pool = makeFolder('_pool', [makeFolder('_k', [makeLayer()]), makeFolder('_ss', [makeLayer()])])
+    pool.hidden = true
+    const chief = makeFolder('総作監 ', [makeFolder('A', [makeLayer({ name: '1' })])])
+    chief.hidden = true
+    const tree = buildLayerTree(makePsd({ children: [pool, makeFolder('LO', [chief])] }), undefined, ['_pool'])
+    const animation = tree.find(node => node.originalName === 'LO')!.children[0].children[0]
+    animation.isAnimationFolder = true
+    animation.animationFolder = { detectedBy: 'clip', trackName: 'A' }
+    useAppStore.setState({ layerTree: tree, manualAnimFolderIds: new Set(), singleMarks: new Map(), visibilityOverrides: new Map() })
+    render(<ExportSettings />)
+    const targets = screen.getByRole('group', { name: '出力対象' })
+    expect(within(targets).queryByRole('button', { name: '監督' })).not.toBeInTheDocument()
+    const chiefButton = within(targets).getByRole('button', { name: '総作監' })
+    fireEvent.click(chiefButton)
+    expect(chiefButton).toHaveAttribute('aria-pressed', 'false')
+    fireEvent.click(chiefButton)
+    expect(chiefButton).toHaveAttribute('aria-pressed', 'true')
+    expect(useAppStore.getState().visibilityOverrides.size).toBe(0)
+  })
+
   it('旧設定で除外した工程名の個別素材を復元し、工程チェックからまとめて再開できる', () => {
     const tree = buildLayerTree(makePsd({ children: [
       makeFolder('_e', [makeLayer()]),

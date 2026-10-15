@@ -73,6 +73,7 @@ function convertLayer(
   animFolderContext: boolean, // アニメーションフォルダ内かどうか（自動マーク無視判定用）
   archivePatterns: string[],
   autoMarkFolderNames: string[],
+  inheritedExclusion?: string,
 ): CspLayer {
   const id = crypto.randomUUID()
   const originalName = layer.name ?? ''
@@ -85,17 +86,16 @@ function convertLayer(
   const clipping = layer.clipping ?? false
   const folder = isFolder(layer)
   const animFolder = isAnimationFolder()
+  const individualOutputExcludedBy = inheritedExclusion ?? (folder
+    ? archivePatterns.find(pattern => pattern.length > 0 && originalName.startsWith(pattern))
+    : undefined)
 
-  // 単体出力の自動マーク（アニメーションフォルダ内・除外パターン一致は対象外）
-  const autoMarked = !animFolderContext && folder && matchesAutoMarkFolderName(
+  // 除外フォルダは子孫も名前による指定・自動昇格の対象外にする。
+  const autoMarked = !individualOutputExcludedBy && !animFolderContext && folder && matchesAutoMarkFolderName(
     originalName,
     archivePatterns,
     autoMarkFolderNames,
   )
-  const individualOutputExcludedBy = !animFolderContext && folder &&
-    matchesAutoMarkFolderName(originalName, [], autoMarkFolderNames)
-    ? archivePatterns.find(pattern => pattern.length > 0 && originalName.startsWith(pattern))
-    : undefined
 
   const top = layer.top ?? 0
   const left = layer.left ?? 0
@@ -107,7 +107,7 @@ function convertLayer(
   // アニメーションフォルダ内では単体出力の自動マークを付けない
   const nextContext = animFolderContext || animFolder
   const children: CspLayer[] = (layer.children ?? []).slice().reverse().map(child =>
-    convertLayer(child, id, depth + 1, nextContext, archivePatterns, autoMarkFolderNames)
+    convertLayer(child, id, depth + 1, nextContext, archivePatterns, autoMarkFolderNames, individualOutputExcludedBy)
   )
 
   return {

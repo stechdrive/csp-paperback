@@ -504,7 +504,7 @@ export function LayerTreeNode({
             {outputStatus.excluded === outputStatus.total ? '出力OFF' : '一部OFF'}
           </span>
         </Tooltip>}
-        {layer.individualOutputExcludedBy && <Tooltip content={`除外リスト「${layer.individualOutputExcludedBy}」に一致するため、名前による個別書き出しの指定と自動表示を行いません。書き出し禁止ではなく、手動指定や表示中の共通素材としての合成は可能です。`}>
+        {layer.individualOutputExcludedBy && <Tooltip content={`自身または祖先フォルダが除外リスト「${layer.individualOutputExcludedBy}」に一致するため、自動の書き出し対象の検出と自動表示を行いません。手動指定・仮想セルでの使用や、表示中の共通素材としての合成は可能です。`}>
           <span className={styles.outputStatus} data-output-state="name-excluded">名前指定の対象外</span>
         </Tooltip>}
 

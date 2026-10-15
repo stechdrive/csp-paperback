@@ -113,7 +113,7 @@ export const ja = {
     autoMarkFolderPlaceholder: '撮影指示',
     autoMarkReloadHint: '変更は次に素材ファイルを読み込んだときに反映されます。',
     archivePatterns: '名前による指定の除外リスト',
-    archivePatternHint: '名前が一致するフォルダを、_ または登録名による個別書き出しの指定と自動表示から外します（前方一致）。書き出し禁止ではありません。手動での個別指定や、表示中の共通素材としての合成は可能です。',
+    archivePatternHint: '名前が一致するフォルダとその配下を、自動の工程・個別書き出しの検出と自動表示から外します（前方一致）。手動指定・仮想セルでの使用や、表示中の共通素材としての合成は可能です。変更は素材の再読み込みで反映します。',
     archivePatternPlaceholder: '_old',
     addPattern: '＋ 項目を追加',
     shareSettings: '設定の保存・共有',

@@ -1,4 +1,5 @@
 import type { CspLayer, TimelineData, TimelineTrack } from '../types'
+import { isAutomaticOutputSuppressed } from './output-target'
 
 /**
  * PSD 読み込み時・表示状態リセット時に使うアプリ側の初期 visibility override。
@@ -86,6 +87,7 @@ export function addXdtsAnimationFolderShowOverrides(
   overrides: Map<string, boolean>,
 ): Map<string, boolean> {
   for (const layer of layers) {
+    if (isAutomaticOutputSuppressed(layer)) continue
     if (layer.isAnimationFolder && (layer.animationFolder?.detectedBy === 'xdts' || layer.animationFolder?.detectedBy === 'clip')) {
       if (layer.hidden) overrides.set(layer.id, false)
       continue

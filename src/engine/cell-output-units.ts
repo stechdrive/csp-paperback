@@ -1,5 +1,6 @@
 import type { CspLayer, ProjectSettings } from '../types'
 import { normalizeProcessFolderName } from '../utils/process-folder'
+import { isAutomaticOutputSuppressed } from '../utils/output-target'
 
 export interface CellOutputUnit {
   cell: CspLayer
@@ -32,13 +33,15 @@ export function collectCellOutputUnits(
   processTable: ProjectSettings['processTable'],
   options: { includeHidden?: boolean } = {},
 ): CellOutputUnit[] {
-  if (!animFolder.isAnimationFolder) return []
+  if (!animFolder.isAnimationFolder || isAutomaticOutputSuppressed(animFolder)) return []
 
   const folderNameToSuffix = buildFolderNameToSuffixMap(processTable)
   const units: CellOutputUnit[] = []
+  const explicitlyIncludedBranch = animFolder.individualOutputExcludedBy !== undefined
 
   for (const [cellIndex, cell] of animFolder.children.entries()) {
     if (!options.includeHidden && (cell.hidden || cell.uiHidden)) continue
+    if (!explicitlyIncludedBranch && isAutomaticOutputSuppressed(cell)) continue
     if (!cell.isFolder) {
       units.push({ cell, cellIndex, sourceLayerId: cell.id, layers: [cell], ignoreOpacityIds: new Set([cell.id]) })
       continue
@@ -48,7 +51,7 @@ export function collectCellOutputUnits(
     const processGroups = new Map<string, CspLayer[]>()
     for (const sub of cell.children) {
       if (!options.includeHidden && (sub.hidden || sub.uiHidden)) continue
-      const suffix = sub.isFolder
+      const suffix = sub.isFolder && (explicitlyIncludedBranch || !isAutomaticOutputSuppressed(sub))
         ? folderNameToSuffix.get(normalizeProcessFolderName(sub.originalName))
         : undefined
       if (suffix === undefined) {
