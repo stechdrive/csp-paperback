@@ -18,7 +18,7 @@ Paperbackでは、アニメーションしない素材をセルとして登録�
 |---|---|
 | タップ・フレーム枠 | 各セルや出力画像へ共通で合成 |
 | 背景原図・BOOK | セルへ混ぜず、それぞれ別画像として出力 |
-| 撮影指示・スライド指示 | 指示ごとに別画像として出力 |
+| 撮影指示 | 指示ごとに別画像として出力 |
 
 個別に書き出す素材は、`_BG` のように先頭に `_` を付けたフォルダや、「個別に書き出すフォルダ名」に登録した名前で指定できます。読み込み後にアプリ上で個別に指定することもできます。
 
@@ -121,7 +121,7 @@ Paperback lets you choose which materials to composite onto each image and which
 |---|---|
 | Peg-hole and frame guides | Composite onto each cel or output image |
 | Background layouts and BOOK layers | Export each as a separate image without mixing it into the cels |
-| Compositing and slide instructions | Export each set of instructions as a separate image |
+| Compositing instructions | Export each set of instructions as a separate image |
 
 Designate separate outputs with folder names starting with `_`, such as `_BG`, or register the names in the individual-output folder list. You can also select materials for separate output after loading the file.
 
