@@ -26,9 +26,7 @@ Paperbackでは、アニメーションしない素材をセルとして登録�
 
 ### 修正用のトラックを増やさず、作画と修正を別画像にする
 
-演出・作監の修正は作画に重ねて描いても、受け渡し時には作画とは別の静止画が必要です。クリスタのアニメーションセル出力でそれぞれを出すには、作画と修正を別のアニメーションフォルダに分けることになります。タイミングを変える際には、作画だけでなく修正のトラックも直す必要があります。
-
-Paperbackでは、セルのレイヤーフォルダの中に、`_e`・`_s` などの登録済み工程フォルダを置くと、作画本体と修正を分けて書き出せます。
+アニメーションフォルダ内の各セルフォルダに、`_e`・`_s` など、設定に登録した工程名のフォルダを作ると、作画本体と修正を別々の画像として書き出せます。
 
 ```text
 A                       アニメーションフォルダ
@@ -38,11 +36,11 @@ A                       アニメーションフォルダ
    └─ 作画レイヤー
 ```
 
-この構成から、作画本体・演出修正・作監修正を、それぞれ別の画像にできます。作画と修正を同じセル内で管理するため、タイミングの変更も一つのトラックで済みます。
+修正用のアニメーションフォルダやトラックを追加せず、作画と修正のタイミングを一つのトラックで管理できます。
 
-工程ごとにフォルダとトラックを分けたCLIPにも対応しています。その構成では、作画と同じコマから始まる修正を、作画と同じ番号で書き出すこともできます。
+### 工程ごとにファイル名を付けて書き出す
 
-### セル名を変えずに、工程ごとのファイル名を付ける
+作画・演出・作監など、工程ごとのレイヤーフォルダにアニメーションフォルダを置く構成にも対応しています。
 
 工程に応じて、ファイル名に `_e` や `_s` などを付けて書き出せます。出力名を区別するために、クリスタ側のフォルダ名やセル名を付け直す必要はありません。
 
@@ -55,6 +53,8 @@ A                       アニメーションフォルダ
 | 作監修正 | `A_001_s.jpg` |
 
 クリスタのセル名をそのまま使う方法と、連番を付ける方法を選べます。工程の文字を付ける位置や番号の桁数、区切り文字も設定できます。
+
+工程ごとにトラックを分けている場合は、作画と同じコマから始まる修正を、作画と同じ番号で書き出すこともできます。
 
 出力先は、アニメーションフォルダごとに分ける方法と、すべての画像を一つのフォルダにまとめる方法を選べます。
 
@@ -83,7 +83,11 @@ JPEG／PNG画像を、ZIPまたはフォルダへ保存できます。PNGは透�
 
 ### クリスタの描画結果を使いたい場合はPSDを追加する
 
-ベクター・3Dなど、CLIPだけではクリスタの描画を十分に再現できない素材には、PSDを併用できます。同じ保存状態のCLIPから、**［ファイル］→［複製を保存］→［.psd(Photoshopドキュメント)...］**でPSDを作り、一緒に読み込んでください。CLIPとPSDは、レイヤーの表示状態を合わせて保存してください。後からPSDを追加することもできます。
+ベクター・3Dなど、CLIPだけではクリスタの描画を十分に再現できない素材には、PSDを併用できます。同じ保存状態のCLIPから、次の操作でPSDを保存して一緒に読み込んでください。
+
+**［ファイル］→［複製を保存］→［.psd(Photoshopドキュメント)...］**
+
+CLIPとPSDは、レイヤーの表示状態を合わせて保存してください。後からPSDを追加することもできます。
 
 カメラ・変形アニメーションは適用せず、撮影前の素材として書き出します。描画範囲と制限の詳細は[CLIP読み込み](docs/clip-import.md)を参照してください。
 
@@ -125,9 +129,7 @@ An import setting makes these target folders visible on load, so compositing ins
 
 ### Export drawings and revisions separately without adding revision tracks
 
-Director and animation supervisor revisions are drawn over the original artwork, but need to be delivered as separate still images. Using CSP's animation cel export for this requires placing drawings and revisions in separate animation folders. Retiming then means updating both the drawing and revision tracks.
-
-With Paperback, place registered stage folders such as `_e` and `_s` inside a cel's layer folder to export the original drawing and revisions separately.
+Inside each cel's layer folder within an animation folder, create folders with registered stage names such as `_e` and `_s`. Paperback exports the original drawing and those revisions as separate images.
 
 ```text
 A                       Animation folder
@@ -137,11 +139,11 @@ A                       Animation folder
    └─ Drawing layer
 ```
 
-This structure produces separate images for the original drawing, director revision, and animation supervisor revision. Keeping them inside the same cel means timing changes only require editing one track.
+Manage the timing of drawings and revisions on one track, without adding animation folders or tracks for the revisions.
 
-CLIPs with separate folders and tracks for each production stage are also supported. In that arrangement, revisions starting on the same frame as a drawing can be exported with the same number as that drawing.
+### Export with filenames for each production stage
 
-### Add stage-specific filename text without renaming your cels
+Paperback also supports animation folders placed inside separate layer folders for drawings, director revisions, animation supervisor revisions, and other stages.
 
 Add text such as `_e` or `_s` to exported filenames according to the production stage. You do not need to rename folders or cels in CSP just to distinguish the output files.
 
@@ -154,6 +156,8 @@ Example filenames using sequential numbering:
 | Animation supervisor revision | `A_001_s.jpg` |
 
 Use the original CSP cel names or assign sequential numbers. You can configure where stage text appears, number padding, and separators.
+
+When stages use separate tracks, revisions starting on the same frame as a drawing can be exported with the same number as that drawing.
 
 Choose between separate output folders for each animation folder and a single folder containing all images.
 
@@ -182,7 +186,11 @@ Try the in-app sample to inspect the output. Detailed instructions and settings 
 
 ### Add a PSD to use CSP's rendered artwork
 
-For materials that CLIP alone cannot fully reproduce, such as vector or 3D layers, add a PSD. From the same saved state of the CLIP, use **File > Save Duplicate > .psd (Photoshop Document)** and load both files together. Save them with matching layer visibility. You can also add the PSD after loading the CLIP.
+For materials that CLIP alone cannot fully reproduce, such as vector or 3D layers, add a PSD. Save it from the same saved state of the CLIP using this menu command, then load both files together.
+
+**File > Save Duplicate > .psd (Photoshop Document)**
+
+Save the CLIP and PSD with matching layer visibility. You can also add the PSD after loading the CLIP.
 
 Camera and animated transforms are left unapplied so the original materials can be exported for compositing. See [CLIP import](docs/clip-import.md) for rendering support and limitations.
 
