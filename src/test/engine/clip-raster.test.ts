@@ -1,8 +1,18 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { Blob as NodeBlob } from 'node:buffer'
+import { Blob as NodeBlob, Buffer } from 'node:buffer'
 import { readAttribute, readRaster } from '../../utils/clip/raster'
 import { cropPixels } from '../../utils/clip/pixels'
 import { rasterFixture } from '../fixtures/clip-raster'
+import type { ClipPixels } from '../../utils/clip/types'
+
+function expectPixelsEqual(actual: ClipPixels, expected: ClipPixels) {
+  const { rgba: actualBytes, ...actualMetadata } = actual
+  const { rgba: expectedBytes, ...expectedMetadata } = expected
+  expect(actualMetadata).toEqual(expectedMetadata)
+  // Compare every byte natively; object equality enumerates millions of indices
+  // across the color/mask cases and can exceed CI's per-test time limit.
+  expect(Buffer.from(actualBytes).equals(Buffer.from(expectedBytes)), 'RGBA bytes').toBe(true)
+}
 
 afterEach(() => vi.unstubAllGlobals())
 
@@ -18,7 +28,7 @@ describe('bounded raster expansion', () => {
       for (const mask of [false, true]) {
         const full = (await readRaster(a, body, mask))!
         const cropped = (await readRaster(a, body, mask, true))!
-        expect(cropped).toEqual(cropPixels(full, mask))
+        expectPixelsEqual(cropped, cropPixels(full, mask))
         expect(cropped.left).toBeGreaterThanOrEqual(256)
         expect(cropped.top).toBeGreaterThanOrEqual(256)
       }
@@ -31,7 +41,7 @@ describe('bounded raster expansion', () => {
       const raw = new Uint8Array(65536).fill(200)
       raw[3] = 0
       const { a, body } = rasterFixture(520, 270, new Map([[4, raw]]), { hasColor, color })
-      expect(await readRaster(a, body, mask, true)).toEqual(cropPixels((await readRaster(a, body, mask))!, mask))
+      expectPixelsEqual((await readRaster(a, body, mask, true))!, cropPixels((await readRaster(a, body, mask))!, mask))
     }
   })
 
