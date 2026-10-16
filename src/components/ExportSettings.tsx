@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type FocusEvent, type PointerEvent, type ReactNode, type RefObject } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type FocusEvent, type PointerEvent, type ReactNode, type RefObject } from 'react'
 import { useAppStore } from '../store'
 import { useLocale } from '../i18n/locale'
 import { selectLayerTreeWithVisibility } from '../store/selectors'
@@ -71,12 +71,22 @@ export function ExportSettings({ configTarget = 'current' }: { configTarget?: Ou
   const root = useRef<HTMLDivElement>(null)
   const nameSampleRef = useRef<HTMLDivElement>(null)
   const highlightTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const hoveredElement = useRef<HTMLElement | null>(null)
   const [changedPart, setChangedPart] = useState<NamePart | null>(null)
   const [hoveredPart, setHoveredPart] = useState<NamePart | null>(null)
   const [focusedPart, setFocusedPart] = useState<NamePart | null>(null)
   const highlighted = hoveredPart ?? focusedPart ?? changedPart
 
   useEffect(() => () => clearTimeout(highlightTimer.current), [])
+  const trackHoverElement = useCallback((element: HTMLElement | null) => {
+    if (!element) return
+    // Removing a preview part does not dispatch pointerleave.
+    return () => {
+      if (hoveredElement.current !== element) return
+      hoveredElement.current = null
+      setHoveredPart(null)
+    }
+  }, [])
 
   const maxSequenceNumber = useMemo(() => getMaxSequenceNumberForAnimationFolders(layerTree), [layerTree])
   const isSequenceMode = isSequenceNamingMode(projectSettings.cellNamingMode)
@@ -118,6 +128,7 @@ export function ExportSettings({ configTarget = 'current' }: { configTarget?: Ou
 
   function clearHighlight() {
     clearTimeout(highlightTimer.current)
+    hoveredElement.current = null
     setChangedPart(null)
     setHoveredPart(null)
     setFocusedPart(null)
@@ -125,11 +136,19 @@ export function ExportSettings({ configTarget = 'current' }: { configTarget?: Ou
 
   function linkPart(part: NamePart) {
     return {
+      ref: trackHoverElement,
       'data-highlighted': highlighted === part,
       onPointerEnter: (event: PointerEvent<HTMLElement>) => {
-        if (event.pointerType === 'mouse') setHoveredPart(part)
+        if (event.pointerType === 'mouse') {
+          hoveredElement.current = event.currentTarget
+          setHoveredPart(part)
+        }
       },
-      onPointerLeave: () => setHoveredPart(null),
+      onPointerLeave: (event: PointerEvent<HTMLElement>) => {
+        if (hoveredElement.current !== event.currentTarget) return
+        hoveredElement.current = null
+        setHoveredPart(null)
+      },
       onFocus: (event: FocusEvent<HTMLElement>) => {
         if (event.target.matches(':focus-visible')) setFocusedPart(part)
       },

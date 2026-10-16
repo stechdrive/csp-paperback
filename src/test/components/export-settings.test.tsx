@@ -251,6 +251,43 @@ describe('ExportSettings naming controls', () => {
     expect(screen.getByTestId('name-sample-row')).toBe(sampleRow)
   })
 
+  it.each([
+    { part: 'prefix', hide: () => useAppStore.getState().setIncludeXdtsTrackPrefixInCellName(false) },
+    { part: 'separator', hide: () => useAppStore.getState().setCellPrefixSeparator('none') },
+    { part: 'directory', hide: () => useAppStore.getState().setStructure('flat') },
+  ])('出力例の $part が消えたら、pointerleaveがなくても強調を解除する', ({ part, hide }) => {
+    vi.useFakeTimers()
+    useAppStore.setState({ outputConfig: { ...DEFAULT_OUTPUT_CONFIG, structure: 'hierarchy' } })
+    render(<ExportSettings />)
+    const sample = screen.getByTestId('name-sample-row')
+    const originalPart = sample.querySelector(`[data-name-part="${part}"]`)!
+
+    fireEvent.pointerEnter(originalPart, { pointerType: 'mouse' })
+    expect(originalPart).toHaveAttribute('data-highlighted', 'true')
+    act(hide)
+
+    expect(originalPart).not.toBeInTheDocument()
+    const emptyPart = sample.querySelector(`[data-name-part="${part}"]`)!
+    expect(emptyPart).toBeEmptyDOMElement()
+    expect(emptyPart).toHaveAttribute('data-highlighted', 'false')
+    expect(sample.querySelector('[data-highlighted="true"]')).toBeNull()
+  })
+
+  it('出力例の文字が消えても、設定欄にマウスがあれば対応する位置の強調を保つ', () => {
+    vi.useFakeTimers()
+    render(<ExportSettings />)
+    const control = screen.getByTestId('xdts-track-prefix-option')
+    fireEvent.pointerEnter(control, { pointerType: 'mouse' })
+
+    act(() => useAppStore.getState().setIncludeXdtsTrackPrefixInCellName(false))
+
+    const emptyPart = screen.getByTestId('name-sample-row').querySelector('[data-name-part="prefix"]')!
+    expect(emptyPart).toBeEmptyDOMElement()
+    expect(emptyPart).toHaveAttribute('data-highlighted', 'true')
+    fireEvent.pointerLeave(control, { pointerType: 'mouse' })
+    expect(emptyPart).toHaveAttribute('data-highlighted', 'false')
+  })
+
   it('作監の辞書色を見本に反映し、色の変更や別名・未登録にも対応する', () => {
     render(<ExportSettings />)
     const sample = screen.getByTestId('revision-label-sample')
