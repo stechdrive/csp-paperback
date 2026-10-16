@@ -1,5 +1,6 @@
 // Offscreen format and tile permutation: wamsoft/clipparse (MIT).
 import { check, inflate, Reader } from './binary'
+import { cropPixels } from './pixels'
 import type { ClipPixels } from './types'
 
 export interface OffscreenAttribute {
@@ -34,12 +35,16 @@ export function readAttribute(bytes: Uint8Array, brushPattern = false): Offscree
   return { width: p[0], height: p[1], cols: p[2], rows: p[3], channels: p[6], bitDepth: p[7], planeBytes: p[8], hasColor, color, rgb, sizes }
 }
 
-export async function readRaster(a: OffscreenAttribute, body: Uint8Array | undefined, mask: boolean): Promise<ClipPixels | undefined> {
+export async function readRaster(a: OffscreenAttribute, body: Uint8Array | undefined, mask: boolean, crop = false): Promise<ClipPixels | undefined> {
   if (!body && !a.hasColor) return undefined
   check(a.width * a.height <= 64 * 1024 * 1024, '画像1枚のサイズが上限を超えました')
-  const rgba = new Uint8ClampedArray(a.width * a.height * 4)
   const baseColor = mask ? [a.color & 255, a.color & 255, a.color & 255, 255] : [...(a.rgb ?? [a.color >>> 24, a.color >>> 16 & 255, a.color >>> 8 & 255]), a.color & 255]
-  if (a.hasColor) for (let i = 0; i < rgba.length; i += 4) rgba.set(baseColor, i)
+  // Inspect compressed tile headers before allocating pixels. Keep source views,
+  // not inflated tiles; each tile is still validated and inflated exactly once.
+  const tiles: { x: number; y: number; expected: number; compressed: Uint8Array }[] = []
+  const fullExtent = !crop || (mask ? !a.hasColor && (a.color & 255) !== 0 : a.hasColor && baseColor[3] !== 0)
+  let left = fullExtent ? 0 : a.width, top = fullExtent ? 0 : a.height
+  let right = fullExtent ? a.width : 0, bottom = fullExtent ? a.height : 0
   if (body) {
     const source = new Reader(body)
     for (let index = 0; index < a.sizes.length; index++) {
@@ -57,30 +62,48 @@ export async function readRaster(a: OffscreenAttribute, body: Uint8Array | undef
         check(section === compressed + 4, 'タイルの圧縮サイズが不正です')
         const expected = a.channels === 4 ? 256 * 256 * 5 : a.channels === 0 ? 256 * 256 : a.planeBytes * 2
         check(length === expected && expected <= 327680, '未対応のタイル形式です')
-        const raw = await inflate(r.take(compressed), expected)
-        check(raw.length === expected, 'タイルの展開サイズが不正です')
         const x0 = index % a.cols * 256, y0 = Math.floor(index / a.cols) * 256
-        for (let y = 0; y < 256 && y0 + y < a.height; y++) for (let x = 0; x < 256 && x0 + x < a.width; x++) {
-          const pixel = y * 256 + x, dst = ((y0 + y) * a.width + x0 + x) * 4
-          if (a.channels === 4) {
-            const color = 65536 + pixel * 4
-            rgba[dst] = raw[color + 2]; rgba[dst + 1] = raw[color + 1]; rgba[dst + 2] = raw[color]
-            rgba[dst + 3] = raw[(Math.floor(y / 4) * 256 + y % 4 * 64 + Math.floor(x / 4)) * 4 + x % 4]
-          } else if (a.channels === 0) {
-            rgba[dst] = rgba[dst + 1] = rgba[dst + 2] = mask ? raw[pixel] : 255
-            rgba[dst + 3] = mask ? 255 : raw[pixel]
-          } else {
-            const at = a.bitDepth === 1 ? Math.floor(pixel / 8) : pixel
-            const alpha = a.bitDepth === 1 ? (raw[at] >>> (7 - pixel % 8) & 1) * 255 : raw[at]
-            const value = a.bitDepth === 1 ? (raw[a.planeBytes + at] >>> (7 - pixel % 8) & 1) * 255 : raw[a.planeBytes + at]
-            rgba[dst] = rgba[dst + 1] = rgba[dst + 2] = value
-            rgba[dst + 3] = alpha
-          }
+        tiles.push({ x: x0, y: y0, expected, compressed: r.take(compressed) })
+        if (x0 < a.width && y0 < a.height) {
+          left = Math.min(left, x0); top = Math.min(top, y0)
+          right = Math.max(right, Math.min(a.width, x0 + 256)); bottom = Math.max(bottom, Math.min(a.height, y0 + 256))
         }
       }
       check(r.wideName() === 'BlockDataEndChunk' && r.position === size, 'タイルの終端が不正です')
     }
     // Some files have a BlockStatus/BlockCheckSum trailer; the per-tile sizes bound decoding.
   }
-  return { width: a.width, height: a.height, left: 0, top: 0, rgba, defaultColor: a.color & 255 }
+  if (right <= left || bottom <= top) { left = top = 0; right = bottom = 1 }
+  const width = right - left, height = bottom - top
+  const rgba = new Uint8ClampedArray(width * height * 4)
+  if (a.hasColor) for (let i = 0; i < rgba.length; i += 4) rgba.set(baseColor, i)
+  for (const tile of tiles) {
+    const raw = await inflate(tile.compressed, tile.expected)
+    check(raw.length === tile.expected, 'タイルの展開サイズが不正です')
+    for (let y = 0; y < 256 && tile.y + y < a.height; y++) for (let x = 0; x < 256 && tile.x + x < a.width; x++) {
+      const pixel = y * 256 + x, dst = ((tile.y + y - top) * width + tile.x + x - left) * 4
+      if (a.channels === 4) {
+        const color = 65536 + pixel * 4
+        rgba[dst] = raw[color + 2]; rgba[dst + 1] = raw[color + 1]; rgba[dst + 2] = raw[color]
+        rgba[dst + 3] = raw[(Math.floor(y / 4) * 256 + y % 4 * 64 + Math.floor(x / 4)) * 4 + x % 4]
+      } else if (a.channels === 0) {
+        rgba[dst] = rgba[dst + 1] = rgba[dst + 2] = mask ? raw[pixel] : 255
+        rgba[dst + 3] = mask ? 255 : raw[pixel]
+      } else {
+        const at = a.bitDepth === 1 ? Math.floor(pixel / 8) : pixel
+        const alpha = a.bitDepth === 1 ? (raw[at] >>> (7 - pixel % 8) & 1) * 255 : raw[at]
+        const value = a.bitDepth === 1 ? (raw[a.planeBytes + at] >>> (7 - pixel % 8) & 1) * 255 : raw[a.planeBytes + at]
+        rgba[dst] = rgba[dst + 1] = rgba[dst + 2] = value
+        rgba[dst + 3] = alpha
+      }
+    }
+  }
+  const pixels = { width, height, left, top, rgba, defaultColor: a.color & 255 }
+  if (!crop) return pixels
+  const cropped = cropPixels(pixels, mask)
+  // Empty images have always used a 1px placeholder at the offscreen origin.
+  if (cropped.width === 1 && cropped.height === 1 && (mask ? cropped.rgba[0] === pixels.defaultColor : cropped.rgba[3] === 0)) {
+    cropped.left = cropped.top = 0
+  }
+  return cropped
 }

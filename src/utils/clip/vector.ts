@@ -3,7 +3,7 @@
 // This is an approximate material renderer, not CSP's brush engine.
 import { check, Reader } from './binary'
 import { num, type ClipRow } from './records'
-import { cropPixels } from './pixels'
+import { VectorSurface } from './vector-surface'
 import type { ClipPixels } from './types'
 import { createBrushTexture, type BrushTexture } from './vector-texture'
 import { brushRandom, readBrushDynamics } from './vector-dynamics'
@@ -143,7 +143,7 @@ export function renderVectors(strokes: VectorStroke[], brushes: VectorBrushes, w
   offsetX = 0, offsetY = 0, report: (message: string) => void = () => {}): ClipPixels {
   check(Number.isInteger(width) && Number.isInteger(height) && width > 0 && height > 0 && width * height <= 16 * 1024 * 1024, 'ベクター描画のキャンバスが16 Mpxを超えるか不正です')
   check(Number.isFinite(offsetX) && Number.isFinite(offsetY) && Math.abs(offsetX) <= 1000000 && Math.abs(offsetY) <= 1000000, 'ベクターレイヤーの位置が不正です')
-  const output = new Float32Array(width * height * 4)
+  const output = new VectorSurface(width, height)
   let work = 0, sampleCount = 0
   const issues = new Set<string>()
   const textures = new Map<number, BrushTexture | undefined>()
@@ -271,9 +271,7 @@ export function renderVectors(strokes: VectorStroke[], brushes: VectorBrushes, w
         // Stroke opacity limits the completed stroke, not every overlapping tip.
         a = a / (ss * ss) * st.opacity
         if (!a) continue
-        const at = ((y0 + y / ss) * width + x0 + x / ss) * 4, remain = 1 - a
-        for (let c = 0; c < 3; c++) output[at + c] = (num(b, 'CompositeMode') === 27 ? 0 : st.color[c] * a) + output[at + c] * remain
-        output[at + 3] = (num(b, 'CompositeMode') === 27 ? 0 : a) + output[at + 3] * remain
+        output.blend(x0 + x / ss, y0 + y / ss, a, st.color, num(b, 'CompositeMode') === 27)
       }
     } catch (e) {
       issues.add(e instanceof Error ? e.message : String(e))
@@ -281,11 +279,5 @@ export function renderVectors(strokes: VectorStroke[], brushes: VectorBrushes, w
     }
   }
   issues.forEach(report)
-  const rgba = new Uint8ClampedArray(output.length)
-  for (let i = 0; i < rgba.length; i += 4) {
-    const a = output[i + 3]
-    if (a > 0) for (let c = 0; c < 3; c++) rgba[i + c] = output[i + c] / a
-    rgba[i + 3] = Math.min(255, Math.floor(a * 256))
-  }
-  return cropPixels({ width, height, left: 0, top: 0, rgba })
+  return output.finish()
 }

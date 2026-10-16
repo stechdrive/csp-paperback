@@ -6,7 +6,6 @@ import type { ClipDiagnostic, ClipLayer, ClipPixels } from './types'
 import type { MaterialEffects, MaterialQuad } from '../../types/rendering'
 import { readGradient } from './gradient'
 import { readAdjustment } from './adjustment'
-import { cropPixels } from './pixels'
 import { readVectorStrokes, renderVectors, type BrushPattern, type VectorBrushes } from './vector'
 
 /** Decode only drawing effects; palette label colors are deliberately unrelated. */
@@ -115,11 +114,10 @@ export function createMaterialDecoder(t: MaterialTables, width: number, height: 
     const a = readAttribute(off.Attribute), body = t.external.get(str(off.BlockData))
     if (!body && !a.hasColor) return
     check(decodedBytes + a.width * a.height * 4 <= 512 * 1024 * 1024, '画像展開の合計が512 MiBを超えました')
-    const decoded = await readRaster(a, body, mask)
+    const decoded = await readRaster(a, body, mask, !keepExtent)
     if (!decoded) return
-    const retained = keepExtent ? decoded : cropPixels(decoded, mask)
-    decodedBytes += retained.rgba.length
-    return retained
+    decodedBytes += decoded.rgba.length
+    return decoded
   }
   return async (layer: ClipLayer, row: ClipRow) => {
     const failures: string[] = []
@@ -161,7 +159,7 @@ export function createMaterialDecoder(t: MaterialTables, width: number, height: 
             ?? [...(t.vectors?.values() ?? [])].find(v => num(v, 'LayerId') === num(row, 'MainId'))
           const raw = vector && t.external.get(str(vector.VectorData))
           check(raw, 'ベクターのストロークデータがありません')
-          // Native-resolution float RGBA + output bytes + the largest stroke alpha plane.
+          // Keep the existing conservative limit even though float tiles are now sparse.
           check(decodedBytes + width * height * 20 + 64 * 1024 * 1024 <= 512 * 1024 * 1024, 'ベクター画像展開の合計が512 MiBを超えました')
           const strokes = readVectorStrokes(raw)
           const patterns = new Set(strokes.map(s => num(vectorBrushes.styles.get(s.brush) ?? {}, 'PatternStyle')))
