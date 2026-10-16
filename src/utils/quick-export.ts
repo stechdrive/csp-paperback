@@ -1,7 +1,7 @@
 import { loadProjectFiles } from './project-loader'
 import { useAppStore } from '../store'
 import { allowTauriLaunchFilePaths, loadableFilesFromPaths } from '../platform/files'
-import { buildOutputEntriesFromState } from './export-entries'
+import { planExportEntriesFromState } from './export-entries'
 import { saveEntriesToDirectoryPath } from './directory-builder'
 import { resolveQuickExportFilePair, resolveQuickExportJobs, type QuickExportFilePair } from './quick-export-plan'
 export { resolveQuickExportFilePair, resolveQuickExportJobs } from './quick-export-plan'
@@ -58,9 +58,9 @@ async function exportPair(pair: QuickExportFilePair, onProgress: (progress: Quic
   const sourceName = loadedState.clipFileName ?? loadedState.psdFileName
   if (!sourceName || loadedState.docWidth === 0) throw new Error('素材ファイルが読み込まれていません')
 
-  onProgress({ progress: 0.38, message: '出力画像を合成しています' })
+  onProgress({ progress: 0.38, message: '出力一覧を準備しています' })
   const outputConfig = loadedState.savedOutputConfig
-  const entries = buildOutputEntriesFromState(loadedState, outputConfig)
+  const entries = planExportEntriesFromState(loadedState, outputConfig)
   if (entries.length === 0) {
     throw new Error('出力対象がありません')
   }
@@ -73,10 +73,11 @@ async function exportPair(pair: QuickExportFilePair, onProgress: (progress: Quic
     outputParent,
     loadedState.docDpiX,
     loadedState.docDpiY,
-    (done, total) => {
+    (done, total, detail) => {
       onProgress({
         progress: 0.5 + 0.45 * (done / total),
-        message: `書き出し中 ${done}/${total}`,
+        message: detail ? `${detail.phase === 'rendering' ? '合成中' : detail.phase === 'encoding' ? '画像変換中' : '保存中'} ${done + 1}/${total} ${detail.path}`
+          : `書き出し中 ${done}/${total}`,
       })
     },
   )

@@ -4,13 +4,30 @@ import type { OutputFile } from '../../utils/output-plan'
 
 beforeEach(() => vi.useFakeTimers())
 afterEach(() => vi.useRealTimers())
-const file = (id: string) => ({ outputId: id }) as OutputFile
+const file = (id: string) => ({ outputId: id, renderKey: id }) as OutputFile
 function image(): RenderedOutput {
   const canvas = document.createElement('canvas'); canvas.width = 300; canvas.height = 200
   return { canvas, sources: { all: new Set(['ink']), content: new Set(['ink']) }, vectorWarning: false, unsupported3D: false }
 }
 
 describe('output render queue', () => {
+  it('shares pending work, pins and notifications across different names for the same image', async () => {
+    const queue = new OutputRenderQueue(), original = file('same-image')
+    const renamed = { ...original, fileName: 'A_0001.png' }
+    const firstListener = vi.fn(), secondListener = vi.fn(), draw = vi.fn(image)
+    const unsubscribe = queue.subscribe([original], 'thumbnail', firstListener)
+    queue.subscribe([renamed], 'thumbnail', secondListener)
+    const release = queue.request(original, 'thumbnail', draw)
+    queue.request(renamed, 'thumbnail', draw)
+    release(); unsubscribe()
+    await vi.runAllTimersAsync()
+    expect(draw).toHaveBeenCalledTimes(1)
+    expect(firstListener).not.toHaveBeenCalled()
+    expect(secondListener).toHaveBeenCalledOnce()
+    expect(queue.get(original, 'thumbnail')).toBe(queue.get(renamed, 'thumbnail'))
+    expect(queue.getStats().entries).toBe(1)
+    queue.clear()
+  })
   it('prioritizes the full preview, shares it with thumbnails, and discards obsolete requests', async () => {
     const queue = new OutputRenderQueue(), active = file('active'), old = file('old')
     const order: string[] = []

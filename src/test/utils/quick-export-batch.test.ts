@@ -7,14 +7,14 @@ import { readClipFile } from '../../utils/clip-io'
 import { readPsdFile } from '../../utils/psd-io'
 import { allowTauriLaunchFilePaths, loadableFilesFromPaths } from '../../platform/files'
 import { saveEntriesToDirectoryPath } from '../../utils/directory-builder'
-import { buildOutputEntriesFromState } from '../../utils/export-entries'
+import { planExportEntriesFromState } from '../../utils/export-entries'
 import type { ClipDocument } from '../../utils/clip/types'
 
 vi.mock('../../utils/clip-io', () => ({ readClipFile: vi.fn() }))
 vi.mock('../../utils/psd-io', () => ({ readPsdFile: vi.fn() }))
 vi.mock('../../platform/files', () => ({ allowTauriLaunchFilePaths: vi.fn(), loadableFilesFromPaths: vi.fn() }))
 vi.mock('../../utils/directory-builder', () => ({ saveEntriesToDirectoryPath: vi.fn() }))
-vi.mock('../../utils/export-entries', () => ({ buildOutputEntriesFromState: vi.fn() }))
+vi.mock('../../utils/export-entries', () => ({ planExportEntriesFromState: vi.fn() }))
 vi.mock('@tauri-apps/api/path', () => ({ dirname: async (path: string) => path.slice(0, path.lastIndexOf('/')) }))
 
 const document = (): ClipDocument => ({ width: 2, height: 2, dpi: 144, defaultTimelineId: null, timelines: [], diagnostics: [], layers: [
@@ -32,7 +32,7 @@ beforeEach(() => {
     name: path.split('/').at(-1)!, sourceDirectory: path.slice(0, path.lastIndexOf('/')),
     arrayBuffer: async () => new ArrayBuffer(0), text: async () => '',
   })))
-  vi.mocked(buildOutputEntriesFromState).mockImplementation(() => [{ path: 'art.png', flatName: 'art.png', sourceLayerId: 'art', canvas: documentCanvas() }])
+  vi.mocked(planExportEntriesFromState).mockImplementation(() => [{ path: 'art.png', flatName: 'art.png', sourceLayerId: 'art', createCanvas: documentCanvas }])
   vi.mocked(saveEntriesToDirectoryPath).mockImplementation(async (_entries, _config, name, parent, _dx, _dy, progress) => {
     progress?.(1, 1)
     return `${parent}/${name.replace(/\.[^.]+$/, '')}`
@@ -64,7 +64,7 @@ describe('batch export with the real loader and project store', () => {
   it('cannot reuse a previous PSD for a standalone CLIP with the same name elsewhere', async () => {
     await runQuickExportBatch(['C:/one/cut.clip', 'C:/one/cut.psd', 'C:/two/cut.clip'], vi.fn())
     expect(vi.mocked(readClipFile).mock.calls.map(call => call[1])).toEqual([false, true])
-    expect(vi.mocked(buildOutputEntriesFromState).mock.calls.map(([state]) => state.psdFileName)).toEqual(['cut.psd', null])
+    expect(vi.mocked(planExportEntriesFromState).mock.calls.map(([state]) => state.psdFileName)).toEqual(['cut.psd', null])
   })
 
   it('rejects structural mismatches before saving and continues after corrupt input and orphan files', async () => {
@@ -87,7 +87,7 @@ describe('batch export with the real loader and project store', () => {
     useAppStore.setState({ savedOutputConfig: output })
     vi.mocked(readClipFile).mockResolvedValueOnce(multiple)
     await runQuickExportBatch(['C:/cuts/multi.clip', 'C:/cuts/single.clip'], vi.fn())
-    expect(vi.mocked(buildOutputEntriesFromState).mock.calls.map(([s]) => s.projectSettings.sharedCutMode)).toEqual([true, false])
+    expect(vi.mocked(planExportEntriesFromState).mock.calls.map(([s]) => s.projectSettings.sharedCutMode)).toEqual([true, false])
     expect(vi.mocked(saveEntriesToDirectoryPath).mock.calls.every(([, config]) => config.format === 'png')).toBe(true)
     expect(useAppStore.getState().projectSettings).toEqual(original)
     expect(useAppStore.getState().savedOutputConfig).toEqual(output)
@@ -105,7 +105,7 @@ describe('batch export with the real loader and project store', () => {
 
   it('continues after a save failure and reports empty exports without saving stale images', async () => {
     vi.mocked(saveEntriesToDirectoryPath).mockRejectedValueOnce(new Error('disk full'))
-    vi.mocked(buildOutputEntriesFromState).mockReturnValueOnce([{ path: 'x.png', flatName: 'x.png', sourceLayerId: 'art', canvas: documentCanvas() }]).mockReturnValueOnce([])
+    vi.mocked(planExportEntriesFromState).mockReturnValueOnce([{ path: 'x.png', flatName: 'x.png', sourceLayerId: 'art', createCanvas: documentCanvas }]).mockReturnValueOnce([])
     const result = await runQuickExportBatch(['C:/a.clip', 'C:/empty.clip', 'C:/ok.clip'], vi.fn())
     expect(result).toMatchObject({ successCount: 1, failureCount: 2 })
     expect(result.jobs[0]).toMatchObject({ status: 'error', error: 'disk full' })

@@ -12,17 +12,17 @@ export interface RenderedOutput {
 }
 export type RenderSize = 'full' | 'comparison' | 'thumbnail'
 export type RenderResult = { image?: RenderedOutput; error?: string }
-type Job = { file: OutputFile; size: RenderSize; draw: () => RenderedOutput; users: number }
+type Job = { key: string; size: RenderSize; draw: () => RenderedOutput; users: number }
 const priority = { full: 0, comparison: 1, thumbnail: 2 }
 const cost = (result?: RenderResult) => result?.image ? result.image.canvas.width * result.image.canvas.height * 4 : 0
 
 /** Only visible consumers pin pixels. Notifications are scoped to each file/resolution. */
 export class OutputRenderQueue {
   private jobs: Job[] = []
-  private cache = new Map<OutputFile, Partial<Record<RenderSize, RenderResult>>>()
+  private cache = new Map<string, Partial<Record<RenderSize, RenderResult>>>()
   private timer: ReturnType<typeof setTimeout> | undefined
-  private listeners = new Map<OutputFile, Map<RenderSize, Set<() => void>>>()
-  private pins = new Map<OutputFile, Map<RenderSize, number>>()
+  private listeners = new Map<string, Map<RenderSize, Set<() => void>>>()
+  private pins = new Map<string, Map<RenderSize, number>>()
   private pauses = 0
   private renders = 0
   private budget: number
@@ -30,21 +30,22 @@ export class OutputRenderQueue {
   constructor(budget = 48 * 1024 * 1024, maxEntries = 256) { this.budget = budget; this.maxEntries = maxEntries }
 
   subscribe(files: readonly OutputFile[], size: RenderSize, listener: () => void) {
-    for (const file of files) {
-      const sizes = this.listeners.get(file) ?? new Map<RenderSize, Set<() => void>>()
+    const keys = new Set(files.map(file => file.renderKey))
+    for (const key of keys) {
+      const sizes = this.listeners.get(key) ?? new Map<RenderSize, Set<() => void>>()
       const callbacks = sizes.get(size) ?? new Set<() => void>()
-      callbacks.add(listener); sizes.set(size, callbacks); this.listeners.set(file, sizes)
+      callbacks.add(listener); sizes.set(size, callbacks); this.listeners.set(key, sizes)
     }
     return () => {
-      for (const file of files) {
-        const sizes = this.listeners.get(file), callbacks = sizes?.get(size)
+      for (const key of keys) {
+        const sizes = this.listeners.get(key), callbacks = sizes?.get(size)
         callbacks?.delete(listener)
         if (!callbacks?.size) sizes?.delete(size)
-        if (!sizes?.size) this.listeners.delete(file)
+        if (!sizes?.size) this.listeners.delete(key)
       }
     }
   }
-  get(file: OutputFile, size: RenderSize): RenderResult | undefined { return this.cache.get(file)?.[size] }
+  get(file: OutputFile, size: RenderSize): RenderResult | undefined { return this.cache.get(file.renderKey)?.[size] }
   getStats() {
     return { bytes: [...this.cache.values()].reduce((total, sizes) => total + Object.values(sizes).reduce((n, result) => n + cost(result), 0), 0),
       entries: this.cache.size, pending: this.jobs.length, renders: this.renders }
@@ -57,18 +58,19 @@ export class OutputRenderQueue {
     return () => { if (released) return; released = true; this.pauses--; this.schedule() }
   }
   request(file: OutputFile, size: RenderSize, draw: () => RenderedOutput): () => void {
-    const sizes = this.pins.get(file) ?? new Map<RenderSize, number>()
+    const key = file.renderKey
+    const sizes = this.pins.get(key) ?? new Map<RenderSize, number>()
     sizes.set(size, (sizes.get(size) ?? 0) + 1)
-    this.pins.set(file, sizes)
+    this.pins.set(key, sizes)
     let job: Job | undefined
     if (!this.get(file, size)) {
-      job = this.jobs.find(job => job.file === file && job.size === size)
-      if (!job) { job = { file, size, draw, users: 0 }; this.jobs.push(job) }
+      job = this.jobs.find(job => job.key === key && job.size === size)
+      if (!job) { job = { key, size, draw, users: 0 }; this.jobs.push(job) }
       job.users++
       this.schedule()
     } else {
-      const cached = this.cache.get(file)!
-      this.cache.delete(file); this.cache.set(file, cached)
+      const cached = this.cache.get(key)!
+      this.cache.delete(key); this.cache.set(key, cached)
     }
     let released = false
     return () => {
@@ -78,7 +80,7 @@ export class OutputRenderQueue {
       const count = (sizes.get(size) ?? 1) - 1
       if (count > 0) sizes.set(size, count)
       else sizes.delete(size)
-      if (!sizes.size && this.pins.get(file) === sizes) this.pins.delete(file)
+      if (!sizes.size && this.pins.get(key) === sizes) this.pins.delete(key)
       this.trim()
     }
   }
@@ -113,9 +115,9 @@ export class OutputRenderQueue {
     this.jobs.sort((a, b) => priority[a.size] - priority[b.size])
     const first = this.jobs[0]
     if (!first) return
-    const jobs = this.jobs.filter(job => job.file === first.file)
-    this.jobs = this.jobs.filter(job => job.file !== first.file)
-    const record = { ...this.cache.get(first.file) }
+    const jobs = this.jobs.filter(job => job.key === first.key)
+    this.jobs = this.jobs.filter(job => job.key !== first.key)
+    const record = { ...this.cache.get(first.key) }
     let temporary: HTMLCanvasElement | undefined
     try {
       let source = record.full?.image ?? (first.size !== 'full' ? record.comparison?.image : undefined)
@@ -141,9 +143,9 @@ export class OutputRenderQueue {
         temporary.width = 1; temporary.height = 1
       }
     }
-    this.cache.delete(first.file); this.cache.set(first.file, record)
+    this.cache.delete(first.key); this.cache.set(first.key, record)
     this.trim()
-    const callbacks = new Set(jobs.flatMap(job => [...(this.listeners.get(job.file)?.get(job.size) ?? [])]))
+    const callbacks = new Set(jobs.flatMap(job => [...(this.listeners.get(job.key)?.get(job.size) ?? [])]))
     callbacks.forEach(listener => listener())
     this.schedule()
   }

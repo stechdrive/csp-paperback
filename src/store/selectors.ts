@@ -102,7 +102,7 @@ let _cache: {
   visibilityOverrides: Map<string, boolean>
   manualAnimFolderIds: Set<string>
   singleMarks: Map<string, SingleMark>
-  processTable: ProcessFolderEntry[]
+  processFolderKey: string
   result: CspLayer[]
 } | null = null
 
@@ -110,12 +110,23 @@ let _navigatorCache: {
   layerTree: CspLayer[]
   visibilityOverrides: Map<string, boolean>
   timelineData: AppStore['timelineData']
-  processTable: ProcessFolderEntry[]
+  processFolderKey: string
   result: CspLayer[]
 } | null = null
 
 const emptyManualAnimFolderIds = new Set<string>()
 const emptySingleMarks = new Map<string, SingleMark>()
+
+const processFolderKeys = new WeakMap<ProcessFolderEntry[], string>()
+function processFolderKey(table: ProcessFolderEntry[]): string {
+  let key = processFolderKeys.get(table)
+  if (key === undefined) {
+    // Auto-promotion only depends on folder matching, not labels or border colors.
+    key = JSON.stringify([...new Set(table.flatMap(entry => entry.folderNames.map(normalizeProcessFolderName)))].sort())
+    processFolderKeys.set(table, key)
+  }
+  return key
+}
 
 /**
  * visibilityOverrides と manualAnimFolderIds を反映したツリーを返す。
@@ -127,6 +138,7 @@ export function selectLayerTreeWithVisibility(state: AppStore): CspLayer[] {
   const { layerTree, visibilityOverrides, manualAnimFolderIds, singleMarks } = state
   // projectSettings が欠けた部分モック state も許容する（既存テストとの後方互換）。
   const processTable = state.projectSettings?.processTable ?? []
+  const folderKey = processFolderKey(processTable)
 
   // 入力参照がすべて前回と同じなら前回の結果を返す（無限ループ防止）
   if (
@@ -135,7 +147,7 @@ export function selectLayerTreeWithVisibility(state: AppStore): CspLayer[] {
     _cache.visibilityOverrides === visibilityOverrides &&
     _cache.manualAnimFolderIds === manualAnimFolderIds &&
     _cache.singleMarks === singleMarks &&
-    _cache.processTable === processTable
+    _cache.processFolderKey === folderKey
   ) {
     return _cache.result
   }
@@ -148,7 +160,7 @@ export function selectLayerTreeWithVisibility(state: AppStore): CspLayer[] {
   // 既に isAnimationFolder=true のフォルダは昇格対象外なので順序は影響しない。
   const result = promoteAutoMarkedByProcessMatch(overridden, processTable)
 
-  _cache = { layerTree, visibilityOverrides, manualAnimFolderIds, singleMarks, processTable, result }
+  _cache = { layerTree, visibilityOverrides, manualAnimFolderIds, singleMarks, processFolderKey: folderKey, result }
   return result
 }
 
@@ -165,12 +177,13 @@ export function selectLayerTreeForNavigator(state: AppStore): CspLayer[] {
 
   const { layerTree, visibilityOverrides, timelineData } = state
   const processTable = state.projectSettings?.processTable ?? []
+  const folderKey = processFolderKey(processTable)
   if (
     _navigatorCache !== null &&
     _navigatorCache.layerTree === layerTree &&
     _navigatorCache.visibilityOverrides === visibilityOverrides &&
     _navigatorCache.timelineData === timelineData &&
-    _navigatorCache.processTable === processTable
+    _navigatorCache.processFolderKey === folderKey
   ) {
     return _navigatorCache.result
   }
@@ -180,7 +193,7 @@ export function selectLayerTreeForNavigator(state: AppStore): CspLayer[] {
     : layerTree
   const result = promoteAutoMarkedByProcessMatch(overridden, processTable)
 
-  _navigatorCache = { layerTree, visibilityOverrides, timelineData, processTable, result }
+  _navigatorCache = { layerTree, visibilityOverrides, timelineData, processFolderKey: folderKey, result }
   return result
 }
 

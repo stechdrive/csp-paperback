@@ -12,7 +12,7 @@ vi.mock('../../platform/files', () => ({
 }))
 
 vi.mock('../../utils/export-entries', () => ({
-  buildOutputEntriesFromState: vi.fn(),
+  planExportEntriesFromState: vi.fn(),
 }))
 
 vi.mock('../../utils/directory-builder', () => ({
@@ -26,16 +26,17 @@ vi.mock('@tauri-apps/api/path', () => ({
 import { dirname } from '@tauri-apps/api/path'
 import { useAppStore } from '../../store'
 import { allowTauriLaunchFilePaths, loadableFilesFromPaths } from '../../platform/files'
-import { buildOutputEntriesFromState } from '../../utils/export-entries'
+import { planExportEntriesFromState } from '../../utils/export-entries'
 import { saveEntriesToDirectoryPath } from '../../utils/directory-builder'
 import { resolveQuickExportFilePair, runQuickExport } from '../../utils/quick-export'
 import { readClipFile } from '../../utils/clip-io'
-import { DEFAULT_OUTPUT_CONFIG, type OutputEntry } from '../../types'
+import { DEFAULT_OUTPUT_CONFIG } from '../../types'
+import type { ExportEntry } from '../../types/output'
 
 const mockedGetState = vi.mocked(useAppStore.getState)
 const mockedAllowLaunchPaths = vi.mocked(allowTauriLaunchFilePaths)
 const mockedLoadableFilesFromPaths = vi.mocked(loadableFilesFromPaths)
-const mockedBuildOutputEntries = vi.mocked(buildOutputEntriesFromState)
+const mockedBuildOutputEntries = vi.mocked(planExportEntriesFromState)
 const mockedSaveEntries = vi.mocked(saveEntriesToDirectoryPath)
 const mockedDirname = vi.mocked(dirname)
 
@@ -86,7 +87,7 @@ describe('runQuickExport', () => {
     mockedGetState.mockReturnValue(state as never)
     mockedDirname.mockResolvedValue('C:/cut')
     mockedLoadableFilesFromPaths.mockResolvedValue([{ name: 'cut.clip', sourceDirectory: 'C:/cut', arrayBuffer: async () => new ArrayBuffer(0), text: async () => '' }])
-    mockedBuildOutputEntries.mockReturnValue([{} as OutputEntry])
+    mockedBuildOutputEntries.mockReturnValue([{} as ExportEntry])
     mockedSaveEntries.mockResolvedValue('C:/cut/cut')
     await expect(runQuickExport(['C:/cut/cut.clip'], vi.fn())).resolves.toEqual({ outputDirectory: 'C:/cut/cut', entryCount: 1, warnings: [] })
     expect(readClipFile).toHaveBeenCalledWith(expect.any(ArrayBuffer), true)
@@ -117,10 +118,10 @@ describe('runQuickExport', () => {
       savedOutputConfig,
       clipDiagnostics: [],
     }
-    const entry: OutputEntry = {
+    const entry: ExportEntry = {
       path: 'A/A1.png',
       flatName: 'A1.png',
-      canvas: document.createElement('canvas'),
+      createCanvas: () => document.createElement('canvas'),
       sourceLayerId: 'cell-1',
     }
     const xdtsFile = {

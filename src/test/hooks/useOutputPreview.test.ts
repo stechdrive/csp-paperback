@@ -114,6 +114,23 @@ describe('useOutputPreview', () => {
     expect(result.current[0].sources!.all.has(process.id)).toBe(false)
   })
 
+  it('updates preview names immediately while retaining the image across export-only settings', async () => {
+    processTree()
+    const { result } = renderHook(() => useOutputPreview())
+    await ready(result)
+    const image = result.current[0].canvas
+    act(() => {
+      useAppStore.getState().setJpgQuality(0.7)
+      useAppStore.getState().setSequenceDigitMode('fixed-4')
+      useAppStore.getState().setStructure('hierarchy')
+      useAppStore.setState(s => ({ outputConfig: { ...s.outputConfig, format: 'png' } }))
+    })
+    expect(result.current[0]).toMatchObject({ canvas: image, flatName: 'A_0002_e.png', path: 'A/A_0002_e.png' })
+    act(() => useAppStore.getState().setBackground('transparent'))
+    await waitFor(() => expect(result.current[0]?.canvas).toBeDefined())
+    expect(result.current[0].canvas).not.toBe(image)
+  })
+
   it('hiding a cel or its ancestor clears the preview without switching outputs', async () => {
     const { cell, anim } = processTree()
     const { result } = renderHook(() => useOutputPreview())
