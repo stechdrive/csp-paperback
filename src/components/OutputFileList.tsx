@@ -6,6 +6,7 @@ import { selectDraftOutputs, selectOutputFiles, selectOutputNavigation } from '.
 import { useRenderedOutputs } from '../hooks/useRenderedOutputs'
 import { useExport } from '../hooks/useExport'
 import { useDismissableLayer } from '../hooks/useDismissableLayer'
+import { useVirtualOutputRows } from '../hooks/useVirtualOutputRows'
 import { supportsDirectoryExport } from '../utils/directory-builder'
 import { observePreviewVisibility } from '../utils/preview-visibility'
 import type { OutputFile } from '../utils/output-plan'
@@ -54,8 +55,11 @@ export function OutputFileList({ active = true, onShowTree, onPreview }: { activ
   }, [files, navigation])
   const visible = useMemo(() => [...ordered, ...drafts].filter(file => normalize(file.relativePath).includes(query)), [ordered, drafts, query])
   const selectedIndex = visible.findIndex(file => file.outputId === activeId)
+  const virtual = useVirtualOutputRows(list, visible, selectedIndex, active)
+  const visibleIds = useMemo(() => new Set(visible.map(file => file.outputId)), [visible])
+  const draftIds = useMemo(() => new Set(drafts.map(file => file.outputId)), [drafts])
   const exportIds = new Set(files.filter(file => selectedIds.has(file.outputId)).map(file => file.outputId))
-  const hiddenSelected = [...selectedIds].filter(id => !visible.some(file => file.outputId === id)).length
+  const hiddenSelected = [...selectedIds].filter(id => !visibleIds.has(id)).length
 
   const select = useCallback((file: OutputFile, toggle = false, range = false) => {
     useAppStore.getState().selectOutputFile(file.outputId, { toggle, range, orderedIds: visible.map(file => file.outputId) })
@@ -85,16 +89,6 @@ export function OutputFileList({ active = true, onShowTree, onPreview }: { activ
     element.addEventListener('wheel', wheel, { passive: false })
     return () => element.removeEventListener('wheel', wheel)
   }, [move])
-  useEffect(() => {
-    if (active && selectedIndex >= 0) document.getElementById(`${id}-${selectedIndex}`)?.scrollIntoView?.({ block: 'nearest' })
-  }, [active, selectedIndex, id])
-  useEffect(() => {
-    const element = list.current
-    if (!element) return
-    const observer = new ResizeObserver(() => element.querySelector('[data-active-output="true"]')?.scrollIntoView?.({ block: 'nearest' }))
-    observer.observe(element)
-    return () => observer.disconnect()
-  }, [])
   useDismissableLayer({ open: !!menu, content: menuRef, trigger: moreRef, closeOnTab: true, closeOnScroll: true, closeOnResize: true,
     initialFocus: () => menuRef.current?.querySelector('button:not(:disabled)'),
     onDismiss: reason => { setMenu(null); if (reason === 'escape' || reason === 'tab') menuInvoker.current?.focus({ preventScroll: true }) } })
@@ -120,15 +114,16 @@ export function OutputFileList({ active = true, onShowTree, onPreview }: { activ
           event.preventDefault(); const rect = event.currentTarget.getBoundingClientRect(); openMenu(visible[selectedIndex], rect.left + 10, rect.top + 20)
         }
       }}>
-      {visible.map((file, index) => <div key={file.outputId}>
-        {drafts.includes(file) && !drafts.includes(visible[index - 1]) && <div className={styles.draftHeading}>未配置の仮想セル · 書き出し対象外</div>}
-        <Tooltip content={file.relativePath}><div data-tooltip={file.relativePath} id={`${id}-${index}`} role="option" aria-selected={selectedIds.has(file.outputId)} className={styles.fileRow}
+      {!!visible.length && <div className={styles.virtualRows} style={{ height: virtual.height }}>
+      {virtual.indices.map(index => { const file = visible[index]; return <div key={file.outputId} className={styles.virtualRow} data-virtual-row={index} style={{ top: virtual.offsets[index] }}>
+        {draftIds.has(file.outputId) && !draftIds.has(visible[index - 1]?.outputId) && <div className={styles.draftHeading}>未配置の仮想セル · 書き出し対象外</div>}
+        <Tooltip content={file.relativePath}><div data-tooltip={file.relativePath} id={`${id}-${index}`} role="option" aria-selected={selectedIds.has(file.outputId)} aria-posinset={index + 1} aria-setsize={visible.length} className={styles.fileRow}
           data-output-id={file.outputId} data-output-source-id={file.sourceLayerId} data-active-output={file.outputId === activeId}
           onClick={event => { list.current?.focus(); select(file, event.ctrlKey || event.metaKey, event.shiftKey) }}
           onContextMenu={event => { event.preventDefault(); openMenu(file, event.clientX, event.clientY) }}>
           <OutputThumbnail file={file} active={active} /><span>{file.relativePath}</span>
         </div></Tooltip>
-      </div>)}
+      </div> })}</div>}
       {!visible.length && <div className={styles.empty}>{query ? '一致するファイルはありません' : '現在の設定で出力されるファイルはありません'}</div>}
     </div>
     <div className={styles.selectionTools}>

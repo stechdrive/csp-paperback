@@ -78,7 +78,7 @@ export async function saveZipStream(
 ): Promise<void> {
   if (isDesktopRuntime()) {
     const { save } = await import('@tauri-apps/plugin-dialog')
-    const { writeFile } = await import('@tauri-apps/plugin-fs')
+    const { open } = await import('@tauri-apps/plugin-fs')
     const { join } = await import('@tauri-apps/api/path')
     const defaultPath = defaultDirectory ? await join(defaultDirectory, fileName) : fileName
     const path = await save({
@@ -88,7 +88,21 @@ export async function saveZipStream(
     })
     if (path === null) { await stream.cancel(); throw createAbortError() }
 
-    await writeFile(path, stream)
+    // The plugin's writeFile(stream) opens without truncating existing files.
+    // A shorter ZIP would leave the old central directory at the end.
+    const file = await open(path, { write: true, create: true, truncate: true })
+    try {
+      await stream.pipeTo(new WritableStream<Uint8Array>({
+        async write(chunk) {
+          let offset = 0
+          while (offset < chunk.length) {
+            const written = await file.write(chunk.subarray(offset))
+            if (written <= 0) throw new Error('ZIPファイルに書き込めませんでした')
+            offset += written
+          }
+        },
+      }))
+    } finally { await file.close() }
     return
   }
 

@@ -48,7 +48,7 @@ export function OutputConnections({ container, treeElement, active = true }: { c
     const clear = () => marked.forEach(row => { delete row.dataset.sourceRole; delete row.dataset.contributionCount; row.removeAttribute('aria-description') })
     const update = () => {
       frame = 0; clear(); marked.clear()
-      const fileRow = [...root.querySelectorAll<HTMLElement>('[data-output-id]')].find(row => row.dataset.outputId === activeId)
+      const fileRow = fileList.querySelector<HTMLElement>('[data-active-output="true"]')
       const viewport = treeRoot.getBoundingClientRect()
       if (!result?.image || !fileRow || !viewport.height || !viewport.width) { setGeometry({ paths: [], endpoints: [] }); return }
       const rows = new Map([...treeRoot.querySelectorAll<HTMLElement>('[data-layer-id]')].map(row => [row.dataset.layerId!, row]))
@@ -133,10 +133,11 @@ export function OutputConnections({ container, treeElement, active = true }: { c
       scroller.scrollBy({ top: event.deltaY * unit, left: event.deltaX * unit })
     }
     root.addEventListener('scroll', schedule, true)
+    fileList.addEventListener('output-layout', schedule)
     root.addEventListener('wheel', wheel, { passive: false })
     window.addEventListener('resize', schedule)
     schedule()
-    return () => { clear(); cancelAnimationFrame(frame); observer.disconnect(); mutation.disconnect(); root.removeEventListener('scroll', schedule, true); root.removeEventListener('wheel', wheel); window.removeEventListener('resize', schedule) }
+    return () => { clear(); cancelAnimationFrame(frame); observer.disconnect(); mutation.disconnect(); root.removeEventListener('scroll', schedule, true); fileList.removeEventListener('output-layout', schedule); root.removeEventListener('wheel', wheel); window.removeEventListener('resize', schedule) }
   }, [activeId, result, layerPaths, container, treeElement])
 
   useDismissableLayer({ open: !!visiblePopup, content: popupRef, trigger: { current: visiblePopup?.trigger ?? null },
@@ -164,9 +165,9 @@ export function OutputConnections({ container, treeElement, active = true }: { c
       aria-expanded={endpoint.kind === 'sources' ? visiblePopup?.edge === endpoint.edge : undefined}
       onClick={event => {
         if (endpoint.kind === 'output') {
-          const row = [...container.current!.querySelectorAll<HTMLElement>('[data-output-id]')].find(row => row.dataset.outputId === activeId)
-          row?.scrollIntoView({ block: 'center', inline: 'nearest' })
-          container.current?.querySelector<HTMLElement>('[role="listbox"]')?.focus({ preventScroll: true })
+          const list = container.current?.querySelector<HTMLElement>('[role="listbox"]')
+          list?.dispatchEvent(new Event('output-scroll-active'))
+          list?.focus({ preventScroll: true })
           return
         }
         if (visiblePopup?.edge === endpoint.edge) { setPopup(null); return }
