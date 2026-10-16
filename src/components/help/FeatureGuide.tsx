@@ -207,7 +207,6 @@ export function FeatureGuide() {
         <ul className={styles.list}>
           <li>フォルダがメニューに表示されないブラウザではZIPを使用してください。</li>
           <li>入力ファイルにDPI情報がある場合は、出力するJPG／PNGにも引き継ぎます。</li>
-          <li>出力中はツールバーに進捗が表示され、完了すると保存先またはファイルが確定します。</li>
         </ul>
       </Section>
 
@@ -404,9 +403,9 @@ A/
             <h3>セル内蔵型</h3>
             <pre>{`B/
   1/
-    線画・影 → B1.jpg
     _s/
-      作監修正 → B1_s.jpg`}</pre>
+      作監修正 → B1_s.jpg
+    線画・影 → B1.jpg`}</pre>
             <p>
               セル内の<code>_s</code>だけを本体から分離し、同じセル番号の
               <code>B1_s.jpg</code>として出力します。
