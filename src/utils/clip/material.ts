@@ -7,7 +7,7 @@ import type { MaterialEffects, MaterialQuad } from '../../types/rendering'
 import { readGradient } from './gradient'
 import { readAdjustment } from './adjustment'
 import { cropPixels } from './pixels'
-import { readVectorStrokes, renderVectors, type VectorBrushes } from './vector'
+import { readVectorStrokes, renderVectors, type BrushPattern, type VectorBrushes } from './vector'
 
 /** Decode only drawing effects; palette label colors are deliberately unrelated. */
 export function readMaterialEffects(row: ClipRow, report?: (message: string) => void): MaterialEffects | undefined {
@@ -73,14 +73,14 @@ export function materialOffscreen(t: MaterialTables, row: ClipRow, field: string
 /** Each layer can fall back independently; one failed image cannot cancel the document. */
 export function createMaterialDecoder(t: MaterialTables, width: number, height: number, dpi: number, diagnostics: ClipDiagnostic[]) {
   let decodedBytes = 0
-  const vectorBrushes: VectorBrushes = { styles: t.brushes ?? new Map(), graphs: t.brushGraphs ?? new Map(), patterns: new Map() }
+  const vectorBrushes: VectorBrushes = { styles: t.brushes ?? new Map(), graphs: t.brushGraphs ?? new Map(), patterns: new Map(), textures: new Map() }
   const loadedPatterns = new Set<number>()
-  async function loadPattern(id: number) {
-    if (!id || loadedPatterns.has(id)) return
-    loadedPatterns.add(id)
-    const pattern = t.brushPatterns?.get(id), indices = pattern?.ImageIndex
-    if (!(indices instanceof Uint8Array) || indices.length < 4) return
-    const image = t.brushImages?.get(new Reader(indices).u32())
+  const brushImages = new Map<number, BrushPattern | undefined>()
+  async function loadBrushImage(id: number): Promise<BrushPattern | undefined> {
+    if (!id) return
+    if (brushImages.has(id)) return brushImages.get(id)
+    brushImages.set(id, undefined)
+    const image = t.brushImages?.get(id)
     const off = image && materialOffscreen(t, image, 'Mipmap')
     if (!(off?.Attribute instanceof Uint8Array)) return
     const a = readAttribute(off.Attribute, true)
@@ -90,7 +90,17 @@ export function createMaterialDecoder(t: MaterialTables, width: number, height: 
     const alpha = new Uint8Array(a.width * a.height)
     for (let i = 0; i < alpha.length; i++) alpha[i] = pixels.rgba[i * 4 + 3]
     decodedBytes += alpha.length
-    vectorBrushes.patterns.set(id, { width: a.width, height: a.height, alpha })
+    const bitmap = { width: a.width, height: a.height, alpha }
+    brushImages.set(id, bitmap)
+    return bitmap
+  }
+  async function loadPattern(id: number) {
+    if (!id || loadedPatterns.has(id)) return
+    loadedPatterns.add(id)
+    const indices = t.brushPatterns?.get(id)?.ImageIndex
+    if (!(indices instanceof Uint8Array) || indices.length < 4) return
+    const image = await loadBrushImage(new Reader(indices).u32())
+    if (image) vectorBrushes.patterns.set(id, image)
   }
   const referenced = new Set([...t.mipInfos.values()].map(r => num(r, 'Offscreen')))
   for (const row of t.thumbnails) referenced.add(num(row, 'ThumbnailOffscreen'))
@@ -156,6 +166,15 @@ export function createMaterialDecoder(t: MaterialTables, width: number, height: 
           const patterns = new Set(strokes.map(s => num(vectorBrushes.styles.get(s.brush) ?? {}, 'PatternStyle')))
           for (const id of patterns) {
             try { await loadPattern(id) } catch (e) { report(errorMessage(e)) }
+          }
+          // Unlike PatternStyle, TexturePattern directly references BrushPatternImage.
+          const textures = new Set(strokes.map(s => {
+            const style = vectorBrushes.styles.get(s.brush) ?? {}
+            return num(style, 'TextureFlag') & 1 ? num(style, 'TexturePattern') : 0
+          }))
+          for (const id of textures) {
+            try { const image = await loadBrushImage(id); if (image) vectorBrushes.textures!.set(id, image) }
+            catch (e) { report(errorMessage(e)) }
           }
           layer.pixels = renderVectors(strokes, vectorBrushes, width, height, num(row, 'LayerOffsetX'), num(row, 'LayerOffsetY'), report)
           decodedBytes += layer.pixels.rgba.length

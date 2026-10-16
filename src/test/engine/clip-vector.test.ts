@@ -10,9 +10,9 @@ const mass = (image: ClipPixels) => image.rgba.reduce((sum, v, i) => sum + (i % 
 
 describe('bounded CLIP vector decoding and approximate rendering', () => {
   it.each([true, false])('decodes %s modern header with its effective brush ID, width and a single control', modern => {
-    const [stroke] = readVectorStrokes(vectorBytes({ modern, size: .5, flow: .7 }))
-    expect(stroke).toMatchObject({ brush: 7, diameter: 4, opacity: 1 })
-    expect(stroke.points[0]).toMatchObject({ x: 8, y: 8, size: .5 })
+    const [stroke] = readVectorStrokes(vectorBytes({ modern, size: .5, flow: .7, randomSeed: 0xfedcba98, direction: 42 }))
+    expect(stroke).toMatchObject({ brush: 7, diameter: 4, opacity: 1, randomSeed: 0xfedcba98 })
+    expect(stroke.points[0]).toMatchObject({ x: 8, y: 8, size: .5, direction: 42 })
     expect(stroke.points[0].flow).toBeCloseTo(.7)
   })
   it('preserves quadratic and cubic handles on every control and follows the curves', () => {
@@ -20,6 +20,19 @@ describe('bounded CLIP vector decoding and approximate rendering', () => {
     expect(Math.min(...sampleVectorStroke(quadratic).map(p => p.y))).toBeCloseTo(4, 1)
     const [cubic] = readVectorStrokes(vectorBytes({ flags: 65, stride: 120, points: [[2, 8], [14, 8]], handles: [[2, 0, 14, 0], [-100, -100, -100, -100]] }))
     expect(Math.min(...sampleVectorStroke(cubic).map(p => p.y))).toBeCloseTo(2, 1)
+  })
+  it('keeps spline controls on opposite sides of a saved corner independent', () => {
+    const bytes = vectorBytes({ points: [[2, 8], [8, 8], [14, 8], [14, 32], [2, 24]] })
+    bytes.writeUInt32BE(4097, 92 + 2 * 88 + 32) // Corner and locked size coexist.
+    const [stroke] = readVectorStrokes(bytes)
+    const before = sampleVectorStroke({ ...stroke, points: stroke.points.slice(0, 3) })
+    const after = sampleVectorStroke({ ...stroke, points: stroke.points.slice(2) })
+    const positions = (points: typeof before) => points.map(p => [p.x, p.y])
+    const corner = positions(sampleVectorStroke(stroke))
+    expect(corner).toEqual(positions([...before, ...after.slice(1)]))
+    expect(before.every(p => Math.abs(p.y - 8) < 1e-10)).toBe(true)
+    stroke.points[2].flags &= ~1
+    expect(positions(sampleVectorStroke(stroke))).not.toEqual(corner)
   })
   it('draws clicks, subpixel dots and coincident controls at the saved layer offset', () => {
     for (const points of [[[8, 8]], [[8, 8], [8, 8]]]) {
@@ -30,7 +43,7 @@ describe('bounded CLIP vector decoding and approximate rendering', () => {
     }
   })
   it('applies point flow, opacity and locked size once; transparent clicks stay transparent', () => {
-    const render = (flow: number, locked: boolean) => renderVectors(readVectorStrokes(vectorBytes({ size: .5, flow, opacity: .5, pointFlags: locked ? 12288 : 0 })), brushes(), 16, 16)
+    const render = (flow: number, locked: boolean) => renderVectors(readVectorStrokes(vectorBytes({ diameter: 14, size: .5, flow, opacity: .5, pointFlags: locked ? 12288 : 0 })), brushes(), 16, 16)
     expect(mass(render(.5, true))).toBe(mass(render(.5, false)))
     expect(alpha(render(.5, true), 8, 8)).toBeGreaterThan(30)
     expect(alpha(render(.5, true), 8, 8)).toBeLessThanOrEqual(64)
