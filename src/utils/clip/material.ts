@@ -97,10 +97,11 @@ export function createMaterialDecoder(t: MaterialTables, width: number, height: 
   async function loadPattern(id: number) {
     if (!id || loadedPatterns.has(id)) return
     loadedPatterns.add(id)
-    const indices = t.brushPatterns?.get(id)?.ImageIndex
+    const pattern = t.brushPatterns?.get(id), indices = pattern?.ImageIndex
     if (!(indices instanceof Uint8Array) || indices.length < 4) return
     const image = await loadBrushImage(new Reader(indices).u32())
-    if (image) vectorBrushes.patterns.set(id, image)
+    // Several pattern styles can share one bitmap but use different reverse modes.
+    if (image) vectorBrushes.patterns.set(id, { ...image, reverse: num(pattern!, 'Reverse2') })
   }
   const referenced = new Set([...t.mipInfos.values()].map(r => num(r, 'Offscreen')))
   for (const row of t.thumbnails) referenced.add(num(row, 'ThumbnailOffscreen'))

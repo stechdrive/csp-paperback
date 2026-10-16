@@ -17,7 +17,7 @@ export interface VectorStroke {
   flags: number; brush: number; diameter: number; opacity: number; randomSeed: number
   color: number[]; points: VectorPoint[]
 }
-export interface BrushPattern { width: number; height: number; alpha: Uint8Array }
+export interface BrushPattern { width: number; height: number; alpha: Uint8Array; reverse?: number }
 export interface VectorBrushes {
   styles: Map<number, ClipRow>
   graphs: Map<number, ClipRow>
@@ -154,14 +154,21 @@ export function renderVectors(strokes: VectorStroke[], brushes: VectorBrushes, w
       if (!brushes.styles.has(st.brush)) issues.add('ブラシ設定がない線を丸いペンで代替しました')
       const pattern = brushes.patterns.get(num(b, 'PatternStyle'))
       if (num(b, 'PatternStyle') && !pattern) issues.add('ブラシ先端画像がない線を丸いペンで代替しました')
-      if (!textures.has(st.brush)) textures.set(st.brush, createBrushTexture(b, brushes.textures?.get(num(b, 'TexturePattern')), message => issues.add(message)))
+      const imageAA = !!pattern && num(b, 'AntiAlias', 1) === 1
+      // Sub-2px nominal image tips regressed in the independent PSD comparison.
+      // Retain their previous footprint/AA until native captures resolve minification.
+      const tinyImage = !!pattern && st.diameter < 2
+      const weakImage = imageAA && !tinyImage
+      if (!textures.has(st.brush)) textures.set(st.brush, createBrushTexture(b, brushes.textures?.get(num(b, 'TexturePattern')), message => issues.add(message), imageAA))
       const texture = textures.get(st.brush)
       if (num(b, 'SprayFlag') || num(b, 'UseWaterColor') || num(b, 'WaterEdgeFlag') || ![0, 27, 31].includes(num(b, 'CompositeMode'))) issues.add('散布・混色・特殊ブラシ合成の一部を通常の線で代替しました')
       // Native AA=weak, hard round tip uses a 1.5px inward ramp at pixel centers.
       // Keep the previous small-tip / special-composite approximation outside captured cases.
       const nativeRound = !pattern && num(b, 'AntiAlias', 1) === 1 && num(b, 'Hardness', 1) === 1
         && num(b, 'CompositeMode') === 0 && st.diameter >= 4
-      const samples = sampleVectorStroke(st), ss = nativeRound ? 1 : num(b, 'AntiAlias', 1) ? 4 : 1
+      // Image-tip AA=weak captures fit a 2x grid at integer sample positions.
+      // This is a sampling approximation, not a translation of the saved path.
+      const samples = sampleVectorStroke(st), ss = nativeRound ? 1 : weakImage ? 2 : num(b, 'AntiAlias', 1) ? 4 : 1
       sampleCount += samples.length
       check(sampleCount <= 1000000, 'ベクターの合計展開量が上限を超えました')
       const thickness = Math.max(.01, Math.min(1, num(b, 'ThicknessBase', 1)))
@@ -169,7 +176,20 @@ export function renderVectors(strokes: VectorStroke[], brushes: VectorBrushes, w
         && num(b, 'CompositeMode') === 31 && num(b, 'AntiAlias') === 1 && num(b, 'Hardness') === 1
         && thickness === 1 && st.diameter <= 4
       let patternScale = 1
+      let aspectX = 1, aspectY = 1, flipX = 1, flipY = 1
       if (pattern) {
+        const reverse = pattern.reverse ?? 0
+        if (!Number.isInteger(reverse) || reverse < 0 || reverse > 255 || (reverse & 15) > 1 || (reverse >>> 4) > 1) {
+          issues.add('ブラシ先端のランダム反転・折り返し反転など、一部の反転方式を省略しました')
+        }
+        if (Number.isInteger(reverse) && reverse >= 0 && reverse <= 255) {
+          flipX = (reverse & 15) === 1 ? -1 : 1
+          flipY = (reverse >>> 4) === 1 ? -1 : 1
+        }
+        if (!tinyImage) {
+          aspectX = pattern.width / Math.max(pattern.width, pattern.height)
+          aspectY = pattern.height / Math.max(pattern.width, pattern.height)
+        }
         let painted = 0
         const tall = pattern.height >= pattern.width, narrow = tall ? pattern.width : pattern.height, long = tall ? pattern.height : pattern.width
         for (let i = 0; i < narrow; i++) {
@@ -214,7 +234,7 @@ export function renderVectors(strokes: VectorStroke[], brushes: VectorBrushes, w
       for (let i = 0; i < stamps.length; i++) {
         const p = stamps[i], previous = stamps[Math.max(0, i - 1)]
         // Native fixtures consume angle before density, including invisible dabs.
-        const randomAngle = rotationMode & 128 ? random() * 2 * Math.PI * num(b, 'RotationRandom', 1) : 0
+        const randomAngle = rotationMode & 128 ? (random() - (pattern && !tinyImage ? .5 : 0)) * 2 * Math.PI * num(b, 'RotationRandom', 1) : 0
         if (flowDynamics.randomMinimum !== undefined) p.alpha *= 1 - p.randomFlow * (1 - flowDynamics.randomMinimum) * (1 - random())
         if (p.diameter <= 0 || p.alpha <= 0) continue
         const radius = p.diameter * ss / 2, cx = (p.x - x0) * ss, cy = (p.y - y0) * ss
@@ -226,10 +246,13 @@ export function renderVectors(strokes: VectorStroke[], brushes: VectorBrushes, w
         work += (right - left) * (bottom - top)
         check(work <= 250000000, 'ベクター描画量が上限を超えました')
         for (let y = top; y < bottom; y++) for (let x = left; x < right; x++) {
-          const dx = x + .5 - cx, dy = y + .5 - cy, lx = dx * cos + dy * sin, ly = -dx * sin + dy * cos
+          const phase = weakImage ? 0 : .5
+          const dx = x + phase - cx, dy = y + phase - cy, lx = dx * cos + dy * sin, ly = -dx * sin + dy * cos
           let coverage: number
           if (pattern) {
-            const u = Math.floor((lx / (2 * radius * thickness) + .5) * pattern.width), v = Math.floor((ly / (2 * radius) + .5) * pattern.height)
+            // Reverse in tip-local axes before lookup; preserve the bitmap's aspect ratio.
+            const u = Math.floor((lx * flipX / (2 * radius * thickness * aspectX) + .5) * pattern.width)
+            const v = Math.floor((ly * flipY / (2 * radius * aspectY) + .5) * pattern.height)
             coverage = u >= 0 && u < pattern.width && v >= 0 && v < pattern.height ? pattern.alpha[v * pattern.width + u] / 255 : 0
           } else {
             const dist = nativeRound ? Math.hypot(lx / thickness, ly) : Math.hypot(lx, ly / (ss === 1 ? thickness : 1)), hardness = clamp(num(b, 'Hardness', 1))

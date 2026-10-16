@@ -1,4 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { deflateSync } from 'node:zlib'
+import { Blob as NodeBlob } from 'node:buffer'
 import { createBrushTexture } from '../../utils/clip/vector-texture'
 import { readVectorStrokes, renderVectors, type VectorBrushes } from '../../utils/clip/vector'
 import { createMaterialDecoder, type MaterialTables } from '../../utils/clip/material'
@@ -121,6 +123,41 @@ function solidAttribute(alpha: number) {
 }
 
 describe('paper image references in the material decoder', () => {
+  afterEach(() => vi.unstubAllGlobals())
+  it('retains each pattern style\'s reverse modes when two styles share the same decoded image', async () => {
+    vi.stubGlobal('Blob', NodeBlob) // jsdom's Blob does not expose a decompression stream.
+    const raw = Buffer.alloc(65536)
+    raw.set([32, 64, 96]); raw.set([128, 192, 255], 256)
+    const compressed = deflateSync(raw), length = Buffer.alloc(4)
+    length.writeUInt32LE(compressed.length)
+    const chunk = Buffer.concat([wide('BlockDataBeginChunk'), ...[0, raw.length, 256, 256, 1, compressed.length + 4].map(u32), length, compressed, wide('BlockDataEndChunk')])
+    const body = new Uint8Array(Buffer.concat([u32(chunk.length + 4), chunk]))
+    const parameters = [3, 2, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 256, 256, 0, 0, 0, 0]
+    const attribute = new Uint8Array(Buffer.concat([Buffer.alloc(16), wide('Parameter'), ...parameters.map(u32),
+      wide('InitColor'), ...[0, 0, 0, 0, 0].map(u32), wide('BlockSize'), ...[0, 1, 0, body.length].map(u32)]))
+    const t: MaterialTables = {
+      mipmaps: new Map([[100, { BaseMipmapInfo: 101 }]]), mipInfos: new Map([[101, { ThisScale: 100, Offscreen: 102 }]]),
+      offscreens: new Map([[102, { Attribute: attribute, BlockData: 'tip' }]]), thumbnails: [],
+      external: new Map<string, Uint8Array>([['tip', body], ['horizontal', vectorBytes({ diameter: 12, points: [[16, 16]] })],
+        ['vertical', vectorBytes({ brush: 8, diameter: 12, points: [[16, 16]] })]]),
+      vectors: new Map([[42, { VectorData: 'horizontal' }], [43, { VectorData: 'vertical' }]]),
+      brushes: new Map([[7, { PatternStyle: 10, AntiAlias: 1 }], [8, { PatternStyle: 11, AntiAlias: 1 }]]),
+      brushPatterns: new Map([[10, { ImageIndex: u32(20), Reverse2: 1 }], [11, { ImageIndex: u32(20), Reverse2: 16 }]]),
+      brushImages: new Map([[20, { Mipmap: 100 }]]),
+    }
+    const layer = (): ClipLayer => ({ id: 'vector', name: 'vector', kind: 'vector', isFolder: false, isAnimationFolder: false,
+      expanded: true, hidden: false, opacity: 1, blendMode: 'normal', clipping: false, children: [] })
+    const diagnostics: ClipDiagnostic[] = [], decode = createMaterialDecoder(t, 32, 32, 72, diagnostics)
+    const horizontal = layer(), vertical = layer(), again = layer()
+    await decode(horizontal, { VectorNormalStrokeIndex: 42 })
+    await decode(vertical, { VectorNormalStrokeIndex: 43 })
+    await decode(again, { VectorNormalStrokeIndex: 42 })
+    expect(diagnostics.filter(d => !d.message.includes('ベクターを近似描画'))).toEqual([])
+    expect(alpha(horizontal.pixels!, 12, 14)).toBe(96)
+    expect(alpha(vertical.pixels!, 12, 14)).toBe(128)
+    expect(again.pixels).toEqual(horizontal.pixels)
+    expect(diagnostics.some(d => /復元できない|不正|未対応/.test(d.message))).toBe(false)
+  })
   it('resolves TexturePattern directly as an image, even when a pattern style has the same numeric ID', async () => {
     const t: MaterialTables = {
       mipmaps: new Map([[100, { BaseMipmapInfo: 101 }], [200, { BaseMipmapInfo: 201 }]]),

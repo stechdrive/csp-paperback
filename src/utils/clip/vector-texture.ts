@@ -8,9 +8,41 @@ export interface BrushTexture {
   perDab: boolean
 }
 
+const wrap = (v: number, size: number) => (v % size + size) % size
+// Keep only the last filter for each bitmap. Shared styles reuse it without
+// mutating the decoded alpha or retaining an unbounded set of scale variants.
+const filtered = new WeakMap<Uint8Array, { size: number; alpha: Float32Array }>()
+
+/** Periodic, separable box prefilter: linear work, including very small scales. */
+function minifiedAlpha(image: BrushPattern, size: number): Uint8Array | Float32Array {
+  if (size <= 1) return image.alpha
+  const cached = filtered.get(image.alpha)
+  if (cached?.size === size) return cached.alpha
+  const { width, height, alpha } = image, radius = Math.floor((size - 1) / 2)
+  const horizontal = new Float32Array(alpha.length), result = new Float32Array(alpha.length)
+  for (let y = 0; y < height; y++) {
+    let sum = 0
+    for (let k = 0; k < size; k++) sum += alpha[y * width + wrap(k - radius, width)]
+    for (let x = 0; x < width; x++) {
+      horizontal[y * width + x] = sum / size
+      sum += alpha[y * width + wrap(x + size - radius, width)] - alpha[y * width + wrap(x - radius, width)]
+    }
+  }
+  for (let x = 0; x < width; x++) {
+    let sum = 0
+    for (let k = 0; k < size; k++) sum += horizontal[wrap(k - radius, height) * width + x]
+    for (let y = 0; y < height; y++) {
+      result[y * width + x] = sum / size
+      sum += horizontal[wrap(y + size - radius, height) * width + x] - horizontal[wrap(y - radius, height) * width + x]
+    }
+  }
+  filtered.set(alpha, { size, alpha: result })
+  return result
+}
+
 /** Native normal/multiply grain; unknown CSP texture effects remain diagnostic. */
 export function createBrushTexture(style: ClipRow, image: BrushPattern | undefined,
-  report: (message: string) => void): BrushTexture | undefined {
+  report: (message: string) => void, pixelAligned = false): BrushTexture | undefined {
   if (!num(style, 'TexturePattern') || !(num(style, 'TextureFlag') & 1)) return
   if (!image) { report('紙質画像を復元できないため、紙質なしで描画しました'); return }
   if (![0, 1].includes(num(style, 'TextureComposite'))) { report('未対応の紙質合成方式を、紙質なしで描画しました'); return }
@@ -29,11 +61,17 @@ export function createBrushTexture(style: ClipRow, image: BrushPattern | undefin
       report('紙質の明度・コントラスト・濃度変動など、一部の効果を近似しました')
     }
     const cos = Math.cos(rotation), sin = Math.sin(rotation)
-    const wrap = (v: number, size: number) => (v % size + size) % size
-    const alpha = (x: number, y: number) => image.alpha[wrap(y, image.height) * image.width + wrap(x, image.width)] / 255
+    // Weak-AA image-tip captures sample grain once per output pixel. At 6.25%,
+    // a 250px tile repeats after 31px, not 31.25px. Integer intermediate sizing
+    // and this prefilter approximate that evidence; CSP's exact kernel is unknown.
+    const periodX = Math.max(1, Math.floor(image.width * scale * 2)) / 2
+    const periodY = Math.max(1, Math.floor(image.height * scale * 2)) / 2
+    const pixels = pixelAligned ? minifiedAlpha(image, Math.max(1, Math.min(64, Math.floor(1 / (scale * 4))))) : image.alpha
+    const alpha = (x: number, y: number) => pixels[wrap(y, image.height) * image.width + wrap(x, image.width)] / 255
     return { perDab: !!(num(style, 'TextureFlag') & 16), sample(x, y) {
-      const dx = x - offsetX, dy = y - offsetY
-      const u = (dx * cos + dy * sin) / scale - .5, v = (-dx * sin + dy * cos) / scale - .5
+      const dx = (pixelAligned ? Math.floor(x) : x) - offsetX, dy = (pixelAligned ? Math.floor(y) : y) - offsetY
+      const u = pixelAligned ? wrap(dx * cos + dy * sin, periodX) * image.width / periodX : (dx * cos + dy * sin) / scale - .5
+      const v = pixelAligned ? wrap(-dx * sin + dy * cos, periodY) * image.height / periodY : (-dx * sin + dy * cos) / scale - .5
       const x0 = Math.floor(u), y0 = Math.floor(v), tx = u - x0, ty = v - y0
       const grain = (alpha(x0, y0) * (1 - tx) + alpha(x0 + 1, y0) * tx) * (1 - ty)
         + (alpha(x0, y0 + 1) * (1 - tx) + alpha(x0 + 1, y0 + 1) * tx) * ty
