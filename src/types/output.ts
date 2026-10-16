@@ -42,7 +42,10 @@ export interface OutputEntry {
 }
 
 /** Lazy entries own their rendered canvas; the encoder releases it after each file. */
-export type ExportEntry = OutputEntry | (Omit<OutputEntry, 'canvas'> & { createCanvas: () => HTMLCanvasElement })
+export type ExportEntry = OutputEntry | (Omit<OutputEntry, 'canvas'> & {
+  createCanvas: () => HTMLCanvasElement
+  releaseRenderCache?: () => void
+})
 export interface ExportProgressDetail {
   phase: 'rendering' | 'encoding' | 'writing'
   path: string

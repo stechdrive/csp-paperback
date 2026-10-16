@@ -12,7 +12,7 @@ export function useRenderedOutputs(files: OutputFile[], size: RenderSize, enable
   const results = useSyncExternalStore(subscribe, snapshot)
   useEffect(() => {
     if (!enabled) return
-    const cancel = files.map(file => outputRenderQueue.request(file, size, () => renderOutputFile(file, table, border)))
+    const cancel = files.map(file => outputRenderQueue.request(file, size, cache => renderOutputFile(file, table, border, cache)))
     return () => cancel.forEach(fn => fn())
   }, [files, size, table, border, enabled])
   return results

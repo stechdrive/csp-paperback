@@ -60,11 +60,17 @@ describe('quick export uses the real lazy plan and directory writer', () => {
   })
 
   it('stops rendering an unsuccessful document and continues with the next document', async () => {
+    const actualPlan = exportEntries.planExportEntriesFromState, released = vi.fn()
+    vi.spyOn(exportEntries, 'planExportEntriesFromState').mockImplementation((...args) => actualPlan(...args).map(entry => {
+      if (!('createCanvas' in entry)) throw new Error('eager export entry')
+      return { ...entry, releaseRenderCache: () => { entry.releaseRenderCache?.(); released() } }
+    }))
     vi.mocked(writeFile).mockRejectedValueOnce(new Error('disk full'))
     const result = await runQuickExportBatch(['C:/test/a.clip', 'C:/test/b.clip'], vi.fn())
     expect(result).toMatchObject({ successCount: 1, failureCount: 1, entryCount: 40 })
     expect(result.jobs[0]).toMatchObject({ status: 'error', error: 'disk full' })
     expect(canvasToBlob).toHaveBeenCalledTimes(41)
+    expect(released).toHaveBeenCalledTimes(80)
     expect(useAppStore.getState().layerTree).toEqual([])
   })
 })

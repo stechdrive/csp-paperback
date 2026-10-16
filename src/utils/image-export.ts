@@ -38,7 +38,7 @@ export async function canvasToBlob(
  * ない場合はSOIの直後に挿入する。
  */
 async function injectDpiJpeg(blob: Blob, dpiX: number, dpiY: number): Promise<Blob> {
-  const buf = await blob.arrayBuffer()
+  const buf = await blob.slice(0, 18).arrayBuffer()
   const bytes = new Uint8Array(buf)
 
   const dxH = (dpiX >> 8) & 0xFF
@@ -55,12 +55,8 @@ async function injectDpiJpeg(blob: Blob, dpiX: number, dpiY: number): Promise<Bl
     bytes[6] === 0x4A && bytes[7] === 0x46 && bytes[8] === 0x49 &&
     bytes[9] === 0x46 && bytes[10] === 0x00
   ) {
-    // 既存APP0を書き換え（コピーして修正）
-    const out = new Uint8Array(bytes)
-    out[13] = 0x01  // DensityUnit = pixels/inch
-    out[14] = dxH; out[15] = dxL  // Xdensity
-    out[16] = dyH; out[17] = dyL  // Ydensity
-    return new Blob([out], { type: 'image/jpeg' })
+    // 密度の5バイトだけを差し替え、画像本体はBlob参照を共有する。
+    return new Blob([blob.slice(0, 13), new Uint8Array([1, dxH, dxL, dyH, dyL]), blob.slice(18)], { type: 'image/jpeg' })
   }
 
   // APP0がない場合はSOIの直後にJFIF APP0を挿入
@@ -73,11 +69,7 @@ async function injectDpiJpeg(blob: Blob, dpiX: number, dpiY: number): Promise<Bl
     dyH, dyL,                         // Ydensity
     0x00, 0x00,                        // no thumbnail
   ])
-  const out = new Uint8Array(2 + app0.length + bytes.length - 2)
-  out.set(bytes.slice(0, 2))           // SOI
-  out.set(app0, 2)                     // JFIF APP0
-  out.set(bytes.slice(2), 2 + app0.length)
-  return new Blob([out], { type: 'image/jpeg' })
+  return new Blob([blob.slice(0, 2), app0, blob.slice(2)], { type: 'image/jpeg' })
 }
 
 /**
@@ -85,9 +77,6 @@ async function injectDpiJpeg(blob: Blob, dpiX: number, dpiY: number): Promise<Bl
  * 既存のpHYsがある場合は置換、ない場合はIHDRの直後に挿入。
  */
 async function injectDpiPng(blob: Blob, dpiX: number, dpiY: number): Promise<Blob> {
-  const buf = await blob.arrayBuffer()
-  const bytes = new Uint8Array(buf)
-
   // pixels per meter に変換（1 inch = 0.0254 m）
   const ppmX = Math.round(dpiX / 0.0254)
   const ppmY = Math.round(dpiY / 0.0254)
@@ -99,10 +88,14 @@ async function injectDpiPng(blob: Blob, dpiX: number, dpiY: number): Promise<Blo
   let ihdrEnd = -1
   const chunks: { start: number; end: number; type: string }[] = []
 
-  while (offset < bytes.length - 4) {
-    const len = readUint32(bytes, offset)
-    const type = String.fromCharCode(bytes[offset+4], bytes[offset+5], bytes[offset+6], bytes[offset+7])
+  while (offset < blob.size - 4) {
+    // Read only chunk headers; compressed pixels remain in Blob slices.
+    const header = new Uint8Array(await blob.slice(offset, offset + 8).arrayBuffer())
+    if (header.length !== 8) return blob
+    const len = readUint32(header, 0)
+    const type = String.fromCharCode(header[4], header[5], header[6], header[7])
     const chunkEnd = offset + 4 + 4 + len + 4  // length + type + data + crc
+    if (chunkEnd > blob.size) return blob
     chunks.push({ start: offset, end: chunkEnd, type })
     if (type === 'IHDR') ihdrEnd = chunkEnd
     offset = chunkEnd
@@ -111,18 +104,14 @@ async function injectDpiPng(blob: Blob, dpiX: number, dpiY: number): Promise<Blo
   if (ihdrEnd < 0) return blob  // 壊れたPNG
 
   // 既存pHYsを除去しつつIHDR直後にphysを挿入
-  const parts: Uint8Array[] = [bytes.slice(0, ihdrEnd), phys]
+  const parts: BlobPart[] = [blob.slice(0, ihdrEnd), phys]
   for (const chunk of chunks) {
     if (chunk.type === 'pHYs') continue  // 古いpHYsをスキップ
     if (chunk.start < ihdrEnd) continue  // IHDR以前は既に含まれている
-    parts.push(bytes.slice(chunk.start, chunk.end))
+    parts.push(blob.slice(chunk.start, chunk.end))
   }
 
-  const total = parts.reduce((s, p) => s + p.length, 0)
-  const out = new Uint8Array(total)
-  let pos = 0
-  for (const p of parts) { out.set(p, pos); pos += p.length }
-  return new Blob([out], { type: 'image/png' })
+  return new Blob(parts, { type: 'image/png' })
 }
 
 function readUint32(bytes: Uint8Array, offset: number): number {
@@ -136,7 +125,7 @@ function writeUint32(bytes: Uint8Array, offset: number, value: number): void {
   bytes[offset+3] = value & 0xFF
 }
 
-function buildPHYsChunk(ppmX: number, ppmY: number): Uint8Array {
+function buildPHYsChunk(ppmX: number, ppmY: number): Uint8Array<ArrayBuffer> {
   // pHYs data: ppux(4) + ppuy(4) + unit(1) = 9 bytes
   const data = new Uint8Array(9)
   writeUint32(data, 0, ppmX)

@@ -1,4 +1,5 @@
 import { applyMaterialEffects } from './material-effects'
+import { withCanvasResources } from './render-resources'
 import { recordOutputSources } from './render-sources'
 import { cellOutputId, layerOutputId, virtualOutputId } from '../utils/output-identity'
 import {
@@ -35,12 +36,12 @@ import {
 } from '../utils/naming'
 
 // A plan only holds metadata and render functions. Canvas work starts at render time.
-interface OutputContext {
+export interface OutputContext {
   lower: FlatLayer[]
   upper: FlatLayer[]
   material?: MaterialOutputContext[]
 }
-type ContextFactory = (cache: OutputRenderCache) => OutputContext
+export type ContextFactory = (cache: OutputRenderCache) => OutputContext
 export type OutputRenderCache = Map<ContextFactory, OutputContext>
 export interface PlannedOutputEntry extends Omit<OutputEntry, 'canvas'> {
   outputId: string
@@ -49,8 +50,7 @@ export interface PlannedOutputEntry extends Omit<OutputEntry, 'canvas'> {
   renderCanvas: (cache: OutputRenderCache) => HTMLCanvasElement
 }
 
-// Context canvases are shared within one render batch and released with that batch,
-// never retained by the metadata plan used by the file list.
+// Render caches own flattened contexts; metadata plans only keep the factories.
 function cachedContext(build: ContextFactory): ContextFactory {
   const get: ContextFactory = cache => {
     const cached = cache.get(get)
@@ -63,12 +63,14 @@ function cachedContext(build: ContextFactory): ContextFactory {
 }
 
 export function renderOutputPlans(plans: PlannedOutputEntry[]): OutputEntry[] {
-  const cache: OutputRenderCache = new Map()
-  return plans.map(entry => ({
-    path: entry.path, flatName: entry.flatName, sourceLayerId: entry.sourceLayerId,
-    sourceCellId: entry.sourceCellId, processSuffixes: entry.processSuffixes,
-    canvas: entry.renderCanvas(cache),
-  }))
+  return withCanvasResources(() => {
+    const cache: OutputRenderCache = new Map()
+    return plans.map(entry => ({
+      path: entry.path, flatName: entry.flatName, sourceLayerId: entry.sourceLayerId,
+      sourceCellId: entry.sourceCellId, processSuffixes: entry.processSuffixes,
+      canvas: entry.renderCanvas(cache),
+    }))
+  }, entries => entries.map(entry => entry.canvas))
 }
 
 /**

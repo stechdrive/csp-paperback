@@ -4,6 +4,7 @@ import type { CspLayer, FlatLayer } from '../types'
 import { collectAnimFolderAncestorIds } from './tree-builder'
 import { applyLayerMask, compositeGroup, compositeStack, createCanvas } from './compositor'
 import { resolveSelectedAnimCell } from '../utils/anim-cell-selection'
+import { withCanvasResources } from './render-resources'
 
 /**
  * コアフラット化アルゴリズム
@@ -33,6 +34,10 @@ export function flattenTree(
   const animAncestorIds = collectAnimFolderAncestorIds(rootChildren)
 
   function flattenLayer(layer: CspLayer): FlatLayer[] {
+    return withCanvasResources(() => flattenLayerContent(layer), flats => flats.map(flat => flat.canvas))
+  }
+
+  function flattenLayerContent(layer: CspLayer): FlatLayer[] {
     // 非表示は合成不参加
     if (layer.hidden || layer.uiHidden) return []
 
@@ -175,6 +180,8 @@ export function flattenToCanvas(
   background: 'white' | 'transparent' = 'white',
   selectedCellIndices?: Map<string, number>
 ): HTMLCanvasElement {
-  const flatLayers = flattenTree(rootChildren, docWidth, docHeight, selectedCellIndices)
-  return compositeRoot(flatLayers, docWidth, docHeight, background)
+  return withCanvasResources(() => {
+    const flatLayers = flattenTree(rootChildren, docWidth, docHeight, selectedCellIndices)
+    return compositeRoot(flatLayers, docWidth, docHeight, background)
+  }, canvas => [canvas])
 }

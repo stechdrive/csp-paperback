@@ -3,6 +3,7 @@ import type { BlendMode, FlatLayer } from '../types'
 import { drawNativeBlend } from './native-blend'
 import { drawAdjustment } from './material-adjustment'
 import { copyRenderWarnings, markVectorWarning, markUnsupported3D } from './render-warning'
+import { createRenderCanvas, canvasBounds, setCanvasBounds, unionBounds, releaseCanvas } from './render-resources'
 
 /**
  * ag-psdのBlendModeをCanvasのglobalCompositeOperationにマッピング
@@ -50,12 +51,7 @@ export function isUnsupportedBlendMode(mode: BlendMode): boolean {
   return blendModeToCompositeOp(mode) === null
 }
 
-export function createCanvas(width: number, height: number): HTMLCanvasElement {
-  const canvas = document.createElement('canvas')
-  canvas.width = width
-  canvas.height = height
-  return canvas
-}
+export const createCanvas = createRenderCanvas
 
 /**
  * FlatLayerを1枚のキャンバスに描画する
@@ -94,11 +90,14 @@ export function compositeStack(
       }
       const clipped = applyClippingMask(layer, baseLayer, width, height)
       const clippedFlat: FlatLayer = { ...layer, canvas: clipped, clipping: false, top: 0, left: 0 }
-      drawLayer(ctx, clippedFlat)
+      try { drawLayer(ctx, clippedFlat) } finally { releaseCanvas(clipped) }
     }
     participating.push(layer)
   }
 
+  if (background === 'transparent') setCanvasBounds(output, unionBounds(participating
+    .filter(layer => layer.opacity > 0)
+    .map(layer => canvasBounds(layer.canvas, layer.left, layer.top, width, height))))
   return recordComposite(output, participating)
 }
 
@@ -198,26 +197,38 @@ export function applyLayerMask(
 
   // マスクをドキュメント座標に配置
   // defaultColor=255（白）の場合、マスク範囲外は完全表示（白で塗りつぶし）
-  const maskOnDoc = createCanvas(docWidth, docHeight)
+  const area = canvasBounds(layerCanvas, layerLeft, layerTop, docWidth, docHeight)
+  setCanvasBounds(result, area)
+  if (!area.width || !area.height) {
+    copyRenderWarnings(result, layerCanvas)
+    return copyRenderSources(result, layerCanvas)
+  }
+  // Fractional translations can change Canvas interpolation when the draw is
+  // clipped against a smaller surface. Keep the original surface in that case.
+  const fractionalMask = !Number.isInteger(maskLeft) || !Number.isInteger(maskTop)
+  const maskX = fractionalMask ? 0 : area.left, maskY = fractionalMask ? 0 : area.top
+  const maskOnDoc = createCanvas(fractionalMask ? docWidth : area.width, fractionalMask ? docHeight : area.height)
   const maskCtx = maskOnDoc.getContext('2d')!
-  if ((mask.defaultColor ?? 0) === 255) {
-    maskCtx.fillStyle = '#ffffff'
-    maskCtx.fillRect(0, 0, docWidth, docHeight)
-  }
-  maskCtx.drawImage(mask.canvas, maskLeft, maskTop)
+  try {
+    if ((mask.defaultColor ?? 0) === 255) {
+      maskCtx.fillStyle = '#ffffff'
+      maskCtx.fillRect(0, 0, maskOnDoc.width, maskOnDoc.height)
+    }
+    maskCtx.drawImage(mask.canvas, maskLeft - maskX, maskTop - maskY)
 
-  // ピクセル単位でアルファにマスク値（Rチャンネル）を乗算
-  const resultData = ctx.getImageData(0, 0, docWidth, docHeight)
-  const maskData = maskCtx.getImageData(0, 0, docWidth, docHeight)
-  const rd = resultData.data
-  const md = maskData.data
-  for (let i = 0; i < rd.length; i += 4) {
-    rd[i + 3] = Math.round((rd[i + 3] * md[i]) / 255)
-  }
-  ctx.putImageData(resultData, 0, 0)
-  copyRenderWarnings(result, layerCanvas)
+    // ピクセル単位でアルファにマスク値（Rチャンネル）を乗算
+    const resultData = ctx.getImageData(area.left, area.top, area.width, area.height)
+    const maskData = maskCtx.getImageData(area.left - maskX, area.top - maskY, area.width, area.height)
+    const rd = resultData.data
+    const md = maskData.data
+    for (let i = 0; i < rd.length; i += 4) {
+      rd[i + 3] = Math.round((rd[i + 3] * md[i]) / 255)
+    }
+    ctx.putImageData(resultData, area.left, area.top)
+    copyRenderWarnings(result, layerCanvas)
 
-  return copyRenderSources(result, layerCanvas)
+    return copyRenderSources(result, layerCanvas)
+  } finally { releaseCanvas(maskOnDoc) }
 }
 
 /**

@@ -44,28 +44,32 @@ export async function* streamOutputEntries(
   onProgress?: ExportProgressCallback,
 ): AsyncGenerator<StreamedOutputEntry> {
   const total = preparedEntries.length
-  for (let i = 0; i < total; i++) {
-    const prepared = preparedEntries[i]
-    const original = originalEntries[i]
-    const lazy = 'createCanvas' in original
-    if (lazy) {
-      onProgress?.(i, total, { phase: 'rendering', path: prepared.relativePath })
-      // Let React, input handling and the progress bar paint between images.
-      await new Promise<void>(resolve => setTimeout(resolve, 0))
+  try {
+    for (let i = 0; i < total; i++) {
+      const prepared = preparedEntries[i]
+      const original = originalEntries[i]
+      const lazy = 'createCanvas' in original
+      if (lazy) {
+        onProgress?.(i, total, { phase: 'rendering', path: prepared.relativePath })
+        // Let React, input handling and the progress bar paint between images.
+        await new Promise<void>(resolve => setTimeout(resolve, 0))
+      }
+      const canvas = lazy ? original.createCanvas() : original.canvas
+      if (!canvas) continue
+      let blob: Blob
+      try {
+        if (lazy) onProgress?.(i, total, { phase: 'encoding', path: prepared.relativePath })
+        blob = await canvasToBlob(canvas, config.format, config.jpgQuality, dpiX, dpiY)
+      } finally {
+        if (lazy) { canvas.width = 1; canvas.height = 1 }
+        else (original as { canvas: HTMLCanvasElement | null }).canvas = null
+      }
+      if (lazy) onProgress?.(i, total, { phase: 'writing', path: prepared.relativePath })
+      yield { ...prepared, input: blob }
+      onProgress?.(i + 1, total)
     }
-    const canvas = lazy ? original.createCanvas() : original.canvas
-    if (!canvas) continue
-    let blob: Blob
-    try {
-      if (lazy) onProgress?.(i, total, { phase: 'encoding', path: prepared.relativePath })
-      blob = await canvasToBlob(canvas, config.format, config.jpgQuality, dpiX, dpiY)
-    } finally {
-      if (lazy) { canvas.width = 1; canvas.height = 1 }
-      else (original as { canvas: HTMLCanvasElement | null }).canvas = null
-    }
-    if (lazy) onProgress?.(i, total, { phase: 'writing', path: prepared.relativePath })
-    yield { ...prepared, input: blob }
-    onProgress?.(i + 1, total)
+  } finally {
+    for (const entry of originalEntries) if ('createCanvas' in entry) entry.releaseRenderCache?.()
   }
 }
 

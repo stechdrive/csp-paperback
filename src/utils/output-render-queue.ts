@@ -3,6 +3,8 @@ import type { ProjectSettings } from '../types'
 import { applyRevisionBorders } from './revision-border'
 import { outputSources } from '../engine/render-sources'
 import { hasVectorWarning, hasUnsupported3D } from '../engine/render-warning'
+import { OutputContextCache, renderWithContextCache } from '../engine/output-context-cache'
+import type { OutputRenderCache } from '../engine/cell-extractor'
 
 export interface RenderedOutput {
   canvas: HTMLCanvasElement
@@ -12,7 +14,7 @@ export interface RenderedOutput {
 }
 export type RenderSize = 'full' | 'comparison' | 'thumbnail'
 export type RenderResult = { image?: RenderedOutput; error?: string }
-type Job = { key: string; size: RenderSize; draw: () => RenderedOutput; users: number }
+type Job = { key: string; size: RenderSize; draw: (cache: OutputRenderCache) => RenderedOutput; users: number }
 const priority = { full: 0, comparison: 1, thumbnail: 2 }
 const cost = (result?: RenderResult) => result?.image ? result.image.canvas.width * result.image.canvas.height * 4 : 0
 
@@ -27,6 +29,7 @@ export class OutputRenderQueue {
   private renders = 0
   private budget: number
   private maxEntries: number
+  private contexts = new OutputContextCache()
   constructor(budget = 48 * 1024 * 1024, maxEntries = 256) { this.budget = budget; this.maxEntries = maxEntries }
 
   subscribe(files: readonly OutputFile[], size: RenderSize, listener: () => void) {
@@ -48,7 +51,8 @@ export class OutputRenderQueue {
   get(file: OutputFile, size: RenderSize): RenderResult | undefined { return this.cache.get(file.renderKey)?.[size] }
   getStats() {
     return { bytes: [...this.cache.values()].reduce((total, sizes) => total + Object.values(sizes).reduce((n, result) => n + cost(result), 0), 0),
-      entries: this.cache.size, pending: this.jobs.length, renders: this.renders }
+      entries: this.cache.size, pending: this.jobs.length, renders: this.renders,
+      contextBytes: this.contexts.bytes, contextEntries: this.contexts.size }
   }
   pause() {
     this.pauses++
@@ -57,7 +61,7 @@ export class OutputRenderQueue {
     let released = false
     return () => { if (released) return; released = true; this.pauses--; this.schedule() }
   }
-  request(file: OutputFile, size: RenderSize, draw: () => RenderedOutput): () => void {
+  request(file: OutputFile, size: RenderSize, draw: (cache: OutputRenderCache) => RenderedOutput): () => void {
     const key = file.renderKey
     const sizes = this.pins.get(key) ?? new Map<RenderSize, number>()
     sizes.set(size, (sizes.get(size) ?? 0) + 1)
@@ -87,7 +91,7 @@ export class OutputRenderQueue {
   clear() {
     if (this.timer !== undefined) clearTimeout(this.timer)
     this.timer = undefined
-    this.jobs = []; this.cache.clear(); this.pins.clear()
+    this.jobs = []; this.cache.clear(); this.pins.clear(); this.contexts.clear()
     const callbacks = new Set([...this.listeners.values()].flatMap(sizes => [...sizes.values()].flatMap(listeners => [...listeners])))
     callbacks.forEach(listener => listener())
   }
@@ -121,7 +125,7 @@ export class OutputRenderQueue {
     let temporary: HTMLCanvasElement | undefined
     try {
       let source = record.full?.image ?? (first.size !== 'full' ? record.comparison?.image : undefined)
-      if (!source) { source = first.draw(); temporary = source.canvas; this.renders++ }
+      if (!source) { source = first.draw(this.contexts); temporary = source.canvas; this.renders++ }
       for (const job of jobs) {
         let image = source
         if (job.size !== 'full') {
@@ -153,11 +157,13 @@ export class OutputRenderQueue {
 
 export const outputRenderQueue = new OutputRenderQueue()
 
-export function renderOutputFile(file: OutputFile, table: ProjectSettings['processTable'], border: boolean, cache: Parameters<OutputFile['renderCanvas']>[0] = new Map()): RenderedOutput {
-  const raw = file.renderCanvas(cache)
-  const sources = outputSources(raw)
-  const canvas = applyRevisionBorders([{ ...file, canvas: raw }], table, border)[0].canvas
-  const image = { canvas, sources, vectorWarning: hasVectorWarning(raw), unsupported3D: hasUnsupported3D(raw) }
-  if (canvas !== raw) { raw.width = 1; raw.height = 1 }
-  return image
+export function renderOutputFile(file: OutputFile, table: ProjectSettings['processTable'], border: boolean, cache?: OutputRenderCache): RenderedOutput {
+  return renderWithContextCache(cache, contexts => {
+    const raw = file.renderCanvas(contexts)
+    const sources = outputSources(raw)
+    const canvas = applyRevisionBorders([{ ...file, canvas: raw }], table, border)[0].canvas
+    const image = { canvas, sources, vectorWarning: hasVectorWarning(raw), unsupported3D: hasUnsupported3D(raw) }
+    if (canvas !== raw) { raw.width = 1; raw.height = 1 }
+    return image
+  }, image => image.canvas)
 }
