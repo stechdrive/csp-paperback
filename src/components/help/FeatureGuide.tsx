@@ -125,7 +125,7 @@ export function FeatureGuide() {
               </tr>
               <tr>
                 <td>3Dレイヤー</td>
-                <td>CLIP内の保存画像を使います。画像がない場合は、{ja.input.clip3dResave}{ja.input.clip3dPsdFallback}</td>
+                <td>CLIP内の保存画像を使います。画像を取得できない場合は、{ja.input.clip3dResave}{ja.input.clip3dPsdFallback}</td>
               </tr>
               <tr>
                 <td>ベクター、その他の効果</td>

@@ -41,7 +41,7 @@ function PsdInstructions() {
       <strong>ベクターや効果の描画を合わせるときは、PSDも一緒にドロップ</strong>
       <p>クリスタの<span className={styles.menuPath}>{ja.input.psdMenu}</span>でPSDを保存してください。</p>
       <p>{ja.input.psdVisibility}</p>
-      <p>3DはCLIP内の保存画像を使います。画像がない場合は、警告に表示される手順で互換情報を付けて保存し直してください。</p>
+      <p>3DはCLIP内の保存画像を使います。画像を取得できない場合は、{ja.input.clip3dResave}</p>
     </div>
   )
 }
