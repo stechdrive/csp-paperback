@@ -38,9 +38,10 @@ function Step({
 function PsdInstructions() {
   return (
     <div className={styles.psdInstructions}>
-      <strong>ベクター・3Dレイヤーがあるときは、PSDも一緒にドロップ</strong>
+      <strong>ベクターや効果の描画を合わせるときは、PSDも一緒にドロップ</strong>
       <p>クリスタの<span className={styles.menuPath}>{ja.input.psdMenu}</span>でPSDを保存してください。</p>
       <p>{ja.input.psdVisibility}</p>
+      <p>3DはCLIP内の保存画像を使います。画像がない場合は、警告に表示される手順で互換情報を付けて保存し直してください。</p>
     </div>
   )
 }

@@ -7,6 +7,7 @@ import type { MaterialEffects, MaterialQuad } from '../../types/rendering'
 import { readGradient } from './gradient'
 import { readAdjustment } from './adjustment'
 import { readVectorStrokes, renderVectors, type BrushPattern, type VectorBrushes } from './vector'
+import { ja } from '../../i18n/ja'
 
 /** Decode only drawing effects; palette label colors are deliberately unrelated. */
 export function readMaterialEffects(row: ClipRow, report?: (message: string) => void): MaterialEffects | undefined {
@@ -226,7 +227,7 @@ export function createMaterialDecoder(t: MaterialTables, width: number, height: 
       if (!layer.pixels && !layer.fragments?.length && !layer.text?.length) {
         if (layer.kind === '3d') {
           layer.unsupported3D = true
-          report('3Dの描画には未対応で、保存画像も復元できません。クリスタで書き出したPSDを追加してください')
+          report([ja.input.clip3dUnavailable, ja.input.clip3dResave, ja.input.clip3dPsdFallback].join('\n'))
         } else if (failures.length || !(num(row, 'LayerType') & 1)) report(failures[0] ?? '素材画像を復元できません。ほかの素材は引き続き書き出せます')
       }
     }

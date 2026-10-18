@@ -41,11 +41,15 @@ describe('vector warnings follow material contributions', () => {
     const image = flattenToCanvas(tree, 8, 4)
     expect(hasVectorWarning(image) || hasUnsupported3D(image)).toBe(false)
     const model = { ...layer('model'), kind: '3d' as const }, cached = { ...model, pixels: solid(1, 1, [0, 0, 0, 255]) }
-    const decode = createMaterialDecoder(tables(), 8, 4, 72, [])
+    const diagnostics: ClipDiagnostic[] = []
+    const decode = createMaterialDecoder(tables(), 8, 4, 72, diagnostics)
     await decode(model, { Manager3DOd: 1 })
     await decode(cached, { Manager3DOd: 1 })
     expect(model.unsupported3D).toBe(true)
     expect(cached.unsupported3D).toBeUndefined()
+    expect(diagnostics).toHaveLength(1)
+    expect(diagnostics[0].message).toContain('［バージョン互換情報の保存］を［保存する］')
+    expect(diagnostics[0].message).toContain('CLIPを保存し直して、再度読み込んでください')
     const d = clip([model]), unpaired = buildClipLayerTree(d, clipRenderingSource(d), undefined, DEFAULT_PROJECT_SETTINGS, false)
     const missing = flattenToCanvas(unpaired, 8, 4)
     expect(hasUnsupported3D(missing)).toBe(true)

@@ -27,6 +27,8 @@ test('explicitly identified 3D without cached pixels is warned separately from v
   await expect(page.getByRole('button', { name: 'ベクター描画の制限' })).toHaveCount(0)
   await warning.hover()
   await expect(page.getByRole('tooltip')).toContainText('出力に含まれません')
+  await expect(page.getByRole('tooltip')).toContainText('［バージョン互換情報の保存］を［保存する］')
+  await expect(page.getByRole('tooltip')).toContainText('CLIPを保存し直して、再度読み込んでください')
   await page.locator('input[type=file][multiple]').setInputFiles('testdata/c001.psd')
   await expect(page.getByRole('button', { name: '3D描画の制限' })).toHaveCount(0)
   await expect.poll(() => filenameLayout(page)).toEqual(before)
