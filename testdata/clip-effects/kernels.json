@@ -1,0 +1,515 @@
+[
+  {
+    "file": "edge-1.png",
+    "edge": {
+      "radius": 1,
+      "reflectOpacity": true,
+      "antialias": true,
+      "color": [
+        255,
+        255,
+        255
+      ]
+    }
+  },
+  {
+    "file": "edge-2.png",
+    "edge": {
+      "radius": 2,
+      "reflectOpacity": true,
+      "antialias": true,
+      "color": [
+        255,
+        255,
+        255
+      ]
+    }
+  },
+  {
+    "file": "edge-3.png",
+    "edge": {
+      "radius": 3,
+      "reflectOpacity": true,
+      "antialias": true,
+      "color": [
+        255,
+        255,
+        255
+      ]
+    }
+  },
+  {
+    "file": "edge-6.png",
+    "edge": {
+      "radius": 6,
+      "reflectOpacity": true,
+      "antialias": true,
+      "color": [
+        255,
+        255,
+        255
+      ]
+    }
+  },
+  {
+    "file": "edge-3-solid.png",
+    "edge": {
+      "radius": 3,
+      "reflectOpacity": false,
+      "antialias": true,
+      "color": [
+        255,
+        255,
+        255
+      ]
+    }
+  },
+  {
+    "file": "edge-05.png",
+    "edge": {
+      "radius": 0.5,
+      "reflectOpacity": true,
+      "antialias": true,
+      "color": [
+        255,
+        255,
+        255
+      ]
+    }
+  },
+  {
+    "file": "edge-35.png",
+    "edge": {
+      "radius": 3.5,
+      "reflectOpacity": true,
+      "antialias": true,
+      "color": [
+        255,
+        255,
+        255
+      ]
+    }
+  },
+  {
+    "file": "water-0.png",
+    "watercolor": {
+      "range": 2,
+      "opacity": 1,
+      "darkness": 20,
+      "blur": 0.2
+    }
+  },
+  {
+    "file": "water-1.png",
+    "watercolor": {
+      "range": 5,
+      "opacity": 1,
+      "darkness": 20,
+      "blur": 0.2
+    }
+  },
+  {
+    "file": "water-2.png",
+    "watercolor": {
+      "range": 5,
+      "opacity": 94,
+      "darkness": 20,
+      "blur": 0.2
+    }
+  },
+  {
+    "file": "water-3.png",
+    "watercolor": {
+      "range": 5,
+      "opacity": 50,
+      "darkness": 20,
+      "blur": 10
+    }
+  },
+  {
+    "file": "water-4.png",
+    "watercolor": {
+      "range": 2,
+      "opacity": 50,
+      "darkness": 50,
+      "blur": 2
+    }
+  },
+  {
+    "file": "water-5.png",
+    "watercolor": {
+      "range": 10,
+      "opacity": 50,
+      "darkness": 20,
+      "blur": 5
+    }
+  },
+  {
+    "file": "water-6.png",
+    "watercolor": {
+      "range": 5,
+      "opacity": 1,
+      "darkness": 50,
+      "blur": 0.2
+    }
+  },
+  {
+    "file": "second-edge-1.png",
+    "edge": {
+      "radius": 3,
+      "reflectOpacity": false,
+      "antialias": true,
+      "color": [
+        255,
+        255,
+        255
+      ]
+    }
+  },
+  {
+    "file": "second-edge-2.png",
+    "edge": {
+      "radius": 0.5,
+      "reflectOpacity": false,
+      "antialias": true,
+      "color": [
+        255,
+        255,
+        255
+      ]
+    }
+  },
+  {
+    "file": "second-edge-3.png",
+    "edge": {
+      "radius": 6,
+      "reflectOpacity": false,
+      "antialias": true,
+      "color": [
+        255,
+        255,
+        255
+      ]
+    }
+  },
+  {
+    "file": "second-edge-6.png",
+    "edge": {
+      "radius": 3,
+      "reflectOpacity": true,
+      "antialias": true,
+      "color": [
+        20,
+        50,
+        90
+      ]
+    }
+  },
+  {
+    "file": "second-edge-3-hard.png",
+    "watercolor": {
+      "range": 1,
+      "opacity": 5,
+      "darkness": 20,
+      "blur": 0.2
+    }
+  },
+  {
+    "file": "second-edge-3-solid.png",
+    "watercolor": {
+      "range": 2,
+      "opacity": 5,
+      "darkness": 20,
+      "blur": 0.2
+    }
+  },
+  {
+    "file": "second-edge-05.png",
+    "watercolor": {
+      "range": 5,
+      "opacity": 5,
+      "darkness": 20,
+      "blur": 0.2
+    }
+  },
+  {
+    "file": "second-edge-35.png",
+    "watercolor": {
+      "range": 10,
+      "opacity": 5,
+      "darkness": 20,
+      "blur": 0.2
+    }
+  },
+  {
+    "file": "second-water-0.png",
+    "watercolor": {
+      "range": 5,
+      "opacity": 50,
+      "darkness": 20,
+      "blur": 2
+    }
+  },
+  {
+    "file": "second-water-1.png",
+    "watercolor": {
+      "range": 5,
+      "opacity": 50,
+      "darkness": 20,
+      "blur": 5
+    }
+  },
+  {
+    "file": "second-water-2.png",
+    "watercolor": {
+      "range": 5,
+      "opacity": 50,
+      "darkness": 20,
+      "blur": 10
+    }
+  },
+  {
+    "file": "second-water-3.png",
+    "watercolor": {
+      "range": 2,
+      "opacity": 50,
+      "darkness": 20,
+      "blur": 0.2
+    }
+  },
+  {
+    "file": "second-water-4.png",
+    "watercolor": {
+      "range": 5,
+      "opacity": 50,
+      "darkness": 50,
+      "blur": 0.2
+    }
+  },
+  {
+    "file": "second-water-5.png",
+    "watercolor": {
+      "range": 5,
+      "opacity": 5,
+      "darkness": 0,
+      "blur": 0.2
+    }
+  },
+  {
+    "file": "second-water-6.png",
+    "watercolor": {
+      "range": 0,
+      "opacity": 50,
+      "darkness": 20,
+      "blur": 0.2
+    }
+  },
+  {
+    "file": "third-0.1-1.png",
+    "edge": {
+      "radius": 0.1,
+      "reflectOpacity": false,
+      "antialias": true,
+      "color": [
+        255,
+        255,
+        255
+      ]
+    }
+  },
+  {
+    "file": "third-0.5-1.png",
+    "edge": {
+      "radius": 0.5,
+      "reflectOpacity": false,
+      "antialias": true,
+      "color": [
+        255,
+        255,
+        255
+      ]
+    }
+  },
+  {
+    "file": "third-1-1.png",
+    "edge": {
+      "radius": 1,
+      "reflectOpacity": false,
+      "antialias": true,
+      "color": [
+        255,
+        255,
+        255
+      ]
+    }
+  },
+  {
+    "file": "third-1.5-1.png",
+    "edge": {
+      "radius": 1.5,
+      "reflectOpacity": false,
+      "antialias": true,
+      "color": [
+        255,
+        255,
+        255
+      ]
+    }
+  },
+  {
+    "file": "third-2-1.png",
+    "edge": {
+      "radius": 2,
+      "reflectOpacity": false,
+      "antialias": true,
+      "color": [
+        255,
+        255,
+        255
+      ]
+    }
+  },
+  {
+    "file": "third-2.5-1.png",
+    "edge": {
+      "radius": 2.5,
+      "reflectOpacity": false,
+      "antialias": true,
+      "color": [
+        255,
+        255,
+        255
+      ]
+    }
+  },
+  {
+    "file": "third-3-1.png",
+    "edge": {
+      "radius": 3,
+      "reflectOpacity": false,
+      "antialias": true,
+      "color": [
+        255,
+        255,
+        255
+      ]
+    }
+  },
+  {
+    "file": "third-6-1.png",
+    "edge": {
+      "radius": 6,
+      "reflectOpacity": false,
+      "antialias": true,
+      "color": [
+        255,
+        255,
+        255
+      ]
+    }
+  },
+  {
+    "file": "third-0.1-0.png",
+    "edge": {
+      "radius": 0.1,
+      "reflectOpacity": false,
+      "antialias": false,
+      "color": [
+        255,
+        255,
+        255
+      ]
+    }
+  },
+  {
+    "file": "third-0.5-0.png",
+    "edge": {
+      "radius": 0.5,
+      "reflectOpacity": false,
+      "antialias": false,
+      "color": [
+        255,
+        255,
+        255
+      ]
+    }
+  },
+  {
+    "file": "third-1-0.png",
+    "edge": {
+      "radius": 1,
+      "reflectOpacity": false,
+      "antialias": false,
+      "color": [
+        255,
+        255,
+        255
+      ]
+    }
+  },
+  {
+    "file": "third-1.5-0.png",
+    "edge": {
+      "radius": 1.5,
+      "reflectOpacity": false,
+      "antialias": false,
+      "color": [
+        255,
+        255,
+        255
+      ]
+    }
+  },
+  {
+    "file": "third-2-0.png",
+    "edge": {
+      "radius": 2,
+      "reflectOpacity": false,
+      "antialias": false,
+      "color": [
+        255,
+        255,
+        255
+      ]
+    }
+  },
+  {
+    "file": "third-2.5-0.png",
+    "edge": {
+      "radius": 2.5,
+      "reflectOpacity": false,
+      "antialias": false,
+      "color": [
+        255,
+        255,
+        255
+      ]
+    }
+  },
+  {
+    "file": "third-3-0.png",
+    "edge": {
+      "radius": 3,
+      "reflectOpacity": false,
+      "antialias": false,
+      "color": [
+        255,
+        255,
+        255
+      ]
+    }
+  },
+  {
+    "file": "third-6-0.png",
+    "edge": {
+      "radius": 6,
+      "reflectOpacity": false,
+      "antialias": false,
+      "color": [
+        255,
+        255,
+        255
+      ]
+    }
+  }
+]

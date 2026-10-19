@@ -18,6 +18,11 @@ export function readMaterialEffects(row: ClipRow, report?: (message: string) => 
     effects.layerColor = { main: rgb('DrawColorMain', 0), sub: rgb('DrawColorSub', 0xffffffff) }
   }
   try {
+    const bytes = row.LayerEffectInfo
+    if (bytes instanceof Uint8Array && num(row, 'LayerEffectAttached')) {
+      const tone = effectRecord(bytes, 'EffectTone')
+      if (tone?.u32()) effects.tone = true
+    }
     Object.assign(effects, readEdgeEffects(row))
   } catch (e) {
     if (!report) throw e
@@ -50,7 +55,8 @@ function readEdgeEffects(row: ClipRow): MaterialEffects | undefined {
     if (water.u32()) {
       const [range, opacity, darkness, blur] = Array.from({ length: 4 }, () => water.number('f64'))
       check(range >= 0 && range <= 20 && opacity >= 0 && opacity <= 100 && darkness >= 0 && darkness <= 100 && blur >= 0 && blur <= 10, '水彩境界の設定が範囲外です')
-      return { watercolor: { range, opacity, darkness, blur } }
+      const style = size >= 44 ? water.u32() : 0
+      return { watercolor: { range, opacity, darkness, blur, ...(style ? { style } : {}) } }
     }
   }
   const edge: NonNullable<MaterialEffects['edge']> = { radius, color }
@@ -62,8 +68,10 @@ function readEdgeEffects(row: ClipRow): MaterialEffects | undefined {
     check(size >= 4 && size <= line.bytes.length, '境界線の追加設定が不正です')
     line.take(size - 4)
     if (line.bytes.length - line.position === 20) {
-      line.take(12)
-      const opacity = line.u32(), aa = line.u32()
+      line.take(4)
+      const aa = line.u32()
+      line.take(4)
+      const opacity = line.u32()
       check(opacity <= 1 && aa <= 1, '境界線の透明度設定が不正です')
       edge.reflectOpacity = !!opacity; edge.antialias = !!aa
     }

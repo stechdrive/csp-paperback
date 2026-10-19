@@ -2,6 +2,7 @@ import type { Layer, Psd } from 'ag-psd'
 import type { CspLayer, ProjectSettings } from '../types'
 import type { ClipDocument, ClipLayer, ClipTimeline } from '../utils/clip/types'
 import { buildLayerTree } from './tree-builder'
+import { hasDrawableMaterialEffects } from './material-effects'
 
 import { pixelCanvas, renderClipMaterial } from './material-image'
 
@@ -50,7 +51,7 @@ export function buildClipLayerTree(clip: ClipDocument, source: Psd, timeline: Cl
       if (n.name !== r.originalName || n.isFolder !== r.isFolder) throw mismatch()
       r.id = `clip:${n.id}`
       r.parentId = parentId
-      if (!paired) { r.materialEffects = n.effects; r.nativeBlendMode = n.nativeBlendMode; r.adjustment = n.adjustment; r.vectorRendering = n.vectorRendering; r.unsupported3D = n.unsupported3D }
+      if (!paired) { r.materialEffects = hasDrawableMaterialEffects(n.effects) ? n.effects : undefined; r.nativeBlendMode = n.nativeBlendMode; r.adjustment = n.adjustment; r.vectorRendering = n.vectorRendering; r.unsupported3D = n.unsupported3D }
       else if (!r.agPsdRef.canvas) {
         if (n.kind === '3d') r.unsupported3D = true
         if (n.kind === 'vector') r.vectorRendering = 'unavailable'

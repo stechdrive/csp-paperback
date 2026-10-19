@@ -31,12 +31,14 @@ export function layerRenderingDiagnostics(layer: ClipLayer, compatibility: ClipD
   else if (layer.materialSource === 'text') add(materialRenderingMessage('text', false, compatibility), 'material', 'approximate', 'text')
   const effects = layer.effects
   if (paired && layer.isFolder) {
-    const names = [effects?.layerColor && 'レイヤーカラー', effects?.edge && '境界線', effects?.watercolor && '水彩境界'].filter(Boolean)
+    const names = [effects?.layerColor && 'レイヤーカラー', effects?.edge && '境界線', effects?.watercolor && '水彩境界', effects?.tone && 'トーン'].filter(Boolean)
     if (names.length) add(`フォルダの${names.join('・')}はPSDに含まれない場合があります。PSD併用時はこれらの効果を補完していません。描画を確認してください。`, 'effect', 'missing-effect')
   } else if (!paired) {
-    if (effects?.layerColor) add('レイヤーカラーを独自処理で再現しています。', 'effect', 'approximate')
-    if (effects?.edge?.radius) add('境界線を近似描画しています。輪郭や半透明部分に差が生じる場合があります。', 'effect', 'approximate')
-    if (effects?.watercolor) add('水彩境界は反映されません。元の描画は書き出します。互換情報付きで保存しても、この効果は補完されません。', 'effect', 'missing-effect')
+    if (effects?.watercolor) {
+      if (effects.watercolor.style) add('この種類の水彩境界には未対応です。効果を除いた元の描画を書き出します。', 'effect', 'missing-effect')
+      else add('水彩境界を近似描画しています。縁の濃さやぼかしに差が生じる場合があります。', 'effect', 'approximate')
+    }
+    if (effects?.tone) add('トーンには未対応です。トーン化前の描画を書き出します。', 'effect', 'missing-effect')
   }
   return result
 }

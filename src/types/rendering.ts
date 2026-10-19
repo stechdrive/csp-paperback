@@ -4,11 +4,13 @@ export interface EdgeEffect {
   reflectOpacity?: boolean
   antialias?: boolean
 }
-export interface WatercolorEffect { range: number; opacity: number; darkness: number; blur: number }
+export interface WatercolorEffect { range: number; opacity: number; darkness: number; blur: number; style?: number }
 export interface MaterialEffects {
   layerColor?: { main: [number, number, number]; sub: [number, number, number] }
   edge?: EdgeEffect
   watercolor?: WatercolorEffect
+  /** Detected for guidance only; tone rasterization is intentionally unsupported. */
+  tone?: boolean
 }
 
 export type MaterialAdjustment = { kind: 'invert' } | { kind: 'threshold'; threshold: number }

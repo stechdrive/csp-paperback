@@ -41,7 +41,31 @@ it('retains folder effects and unresolved PSD images while removing only replace
   expect(resolveClipDiagnostics(document, missing, true).some(d => d.layerId === 'art' && d.outcome === 'missing-content')).toBe(true)
   expect(missing[0].children[0].unsupported3D).toBe(true)
   const unpaired = buildClipLayerTree(document, clipRenderingSource(document), undefined, DEFAULT_PROJECT_SETTINGS, false)
-  expect(resolveClipDiagnostics(document, unpaired, false).find(d => d.part === 'effect')?.message).toContain('互換情報付きで保存しても')
+  expect(resolveClipDiagnostics(document, unpaired, false).find(d => d.part === 'effect')).toMatchObject({ outcome: 'approximate', message: expect.stringContaining('水彩境界を近似描画') })
+})
+
+it.each(['saved', 'not-saved', 'unknown'] as const)('only reports effects that need attention with compatibility=%s', compatibility => {
+  const effects = { edge: { radius: 3, color: [255, 255, 255] as [number, number, number] }, layerColor: { main: [0, 0, 255] as [number, number, number], sub: [255, 255, 255] as [number, number, number] } }
+  for (const isFolder of [false, true]) {
+    expect(layerRenderingDiagnostics(layer({ effects, isFolder }), compatibility)).toEqual([])
+    const [tone] = layerRenderingDiagnostics(layer({ effects: { tone: true }, isFolder }), compatibility)
+    expect(tone).toMatchObject({ part: 'effect', outcome: 'missing-effect' })
+    expect(tone.message).toContain('トーンには未対応')
+    expect(tone.message).not.toContain('保存し直')
+  }
+  expect(layerRenderingDiagnostics(layer({ effects, isFolder: true }), compatibility, true)[0].outcome).toBe('missing-effect')
+  expect(layerRenderingDiagnostics(layer({ effects: { tone: true } }), compatibility, true, true)).toEqual([])
+  expect(layerRenderingDiagnostics(layer({ materialSource: 'text', kind: 'text' }), compatibility)[0]).toMatchObject({ part: 'material', outcome: 'approximate', materialKind: 'text' })
+})
+
+it('does not isolate pass-through folders or move offset artwork just to report unsupported tone', () => {
+  const ink = layer({ pixels: { width: 1, height: 1, left: 3, top: 4, rgba: new Uint8ClampedArray([80, 120, 180, 127]) }, effects: { tone: true } })
+  const folder = layer({ id: 'folder', isFolder: true, blendMode: 'pass through', effects: { tone: true }, children: [ink] })
+  const document = doc([folder]), tree = buildClipLayerTree(document, clipRenderingSource(document), undefined, DEFAULT_PROJECT_SETTINGS, false)
+  expect(tree[0].materialEffects).toBeUndefined()
+  expect(tree[0].children[0].materialEffects).toBeUndefined()
+  expect(tree[0].children[0]).toMatchObject({ left: 3, top: 4 })
+  expect(resolveClipDiagnostics(document, tree, false)).toHaveLength(2)
 })
 
 it('parses compatibility and folder effects even when paired loading skips raster decoding', async () => {
