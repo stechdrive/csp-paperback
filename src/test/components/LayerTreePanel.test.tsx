@@ -76,7 +76,7 @@ describe('LayerTreePanel output navigation', () => {
     const tree = buildLayerTree(makePsd({ children: [makeFolder('_old_01', [makeLayer()])] }), undefined, ['_old'])
     resetTestStore({ layerTree: tree, docWidth: 100, docHeight: 100 })
     render(<LayerTreePanel />)
-    expect(row(tree[0].id)!.querySelector('[data-output-state="name-excluded"]')).toHaveTextContent('名前指定の対象外')
+    expect(row(tree[0].id)!.querySelector('[data-output-state="name-excluded"]')).toHaveTextContent('除外指定')
     expect(row(tree[0].id)!.querySelector('button[aria-pressed]')).toHaveAttribute('aria-pressed', 'true')
   })
   it('shares list, search and tree selection while preserving manual folder state', () => {

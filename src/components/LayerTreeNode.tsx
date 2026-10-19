@@ -505,7 +505,7 @@ export function LayerTreeNode({
           </span>
         </Tooltip>}
         {layer.individualOutputExcludedBy && <Tooltip content={`自身または祖先フォルダが除外リスト「${layer.individualOutputExcludedBy}」に一致するため、自動の書き出し対象の検出と自動表示を行いません。手動指定・仮想セルでの使用や、表示中の共通素材としての合成は可能です。`}>
-          <span className={styles.outputStatus} data-output-state="name-excluded">名前指定の対象外</span>
+          <span className={styles.outputStatus} data-output-state="name-excluded">除外指定</span>
         </Tooltip>}
 
         {(layer.vectorRendering || layer.unsupported3D) && <RenderWarning vector={!!layer.vectorRendering} unavailable={layer.vectorRendering === 'unavailable'} unsupported3D={layer.unsupported3D} />}

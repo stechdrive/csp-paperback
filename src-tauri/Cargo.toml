@@ -1,6 +1,6 @@
 [package]
 name = "csp-paperback"
-version = "1.28.267"
+version = "1.28.268"
 description = "Animation artwork exporter for Clip Studio Paint"
 authors = ["stechdrive"]
 edition = "2021"
