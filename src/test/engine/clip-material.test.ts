@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { createCanvas as napiCanvas } from '@napi-rs/canvas'
 import { readTextObjects } from '../../utils/clip/text'
 import { createMaterialDecoder, readMaterialEffects, readMaterialQuad, type MaterialTables } from '../../utils/clip/material'
@@ -32,6 +32,31 @@ const pixel = (canvas: HTMLCanvasElement, x: number, y: number) => [...canvas.ge
 const tables = (): MaterialTables => ({ mipmaps: new Map(), mipInfos: new Map(), offscreens: new Map(), thumbnails: [], external: new Map() })
 const solid = (width: number, height: number, rgba: number[], left = 0, top = 0): ClipPixels => ({ width, height, left, top, rgba: new Uint8ClampedArray(Array.from({ length: width * height }, () => rgba).flat()) })
 const clip = (layers: ClipLayer[], width = 8, height = 4): ClipDocument => ({ width, height, dpi: 72, layers, timelines: [], defaultTimelineId: null, diagnostics: [] })
+
+describe('CLIP rendering source memory', () => {
+  it('shares immutable adjustment coverage, keeping separate masks and identical output', () => {
+    const adjustments = Array.from({ length: 8 }, (_, i) => ({ ...layer(String(i)), adjustment: { kind: 'invert' as const } }))
+    adjustments[0] = { ...adjustments[0], mask: solid(8, 4, [255, 255, 255, 128]) } as typeof adjustments[0]
+    const doc = clip([...adjustments, { ...layer('ink'), pixels: solid(8, 4, [32, 64, 128, 255]) }])
+    const source = clipRenderingSource(doc)
+    expect(new Set(source.children!.slice(1).map(l => l.canvas)).size).toBe(1)
+    const legacy = { width: 8, height: 4, children: source.children!.map(l => ({ ...l,
+      canvas: l.name === 'ink' ? l.canvas : renderClipMaterial(adjustments[0], 8, 4)!.canvas })) }
+    const render = (psd: typeof source) => flattenToCanvas(buildClipLayerTree(doc, psd, undefined, DEFAULT_PROJECT_SETTINGS, false), 8, 4)
+    const pixels = (c: HTMLCanvasElement) => [...c.getContext('2d')!.getImageData(0, 0, 8, 4).data]
+    expect(pixels(render(source))).toEqual(pixels(render(legacy)))
+  })
+
+  it('counts post-decode full-document canvases and masks before allocating them', () => {
+    const create = vi.spyOn(document, 'createElement').mockImplementation(() => { throw Error('unexpected allocation') })
+    try {
+      const text = { text: '', left: 0, top: 0, width: 1, height: 1, size: 12, font: 'sans-serif', color: [0, 0, 0] as [number, number, number], runs: [], align: 'left' as const }
+      const layers = Array.from({ length: 9 }, (_, i) => ({ ...layer(String(i)), text: [text] }))
+      expect(() => clipRenderingSource(clip(layers, 4096, 4096))).toThrow('512 MiB')
+      expect(create).not.toHaveBeenCalled()
+    } finally { create.mockRestore() }
+  })
+})
 
 describe('vector warnings follow material contributions', () => {
   it('does not warn for layer color, borders or masks alone; warns only for explicitly unsupported 3D without a cache', async () => {

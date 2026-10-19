@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAppStore } from '../../store'
 import { DEFAULT_OUTPUT_CONFIG, DEFAULT_PROJECT_SETTINGS } from '../../types'
 import { resetTestStore } from '../helpers/store-reset'
@@ -9,6 +9,33 @@ beforeEach(resetTestStore)
 afterEach(resetTestStore)
 
 describe('persisted output settings', () => {
+  it('recovers malformed persisted fields while preserving valid settings', async () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 2, state: {
+      projectSettings: { autoMarkFolderNames: [42], processTable: [null], cellNamingMode: 'sequence' },
+      savedOutputConfig: { format: 'png', excludedProcessSuffixes: [42], jpgQuality: 'bad', individualOutputOverrides: { SL: 'false' } },
+      mobileUiScale: 'bad',
+    } }))
+    await useAppStore.persist.rehydrate()
+    const state = useAppStore.getState()
+    expect(state.projectSettings).toMatchObject({ autoMarkFolderNames: DEFAULT_PROJECT_SETTINGS.autoMarkFolderNames,
+      processTable: DEFAULT_PROJECT_SETTINGS.processTable, cellNamingMode: 'sequence' })
+    expect(state.savedOutputConfig).toMatchObject({ format: 'png', excludedProcessSuffixes: [], jpgQuality: 0.92, individualOutputOverrides: {} })
+    expect(Number.isFinite(state.mobileUiScale)).toBe(true)
+  })
+
+  it('does not write settings on selection changes, but persists changes and Undo immediately', () => {
+    useAppStore.setState({ selectedLayerId: null })
+    const write = vi.spyOn(Storage.prototype, 'setItem')
+    try {
+      for (let i = 0; i < 100; i++) useAppStore.setState({ selectedLayerId: String(i) })
+      expect(write).not.toHaveBeenCalled()
+      useAppStore.getState().setCellNamingMode('sequence')
+      expect(write).toHaveBeenCalledTimes(1)
+      useAppStore.getState().undo()
+      expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).state.projectSettings.cellNamingMode).toBe('cellname')
+    } finally { write.mockRestore() }
+  })
+
   it('旧設定のグループ名を補完して書き戻し、設定済み名称・照合名・色・出力選択を保持する', async () => {
     const legacyTable = DEFAULT_PROJECT_SETTINGS.processTable.map(entry => ({
       suffix: entry.suffix, folderNames: [...entry.folderNames], revisionBorderColor: entry.revisionBorderColor,

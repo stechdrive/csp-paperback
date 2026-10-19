@@ -1,10 +1,12 @@
 import { downloadBlob } from '../utils/zip-builder'
 import { ja } from '../i18n/ja'
 import { createAbortError, isDesktopRuntime } from './runtime'
+import { MAX_INPUT_BYTES } from '../utils/image-budget'
 
 export interface LoadableFile {
   name: string
   sourceDirectory?: string
+  size?: number
   text: () => Promise<string>
   arrayBuffer: () => Promise<ArrayBuffer>
 }
@@ -26,8 +28,10 @@ class TauriLoadableFile implements LoadableFile {
   }
 
   async arrayBuffer(): Promise<ArrayBuffer> {
-    const { readFile } = await import('@tauri-apps/plugin-fs')
+    const { readFile, stat } = await import('@tauri-apps/plugin-fs')
+    if ((await stat(this.path)).size > MAX_INPUT_BYTES) throw new Error('入力ファイルは1 GiBまで読み込めます')
     const bytes = await readFile(this.path)
+    if (bytes.byteOffset === 0 && bytes.byteLength === bytes.buffer.byteLength) return bytes.buffer
     return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)
   }
 }

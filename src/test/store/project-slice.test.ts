@@ -22,6 +22,19 @@ beforeEach(() => {
 })
 
 describe('project-slice - auto mark folder names', () => {
+  it.each([
+    { autoMarkFolderNames: [42] }, { archivePatterns: [null] },
+    { processTable: [{ suffix: '_x', folderNames: [42] }] },
+    { sharedCutMode: 'false' }, { cellNamingMode: 'invalid' }, { autoMarkFolderNames: ['x'.repeat(4097)] },
+    null, [],
+  ])('rejects invalid settings atomically, preserving persisted settings and Undo (%j)', invalid => {
+    const before = useAppStore.getState(), saved = localStorage.getItem('csp-paperback:settings')
+    expect(() => before.importSettings(JSON.stringify(invalid))).toThrow()
+    expect(useAppStore.getState().projectSettings).toBe(before.projectSettings)
+    expect(useAppStore.getState()._past).toBe(before._past)
+    expect(localStorage.getItem('csp-paperback:settings')).toBe(saved)
+  })
+
   it('表示名と読み込み設定のない旧JSONを互換で読み、新設定を共有できる', () => {
     useAppStore.getState().importSettings(JSON.stringify({ processTable: [{ suffix: '_e', folderNames: ['_e', '演出修正'] }] }))
     expect(processDisplayName(useAppStore.getState().projectSettings.processTable[0])).toBe('演出')

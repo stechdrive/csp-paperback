@@ -6,6 +6,8 @@ import { buildClipLayerTree, clipRenderingSource } from '../engine/clip-tree'
 import { buildDefaultVisibilityOverrides, retainManualVisibility } from '../utils/default-visibility'
 import type { AppStore } from './index'
 import { resolveClipDiagnostics } from '../utils/clip/rendering-status'
+import { clearProjectSelectorCaches } from './selectors'
+import { outputRenderQueue } from '../utils/output-render-queue'
 
 export interface ClipPsdSource { psd: Psd; name: string; sourceDirectory?: string }
 export interface ClipSlice {
@@ -68,6 +70,8 @@ export const createClipSlice: StateCreator<AppStore, [], [], ClipSlice> = (set, 
     if (!clip) throw new Error('CLIPが読み込まれていません')
     const timeline = clip.timelines.find(t => t.id === state.clipTimelineId)
     const tree = buildClipLayerTree(clip, psd, timeline, state.projectSettings)
+    outputRenderQueue.clear()
+    clearProjectSelectorCaches()
     // Stable native IDs preserve marks, virtual sets, selections and process settings.
     // Render attributes and masks come entirely from the corresponding native PSD.
     set({ rawPsd: psd, psdFileName: name, psdSourceDirectory: sourceDirectory ?? null, layerTree: tree,

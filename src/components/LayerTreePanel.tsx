@@ -40,6 +40,9 @@ export function LayerTreePanel({ active = true, onPreviewOutput }: { active?: bo
   const selectedLayer = useAppStore(s => selectedLayerId ? selectLayerById(s, selectedLayerId) : null)
 
   const treeRef = useRef<HTMLDivElement>(null)
+  const handleSelectLayer = useCallback((id: string) => {
+    selectLayer(id); treeRef.current?.focus({ preventScroll: true })
+  }, [selectLayer])
   const dragAutoScrollHandlers = useDragAutoScroll(treeRef)
   const { entries, navigate, revealCurrent } = useOutputNavigation()
   const visibleExpandedFolders = useMemo(
@@ -156,8 +159,7 @@ export function LayerTreePanel({ active = true, onPreviewOutput }: { active?: bo
             <LayerTreeNode
               key={layer.id}
               layer={layer}
-              selectedLayerId={selectedLayerId}
-              onSelect={id => { selectLayer(id); treeRef.current?.focus({ preventScroll: true }) }}
+              onSelect={handleSelectLayer}
               onToggleVisibility={toggleLayerVisibility}
               onSetExpanded={setFolderExpanded}
               onSetExpandedRecursive={setFolderExpandedRecursive}

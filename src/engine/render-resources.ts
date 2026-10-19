@@ -12,6 +12,9 @@ export function releaseCanvas(canvas: HTMLCanvasElement): void {
   canvas.width = 1; canvas.height = 1
 }
 
+/** Transfer a newly allocated canvas to an explicit cache owner. */
+export function detachCanvasResource(canvas: HTMLCanvasElement): void { allocations?.delete(canvas) }
+
 export function withCanvasResources<T>(render: () => T,
   retain: (result: T, owned: ReadonlySet<HTMLCanvasElement>) => Iterable<HTMLCanvasElement>): T {
   const parent = allocations, owned = new Set<HTMLCanvasElement>()

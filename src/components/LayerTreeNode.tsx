@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import { memo, useCallback, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useAppStore } from '../store'
 import type { CspLayer, VirtualSet } from '../types'
@@ -18,7 +18,7 @@ import { Tooltip } from './Tooltip'
 import { RenderWarning } from './RenderWarning'
 import styles from './LayerTreeNode.module.css'
 import type { HistoryOptions } from '../store/history-slice'
-import { selectOutputRowStatuses } from '../store/selectors'
+import { selectLayerVirtualInsertions, selectOutputRowStatuses } from '../store/selectors'
 import { visibilityDrag } from '../utils/visibility-gesture'
 
 // 目玉アイコンをなぞって一括トグルするためのモジュールレベルドラッグ状態
@@ -29,7 +29,6 @@ const FOLDER_INSIDE_ZONE_END = 0.65
 
 interface LayerTreeNodeProps {
   layer: CspLayer
-  selectedLayerId: string | null
   onSelect: (id: string) => void
   onToggleVisibility: (id: string, options?: HistoryOptions) => void
   onSetExpanded: (id: string, expanded: boolean) => void
@@ -42,6 +41,7 @@ interface LayerTreeNodeProps {
   visibilityOverrides: Map<string, boolean>
   isCell?: boolean
   animParentId?: string
+  cellIndex?: number
 }
 
 function DocumentIcon() {
@@ -219,9 +219,8 @@ function VirtualSetBadge({ vs, indentWidth, onClear }: {
   )
 }
 
-export function LayerTreeNode({
+export const LayerTreeNode = memo(function LayerTreeNodeView({
   layer,
-  selectedLayerId,
   onSelect,
   onToggleVisibility,
   onSetExpanded,
@@ -233,13 +232,16 @@ export function LayerTreeNode({
   visibilityOverrides,
   isCell = false,
   animParentId,
+  cellIndex,
 }: LayerTreeNodeProps) {
   const outputStatus = useAppStore(s => selectOutputRowStatuses(s).get(layer.id))
-  const singleMarks = useAppStore(s => s.singleMarks)
-  const manualAnimFolderIds = useAppStore(s => s.manualAnimFolderIds)
-  const selectedCells = useAppStore(s => s.selectedCells)
-  const focusedAnimFolderId = useAppStore(s => s.focusedAnimFolderId)
-  const virtualSets = useAppStore(s => s.virtualSets)
+  const isSelected = useAppStore(s => s.selectedLayerId === layer.id)
+  const hasSingleMark = useAppStore(s => s.singleMarks.has(layer.id))
+  const isManualAnimFolder = useAppStore(s => s.manualAnimFolderIds.has(layer.id))
+  const hasAnimDescendant = useAppStore(s => layer.isFolder && !isCell && hasEffectiveAnimDescendant(layer, s.manualAnimFolderIds))
+  const isCellActive = useAppStore(s => isCell && animParentId != null && s.focusedAnimFolderId === animParentId &&
+    (s.selectedCells.get(animParentId) ?? 0) === cellIndex)
+  const { above: vsAbove, below: vsBelow } = useAppStore(s => selectLayerVirtualInsertions(s, layer.id))
   const updateVirtualSet = useAppStore(s => s.updateVirtualSet)
   // 仮想セットドロップ時の挿入ライン表示状態（'above' | 'inside' | 'below' | null）
   const [dropPlacement, setDropPlacement] = useState<DropPlacement | null>(null)
@@ -249,7 +251,6 @@ export function LayerTreeNode({
 
   const { draggable, onDragStart, onDragEnd, onPointerDown } = useDragSource({ type: 'layer', layerId: layer.id })
 
-  const isSelected = selectedLayerId === layer.id
   // override があればその値、なければ PSD の hidden/uiHidden 両方を考慮した実効的な非表示状態
   const isUiHidden = visibilityOverrides.has(layer.id)
     ? visibilityOverrides.get(layer.id)!
@@ -259,19 +260,14 @@ export function LayerTreeNode({
   const isTransientExpanded = !!transientExpandedFolders?.has(layer.id)
   const isAutoMarkedContainerSuppressed = isAutoMarkedContainerOutputSuppressed(layer)
   const isOutputAutoMarked = layer.autoMarked && !isAutoMarkedContainerSuppressed
-  const isMarked = isOutputAutoMarked || singleMarks.has(layer.id)
-  const isManualAnimFolder = manualAnimFolderIds.has(layer.id)
+  const isMarked = isOutputAutoMarked || hasSingleMark
   const isXdtsAnimFolder = layer.animationFolder?.detectedBy === 'xdts' || layer.animationFolder?.detectedBy === 'clip'
   const isAutoProcessAnimFolder = layer.animationFolder?.detectedBy === 'autoProcess'
   const isAnimFolder = layer.isAnimationFolder || (layer.isFolder && isManualAnimFolder)
   const canToggleManualAnimFolder = layer.isFolder &&
     !isCell &&
     !isXdtsAnimFolder &&
-    (isManualAnimFolder || !hasEffectiveAnimDescendant(layer, manualAnimFolderIds))
-
-  // このレイヤーに挿入位置が設定されている仮想セットを取得
-  const vsAbove = virtualSets.filter(vs => vs.insertionLayerId === layer.id && vs.insertionPosition === 'above')
-  const vsBelow = virtualSets.filter(vs => vs.insertionLayerId === layer.id && vs.insertionPosition === 'below')
+    (isManualAnimFolder || !hasAnimDescendant)
 
   const handleRowClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
@@ -388,15 +384,6 @@ export function LayerTreeNode({
   else if (isAnimFolder) nameClass = `${styles.name} ${styles.nameAnim}`
   else if (isOutputAutoMarked) nameClass = `${styles.name} ${styles.nameAutoMark}`
   else if (isCell) nameClass = `${styles.name} ${styles.nameCell}`
-
-  const isCellActive = isCell && animParentId != null && (() => {
-    if (focusedAnimFolderId !== animParentId) return false
-    const { layerTree } = useAppStore.getState()
-    const animFolder = findLayerById(layerTree, animParentId)
-    if (!animFolder) return false
-    const idx = animFolder.children.findIndex(c => c.id === layer.id)
-    return (selectedCells.get(animParentId) ?? 0) === idx
-  })()
 
   const rowClass = [
     styles.row,
@@ -551,11 +538,10 @@ export function LayerTreeNode({
 
       {layer.isFolder && isExpanded && layer.children.length > 0 && (
         <div className={styles.children}>
-          {layer.children.map(child => (
+          {layer.children.map((child, index) => (
             <LayerTreeNode
               key={child.id}
               layer={child}
-              selectedLayerId={selectedLayerId}
               onSelect={onSelect}
               onToggleVisibility={onToggleVisibility}
               onSetExpanded={onSetExpanded}
@@ -567,6 +553,7 @@ export function LayerTreeNode({
               visibilityOverrides={visibilityOverrides}
               isCell={isAnimFolder}
               animParentId={isAnimFolder ? layer.id : undefined}
+              cellIndex={isAnimFolder ? index : undefined}
             />
           ))}
         </div>
@@ -594,16 +581,7 @@ export function LayerTreeNode({
       ))}
     </div>
   )
-}
-
-function findLayerById(layers: CspLayer[], id: string): CspLayer | null {
-  for (const l of layers) {
-    if (l.id === id) return l
-    const found = findLayerById(l.children, id)
-    if (found) return found
-  }
-  return null
-}
+})
 
 function hasEffectiveAnimDescendant(layer: CspLayer, manualAnimFolderIds: Set<string>): boolean {
   for (const child of layer.children) {

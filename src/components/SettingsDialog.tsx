@@ -59,6 +59,7 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
   const exportSettings = useAppStore(s => s.exportSettings)
   const setActiveTheme = useAppStore(s => s.setActiveTheme)
   const { t } = useLocale()
+  const [importError, setImportError] = useState<string | null>(null)
 
   const [tableRows, setTableRows] = useState<ProcessFolderEntry[]>(
     normalizeProcessTable(projectSettings.processTable)
@@ -190,16 +191,24 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
     updateAutoMarkFolderNames(next)
   }
 
+  const applyImport = async (file: { text: () => Promise<string> }) => {
+    try {
+      importSettings(await file.text())
+      const s = useAppStore.getState().projectSettings
+      setTableRows(normalizeProcessTable(s.processTable))
+      setAutoMarkRows(s.autoMarkFolderNames)
+      setArchiveRows(s.archivePatterns)
+      setImportError(null)
+    } catch (error) {
+      setImportError(`設定を読み込めませんでした: ${error instanceof Error ? error.message : String(error)}`)
+    }
+  }
+
   const handleImport = async () => {
     if (supportsNativeOpenDialog()) {
       const file = await pickSettingsJsonFile()
       if (!file) return
-      const text = await file.text()
-      importSettings(text)
-      const s = useAppStore.getState().projectSettings
-      setTableRows(normalizeProcessTable(s.processTable))
-      setAutoMarkRows(s.autoMarkFolderNames ?? DEFAULT_PROJECT_SETTINGS.autoMarkFolderNames)
-      setArchiveRows(s.archivePatterns ?? DEFAULT_PROJECT_SETTINGS.archivePatterns)
+      await applyImport(file)
       return
     }
 
@@ -209,12 +218,7 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
     input.onchange = async () => {
       const file = input.files?.[0]
       if (!file) return
-      const text = await file.text()
-      importSettings(text)
-      const s = useAppStore.getState().projectSettings
-      setTableRows(normalizeProcessTable(s.processTable))
-      setAutoMarkRows(s.autoMarkFolderNames ?? DEFAULT_PROJECT_SETTINGS.autoMarkFolderNames)
-      setArchiveRows(s.archivePatterns ?? DEFAULT_PROJECT_SETTINGS.archivePatterns)
+      await applyImport(file)
     }
     input.click()
   }
@@ -392,6 +396,7 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
           </div>
 
           {/* JSON import/export */}
+          {importError && <div role="alert" className={styles.errorMsg}>{importError}</div>}
           <div className={styles.section}>
             <div className={styles.sectionTitle}>{t.settings.shareSettings}</div>
             <div className={styles.hint}>{t.settings.shareSettingsHint}</div>

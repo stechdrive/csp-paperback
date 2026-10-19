@@ -1,10 +1,8 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { createJSONStorage, persist, type PersistStorage, type StorageValue } from 'zustand/middleware'
 import {
   DEFAULT_OUTPUT_CONFIG,
   DEFAULT_PROJECT_SETTINGS,
-  resolveCellPrefixSeparator,
-  resolveIncludeXdtsTrackPrefixInCellName,
 } from '../types'
 import { createPsdSlice, type PsdSlice } from './psd-slice'
 import { createXdtsSlice, type XdtsSlice } from './xdts-slice'
@@ -17,7 +15,7 @@ import { createUiSlice, type UiSlice } from './ui-slice'
 import { createHistorySlice, type HistorySlice } from './history-slice'
 import { DEFAULT_MOBILE_UI_SCALE, clampMobileUiScale } from '../utils/mobile-ui-scale'
 import { DEFAULT_APP_THEME, isAppTheme } from '../theme'
-import { normalizeProcessTable } from '../utils/process-table'
+import { validateProjectSettings, validateOutputConfig } from '../utils/settings-validation'
 
 export type AppStore =
   PsdSlice &
@@ -38,6 +36,21 @@ type PersistedSettings = {
   activeTheme?: unknown
 }
 
+const jsonStorage = createJSONStorage<PersistedSettings>(() => localStorage)
+let lastSaved: StorageValue<PersistedSettings> | undefined
+const settingsStorage: PersistStorage<PersistedSettings> | undefined = jsonStorage && {
+  getItem: name => { lastSaved = undefined; return jsonStorage.getItem(name) },
+  removeItem: name => { lastSaved = undefined; return jsonStorage.removeItem(name) },
+  setItem: (name, value) => {
+    // These settings are immutable. UI-only changes should not serialize or write them.
+    if (lastSaved?.version === value.version && Object.keys(value.state).every(key =>
+      value.state[key as keyof PersistedSettings] === lastSaved!.state[key as keyof PersistedSettings])) return
+    const result = jsonStorage.setItem(name, value)
+    lastSaved = value
+    return result
+  },
+}
+
 export const useAppStore = create<AppStore>()(
   persist(
     (...a) => ({
@@ -53,6 +66,7 @@ export const useAppStore = create<AppStore>()(
     }),
     {
       name: 'csp-paperback:settings',
+      storage: settingsStorage,
       version: 2,
       // merge normalizes legacy names; a migration also writes them back to storage.
       migrate: persisted => persisted as PersistedSettings,
@@ -67,22 +81,11 @@ export const useAppStore = create<AppStore>()(
         const persistedTheme = p?.activeTheme
         const persistedProjectSettings = p?.projectSettings
         const persistedOutputConfig = p?.savedOutputConfig ?? p?.quickExportConfig
-        const cellPrefixSeparator = resolveCellPrefixSeparator(persistedProjectSettings ?? {})
         return {
           ...current,
-          projectSettings: {
-            ...DEFAULT_PROJECT_SETTINGS,
-            ...persistedProjectSettings,
-            cellPrefixSeparator,
-            animationSequenceSeparator: cellPrefixSeparator,
-            includeXdtsTrackPrefixInCellName:
-              resolveIncludeXdtsTrackPrefixInCellName(persistedProjectSettings ?? {}),
-            processTable: normalizeProcessTable(
-              persistedProjectSettings?.processTable ?? DEFAULT_PROJECT_SETTINGS.processTable,
-            ),
-          },
-          savedOutputConfig: { ...DEFAULT_OUTPUT_CONFIG, ...persistedOutputConfig },
-          mobileUiScale: clampMobileUiScale(p?.mobileUiScale ?? DEFAULT_MOBILE_UI_SCALE),
+          projectSettings: validateProjectSettings(persistedProjectSettings),
+          savedOutputConfig: validateOutputConfig(persistedOutputConfig),
+          mobileUiScale: clampMobileUiScale(typeof p?.mobileUiScale === 'number' && Number.isFinite(p.mobileUiScale) ? p.mobileUiScale : DEFAULT_MOBILE_UI_SCALE),
           activeTheme: isAppTheme(persistedTheme) ? persistedTheme : DEFAULT_APP_THEME,
         }
       },

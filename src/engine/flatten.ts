@@ -117,7 +117,7 @@ export function flattenTree(
     // 通常レイヤー
     const sourceCanvas = layer.agPsdRef.canvas ?? (layer.vectorRendering || layer.unsupported3D ? createCanvas(1, 1) : undefined)
     if (!sourceCanvas) return []
-    const canvas = applyMaterialEffects(sourceCanvas, layer.left, layer.top, layer.materialEffects, docWidth, docHeight)
+    const canvas = applyMaterialEffects(sourceCanvas, layer.left, layer.top, layer.materialEffects, docWidth, docHeight, true)
     const fullSize = canvas !== sourceCanvas
 
     const maskData = layer.agPsdRef.mask

@@ -7,6 +7,8 @@ import { buildOutputPlan } from '../../utils/output-plan'
 import { DEFAULT_OUTPUT_CONFIG, DEFAULT_PROJECT_SETTINGS } from '../../types'
 import { makeAnimationFolder, makeLayer, makePsd, makeCanvas } from '../helpers/psd-factory'
 import { createCanvas } from '../../engine/compositor'
+import { applyMaterialEffects } from '../../engine/material-effects'
+import { renderWithContextCache } from '../../engine/output-context-cache'
 
 beforeEach(() => {
   const original = document.createElement.bind(document)
@@ -34,7 +36,7 @@ describe('bounded shared output contexts', () => {
     const release = files.slice(0, 3).map(file => queue.request(file, 'full', cache => renderOutputFile(file, [], false, cache)))
     await vi.runAllTimersAsync()
     expect(queue.getStats().contextEntries).toBe(1)
-    expect(queue.getStats().contextBytes).toBe(160 * 120 * 4)
+    expect(queue.getStats().contextBytes).toBe(16 * 12 * 4)
     for (const file of files.slice(0, 3)) {
       const warm = queue.get(file, 'full')!.image!, cold = renderOutputFile(file, [], false)
       expect(pixels(warm.canvas)).toEqual(pixels(cold.canvas))
@@ -74,5 +76,54 @@ describe('bounded shared output contexts', () => {
     let temporary!: HTMLCanvasElement
     expect(() => renderOutputFile({ ...files[0], renderCanvas: () => { temporary = createCanvas(40, 30); throw Error('bad render') } }, [], false, cache)).toThrow('bad render')
     expect(temporary.width).toBe(1); expect(cache.size).toBe(0); expect(cache.bytes).toBe(0)
+  })
+
+  it('keeps sparse 4K common material within the default budget with identical pixels', () => {
+    const { tree, state } = fixture()
+    const files = buildOutputPlan(tree, { ...state, docWidth: 3840, docHeight: 2160 })
+    const cache = new OutputContextCache()
+    for (const file of files.slice(0, 2)) {
+      const image = renderOutputFile(file, [], false, cache)
+      expect(pixels(image.canvas).equals(pixels(renderOutputFile(file, [], false).canvas))).toBe(true)
+      expect(cache.size).toBe(1); expect(cache.bytes).toBe(16 * 12 * 4)
+    }
+    cache.clear()
+  })
+
+  it('reuses immutable effects across output sizes and invalidates on effect or placement changes', () => {
+    const source = makeCanvas(16, 12); source.getContext('2d')!.fillRect(2, 2, 10, 8)
+    const cache = new OutputContextCache(160 * 120 * 4, 2)
+    const effects = { watercolor: { range: 3, opacity: 20, darkness: 20, blur: 3 } }
+    const render = (left = 0, darkness = 20) => renderWithContextCache(cache, () => {
+      const result = createCanvas(160, 120)
+      result.getContext('2d')!.drawImage(applyMaterialEffects(source, left, 0,
+        { watercolor: { ...effects.watercolor, darkness } }, 160, 120, true), 0, 0)
+      return result
+    }, c => c)
+    const first = render()
+    expect(pixels(render())).toEqual(pixels(first)); expect(cache.effectStats.hits).toBe(1)
+    const moved = render(2)
+    expect(pixels(moved)).toEqual(pixels(applyMaterialEffects(source, 2, 0, effects, 160, 120)))
+    expect(cache.effectStats.hits).toBe(1)
+    render(2, 40); expect(cache.effectStats.hits).toBe(1)
+    expect(cache.bytes).toBeLessThanOrEqual(160 * 120 * 4)
+    cache.clear(); expect(cache.bytes).toBe(0); expect(source.width).toBe(16)
+    expect(pixels(first).some(v => v > 0)).toBe(true)
+  })
+
+  it('retains at most one oversized immutable image within the explicit ceiling', () => {
+    const source = makeCanvas(16, 12); source.getContext('2d')!.fillRect(0, 0, 16, 12)
+    const cache = new OutputContextCache(32, 2, 16 * 12 * 4)
+    const render = (width: number, red: number) => renderWithContextCache(cache, () => {
+      const result = createCanvas(width, 12)
+      result.getContext('2d')!.drawImage(applyMaterialEffects(source, 0, 0,
+        { edge: { radius: 1, color: [red, 0, 0] } }, width, 12, true), 0, 0)
+      return result
+    }, c => c)
+    render(16, 0); render(16, 0)
+    expect(cache.effectStats).toEqual({ entries: 1, hits: 1 })
+    render(16, 255); expect(cache.effectStats.entries).toBe(1)
+    expect(cache.bytes).toBe(16 * 12 * 4)
+    render(32, 0); expect(cache.bytes).toBe(0)
   })
 })

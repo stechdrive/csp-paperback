@@ -1,6 +1,8 @@
 import type { ClipDocument } from './clip/types'
+import { MAX_INPUT_BYTES } from './image-budget'
 
 export function readClipFile(buffer: ArrayBuffer, includeRaster = true): Promise<ClipDocument> {
+  if (buffer.byteLength > MAX_INPUT_BYTES) return Promise.reject(new Error('CLIPファイルは1 GiBまで読み込めます'))
   return new Promise((resolve, reject) => {
     const worker = new Worker(new URL('./clip/worker.ts', import.meta.url), { type: 'module' })
     const timeout = setTimeout(() => finish(new Error('CLIPの読み込みが時間制限（2分）を超えました')), 120000)

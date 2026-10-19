@@ -17,7 +17,7 @@ export function planExportEntriesFromState(
   const plans = outputConfig === state.outputConfig ? selectOutputFiles(state)
     : buildOutputPlan(selectLayerTreeWithVisibility(state), state, outputConfig)
   const selected = selectedIds ? plans.filter(plan => selectedIds.has(plan.outputId)) : plans
-  const contextCache = new OutputContextCache(24 * 1024 * 1024, 2)
+  const contextCache = new OutputContextCache(24 * 1024 * 1024, 2, 64 * 1024 * 1024)
   return selected.map(file => ({
     path: file.path, flatName: file.flatName, sourceLayerId: file.sourceLayerId,
     sourceCellId: file.sourceCellId, processSuffixes: file.processSuffixes, prepared: file,

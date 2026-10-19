@@ -16,7 +16,7 @@ test('EXE launch flow exports a mixed batch, shows individual errors/warnings, a
     return route.fulfill({ body: inputs[name], contentType: 'application/octet-stream' })
   })
   const launchPaths = ['paired.psd', 'solo.clip', 'paired.clip', 'mismatch.clip', 'mismatch.psd', 'warning.clip', 'orphan.psd'].map(name => `C:/cuts/${name}`)
-  await page.addInitScript(({ paths }) => {
+  await page.addInitScript(({ paths, sizes }) => {
     const proof = { writes: [] as { path: string; size: number; signature: number[] }[], dirs: ['C:/cuts/paired'], reads: [] as string[], closed: false }
     const host = window as unknown as Record<string, unknown>
     host.isTauri = true
@@ -32,6 +32,7 @@ test('EXE launch flow exports a mixed batch, shows individual errors/warnings, a
         if (command === 'plugin:path|join') return params.paths!.join('/')
         if (command === 'plugin:fs|exists') return proof.dirs.includes(params.path!)
         if (command === 'plugin:fs|mkdir') { proof.dirs.push(params.path!); return }
+        if (command === 'plugin:fs|stat') return { size: sizes[params.path!.split('/').at(-1)!], mtime: null, atime: null, birthtime: null }
         if (command === 'plugin:fs|read_file') {
           proof.reads.push(params.path!)
           return (await fetch(`/__batch-fixture/${encodeURIComponent(params.path!.split('/').at(-1)!)}`)).arrayBuffer()
@@ -44,7 +45,7 @@ test('EXE launch flow exports a mixed batch, shows individual errors/warnings, a
         throw new Error(`Unexpected desktop command: ${command}`)
       },
     }
-  }, { paths: launchPaths })
+  }, { paths: launchPaths, sizes: Object.fromEntries(Object.entries(inputs).map(([name, bytes]) => [name, bytes.length])) })
   const errors: string[] = []
   page.on('pageerror', error => errors.push(error.message))
   await page.setViewportSize({ width: 640, height: 520 })

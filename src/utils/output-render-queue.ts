@@ -29,7 +29,8 @@ export class OutputRenderQueue {
   private renders = 0
   private budget: number
   private maxEntries: number
-  private contexts = new OutputContextCache()
+  // A single 4K common image may exceed the usual budget, but never grows unbounded.
+  private contexts = new OutputContextCache(24 * 1024 * 1024, 8, 64 * 1024 * 1024)
   constructor(budget = 48 * 1024 * 1024, maxEntries = 256) { this.budget = budget; this.maxEntries = maxEntries }
 
   subscribe(files: readonly OutputFile[], size: RenderSize, listener: () => void) {
@@ -52,7 +53,7 @@ export class OutputRenderQueue {
   getStats() {
     return { bytes: [...this.cache.values()].reduce((total, sizes) => total + Object.values(sizes).reduce((n, result) => n + cost(result), 0), 0),
       entries: this.cache.size, pending: this.jobs.length, renders: this.renders,
-      contextBytes: this.contexts.bytes, contextEntries: this.contexts.size }
+      contextBytes: this.contexts.bytes, contextEntries: this.contexts.size, materialEffects: this.contexts.effectStats }
   }
   pause() {
     this.pauses++

@@ -1,5 +1,5 @@
 import type { AnimationFolderInfo, CspLayer } from '../types'
-import type { SingleMark } from '../types/marks'
+import type { SingleMark, VirtualSet } from '../types/marks'
 import type { ProcessFolderEntry } from '../types/project'
 import { promoteAutoMarkedByProcessMatch } from '../engine/tree-builder'
 import { isAutoMarkedOutputTarget } from '../utils/auto-marked-container'
@@ -11,6 +11,21 @@ import { isOutputTargetExcluded } from '../utils/output-target'
 import { buildDraftOutputs } from '../utils/draft-output'
 
 let draftCache: { inputs: unknown[]; result: OutputFile[] } | undefined
+const virtualInsertions = new WeakMap<VirtualSet[], Map<string, { above: VirtualSet[]; below: VirtualSet[] }>>()
+const noVirtualInsertions = { above: [] as VirtualSet[], below: [] as VirtualSet[] }
+export function selectLayerVirtualInsertions(state: AppStore, id: string) {
+  let index = virtualInsertions.get(state.virtualSets)
+  if (!index) {
+    index = new Map()
+    for (const set of state.virtualSets) if (set.insertionLayerId) {
+      const entry = index.get(set.insertionLayerId) ?? { above: [], below: [] }
+      entry[set.insertionPosition].push(set)
+      index.set(set.insertionLayerId, entry)
+    }
+    virtualInsertions.set(state.virtualSets, index)
+  }
+  return index.get(id) ?? noVirtualInsertions
+}
 export function selectDraftOutputs(state: AppStore): OutputFile[] {
   const tree = selectLayerTreeWithVisibility(state)
   const inputs = [tree, state.virtualSets, state.docWidth, state.docHeight, state.outputConfig, state.projectSettings]
@@ -117,6 +132,13 @@ let _navigatorCache: {
 const emptyManualAnimFolderIds = new Set<string>()
 const emptySingleMarks = new Map<string, SingleMark>()
 
+/** Release references to the previous document even when no selector is subscribed (quick export). */
+export function clearProjectSelectorCaches(): void {
+  draftCache = undefined
+  outputPlanCache = outputNavigationCache = candidateCache = statusCache = null
+  _cache = _navigatorCache = null
+}
+
 const processFolderKeys = new WeakMap<ProcessFolderEntry[], string>()
 function processFolderKey(table: ProcessFolderEntry[]): string {
   let key = processFolderKeys.get(table)
@@ -172,6 +194,7 @@ export function selectLayerTreeWithVisibility(state: AppStore): CspLayer[] {
  */
 export function selectLayerTreeForNavigator(state: AppStore): CspLayer[] {
   if (!state.timelineData) {
+    _navigatorCache = null
     return selectLayerTreeWithVisibility(state)
   }
 

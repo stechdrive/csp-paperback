@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('../../utils/clip-io', () => ({ readClipFile: vi.fn() }))
+vi.mock('../../utils/psd-io', () => ({ readPsdFile: vi.fn(() => ({ width: 1920, height: 1080 })) }))
 
 vi.mock('../../store', () => ({
   useAppStore: { getState: vi.fn() },
@@ -97,7 +98,7 @@ describe('runQuickExport', () => {
   it('保存済み設定でPSD/XDTSを読み込み、同じ設定を合成と保存へ渡す', async () => {
     const resetProject = vi.fn()
     const loadXdts = vi.fn()
-    const loadPsd = vi.fn()
+    const loadParsedPsd = vi.fn()
     const savedOutputConfig = {
       ...DEFAULT_OUTPUT_CONFIG,
       format: 'png' as const,
@@ -108,7 +109,7 @@ describe('runQuickExport', () => {
     const state = {
       resetProject,
       loadXdts,
-      loadPsd,
+      loadParsedPsd,
       psdFileName: 'cut001.psd',
       docWidth: 1920,
       docDpiX: 144,
@@ -151,7 +152,7 @@ describe('runQuickExport', () => {
     expect(mockedAllowLaunchPaths).toHaveBeenCalledOnce()
     expect(resetProject).toHaveBeenCalledOnce()
     expect(loadXdts).toHaveBeenCalledWith('xdts', 'cut001.xdts', String.raw`C:\work\cut001`)
-    expect(loadPsd).toHaveBeenCalledWith(expect.any(ArrayBuffer), 'cut001.psd', String.raw`C:\work\cut001`)
+    expect(loadParsedPsd).toHaveBeenCalledWith({ width: 1920, height: 1080 }, 'cut001.psd', String.raw`C:\work\cut001`)
     expect(mockedBuildOutputEntries).toHaveBeenCalledWith(state, savedOutputConfig)
     expect(mockedSaveEntries).toHaveBeenCalledWith(
       [entry],
@@ -174,7 +175,7 @@ describe('runQuickExport', () => {
     const state = {
       resetProject: vi.fn(),
       loadXdts: vi.fn(),
-      loadPsd: vi.fn(),
+      loadParsedPsd: vi.fn(),
       psdFileName: 'cut001.psd',
       docWidth: 1920,
       timelineData: { tracks: [] },

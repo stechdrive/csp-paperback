@@ -5,19 +5,50 @@ import { buildLayerTree } from './tree-builder'
 import { hasDrawableMaterialEffects } from './material-effects'
 
 import { pixelCanvas, renderClipMaterial } from './material-image'
+import { ImageBudget, imageBytes, MAX_LAYER_COUNT, MAX_LAYER_DEPTH } from '../utils/image-budget'
+import { withCanvasResources } from './render-resources'
+
+function checkClipCanvasBudget(clip: ClipDocument): void {
+  imageBytes(clip.width, clip.height)
+  const budget = new ImageBudget(), stack = clip.layers.map(layer => ({ layer, depth: 1 }))
+  let count = 0, adjustment = false
+  while (stack.length) {
+    const { layer, depth } = stack.pop()!
+    if (++count > MAX_LAYER_COUNT || depth > MAX_LAYER_DEPTH) throw new Error('CLIPのレイヤー数または階層が上限を超えました')
+    if (layer.adjustment) {
+      if (!adjustment) budget.reserve(clip.width, clip.height)
+      adjustment = true
+    } else if (layer.text?.length || layer.fragments?.length) budget.reserve(clip.width, clip.height)
+    else if (layer.pixels) {
+      if (layer.placement) {
+        const xs = layer.placement.filter((_, i) => i % 2 === 0), ys = layer.placement.filter((_, i) => i % 2 !== 0)
+        budget.reserve(Math.ceil(Math.max(...xs)) - Math.floor(Math.min(...xs)), Math.ceil(Math.max(...ys)) - Math.floor(Math.min(...ys)))
+      } else budget.reserve(layer.pixels.width, layer.pixels.height)
+    }
+    if (layer.mask) budget.reserve(layer.mask.width, layer.mask.height)
+    for (const child of layer.children) stack.push({ layer: child, depth: depth + 1 })
+  }
+}
 
 /** A Layer-shaped rendering adapter, not an intermediate PSD serialization. */
 export function clipRenderingSource(clip: ClipDocument): Psd {
+  checkClipCanvasBudget(clip)
+  // Adjustment coverage is immutable and identical across this document's adjustment layers.
+  let adjustment: ReturnType<typeof renderClipMaterial>
+  const retained: HTMLCanvasElement[] = []
   function convert(layer: ClipLayer): Layer {
     let rendered: ReturnType<typeof renderClipMaterial>
-    try { rendered = renderClipMaterial(layer, clip.width, clip.height) }
+    try {
+      rendered = layer.adjustment && adjustment ? adjustment : renderClipMaterial(layer, clip.width, clip.height)
+      if (layer.adjustment) adjustment = rendered
+    }
     catch (e) { clip.diagnostics.push({ scope: 'raster', layerId: layer.id, message: `「${layer.name}」: ${e instanceof Error ? e.message : String(e)}` }) }
     const result: Layer = {
       name: layer.name, hidden: layer.hidden, opacity: layer.opacity, blendMode: layer.blendMode, clipping: layer.clipping,
       top: rendered?.top ?? 0, left: rendered?.left ?? 0,
       right: rendered ? rendered.left + rendered.canvas.width : 0, bottom: rendered ? rendered.top + rendered.canvas.height : 0,
     }
-    if (rendered) result.canvas = rendered.canvas
+    if (rendered) { result.canvas = rendered.canvas; retained.push(rendered.canvas) }
     if (layer.isFolder) {
       result.sectionDivider = { type: layer.expanded ? 1 : 2 }
       result.children = layer.children.slice().reverse().map(convert)
@@ -26,10 +57,11 @@ export function clipRenderingSource(clip: ClipDocument): Psd {
       const mask = layer.mask
       result.mask = { canvas: pixelCanvas(mask), top: mask.top, left: mask.left, bottom: mask.top + mask.height, right: mask.left + mask.width,
         defaultColor: mask.defaultColor ?? 0, disabled: mask.disabled, positionRelativeToLayer: false }
+      retained.push(result.mask.canvas!)
     }
     return result
   }
-  return { width: clip.width, height: clip.height, children: clip.layers.slice().reverse().map(convert) }
+  return withCanvasResources(() => ({ width: clip.width, height: clip.height, children: clip.layers.slice().reverse().map(convert) }), () => retained)
 }
 
 /** Validate the entire ordered hierarchy before assigning any native identities. */

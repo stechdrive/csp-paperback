@@ -9,12 +9,11 @@ import type {
 } from '../types'
 import {
   DEFAULT_PROJECT_SETTINGS,
-  resolveCellPrefixSeparator,
-  resolveIncludeXdtsTrackPrefixInCellName,
 } from '../types'
 import { buildDefaultVisibilityOverrides, retainManualVisibility } from '../utils/default-visibility'
 import { normalizeProcessTable } from '../utils/process-table'
 import type { AppStore } from './index'
+import { MAX_SETTINGS_JSON_LENGTH, validateProjectSettings } from '../utils/settings-validation'
 
 export interface ProjectSlice {
   projectSettings: ProjectSettings
@@ -120,34 +119,10 @@ export const createProjectSlice: StateCreator<AppStore, [], [], ProjectSlice> = 
   },
 
   importSettings: (json) => {
-    try {
-      const parsed = JSON.parse(json) as Partial<ProjectSettings>
-      const cellPrefixSeparator = resolveCellPrefixSeparator(parsed)
-      get().pushHistory()
-      set({
-        projectSettings: {
-          ...DEFAULT_PROJECT_SETTINGS,
-          ...parsed,
-          cellPrefixSeparator,
-          animationSequenceSeparator: cellPrefixSeparator,
-          includeXdtsTrackPrefixInCellName:
-            resolveIncludeXdtsTrackPrefixInCellName(parsed),
-          processTable: normalizeProcessTable(
-            Array.isArray(parsed.processTable)
-              ? parsed.processTable
-              : DEFAULT_PROJECT_SETTINGS.processTable,
-          ),
-          autoMarkFolderNames: Array.isArray(parsed.autoMarkFolderNames)
-            ? parsed.autoMarkFolderNames
-            : DEFAULT_PROJECT_SETTINGS.autoMarkFolderNames,
-          archivePatterns: Array.isArray(parsed.archivePatterns)
-            ? parsed.archivePatterns
-            : DEFAULT_PROJECT_SETTINGS.archivePatterns,
-        },
-      })
-    } catch {
-      console.error('Failed to import project settings')
-    }
+    if (json.length > MAX_SETTINGS_JSON_LENGTH) throw new Error('設定JSONが大きすぎます（1 Mi文字まで）')
+    const projectSettings = validateProjectSettings(JSON.parse(json), true)
+    get().pushHistory()
+    set({ projectSettings })
   },
 
   exportSettings: () => {

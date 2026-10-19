@@ -7,6 +7,8 @@ import {
   selectLayerById,
   selectMarkedLayerIds,
   selectProcessTableErrors,
+  selectOutputFiles,
+  selectDraftOutputs,
 } from '../../store/selectors'
 import { buildLayerTree } from '../../engine/tree-builder'
 import { makeLayer, makePsd, makeFolder } from '../helpers/psd-factory'
@@ -31,6 +33,22 @@ beforeEach(() => {
 })
 
 describe('selectLayerTreeWithVisibility', () => {
+  it('reuses project selectors during interaction and releases every cache on reset without subscribers', () => {
+    const tree = buildLayerTree(makePsd({ children: [makeLayer({ name: '_material' })] }))
+    useAppStore.setState({ layerTree: tree, visibilityOverrides: new Map([[tree[0].id, true]]),
+      timelineData: { tracks: [], version: 5, duration: 24, fps: 24, header: { cut: '', scene: '' }, timeTableName: 'test' } })
+    const state = useAppStore.getState()
+    const outputs = selectOutputFiles(state), drafts = selectDraftOutputs(state), navigator = selectLayerTreeForNavigator(state)
+    useAppStore.getState().selectLayer(tree[0].id)
+    expect(selectOutputFiles(useAppStore.getState())).toBe(outputs)
+    expect(selectDraftOutputs(useAppStore.getState())).toBe(drafts)
+    expect(selectLayerTreeForNavigator(useAppStore.getState())).toBe(navigator)
+    useAppStore.getState().resetProject()
+    expect(selectOutputFiles(state)).not.toBe(outputs)
+    expect(selectDraftOutputs(state)).not.toBe(drafts)
+    expect(selectLayerTreeForNavigator(state)).not.toBe(navigator)
+  })
+
   it('visibilityOverridesがない場合はそのままツリーを返す', () => {
     const psd = makePsd({ children: [makeLayer({ name: 'layer' })] })
     const tree = buildLayerTree(psd)

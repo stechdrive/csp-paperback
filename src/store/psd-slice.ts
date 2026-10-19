@@ -10,6 +10,7 @@ import type { HistoryOptions } from './history-slice'
 import { nativeBlendOverride } from '../utils/clip/blend'
 import { emptyOutputSelection } from './output-selection'
 import { outputRenderQueue } from '../utils/output-render-queue'
+import { clearProjectSelectorCaches } from './selectors'
 
 export interface PsdSlice {
   rawPsd: Psd | null
@@ -21,6 +22,7 @@ export interface PsdSlice {
   docDpiX: number  // pixels per inch (0 = 不明)
   docDpiY: number  // pixels per inch (0 = 不明)
   loadPsd: (buffer: ArrayBuffer, fileName: string, sourceDirectory?: string) => void
+  loadParsedPsd: (psd: Psd, fileName: string, sourceDirectory?: string) => void
   resetProject: () => void
   resetPsd: () => void
   setLayerBlendMode: (layerId: string, blendMode: BlendMode, options?: HistoryOptions) => void
@@ -95,9 +97,8 @@ export const createPsdSlice: StateCreator<AppStore, [], [], PsdSlice> = (set, ge
   docDpiX: 0,
   docDpiY: 0,
 
-  loadPsd: (buffer, fileName, sourceDirectory) => {
-    outputRenderQueue.clear()
-    const psd = readPsdFile(buffer)
+  loadPsd: (buffer, fileName, sourceDirectory) => get().loadParsedPsd(readPsdFile(buffer), fileName, sourceDirectory),
+  loadParsedPsd: (psd, fileName, sourceDirectory) => {
     if (get().clipDocument) {
       get().attachClipPsd({ psd, name: fileName, sourceDirectory })
       return
@@ -136,6 +137,8 @@ export const createPsdSlice: StateCreator<AppStore, [], [], PsdSlice> = (set, ge
 
     const manualAnimFolderIds = sanitizeManualAnimFolderIds(tree, get().manualAnimFolderIds)
 
+    outputRenderQueue.clear()
+    clearProjectSelectorCaches()
     set({
       ...emptyOutputSelection(),
       rawPsd: psd,
@@ -182,6 +185,7 @@ export const createPsdSlice: StateCreator<AppStore, [], [], PsdSlice> = (set, ge
 
   resetProject: () => {
     outputRenderQueue.clear()
+    clearProjectSelectorCaches()
     set({
       ...emptyOutputSelection(),
       clipDocument: null,
