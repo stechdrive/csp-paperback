@@ -1,7 +1,7 @@
 {
   "name": "csp-paperback",
   "private": true,
-  "version": "1.28.269",
+  "version": "1.28.270",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -24,11 +24,12 @@
     "test:run": "vitest run --sequence.shuffle --sequence.seed=2307",
     "test:coverage": "vitest run --coverage --sequence.shuffle --sequence.seed=2307",
     "test:e2e": "playwright test",
+    "test:deploy": "node --test scripts/test-deploy-pages.mjs",
     "test:ui": "vitest --ui",
-    "check": "npm run lint && npm run test:run && npm run build",
-    "check:ci": "npm run lint && npm run test:coverage && npm run build && npm run test:e2e",
+    "check": "npm run lint && npm run test:deploy && npm run test:run && npm run build",
+    "check:ci": "npm run lint && npm run test:deploy && npm run test:coverage && npm run build && npm run test:e2e",
     "predeploy": "npm run build && npm run audit:artifacts -- dist",
-    "deploy": "gh-pages -d dist"
+    "deploy": "node scripts/deploy-pages.mjs --publish"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.11.0",
@@ -61,7 +62,6 @@
     "eslint": "^9.39.4",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
-    "gh-pages": "^6.3.0",
     "globals": "^17.4.0",
     "jsdom": "^29.0.1",
     "typescript": "~5.9.3",
