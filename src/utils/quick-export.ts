@@ -2,6 +2,7 @@ import { loadProjectFiles } from './project-loader'
 import { useAppStore } from '../store'
 import { allowTauriLaunchFilePaths, loadableFilesFromPaths } from '../platform/files'
 import { planExportEntriesFromState } from './export-entries'
+import { trackExportDiagnostics } from './export-diagnostics'
 import { saveEntriesToDirectoryPath } from './directory-builder'
 import { resolveQuickExportFilePair, resolveQuickExportJobs, type QuickExportFilePair } from './quick-export-plan'
 export { resolveQuickExportFilePair, resolveQuickExportJobs } from './quick-export-plan'
@@ -60,10 +61,12 @@ async function exportPair(pair: QuickExportFilePair, onProgress: (progress: Quic
 
   onProgress({ progress: 0.38, message: '出力一覧を準備しています' })
   const outputConfig = loadedState.savedOutputConfig
-  const entries = planExportEntriesFromState(loadedState, outputConfig)
-  if (entries.length === 0) {
+  const planned = planExportEntriesFromState(loadedState, outputConfig)
+  if (planned.length === 0) {
     throw new Error('出力対象がありません')
   }
+  const tracked = trackExportDiagnostics(planned, loadedState.clipDiagnostics, outputConfig)
+  const entries = tracked.entries
 
   onProgress({ progress: 0.5, message: '入力ファイルと同じ場所へ書き出しています' })
   const outputDirectory = await saveEntriesToDirectoryPath(
@@ -87,7 +90,7 @@ async function exportPair(pair: QuickExportFilePair, onProgress: (progress: Quic
   return {
     outputDirectory,
     entryCount: entries.length,
-    warnings: [...new Set(loadedState.clipDiagnostics.map(d => d.message))],
+    warnings: tracked.messages(),
   }
 }
 

@@ -51,7 +51,7 @@ export function OutputPreviewFiles({ entries, structure }: { entries: OutputPrev
       <span className={styles.fileNameText} data-testid="preview-file-name">{names[0]}</span>
       {entries.length > 1 && <span className={styles.previewFileCount}>{entries.length}件</span>}
     </button></Tooltip>
-    {(vector || unsupported3D) && <RenderWarning vector={vector} unsupported3D={unsupported3D} />}
+    {(vector || unsupported3D) && <RenderWarning vector={vector} unsupported3D={unsupported3D} sourceIds={entries.flatMap(entry => [...(entry.sources?.all ?? [])])} />}
     {position && createPortal(<div ref={popup} id={id} role="dialog" aria-label="プレビュー中のファイル名" className={styles.settingsPopup} style={position}>
       <div className={styles.settingsHeader}>
         <strong>プレビュー中のファイル · {entries.length}件</strong>
@@ -60,7 +60,7 @@ export function OutputPreviewFiles({ entries, structure }: { entries: OutputPrev
       <ol className={styles.previewFileList}>
         {entries.map((entry, index) => <li key={index}>
           <span>{names[index]}</span>
-          {(entry.vectorWarning || entry.unsupported3D) && <RenderWarning vector={entry.vectorWarning} unsupported3D={entry.unsupported3D} />}
+          {(entry.vectorWarning || entry.unsupported3D) && <RenderWarning vector={entry.vectorWarning} unsupported3D={entry.unsupported3D} sourceIds={entry.sources?.all} />}
         </li>)}
       </ol>
     </div>, document.body)}

@@ -152,7 +152,7 @@ describe('paper image references in the material decoder', () => {
     await decode(horizontal, { VectorNormalStrokeIndex: 42 })
     await decode(vertical, { VectorNormalStrokeIndex: 43 })
     await decode(again, { VectorNormalStrokeIndex: 42 })
-    expect(diagnostics.filter(d => !d.message.includes('ベクターを近似描画'))).toEqual([])
+    expect(diagnostics.filter(d => !d.rendering)).toEqual([])
     expect(alpha(horizontal.pixels!, 12, 14)).toBe(96)
     expect(alpha(vertical.pixels!, 12, 14)).toBe(128)
     expect(again.pixels).toEqual(horizontal.pixels)

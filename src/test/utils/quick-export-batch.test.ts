@@ -9,6 +9,7 @@ import { allowTauriLaunchFilePaths, loadableFilesFromPaths } from '../../platfor
 import { saveEntriesToDirectoryPath } from '../../utils/directory-builder'
 import { planExportEntriesFromState } from '../../utils/export-entries'
 import type { ClipDocument } from '../../utils/clip/types'
+import { recordComposite } from '../../engine/render-sources'
 
 vi.mock('../../utils/clip-io', () => ({ readClipFile: vi.fn() }))
 vi.mock('../../utils/psd-io', () => ({ readPsdFile: vi.fn() }))
@@ -96,10 +97,19 @@ describe('batch export with the real loader and project store', () => {
 
   it('records diagnostics per project, retaining timeline warnings but clearing PSD-replaced raster warnings', async () => {
     const doc = document()
-    doc.diagnostics = [{ scope: 'raster', message: '描画は近似です' }, { scope: 'timeline', message: '未対応の時間伸縮' }]
+    doc.diagnostics = [{ scope: 'raster', layerId: 'art', message: '描画は近似です' }, { scope: 'timeline', message: '未対応の時間伸縮' }]
     vi.mocked(readClipFile).mockImplementation(async () => structuredClone(doc))
+    vi.mocked(readPsdFile).mockImplementation(() => ({ width: 2, height: 2, children: [{ name: 'art', canvas: documentCanvas() }] }))
+    vi.mocked(planExportEntriesFromState).mockImplementation(() => [{ path: 'art.png', flatName: 'art.png', sourceLayerId: 'clip:art', createCanvas: () => {
+      const canvas = documentCanvas()
+      return recordComposite(canvas, [{ canvas, sourceId: 'clip:art', opacity: 100, blendMode: 'normal', clipping: false, left: 0, top: 0 }])
+    } }])
+    vi.mocked(saveEntriesToDirectoryPath).mockImplementation(async entries => {
+      for (const entry of entries) if ('createCanvas' in entry) entry.createCanvas()
+      return 'C:/cuts/out'
+    })
     const result = await runQuickExportBatch(['C:/cuts/a.clip', 'C:/cuts/b.clip', 'C:/cuts/b.psd'], vi.fn())
-    expect(result.jobs[0].warnings).toEqual(['描画は近似です', '未対応の時間伸縮'])
+    expect(result.jobs[0].warnings).toEqual(['未対応の時間伸縮', 'art.png — 描画は近似です'])
     expect(result.jobs[1].warnings).toEqual(['未対応の時間伸縮'])
   })
 

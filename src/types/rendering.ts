@@ -1,7 +1,14 @@
-export interface EdgeEffect { radius: number; color: [number, number, number] }
+export interface EdgeEffect {
+  radius: number
+  color: [number, number, number]
+  reflectOpacity?: boolean
+  antialias?: boolean
+}
+export interface WatercolorEffect { range: number; opacity: number; darkness: number; blur: number }
 export interface MaterialEffects {
   layerColor?: { main: [number, number, number]; sub: [number, number, number] }
   edge?: EdgeEffect
+  watercolor?: WatercolorEffect
 }
 
 export type MaterialAdjustment = { kind: 'invert' } | { kind: 'threshold'; threshold: number }

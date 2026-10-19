@@ -149,7 +149,7 @@ describe('drawing color fields and safe recovery', () => {
     await decode(material, { ...fixtures[1].layers[0].fields, LayerEffectAttached: 1, LayerEffectInfo: truncated })
     expect(material.effects?.layerColor).toEqual({ main: [62, 140, 236], sub: [255, 255, 255] })
     expect(material.effects?.edge).toBeUndefined()
-    expect(diagnostics).toHaveLength(1)
+    expect(diagnostics.filter(d => !d.rendering)).toHaveLength(1)
   })
 })
 

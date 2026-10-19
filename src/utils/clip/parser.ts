@@ -4,7 +4,7 @@ import { check, readContainer } from './binary'
 import { readActionMixer } from './binc'
 import { readCelFrames } from './timeline'
 import { readAttribute } from './raster'
-import { createMaterialDecoder } from './material'
+import { createMaterialDecoder, readMaterialEffects } from './material'
 import { num, str, errorMessage, type ClipRow as Row } from './records'
 import type { ClipDiagnostic, ClipDocument, ClipLayer, ClipTimeline } from './types'
 
@@ -30,6 +30,8 @@ export async function parseClipDocument(bytes: Uint8Array, SQL: SqlJsStatic, inc
     const canvases = rows(db, 'Canvas')
     check(canvases.length === 1, '複数キャンバスまたはキャンバスのないファイルには未対応です')
     const canvas = canvases[0]
+    const compatibility = canvas.CanvasRenderMipmapForceSaved === 1 ? 'saved'
+      : canvas.CanvasRenderMipmapForceSaved === 0 ? 'not-saved' : 'unknown'
     const layerRows = rows(db, 'Layer'), layersById = keyed(layerRows)
     const root = layersById.get(num(canvas, 'CanvasRootFolder'))
     check(root && layerRows.length === layersById.size, 'レイヤーツリーのルートまたはIDが不正です')
@@ -68,7 +70,7 @@ export async function parseClipDocument(bytes: Uint8Array, SQL: SqlJsStatic, inc
         check(/^[0-9a-f]{32}$/.test(key) && !nativeRows.has(key), 'レイヤーUUIDが不正または重複しています')
         nativeRows.set(key, row)
         const composite = num(row, 'LayerComposite')
-        if (!blends[composite]) diagnostics.push({ scope: 'raster', layerId: key, message: `「${str(row.LayerName)}」の合成モード ${composite} は未対応です（通常で表示）` })
+        if (!blends[composite]) diagnostics.push({ scope: 'raster', part: 'blend', layerId: key, message: `「${str(row.LayerName)}」の合成モード ${composite} は未対応です（通常で表示）` })
         result.push({ id: key, name: str(row.LayerName), isFolder: !!(num(row, 'LayerFolder') & 1),
           kind: num(row, 'LayerType') & 512 ? 'camera' : num(row, 'LayerFolder') & 1 ? 'folder' : row.FilterLayerInfo ? 'adjustment' : num(row, 'Manager3D') || num(row, 'Manager3DOd') ? '3d' : row.TextLayerString != null || row.TextLayerStringArray != null ? 'text' : row.ResizableImageInfo ? 'image-material' : num(row, 'VectorNormalStrokeIndex') || vectorLayerIds.has(next) ? 'vector' : num(row, 'LayerType') & 1 ? 'raster' : 'other',
           nativeBlendMode: composite,
@@ -130,7 +132,7 @@ export async function parseClipDocument(bytes: Uint8Array, SQL: SqlJsStatic, inc
       const decode = createMaterialDecoder({ mipmaps, mipInfos, offscreens, thumbnails: rows(db, 'LayerThumbnail'), external: container.external,
         vectors, brushes: keyed(rows(db, 'BrushStyle')), brushGraphs: keyed(rows(db, 'BrushEffectorGraphData')),
         brushPatterns: keyed(rows(db, 'BrushPatternStyle')), brushImages: keyed(rows(db, 'BrushPatternImage')),
-      }, width, height, num(canvas, 'CanvasResolution'), diagnostics)
+      }, width, height, num(canvas, 'CanvasResolution'), diagnostics, compatibility)
       async function walk(layers: ClipLayer[]): Promise<void> {
         for (const layer of layers) {
           try { await decode(layer, nativeRows.get(layer.id)!) }
@@ -139,7 +141,17 @@ export async function parseClipDocument(bytes: Uint8Array, SQL: SqlJsStatic, inc
         }
       }
       await walk(layers)
+    } else {
+      // Pairing skips expensive pixel decoding, not effect metadata. Folder
+      // effects can remain absent from the PSD and still need a truthful notice.
+      const walk = (layers: ClipLayer[]) => layers.forEach(layer => {
+        layer.effects = readMaterialEffects(nativeRows.get(layer.id)!, message => diagnostics.push({
+          scope: 'raster', part: 'effect', layerId: layer.id, message: `「${layer.name}」: ${message}`,
+        }))
+        walk(layer.children)
+      })
+      walk(layers)
     }
-    return { width, height, dpi: num(canvas, 'CanvasResolution'), layers, timelines, defaultTimelineId: defaultTimelineId ?? timelines[0]?.id ?? null, diagnostics }
+    return { width, height, dpi: num(canvas, 'CanvasResolution'), compatibility, layers, timelines, defaultTimelineId: defaultTimelineId ?? timelines[0]?.id ?? null, diagnostics }
   } finally { db.close() }
 }

@@ -81,9 +81,13 @@ JPEG／PNG画像を、ZIPまたはフォルダへ保存できます。PNGは透�
 
 アプリ内のサンプルから、出力結果を試せます。詳しい操作と設定はアプリ内ヘルプで確認できます。
 
-### クリスタの描画結果を使いたい場合はPSDを追加する
+### ベクター・3Dの描画をクリスタに合わせる
 
-クリスタの描画との厳密な一致が必要な場合や、3Dなどの素材を使う場合は、PSDを併用できます。同じ保存状態のCLIPから、次の操作でPSDを保存して一緒に読み込んでください。
+クリスタの［環境設定］→［ファイル］で［バージョン互換情報の保存］を［保存する］に設定し、CLIPを保存し直してください。レイヤー単独の保存画像を取得できる場合は、その画像を使います。
+
+画像を取得できないベクターは近似描画し、3Dは透明な画像として扱います。書き出しは止めず、残る制限を「再現状況」で案内します。レイヤーカラー・境界線は独自処理、水彩境界は現在未反映です。
+
+通常レイヤーの描画をPSDから補うこともできます。同じ保存状態のCLIPから、次の操作でPSDを保存して一緒に読み込んでください。フォルダの効果はPSDにも含まれない場合があります。
 
 **［ファイル］→［複製を保存］→［.psd(Photoshopドキュメント)...］**
 
@@ -184,9 +188,11 @@ Stage names vary between studios and productions. On first use, check the stage 
 
 Try the in-app sample to inspect the output. Detailed instructions and settings are covered in the in-app help.
 
-### Add a PSD to use CSP's rendered artwork
+### Use CSP's saved images for vector and 3D layers
 
-For materials that CLIP alone cannot fully reproduce, such as vector or 3D layers, add a PSD. Save it from the same saved state of the CLIP using this menu command, then load both files together.
+Enable version compatibility information in CSP's file preferences and save the CLIP again. When an individual layer's saved image is available, the app uses it. Otherwise, vectors use approximate rendering and unavailable 3D layers contribute a transparent image. Export continues, with the remaining limitations listed in the rendering status.
+
+Layer color and outlines use the app's own processing; watercolor edges are currently omitted. A PSD can also supply ordinary layer images. Save it from the same saved state of the CLIP using this menu command, then load both files together. Folder effects may be absent from the PSD too.
 
 **File > Save Duplicate > .psd (Photoshop Document)**
 

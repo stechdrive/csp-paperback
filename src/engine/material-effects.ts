@@ -34,6 +34,26 @@ function distanceLine(input: Float64Array, output: Float64Array, count: number) 
   }
 }
 
+/** A bounded, linear-time alpha maximum. The distance field below rounds its support. */
+function expandedAlpha(data: Uint8ClampedArray, width: number, height: number, radius: number): Uint8Array {
+  const horizontal = new Uint8Array(width * height), result = new Uint8Array(width * height)
+  const queue = new Int32Array(Math.max(width, height))
+  const pass = (count: number, read: (i: number) => number, write: (i: number, value: number) => void) => {
+    let head = 0, tail = 0, next = 0
+    for (let i = 0; i < count; i++) {
+      while (next < count && next <= i + radius) {
+        while (tail > head && read(queue[tail - 1]) <= read(next)) tail--
+        queue[tail++] = next++
+      }
+      while (queue[head] < i - radius) head++
+      write(i, read(queue[head]))
+    }
+  }
+  for (let y = 0; y < height; y++) pass(width, x => data[(y * width + x) * 4 + 3], (x, a) => { horizontal[y * width + x] = a })
+  for (let x = 0; x < width; x++) pass(height, y => horizontal[y * width + x], (y, a) => { result[y * width + x] = a })
+  return result
+}
+
 /** Apply effects to the selected material, never to a cached composite of other cels. */
 export function applyMaterialEffects(canvas: HTMLCanvasElement, left: number, top: number, effects: MaterialEffects | undefined, width: number, height: number): HTMLCanvasElement {
   if (!effects?.edge && !effects?.layerColor) return canvas
@@ -50,6 +70,7 @@ export function applyMaterialEffects(canvas: HTMLCanvasElement, left: number, to
   if (effects.layerColor) applyLayerColor(data, effects.layerColor)
   const edge = effects.edge
   if (edge && edge.radius > 0) {
+    const alphaMaximum = edge.reflectOpacity ? expandedAlpha(data, wImage, hImage, Math.ceil(edge.radius)) : undefined
     let x0 = wImage, y0 = hImage, x1 = -1, y1 = -1
     for (let y = 0; y < hImage; y++) for (let x = 0; x < wImage; x++) if (data[(y * wImage + x) * 4 + 3]) {
       x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y)
@@ -70,10 +91,16 @@ export function applyMaterialEffects(canvas: HTMLCanvasElement, left: number, to
         distanceLine(input, output, h)
         for (let y = 0; y < h; y++) {
           const at = ((y + y0) * wImage + x + x0) * 4, alpha = data[at + 3] / 255
-          const stroke = Math.max(0, Math.min(1, edge.radius + 0.5 - Math.sqrt(output[y])))
-          const combined = alpha + stroke * (1 - alpha)
+          const distance = Math.sqrt(output[y])
+          const stroke = edge.antialias === false ? Number(distance <= edge.radius)
+            : Math.max(0, Math.min(1, edge.radius + 0.5 - distance))
+          // Reflect opacity expands the alpha envelope; it must not source-over
+          // an opaque border underneath every semitransparent interior pixel.
+          const combined = alphaMaximum
+            ? Math.max(alpha, stroke * alphaMaximum[(y + y0) * wImage + x + x0] / 255)
+            : alpha + stroke * (1 - alpha)
           if (!combined) continue
-          for (let c = 0; c < 3; c++) data[at + c] = (data[at + c] * alpha + edge.color[c] * stroke * (1 - alpha)) / combined
+          for (let c = 0; c < 3; c++) data[at + c] = (data[at + c] * alpha + edge.color[c] * (combined - alpha)) / combined
           data[at + 3] = combined * 255
         }
       }

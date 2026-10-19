@@ -9,13 +9,11 @@ export const ja = {
   },
   input: {
     openTitle: 'CLIP / PSD / 設定JSON を開く',
-    openHint: 'CLIPを読み込みます。クリスタの描画結果を使う場合は、対応するPSDを追加できます。',
+    openHint: 'CLIPを読み込みます。対応するPSDを追加することもできます。',
     psdMenu: '［ファイル］→［複製を保存］→［.psd(Photoshopドキュメント)...］',
     psdVisibility: 'CLIPとPSDは、レイヤーの表示状態を合わせて保存してください。',
-    psdOptional: 'クリスタの描画結果を使う場合は、同じCLIPから「複製を保存」で作成したPSDを追加できます。',
-    clip3dUnavailable: '3Dレイヤーの保存画像を取得できず、出力に含まれません。',
-    clip3dResave: 'クリスタの［環境設定］→［ファイル］で［バージョン互換情報の保存］を［保存する］に設定し、互換情報を含めてCLIPを保存し直して、再度読み込んでください。',
-    clip3dPsdFallback: 'それでも取得できない場合は、同じ保存状態からクリスタで書き出したPSDを追加してください。',
+    psdOptional: '通常レイヤーの描画をPSDから補う場合は、同じ保存状態のCLIPから「複製を保存」で作成したPSDを追加できます。フォルダの効果はPSDにも含まれない場合があります。',
+    clipCompatibilityResave: 'クリスタの［環境設定］→［ファイル］で［バージョン互換情報の保存］を［保存する］に設定し、互換情報を含めてCLIPを保存し直して、再度読み込んでください。',
   },
   export: {
     title: '出力設定',

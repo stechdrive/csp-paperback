@@ -51,6 +51,10 @@ export function buildClipLayerTree(clip: ClipDocument, source: Psd, timeline: Cl
       r.id = `clip:${n.id}`
       r.parentId = parentId
       if (!paired) { r.materialEffects = n.effects; r.nativeBlendMode = n.nativeBlendMode; r.adjustment = n.adjustment; r.vectorRendering = n.vectorRendering; r.unsupported3D = n.unsupported3D }
+      else if (!r.agPsdRef.canvas) {
+        if (n.kind === '3d') r.unsupported3D = true
+        if (n.kind === 'vector') r.vectorRendering = 'unavailable'
+      }
       if (n.isAnimationFolder) {
         r.isAnimationFolder = true
         r.animationFolder = { detectedBy: 'clip', trackName: n.name, trackNo: timeline?.bindings[n.id] }

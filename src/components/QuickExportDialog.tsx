@@ -71,7 +71,7 @@ export function QuickExportDialog({ paths }: QuickExportDialogProps) {
           <div id="quick-export-title" className={styles.title}>クイック書き出し</div>
           <div className={styles.status} role="status">
             {status === 'running' ? `${message} ${percent}%` : message}
-            {result && <div>成功 {result.successCount}件／失敗 {result.failureCount}件／注意 {warningCount}件・計 {result.entryCount}枚</div>}
+            {result && <div>成功 {result.successCount}件／失敗 {result.failureCount}件／再現状況の案内 {warningCount}件・計 {result.entryCount}枚</div>}
           </div>
         </div>
         <div className={styles.progressTrack} role="progressbar" aria-label="書き出し進捗" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent}>
@@ -88,8 +88,8 @@ export function QuickExportDialog({ paths }: QuickExportDialogProps) {
             {job.status === 'done'
               ? <><div>出力先: {job.outputDirectory}</div><div>枚数: {job.entryCount}</div></>
               : <div className={styles.error}>{job.error}</div>}
-            {job.warnings.length > 0 && <details>
-              <summary>注意 {job.warnings.length}件 — 再現状況を確認してください</summary>
+            {status !== 'running' && job.warnings.length > 0 && <details open>
+              <summary>再現状況 {job.warnings.length}件</summary>
               <ul>{job.warnings.map((warning, warningIndex) => <li key={warningIndex}>{warning}</li>)}</ul>
             </details>}
           </div>)}

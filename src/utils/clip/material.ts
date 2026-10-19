@@ -7,7 +7,7 @@ import type { MaterialEffects, MaterialQuad } from '../../types/rendering'
 import { readGradient } from './gradient'
 import { readAdjustment } from './adjustment'
 import { readVectorStrokes, renderVectors, type BrushPattern, type VectorBrushes } from './vector'
-import { ja } from '../../i18n/ja'
+import { layerRenderingDiagnostics } from './rendering-status'
 
 /** Decode only drawing effects; palette label colors are deliberately unrelated. */
 export function readMaterialEffects(row: ClipRow, report?: (message: string) => void): MaterialEffects | undefined {
@@ -18,8 +18,7 @@ export function readMaterialEffects(row: ClipRow, report?: (message: string) => 
     effects.layerColor = { main: rgb('DrawColorMain', 0), sub: rgb('DrawColorSub', 0xffffffff) }
   }
   try {
-    const edge = readEdgeEffect(row)
-    if (edge) effects.edge = edge
+    Object.assign(effects, readEdgeEffects(row))
   } catch (e) {
     if (!report) throw e
     report(errorMessage(e))
@@ -29,17 +28,47 @@ export function readMaterialEffects(row: ClipRow, report?: (message: string) => 
 
 function isPaper(row: ClipRow): boolean { return (num(row, 'LayerType') & ~2) === 1584 }
 
-function readEdgeEffect(row: ClipRow): MaterialEffects['edge'] {
+function effectRecord(bytes: Uint8Array, name: string): Reader | undefined {
+  const needle = [0, 0, 0, name.length, ...Array.from(name).flatMap(c => [0, c.charCodeAt(0)])]
+  const start = bytes.findIndex((_, i) => needle.every((b, j) => bytes[i + j] === b))
+  return start < 0 ? undefined : new Reader(bytes.subarray(start + needle.length))
+}
+
+function readEdgeEffects(row: ClipRow): MaterialEffects | undefined {
   const bytes = row.LayerEffectInfo
   if (!(bytes instanceof Uint8Array) || !num(row, 'LayerEffectAttached')) return
-  const needle = [0, 0, 0, 10, ...Array.from('EffectEdge').flatMap(c => [0, c.charCodeAt(0)])]
-  const start = bytes.findIndex((_, i) => needle.every((b, j) => bytes[i + j] === b))
-  if (start < 0) return
-  const r = new Reader(bytes.subarray(start + needle.length))
+  const r = effectRecord(bytes, 'EffectEdge')
+  if (!r) return
   if (!r.u32()) return
   const radius = r.number('f64')
   check(radius >= 0 && radius <= 256, '境界の太さが範囲外です')
-  return { radius, color: [r.u32() >>> 24, r.u32() >>> 24, r.u32() >>> 24] }
+  const color: [number, number, number] = [r.u32() >>> 24, r.u32() >>> 24, r.u32() >>> 24]
+  const water = effectRecord(bytes, 'EffectWaterEdge')
+  if (water) {
+    const size = water.u32()
+    check(size >= 40 && size - 4 <= water.bytes.length - water.position, '水彩境界の設定が不正です')
+    if (water.u32()) {
+      const [range, opacity, darkness, blur] = Array.from({ length: 4 }, () => water.number('f64'))
+      check(range >= 0 && range <= 20 && opacity >= 0 && opacity <= 100 && darkness >= 0 && darkness <= 100 && blur >= 0 && blur <= 10, '水彩境界の設定が範囲外です')
+      return { watercolor: { range, opacity, darkness, blur } }
+    }
+  }
+  const edge: NonNullable<MaterialEffects['edge']> = { radius, color }
+  // CSP 5.1.5 appends edge options after the sized EffectLine record.
+  // A native checkbox-only A/B changes reflectOpacity here, not EffectApplyOpacity.
+  const line = effectRecord(bytes, 'EffectLine')
+  if (line) {
+    const size = line.u32()
+    check(size >= 4 && size <= line.bytes.length, '境界線の追加設定が不正です')
+    line.take(size - 4)
+    if (line.bytes.length - line.position === 20) {
+      line.take(12)
+      const opacity = line.u32(), aa = line.u32()
+      check(opacity <= 1 && aa <= 1, '境界線の透明度設定が不正です')
+      edge.reflectOpacity = !!opacity; edge.antialias = !!aa
+    }
+  }
+  return { edge }
 }
 
 /** ResizableImageInfo describes static artwork placement, not animation/camera transforms. */
@@ -71,7 +100,7 @@ export function materialOffscreen(t: MaterialTables, row: ClipRow, field: string
 }
 
 /** Each layer can fall back independently; one failed image cannot cancel the document. */
-export function createMaterialDecoder(t: MaterialTables, width: number, height: number, dpi: number, diagnostics: ClipDiagnostic[]) {
+export function createMaterialDecoder(t: MaterialTables, width: number, height: number, dpi: number, diagnostics: ClipDiagnostic[], compatibility?: import('./types').ClipDocument['compatibility']) {
   let decodedBytes = 0
   const vectorBrushes: VectorBrushes = { styles: t.brushes ?? new Map(), graphs: t.brushGraphs ?? new Map(), patterns: new Map(), textures: new Map() }
   const loadedPatterns = new Set<number>()
@@ -125,7 +154,6 @@ export function createMaterialDecoder(t: MaterialTables, width: number, height: 
     const report = (message: string) => diagnostics.push({ scope: 'raster', layerId: layer.id, message: `「${layer.name}」: ${message}` })
     try {
       layer.effects = readMaterialEffects(row, report)
-      if (layer.effects?.edge?.radius) report('境界線を近似描画します（輪郭の丸めはクリスタと差が生じます）')
     } catch (e) { report(errorMessage(e)) }
     if (row.FilterLayerInfo instanceof Uint8Array) {
       try {
@@ -179,7 +207,6 @@ export function createMaterialDecoder(t: MaterialTables, width: number, height: 
           layer.pixels = renderVectors(strokes, vectorBrushes, width, height, num(row, 'LayerOffsetX'), num(row, 'LayerOffsetY'), report)
           decodedBytes += layer.pixels.rgba.length
           layer.materialSource = 'vector'; layer.vectorRendering = 'approximate'
-          report('ベクターを近似描画しています。線幅・濃さ・ブラシ形状がクリスタと異なる場合があります。同じ出力が必要な場合はクリスタで書き出したPSDを追加してください')
         } catch (e) { failures.push(errorMessage(e)) }
       }
       if (!layer.pixels && (row.TextLayerString != null || row.TextLayerStringArray != null)) {
@@ -204,7 +231,7 @@ export function createMaterialDecoder(t: MaterialTables, width: number, height: 
           }
           if (fragments.length === 1) layer.pixels = fragments[0]
           else if (fragments.length) layer.fragments = fragments
-          if (unresolved.length) { layer.text = unresolved; report('文字情報から描画します（フォント・組版は環境によって差が生じます）') }
+          if (unresolved.length) layer.text = unresolved
           layer.materialSource = unresolved.length ? 'text' : fragments.length ? 'object-cache' : undefined
         } catch (e) { failures.push(errorMessage(e)) }
       }
@@ -227,8 +254,7 @@ export function createMaterialDecoder(t: MaterialTables, width: number, height: 
       if (!layer.pixels && !layer.fragments?.length && !layer.text?.length) {
         if (layer.kind === '3d') {
           layer.unsupported3D = true
-          report([ja.input.clip3dUnavailable, ja.input.clip3dResave, ja.input.clip3dPsdFallback].join('\n'))
-        } else if (failures.length || !(num(row, 'LayerType') & 1)) report(failures[0] ?? '素材画像を復元できません。ほかの素材は引き続き書き出せます')
+        } else if (layer.kind !== 'vector' && (failures.length || !(num(row, 'LayerType') & 1))) report(failures[0] ?? '素材画像を復元できません。ほかの素材は引き続き書き出せます')
       }
     }
     if (num(row, 'LayerType') & 2) {
@@ -240,5 +266,6 @@ export function createMaterialDecoder(t: MaterialTables, width: number, height: 
         mask.disabled = !(num(row, 'LayerVisibility') & 2); layer.mask = mask
       } catch (e) { report(errorMessage(e)) }
     }
+    diagnostics.push(...layerRenderingDiagnostics(layer, compatibility))
   }
 }

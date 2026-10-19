@@ -35,13 +35,11 @@ function Step({
   )
 }
 
-function PsdInstructions() {
+function RenderingInstructions() {
   return (
     <div className={styles.psdInstructions}>
-      <strong>ベクターや効果の描画を合わせるときは、PSDも一緒にドロップ</strong>
-      <p>クリスタの<span className={styles.menuPath}>{ja.input.psdMenu}</span>でPSDを保存してください。</p>
-      <p>{ja.input.psdVisibility}</p>
-      <p>3DはCLIP内の保存画像を使います。画像を取得できない場合は、{ja.input.clip3dResave}</p>
+      <strong>ベクターレイヤー・3Dレイヤーの描画をクリスタに合わせるには</strong>
+      <p>{ja.input.clipCompatibilityResave}</p>
     </div>
   )
 }
@@ -66,12 +64,12 @@ export function QuickStartGuide({
               ? '読み込み済みのタイムシートに対応するPSDを読み込んでください。'
               : '「ファイルを開く」からも選べます。'}
           </p>
-          {!timelineOnlyLoaded && <PsdInstructions />}
+          {!timelineOnlyLoaded && <RenderingInstructions />}
         </div>
       )}
 
       {full ? (
-        <div className={styles.callout}><PsdInstructions /></div>
+        <div className={styles.callout}><RenderingInstructions /></div>
       ) : (
         <>
           <div className={styles.folderRules}>

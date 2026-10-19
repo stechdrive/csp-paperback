@@ -42,6 +42,11 @@ export interface ClipDiagnostic {
   scope: 'raster' | 'timeline'
   message: string
   layerId?: string
+  /** Generated from the final rendering route, rather than an unsuccessful candidate. */
+  rendering?: boolean
+  part?: 'material' | 'effect' | 'mask' | 'placement' | 'blend'
+  outcome?: 'approximate' | 'missing-content' | 'missing-effect'
+  materialKind?: 'vector' | 'text' | '3d'
 }
 
 export interface ClipTimeline {
@@ -55,6 +60,8 @@ export interface ClipTimeline {
 }
 
 export interface ClipDocument {
+  /** A save preference is evidence, not proof that every layer image exists. */
+  compatibility?: 'saved' | 'not-saved' | 'unknown'
   width: number
   height: number
   dpi: number

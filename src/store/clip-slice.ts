@@ -5,6 +5,7 @@ import type { ClipDocument, ClipDiagnostic, ClipLayer } from '../utils/clip/type
 import { buildClipLayerTree, clipRenderingSource } from '../engine/clip-tree'
 import { buildDefaultVisibilityOverrides, retainManualVisibility } from '../utils/default-visibility'
 import type { AppStore } from './index'
+import { resolveClipDiagnostics } from '../utils/clip/rendering-status'
 
 export interface ClipPsdSource { psd: Psd; name: string; sourceDirectory?: string }
 export interface ClipSlice {
@@ -49,7 +50,7 @@ export const createClipSlice: StateCreator<AppStore, [], [], ClipSlice> = (set, 
       // Canvases own the decoded pixels now. Retain only identities and metadata for later pairing.
       clipDocument: { ...clip, layers: metadataOnly(clip.layers) }, clipFileName: name, clipSourceDirectory: sourceDirectory ?? null,
       clipTimelineId: timeline?.id ?? null,
-      clipDiagnostics: [...clip.diagnostics.filter(d => !psd || d.scope !== 'raster'), ...(timeline?.diagnostics ?? [])],
+      clipDiagnostics: [...resolveClipDiagnostics(clip, tree, !!psd), ...(timeline?.diagnostics ?? [])],
       rawPsd: source, psdFileName: psd?.name ?? null, psdSourceDirectory: psd?.sourceDirectory ?? null,
       layerTree: tree, docWidth: clip.width, docHeight: clip.height, docDpiX: clip.dpi, docDpiY: clip.dpi,
       // Shared timeline representation. xdtsFileName remains null for a native timeline.
@@ -70,7 +71,7 @@ export const createClipSlice: StateCreator<AppStore, [], [], ClipSlice> = (set, 
     // Stable native IDs preserve marks, virtual sets, selections and process settings.
     // Render attributes and masks come entirely from the corresponding native PSD.
     set({ rawPsd: psd, psdFileName: name, psdSourceDirectory: sourceDirectory ?? null, layerTree: tree,
-      clipDiagnostics: [...clip.diagnostics.filter(d => d.scope !== 'raster'), ...(timeline?.diagnostics ?? [])],
+      clipDiagnostics: [...resolveClipDiagnostics(clip, tree, true), ...(timeline?.diagnostics ?? [])],
       _past: [], _future: [], canUndo: false, canRedo: false })
   },
 
@@ -86,7 +87,7 @@ export const createClipSlice: StateCreator<AppStore, [], [], ClipSlice> = (set, 
     }))
     const tree = bind(state.layerTree)
     set({ layerTree: tree, timelineData: timeline.data, clipTimelineId: id,
-      clipDiagnostics: [...clip.diagnostics.filter(d => !state.psdFileName || d.scope !== 'raster'), ...timeline.diagnostics],
+      clipDiagnostics: [...resolveClipDiagnostics(clip, tree, !!state.psdFileName), ...timeline.diagnostics],
       visibilityOverrides: retainManualVisibility(buildDefaultVisibilityOverrides(tree, timeline.data, !!state.projectSettings.sharedCutMode,
         state.projectSettings.showIndividualFoldersOnLoad !== false), state.visibilityOverrides, state.manualVisibilityIds),
       selectedCells: new Map(), currentFrame: 0,

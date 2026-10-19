@@ -82,7 +82,7 @@ describe('bounded CLIP vector decoding and approximate rendering', () => {
     expect(layer.materialSource).toBe('vector')
     expect(layer.vectorRendering).toBe('approximate')
     expect(alpha(layer.pixels!, 8, 8)).toBeGreaterThan(0)
-    expect(diagnostics.some(d => d.message.includes('PSD'))).toBe(true)
+    expect(diagnostics.some(d => d.message.includes('バージョン互換情報の保存'))).toBe(true)
     const missing = { ...layer, pixels: undefined, materialSource: undefined }
     await decode(missing, { MainId: 10 })
     expect(missing.vectorRendering).toBe('unavailable')

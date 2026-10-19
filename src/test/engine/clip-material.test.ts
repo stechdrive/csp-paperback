@@ -51,9 +51,12 @@ describe('vector warnings follow material contributions', () => {
     expect(diagnostics[0].message).toContain('［バージョン互換情報の保存］を［保存する］')
     expect(diagnostics[0].message).toContain('CLIPを保存し直して、再度読み込んでください')
     const d = clip([model]), unpaired = buildClipLayerTree(d, clipRenderingSource(d), undefined, DEFAULT_PROJECT_SETTINGS, false)
-    const missing = flattenToCanvas(unpaired, 8, 4)
+    const missing = flattenToCanvas(unpaired, 8, 4, 'transparent')
     expect(hasUnsupported3D(missing)).toBe(true)
     expect(hasVectorWarning(missing)).toBe(false)
+    expect([missing.width, missing.height]).toEqual([8, 4])
+    expect([...missing.getContext('2d')!.getImageData(0, 0, 8, 4).data].every(v => v === 0)).toBe(true)
+    expect([...flattenToCanvas(unpaired, 8, 4, 'white').getContext('2d')!.getImageData(0, 0, 8, 4).data].every(v => v === 255)).toBe(true)
   })
   it('tracks selected cels through effects and masks, excludes hidden/zero-opacity layers, and clears after PSD pairing', () => {
     const vector = { ...layer('vector'), vectorRendering: 'approximate' as const, pixels: solid(2, 2, [0, 0, 0, 200]) }
