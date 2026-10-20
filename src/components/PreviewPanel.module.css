@@ -106,7 +106,8 @@
   min-height: 24px;
   font-family: monospace;
   font-size: .72rem;
-  line-height: 1;
+  /* Leave room for underscores and descenders inside fileNameText's overflow clip. */
+  line-height: 1.5;
   color: var(--color-text-secondary);
   background: transparent;
   border: 1px solid transparent;
