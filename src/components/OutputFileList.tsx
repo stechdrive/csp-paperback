@@ -110,11 +110,9 @@ export function OutputFileList({ active = true, onShowTree, onPreview }: { activ
     <div className={styles.listTools}>
       <input type="search" aria-label="出力ファイル名を検索" placeholder="ファイル名を検索" value={search} onChange={event => setSearch(event.target.value)} />
     </div>
-    {!!files.length && <div className={warningStyles.status} role="status">
-      {checkedCount < files.length ? `描画を確認中 ${checkedCount}/${files.length}件` : '描画確認済み'}
-      {warningCount > 0 ? ` · 要確認 ${warningCount}件` : checkedCount === files.length ? ' · 警告なし' : ''}
-    </div>}
+    {warningCount > 0 && <div className={warningStyles.status} role="status">要確認 {warningCount}件</div>}
     <div ref={list} className={styles.fileList} role="listbox" tabIndex={0} aria-label="出力ファイル" aria-multiselectable="true"
+      aria-busy={checkedCount < files.length}
       aria-activedescendant={selectedIndex >= 0 ? `${id}-${selectedIndex}` : undefined}
       onKeyDown={event => {
         if (event.nativeEvent.isComposing) return
@@ -133,10 +131,8 @@ export function OutputFileList({ active = true, onShowTree, onPreview }: { activ
           onClick={event => { list.current?.focus(); select(file, event.ctrlKey || event.metaKey, event.shiftKey) }}
           onContextMenu={event => { event.preventDefault(); openMenu(file, event.clientX, event.clientY) }}>
           <OutputThumbnail file={file} active={active} /><span data-output-name>{file.relativePath}</span>
-          {!draftIds.has(file.outputId) && (checkById.get(file.outputId)
-            ? <DiagnosticWarning issues={checkById.get(file.outputId)?.image?.diagnostics}
-                error={checkById.get(file.outputId)?.error} onRetry={checkById.get(file.outputId)?.error ? () => outputRenderQueue.retry(file) : undefined} />
-            : <span className={warningStyles.status}>確認中</span>)}
+          {!draftIds.has(file.outputId) && <DiagnosticWarning issues={checkById.get(file.outputId)?.image?.diagnostics}
+            error={checkById.get(file.outputId)?.error} onRetry={checkById.get(file.outputId)?.error ? () => outputRenderQueue.retry(file) : undefined} />}
         </div></Tooltip>
       </div> })}</div>}
       {!visible.length && <div className={styles.empty}>{query ? '一致するファイルはありません' : '現在の設定で出力されるファイルはありません'}</div>}
