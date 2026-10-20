@@ -8,7 +8,7 @@ import { resetTestStore } from '../helpers/store-reset'
 import type { ClipDocument } from '../../utils/clip/types'
 import type { LoadableFile } from '../../platform/files'
 
-vi.mock('../../utils/clip-io', () => ({ readClipFile: vi.fn() }))
+vi.mock('../../utils/clip-io', () => ({ readClipFile: vi.fn(), clipReader: vi.fn() }))
 vi.mock('../../utils/psd-io', () => ({ readPsdFile: vi.fn() }))
 
 const clip: ClipDocument = {
@@ -37,7 +37,7 @@ describe('CLIP input combinations', () => {
     expect(result.current.error).toBeNull()
     expect(useAppStore.getState().clipFileName).toBe('cut.clip')
     expect(useAppStore.getState().psdFileName).toBe('cut.psd')
-    expect(readClipFile).toHaveBeenCalledWith(expect.any(ArrayBuffer), false)
+    expect(readClipFile).toHaveBeenCalledWith(expect.any(ArrayBuffer), false, true)
   })
 
   it('serializes a PSD dropped while the CLIP is still decoding', async () => {
@@ -96,7 +96,7 @@ describe('CLIP input combinations', () => {
     await act(async () => result.current.loadFiles([file('cut.clip')]))
     expect(result.current.error).toBeNull()
     expect(useAppStore.getState().psdFileName).toBe('cut.psd')
-    expect(readClipFile).toHaveBeenCalledWith(expect.any(ArrayBuffer), false)
+    expect(readClipFile).toHaveBeenCalledWith(expect.any(ArrayBuffer), false, true)
     await act(async () => result.current.loadFiles([file('one.clip'), file('two.clip')]))
     expect(result.current.error).toContain('1ファイルずつ')
     expect(useAppStore.getState().clipFileName).toBe('cut.clip')

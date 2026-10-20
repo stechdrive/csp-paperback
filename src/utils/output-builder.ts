@@ -54,7 +54,7 @@ export async function* streamOutputEntries(
         // Let React, input handling and the progress bar paint between images.
         await new Promise<void>(resolve => setTimeout(resolve, 0))
       }
-      const canvas = lazy ? original.createCanvas() : original.canvas
+      const canvas = lazy ? await original.createCanvas() : original.canvas
       if (!canvas) continue
       let blob: Blob
       try {

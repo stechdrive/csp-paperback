@@ -4,6 +4,7 @@ import { copyRenderSources } from './render-sources'
 import { copyRenderWarnings } from './render-warning'
 import { withMaterialEffectCache } from './material-effect-cache'
 import type { FlatLayer } from '../types'
+import { materialEviction } from './material-cache'
 
 function contextCanvases(cache: OutputRenderCache): Set<HTMLCanvasElement> {
   return new Set([...cache.values()].flatMap(value => [
@@ -87,6 +88,8 @@ export class OutputContextCache extends Map<ContextFactory, OutputContext> {
 export function renderWithContextCache<T>(cache: OutputRenderCache | undefined,
   render: (cache: OutputRenderCache) => T, canvasOf: (result: T) => HTMLCanvasElement): T {
   const contexts = cache ?? new Map()
+  const epoch = materialEviction()
+  if (contextEpochs.get(contexts) !== epoch) { contexts.clear(); contextEpochs.set(contexts, epoch) }
   return withCanvasResources(() => {
     try { return withMaterialEffectCache(contexts instanceof OutputContextCache ? contexts : undefined, () => render(contexts)) }
     catch (error) { contexts.clear(); throw error }
@@ -96,3 +99,4 @@ export function renderWithContextCache<T>(cache: OutputRenderCache | undefined,
     return [canvasOf(result), ...(cache ? contextCanvases(contexts) : [])]
   })
 }
+const contextEpochs = new WeakMap<OutputRenderCache, number>()

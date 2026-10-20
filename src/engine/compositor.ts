@@ -4,6 +4,7 @@ import { drawNativeBlend } from './native-blend'
 import { drawAdjustment } from './material-adjustment'
 import { copyRenderWarnings, markVectorWarning, markUnsupported3D } from './render-warning'
 import { createRenderCanvas, canvasBounds, setCanvasBounds, unionBounds, releaseCanvas } from './render-resources'
+import { collectingMaterials } from './material-dependencies'
 
 /**
  * ag-psdのBlendModeをCanvasのglobalCompositeOperationにマッピング
@@ -63,6 +64,7 @@ export function compositeStack(
   height: number,
   background: 'white' | 'transparent' = 'white'
 ): HTMLCanvasElement {
+  if (collectingMaterials()) return createCanvas(1, 1)
   const output = createCanvas(width, height)
   const ctx = output.getContext('2d')!
 

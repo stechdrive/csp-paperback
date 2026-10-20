@@ -65,7 +65,7 @@ async function exportPair(pair: QuickExportFilePair, onProgress: (progress: Quic
   if (planned.length === 0) {
     throw new Error('出力対象がありません')
   }
-  const tracked = trackExportDiagnostics(planned, loadedState.clipDiagnostics, outputConfig)
+  const tracked = trackExportDiagnostics(planned, loadedState.clipDiagnostics, outputConfig, loadedState.layerTree)
   const entries = tracked.entries
 
   onProgress({ progress: 0.5, message: '入力ファイルと同じ場所へ書き出しています' })

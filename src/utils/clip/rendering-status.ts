@@ -51,7 +51,8 @@ export function resolveClipDiagnostics(clip: ClipDocument, tree: CspLayer[], pai
   const replaced = new Set<string>()
   const generated: ClipDiagnostic[] = []
   const visit = (layers: ClipLayer[]) => layers.forEach(layer => {
-    const hasImage = !!rendered.get(`clip:${layer.id}`)?.agPsdRef.canvas
+    const ref = rendered.get(`clip:${layer.id}`)?.agPsdRef
+    const hasImage = !!ref && (!!ref.canvas || hasDeferredMaterial(ref))
     if (paired && !layer.isFolder && hasImage) replaced.add(layer.id)
     generated.push(...layerRenderingDiagnostics(layer, clip.compatibility, paired, hasImage))
     visit(layer.children)
@@ -61,3 +62,4 @@ export function resolveClipDiagnostics(clip: ClipDocument, tree: CspLayer[], pai
     replaced.has(d.layerId) || (paired && d.part === 'blend' && rendered.has(`clip:${d.layerId}`))
   ))), ...generated]
 }
+import { hasDeferredMaterial } from '../../engine/material-cache'

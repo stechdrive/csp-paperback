@@ -107,7 +107,7 @@ describe('buildOutputEntriesFromState', () => {
   })
 })
 
-it('plans the same output names and borders lazily without modifying imported canvas pixels', () => {
+it('plans the same output names and borders lazily without modifying imported canvas pixels', async () => {
   const tree = makeAnimationTree()
   useAppStore.setState({ layerTree: tree, docWidth: 100, docHeight: 100,
     projectSettings: { ...DEFAULT_PROJECT_SETTINGS, processTable: [{ suffix: '_e', folderNames: ['EN'], revisionBorderColor: '#FBECE6' }] } })
@@ -116,8 +116,8 @@ it('plans the same output names and borders lazily without modifying imported ca
   const spies = plans.map(file => vi.spyOn(file, 'renderCanvas'))
   const entries = planExportEntriesFromState(state)
   expect(spies.every(spy => spy.mock.calls.length === 0)).toBe(true)
-  const images = entries.map(entry => 'createCanvas' in entry ? entry.createCanvas() : entry.canvas)
-  expect(spies.every(spy => spy.mock.calls.length === 1)).toBe(true)
+  const images = await Promise.all(entries.map(entry => 'createCanvas' in entry ? entry.createCanvas() : entry.canvas))
+  expect(spies.every(spy => spy.mock.calls.length === 2)).toBe(true)
   const eager = buildOutputEntriesFromState(state)
   expect(entries.map(entry => entry.prepared?.relativePath)).toEqual(eager.map(entry => entry.prepared?.relativePath))
   const walk = (layers: typeof tree): HTMLCanvasElement[] => layers.flatMap(layer => [...(layer.agPsdRef.canvas ? [layer.agPsdRef.canvas] : []), ...walk(layer.children)])

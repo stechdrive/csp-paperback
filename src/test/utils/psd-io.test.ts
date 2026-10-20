@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createCanvas } from '@napi-rs/canvas'
 import { readPsd, writePsd } from 'ag-psd'
 import { readPsdFile } from '../../utils/psd-io'
+import { buildLayerTree } from '../../engine/tree-builder'
+import { disposeMaterials, withPreparedMaterials } from '../../engine/material-cache'
 
 beforeEach(() => {
   const original = document.createElement.bind(document)
@@ -17,6 +19,19 @@ function fixture(compress = false, psb = false) {
 }
 
 describe('PSD allocation preflight', () => {
+  it('keeps compressed channels until requested and preserves native pixels', async () => {
+    const buffer = fixture(true), lazy = readPsdFile(buffer, true), eager = readPsdFile(buffer)
+    const tree = buildLayerTree(lazy)
+    expect(tree[0].agPsdRef.canvas).toBeUndefined()
+    expect(tree[0].agPsdRef.rawData).toBeDefined()
+    try {
+      await withPreparedMaterials(tree, () => {
+        const data = (canvas: HTMLCanvasElement) => [...canvas.getContext('2d')!.getImageData(0, 0, 2, 2).data]
+        expect(data(tree[0].agPsdRef.canvas!)).toEqual(data(eager.children![0].canvas!))
+        expect(tree[0].agPsdRef.rawData).toBeDefined()
+      })
+    } finally { disposeMaterials(lazy) }
+  })
   it.each([false, true])('keeps every decoded pixel for RLE/ZIP (compress=%s), including PSB', compress => {
     for (const psb of [false, true]) {
       const buffer = fixture(compress, psb), checked = readPsdFile(buffer), original = readPsd(buffer)

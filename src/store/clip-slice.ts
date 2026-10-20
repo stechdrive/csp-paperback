@@ -8,6 +8,7 @@ import type { AppStore } from './index'
 import { resolveClipDiagnostics } from '../utils/clip/rendering-status'
 import { clearProjectSelectorCaches } from './selectors'
 import { outputRenderQueue } from '../utils/output-render-queue'
+import { disposeMaterials } from '../engine/material-cache'
 
 export interface ClipPsdSource { psd: Psd; name: string; sourceDirectory?: string }
 export interface ClipSlice {
@@ -44,9 +45,14 @@ export const createClipSlice: StateCreator<AppStore, [], [], ClipSlice> = (set, 
       ? { ...get().projectSettings, sharedCutMode: true }
       : get().projectSettings
     // Build and validate before resetting the current project.
-    const tree = buildClipLayerTree(clip, source, timeline, projectSettings, !!psd)
+    let tree: CspLayer[]
+    try { tree = buildClipLayerTree(clip, source, timeline, projectSettings, !!psd) }
+    catch (error) {
+      if (!psd) disposeMaterials(source)
+      throw error
+    }
     const all = flatten(tree)
-    get().resetProject()
+    get().resetProject(source)
     set({
       projectSettings,
       // Canvases own the decoded pixels now. Retain only identities and metadata for later pairing.
@@ -70,6 +76,7 @@ export const createClipSlice: StateCreator<AppStore, [], [], ClipSlice> = (set, 
     if (!clip) throw new Error('CLIPが読み込まれていません')
     const timeline = clip.timelines.find(t => t.id === state.clipTimelineId)
     const tree = buildClipLayerTree(clip, psd, timeline, state.projectSettings)
+    if (state.rawPsd !== psd) disposeMaterials(state.rawPsd)
     outputRenderQueue.clear()
     clearProjectSelectorCaches()
     // Stable native IDs preserve marks, virtual sets, selections and process settings.

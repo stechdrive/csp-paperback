@@ -35,6 +35,7 @@ export interface CspLayer {
   adjustment?: MaterialAdjustment
   vectorRendering?: 'approximate' | 'unavailable'
   unsupported3D?: boolean
+  materialMissing?: boolean
 }
 
 export interface FlatLayer {

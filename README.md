@@ -85,7 +85,9 @@ JPEG／PNG画像を、ZIPまたはフォルダへ保存できます。PNGは透�
 
 クリスタの［環境設定］→［ファイル］で［バージョン互換情報の保存］を［保存する］に設定し、CLIPを保存し直してください。レイヤー単独の保存画像を取得できる場合は、その画像を使います。
 
-画像を取得できないベクターは近似描画し、3Dは透明な画像として扱います。書き出しは止めず、残る制限を「再現状況」で案内します。レイヤーカラー・境界線は独自処理、水彩境界は現在未反映です。
+画像を取得できないベクターは近似描画し、3Dは透明な画像として扱います。影響する出力行とレイヤー単体の警告マークから、対象素材と理由を確認できます。出力一覧は確認中と確認済みを区別します。レイヤーカラー・境界線は独自処理、水彩境界は近似描画します。
+
+CLIP・PSDの画像は必要なときに読み込み、キャッシュから解放した素材は再読み込みします。文書全体の展開画像が累計512 MiBに達しただけで、後続レイヤーを読み飛ばすことはありません。単一画像や同時使用メモリの制限は維持し、メモリ確保に失敗した出力は中止して再試行できるエラーを表示します。
 
 通常レイヤーの描画をPSDから補うこともできます。同じ保存状態のCLIPから、次の操作でPSDを保存して一緒に読み込んでください。フォルダの効果はPSDにも含まれない場合があります。
 
@@ -190,9 +192,11 @@ Try the in-app sample to inspect the output. Detailed instructions and settings 
 
 ### Use CSP's saved images for vector and 3D layers
 
-Enable version compatibility information in CSP's file preferences and save the CLIP again. When an individual layer's saved image is available, the app uses it. Otherwise, vectors use approximate rendering and unavailable 3D layers contribute a transparent image. Export continues, with the remaining limitations listed in the rendering status.
+Enable version compatibility information in CSP's file preferences and save the CLIP again. When an individual layer's saved image is available, the app uses it. Otherwise, vectors use approximate rendering and unavailable 3D layers contribute a transparent image. Warning marks on affected output rows and individual layers show the source and reason. Outputs still being checked are distinguished from checked outputs.
 
-Layer color and outlines use the app's own processing; watercolor edges are currently omitted. A PSD can also supply ordinary layer images. Save it from the same saved state of the CLIP using this menu command, then load both files together. Folder effects may be absent from the PSD too.
+CLIP and PSD images are decoded when needed and reloaded after cache eviction. The app no longer stops decoding a document when its cumulative layer images exceed 512 MiB. Individual image and working-memory limits remain; allocation failures stop the affected output with a retryable error.
+
+Layer color and outlines use the app's own processing; watercolor edges are approximate. A PSD can also supply ordinary layer images. Save it from the same saved state of the CLIP using this menu command, then load both files together. Folder effects may be absent from the PSD too.
 
 **File > Save Duplicate > .psd (Photoshop Document)**
 

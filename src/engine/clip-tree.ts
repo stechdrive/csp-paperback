@@ -7,6 +7,9 @@ import { hasDrawableMaterialEffects } from './material-effects'
 import { pixelCanvas, renderClipMaterial } from './material-image'
 import { ImageBudget, imageBytes, MAX_LAYER_COUNT, MAX_LAYER_DEPTH } from '../utils/image-budget'
 import { withCanvasResources } from './render-resources'
+import { clipReader } from '../utils/clip-io'
+import { bindMaterialDiagnostics, hasDeferredMaterial, ownMaterials, registerMaterial } from './material-cache'
+import { layerRenderingDiagnostics } from '../utils/clip/rendering-status'
 
 function checkClipCanvasBudget(clip: ClipDocument): void {
   imageBytes(clip.width, clip.height)
@@ -32,6 +35,37 @@ function checkClipCanvasBudget(clip: ClipDocument): void {
 
 /** A Layer-shaped rendering adapter, not an intermediate PSD serialization. */
 export function clipRenderingSource(clip: ClipDocument): Psd {
+  const reader = clipReader(clip)
+  if (reader) {
+    const disposers: (() => void)[] = []
+    const convert = (metadata: ClipLayer): Layer => {
+      const target: Layer = { name: metadata.name, hidden: metadata.hidden, opacity: metadata.opacity,
+        blendMode: metadata.blendMode, clipping: metadata.clipping, top: 0, left: 0, right: 0, bottom: 0 }
+      if (metadata.isFolder) {
+        target.sectionDivider = { type: metadata.expanded ? 1 : 2 }
+        target.children = metadata.children.slice().reverse().map(convert)
+      }
+      disposers.push(registerMaterial(target, clip.width * clip.height * 8, async () => {
+        const { layer, diagnostics } = await reader.decode(metadata.id)
+        withCanvasResources(() => {
+          const rendered = renderClipMaterial(layer, clip.width, clip.height)
+          if (rendered) Object.assign(target, { canvas: rendered.canvas, top: rendered.top, left: rendered.left,
+            right: rendered.left + rendered.canvas.width, bottom: rendered.top + rendered.canvas.height })
+          if (layer.mask) {
+            const mask = layer.mask
+            target.mask = { canvas: pixelCanvas(mask), top: mask.top, left: mask.left,
+              bottom: mask.top + mask.height, right: mask.left + mask.width,
+              defaultColor: mask.defaultColor ?? 0, disabled: mask.disabled, positionRelativeToLayer: false }
+          }
+        }, () => [target.canvas, target.mask?.canvas].filter((c): c is HTMLCanvasElement => !!c))
+        return { native: { ...layer, pixels: undefined, fragments: undefined, mask: undefined }, diagnostics }
+      }))
+      return target
+    }
+    const source: Psd = { width: clip.width, height: clip.height, children: clip.layers.slice().reverse().map(convert) }
+    ownMaterials(source, () => { reader.dispose(); disposers.forEach(dispose => dispose()) })
+    return source
+  }
   checkClipCanvasBudget(clip)
   // Adjustment coverage is immutable and identical across this document's adjustment layers.
   let adjustment: ReturnType<typeof renderClipMaterial>
@@ -83,8 +117,13 @@ export function buildClipLayerTree(clip: ClipDocument, source: Psd, timeline: Cl
       if (n.name !== r.originalName || n.isFolder !== r.isFolder) throw mismatch()
       r.id = `clip:${n.id}`
       r.parentId = parentId
+      r.materialMissing = clip.diagnostics.some(d => d.layerId === n.id && d.outcome === 'missing-content')
+      if (paired && !n.isFolder && hasDeferredMaterial(r.agPsdRef)) {
+        const ref = r.agPsdRef
+        bindMaterialDiagnostics(ref, () => layerRenderingDiagnostics(n, clip.compatibility, true, !!ref.canvas))
+      }
       if (!paired) { r.materialEffects = hasDrawableMaterialEffects(n.effects) ? n.effects : undefined; r.nativeBlendMode = n.nativeBlendMode; r.adjustment = n.adjustment; r.vectorRendering = n.vectorRendering; r.unsupported3D = n.unsupported3D }
-      else if (!r.agPsdRef.canvas) {
+      else if (!r.agPsdRef.canvas && !hasDeferredMaterial(r.agPsdRef)) {
         if (n.kind === '3d') r.unsupported3D = true
         if (n.kind === 'vector') r.vectorRendering = 'unavailable'
       }

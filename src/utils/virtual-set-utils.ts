@@ -6,6 +6,8 @@ import { collectAnimFolderAncestorIds } from '../engine/tree-builder'
 import { resolveSelectedAnimCell } from './anim-cell-selection'
 import type { BlendMode, CspLayer, FlatLayer } from '../types'
 import type { VirtualSetLayerOverride, VirtualSetMember } from '../types/marks'
+import { collectingMaterials, visitMaterial } from '../engine/material-dependencies'
+import { resolvedMaterialLayer } from '../engine/material-cache'
 
 /** ツリー順を維持しながら memberIds に含まれるレイヤーを収集する */
 export function collectMembersInTreeOrder(layers: CspLayer[], memberIds: Set<string>): CspLayer[] {
@@ -86,6 +88,8 @@ function flattenTreeWithCompositeOverrides(
 
   function flattenLayer(layer: CspLayer): FlatLayer[] {
     if (layer.hidden || layer.uiHidden) return []
+    if (collectingMaterials()) visitMaterial(layer)
+    else layer = resolvedMaterialLayer(layer)
 
     const override = layerOverrides[layer.id]
     const hasOverride = hasCompositeOverride(override)
@@ -150,7 +154,8 @@ function flattenTreeWithCompositeOverrides(
       }]
     }
 
-    const sourceCanvas = layer.agPsdRef.canvas ?? (layer.vectorRendering || layer.unsupported3D ? createCanvas(1, 1) : undefined)
+    if (collectingMaterials()) return []
+    const sourceCanvas = layer.agPsdRef.canvas ?? (layer.vectorRendering || layer.unsupported3D || layer.materialMissing ? createCanvas(1, 1) : undefined)
     if (!sourceCanvas) return []
     const canvas = applyMaterialEffects(sourceCanvas, layer.left, layer.top, layer.materialEffects, docWidth, docHeight)
     const fullSize = !!layer.materialEffects

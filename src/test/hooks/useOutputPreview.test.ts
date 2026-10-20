@@ -98,7 +98,7 @@ describe('useOutputPreview', () => {
     act(() => { useAppStore.getState().selectLayer(cell.id); useAppStore.setState({ selectedCells: new Map([['other', 3]]) }) })
     expect(result.current[0].canvas).toBe(image)
     expect(useAppStore.getState().currentFrame).toBe(frame)
-    spies.forEach((spy, i) => expect(spy).toHaveBeenCalledTimes(plans[i].sourceLayerId === process.id ? 1 : 0))
+    spies.forEach((spy, i) => expect(spy).toHaveBeenCalledTimes(plans[i].sourceLayerId === process.id ? 2 : 0))
     spies.forEach(spy => spy.mockRestore())
   })
 
@@ -192,7 +192,7 @@ describe('useOutputPreview', () => {
     rerender({ enabled: true })
     await ready(result)
     expect(result.current[0].outputId).toBe(plans.at(-1)!.outputId)
-    spies.forEach((spy, i) => expect(spy).toHaveBeenCalledTimes(i === plans.length - 1 ? 1 : 0))
+    spies.forEach((spy, i) => expect(spy).toHaveBeenCalledTimes(i === plans.length - 1 ? 2 : 0))
     spies.forEach(spy => spy.mockRestore())
   })
 

@@ -30,7 +30,7 @@ export async function loadProjectFiles(files: LoadableFile[]): Promise<string | 
     validateProjectSettings(JSON.parse(text), true)
     settingsJson.push(text)
   }
-  const psd = psdFile ? readPsdFile(await psdFile.arrayBuffer()) : undefined
+  const psd = psdFile ? readPsdFile(await psdFile.arrayBuffer(), true) : undefined
   const hasProjectFile = Boolean(psdFile || xdtsFile)
   const state = useAppStore.getState()
   if (clipFile) {
@@ -38,7 +38,7 @@ export async function loadProjectFiles(files: LoadableFile[]): Promise<string | 
     const existingPsd = !psdFile && state.rawPsd && state.psdFileName && basename(state.psdFileName) === basename(clipFile.name)
       ? { psd: state.rawPsd, name: state.psdFileName, sourceDirectory: state.psdSourceDirectory ?? undefined }
       : undefined
-    const clip = await readClipFile(await clipFile.arrayBuffer(), !psdFile && !existingPsd)
+    const clip = await readClipFile(await clipFile.arrayBuffer(), !psdFile && !existingPsd, true)
     const source = psdFile ? { psd: psd!, name: psdFile.name, sourceDirectory: psdFile.sourceDirectory } : existingPsd
     for (const json of settingsJson) importSettings(json)
     useAppStore.getState().loadClip(clip, clipFile.name, clipFile.sourceDirectory, source)

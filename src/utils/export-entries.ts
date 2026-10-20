@@ -5,7 +5,7 @@ import type { OutputConfig, OutputEntry } from '../types'
 import { buildOutputPlan } from './output-plan'
 import { applyRevisionBorders } from './revision-border'
 import type { ExportEntry } from '../types/output'
-import { renderOutputFile } from './output-render-queue'
+import { renderOutputFileAsync } from './output-render-queue'
 import { OutputContextCache } from '../engine/output-context-cache'
 
 /** Resolve every filename before taking the subset, without allocating output pixels. */
@@ -21,7 +21,7 @@ export function planExportEntriesFromState(
   return selected.map(file => ({
     path: file.path, flatName: file.flatName, sourceLayerId: file.sourceLayerId,
     sourceCellId: file.sourceCellId, processSuffixes: file.processSuffixes, prepared: file,
-    createCanvas: () => renderOutputFile(file, state.projectSettings.processTable, outputConfig.revisionBorderEnabled, contextCache).canvas,
+    createCanvas: async () => (await renderOutputFileAsync(file, state.projectSettings.processTable, outputConfig.revisionBorderEnabled, contextCache, state.clipDiagnostics)).canvas,
     releaseRenderCache: () => contextCache.clear(),
   }))
 }

@@ -15,7 +15,7 @@ import {
 } from '../utils/virtual-set-insertion'
 import { isAutoMarkedContainerOutputSuppressed } from '../utils/auto-marked-container'
 import { Tooltip } from './Tooltip'
-import { RenderWarning } from './RenderWarning'
+import { LayerDiagnosticWarning } from './DiagnosticWarning'
 import styles from './LayerTreeNode.module.css'
 import type { HistoryOptions } from '../store/history-slice'
 import { selectLayerVirtualInsertions, selectOutputRowStatuses } from '../store/selectors'
@@ -495,7 +495,7 @@ export const LayerTreeNode = memo(function LayerTreeNodeView({
           <span className={styles.outputStatus} data-output-state="name-excluded">除外指定</span>
         </Tooltip>}
 
-        {(layer.vectorRendering || layer.unsupported3D) && <RenderWarning vector={!!layer.vectorRendering} unavailable={layer.vectorRendering === 'unavailable'} unsupported3D={layer.unsupported3D} />}
+        <LayerDiagnosticWarning layer={layer} />
         {canToggleManualAnimFolder && (
           <Tooltip content={isManualAnimFolder
             ? '手動アニメーションフォルダ指定を解除する'

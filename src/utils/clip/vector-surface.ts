@@ -1,4 +1,5 @@
 import type { ClipPixels } from './types'
+import { ImageResourceError } from '../image-budget'
 
 const SIZE = 128
 interface Tile { left: number; top: number; width: number; height: number; data: Float32Array }
@@ -11,6 +12,7 @@ export class VectorSurface {
   private cols: number
   private width: number
   private height: number
+  private bytes = 0
 
   constructor(width: number, height: number) { this.width = width; this.height = height; this.cols = Math.ceil(width / SIZE) }
 
@@ -22,6 +24,8 @@ export class VectorSurface {
       if (erase) return
       const left = col * SIZE, top = row * SIZE
       const width = Math.min(SIZE, this.width - left), height = Math.min(SIZE, this.height - top)
+      this.bytes += width * height * 16
+      if (this.bytes > 256 * 1024 * 1024) throw new ImageResourceError('ベクター描画の作業メモリが上限を超えました')
       tile = { left, top, width, height, data: new Float32Array(width * height * 4) }
       this.tiles.set(key, tile)
     }

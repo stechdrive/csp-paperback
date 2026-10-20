@@ -8,6 +8,7 @@ import { readGradient } from './gradient'
 import { readAdjustment } from './adjustment'
 import { readVectorStrokes, renderVectors, type BrushPattern, type VectorBrushes } from './vector'
 import { layerRenderingDiagnostics } from './rendering-status'
+import { ImageResourceError, rethrowImageResourceError } from '../image-budget'
 
 /** Decode only drawing effects; palette label colors are deliberately unrelated. */
 export function readMaterialEffects(row: ClipRow, report?: (message: string) => void): MaterialEffects | undefined {
@@ -151,24 +152,29 @@ export function createMaterialDecoder(t: MaterialTables, width: number, height: 
     if (!(off?.Attribute instanceof Uint8Array)) return
     const a = readAttribute(off.Attribute), body = t.external.get(str(off.BlockData))
     if (!body && !a.hasColor) return
-    check(decodedBytes + a.width * a.height * 4 <= 512 * 1024 * 1024, '画像展開の合計が512 MiBを超えました')
     const decoded = await readRaster(a, body, mask, !keepExtent)
     if (!decoded) return
     decodedBytes += decoded.rgba.length
+    if (decodedBytes > 384 * 1024 * 1024) throw new ImageResourceError('この素材の展開に必要なメモリが上限を超えました。描画を中止しました')
     return decoded
   }
   return async (layer: ClipLayer, row: ClipRow) => {
     const failures: string[] = []
-    const report = (message: string) => diagnostics.push({ scope: 'raster', layerId: layer.id, message: `「${layer.name}」: ${message}` })
+    const report = (message: string, part: ClipDiagnostic['part'] = 'material', outcome: ClipDiagnostic['outcome'] = 'approximate') =>
+      diagnostics.push({ scope: 'raster', part, outcome, layerId: layer.id, message: `「${layer.name}」: ${message}` })
+    const failed = (error: unknown) => {
+      rethrowImageResourceError(error)
+      failures.push(errorMessage(error))
+    }
     try {
-      layer.effects = readMaterialEffects(row, report)
-    } catch (e) { report(errorMessage(e)) }
+      layer.effects = readMaterialEffects(row, message => report(message, 'effect', 'missing-effect'))
+    } catch (e) { report(errorMessage(e), 'effect', 'missing-effect') }
     if (row.FilterLayerInfo instanceof Uint8Array) {
       try {
         check(!num(row, 'LayerComposite'), '通常以外の合成モードの色調補正には未対応です')
         layer.adjustment = readAdjustment(row.FilterLayerInfo)
         layer.materialSource = 'adjustment'
-      } catch (e) { report(errorMessage(e)) }
+      } catch (e) { report(errorMessage(e), 'material', 'missing-content') }
     } else if (!layer.isFolder) {
       // Original animation material takes precedence over a render of the current shooting frame.
       const candidates = [
@@ -183,11 +189,11 @@ export function createMaterialDecoder(t: MaterialTables, width: number, height: 
           decoded.top += num(row, 'LayerOffsetY') + (source === 'render' ? num(row, 'LayerRenderOffscrOffsetY') : 0)
           if (source === 'image-original' && row.ResizableImageInfo instanceof Uint8Array) {
             try { layer.placement = readMaterialQuad(row.ResizableImageInfo) }
-            catch (e) { report(`${errorMessage(e)}。元画像の位置で描画します`) }
+            catch (e) { report(`${errorMessage(e)}。元画像の位置で描画します`, 'placement') }
           }
           layer.pixels = decoded; layer.materialSource = source
           break
-        } catch (e) { failures.push(errorMessage(e)) }
+        } catch (e) { failed(e) }
       }
       if (!layer.pixels && layer.kind === 'vector') {
         layer.vectorRendering = 'unavailable'
@@ -196,12 +202,12 @@ export function createMaterialDecoder(t: MaterialTables, width: number, height: 
             ?? [...(t.vectors?.values() ?? [])].find(v => num(v, 'LayerId') === num(row, 'MainId'))
           const raw = vector && t.external.get(str(vector.VectorData))
           check(raw, 'ベクターのストロークデータがありません')
-          // Keep the existing conservative limit even though float tiles are now sparse.
-          check(decodedBytes + width * height * 20 + 64 * 1024 * 1024 <= 512 * 1024 * 1024, 'ベクター画像展開の合計が512 MiBを超えました')
+          // VectorSurface bounds actual allocated tiles, not a hypothetical
+          // full-document float surface.
           const strokes = readVectorStrokes(raw)
           const patterns = new Set(strokes.map(s => num(vectorBrushes.styles.get(s.brush) ?? {}, 'PatternStyle')))
           for (const id of patterns) {
-            try { await loadPattern(id) } catch (e) { report(errorMessage(e)) }
+            try { await loadPattern(id) } catch (e) { rethrowImageResourceError(e); report(errorMessage(e)) }
           }
           // Unlike PatternStyle, TexturePattern directly references BrushPatternImage.
           const textures = new Set(strokes.map(s => {
@@ -210,12 +216,12 @@ export function createMaterialDecoder(t: MaterialTables, width: number, height: 
           }))
           for (const id of textures) {
             try { const image = await loadBrushImage(id); if (image) vectorBrushes.textures!.set(id, image) }
-            catch (e) { report(errorMessage(e)) }
+            catch (e) { rethrowImageResourceError(e); report(errorMessage(e)) }
           }
           layer.pixels = renderVectors(strokes, vectorBrushes, width, height, num(row, 'LayerOffsetX'), num(row, 'LayerOffsetY'), report)
           decodedBytes += layer.pixels.rgba.length
           layer.materialSource = 'vector'; layer.vectorRendering = 'approximate'
-        } catch (e) { failures.push(errorMessage(e)) }
+        } catch (e) { failed(e) }
       }
       if (!layer.pixels && (row.TextLayerString != null || row.TextLayerStringArray != null)) {
         try {
@@ -233,7 +239,9 @@ export function createMaterialDecoder(t: MaterialTables, width: number, height: 
             const off = matching[0]
             const unique = off && matching.every(other => same(off.Attribute as Uint8Array, other.Attribute as Uint8Array) && same(t.external.get(str(off.BlockData))!, t.external.get(str(other.BlockData))!))
             let image: ClipPixels | undefined
-            try { image = unique ? await pixels(off) : undefined } catch { /* Render this text object from metadata. */ }
+            try { image = unique ? await pixels(off) : undefined } catch (error) {
+              rethrowImageResourceError(error) // Other cache failures fall back to text metadata.
+            }
             if (image) { image.left += text.left; image.top += text.top; fragments.push(image) }
             else unresolved.push(text)
           }
@@ -241,18 +249,18 @@ export function createMaterialDecoder(t: MaterialTables, width: number, height: 
           else if (fragments.length) layer.fragments = fragments
           if (unresolved.length) layer.text = unresolved
           layer.materialSource = unresolved.length ? 'text' : fragments.length ? 'object-cache' : undefined
-        } catch (e) { failures.push(errorMessage(e)) }
+        } catch (e) { failed(e) }
       }
       if (!layer.pixels && !layer.fragments?.length && !layer.text?.length && row.GradationFillInfo instanceof Uint8Array) {
         try {
-          check(decodedBytes + width * height * 4 <= 512 * 1024 * 1024, '画像展開の合計が512 MiBを超えました')
+          if (decodedBytes + width * height * 4 > 384 * 1024 * 1024) throw new ImageResourceError('グラデーション素材の展開に必要なメモリが上限を超えました')
           layer.pixels = readGradient(row.GradationFillInfo, width, height, num(row, 'LayerOffsetX'), num(row, 'LayerOffsetY'), report)
           decodedBytes += layer.pixels.rgba.length
           layer.materialSource = 'gradient'
-        } catch (e) { failures.push(errorMessage(e)) }
+        } catch (e) { failed(e) }
       }
       if (!layer.pixels && !layer.fragments?.length && !layer.text?.length && isPaper(row) && num(row, 'DrawColorEnable')) {
-        check(decodedBytes + width * height * 4 <= 512 * 1024 * 1024, '画像展開の合計が512 MiBを超えました')
+        if (decodedBytes + width * height * 4 > 384 * 1024 * 1024) throw new ImageResourceError('用紙素材の展開に必要なメモリが上限を超えました')
         const rgba = new Uint8ClampedArray(width * height * 4)
         const rgb = ['Red', 'Green', 'Blue'].map(c => num(row, `DrawColorMain${c}`) >>> 24)
         decodedBytes += rgba.length
@@ -262,7 +270,10 @@ export function createMaterialDecoder(t: MaterialTables, width: number, height: 
       if (!layer.pixels && !layer.fragments?.length && !layer.text?.length) {
         if (layer.kind === '3d') {
           layer.unsupported3D = true
-        } else if (layer.kind !== 'vector' && (failures.length || !(num(row, 'LayerType') & 1))) report(failures[0] ?? '素材画像を復元できません。ほかの素材は引き続き書き出せます')
+        }
+        if (failures.length || (layer.kind !== 'vector' && layer.kind !== '3d' && !(num(row, 'LayerType') & 1))) {
+          report(failures.join(' / ') || '素材画像を復元できません。このレイヤーの描画は出力に含まれません', 'material', 'missing-content')
+        }
       }
     }
     if (num(row, 'LayerType') & 2) {
@@ -272,7 +283,10 @@ export function createMaterialDecoder(t: MaterialTables, width: number, height: 
         mask.left += num(row, 'LayerOffsetX') + num(row, 'LayerMaskOffsetX') + num(row, 'LayerMaskOffscrOffsetX')
         mask.top += num(row, 'LayerOffsetY') + num(row, 'LayerMaskOffsetY') + num(row, 'LayerMaskOffscrOffsetY')
         mask.disabled = !(num(row, 'LayerVisibility') & 2); layer.mask = mask
-      } catch (e) { report(errorMessage(e)) }
+      } catch (e) {
+        rethrowImageResourceError(e)
+        report(errorMessage(e), 'mask', 'missing-effect')
+      }
     }
     diagnostics.push(...layerRenderingDiagnostics(layer, compatibility))
   }

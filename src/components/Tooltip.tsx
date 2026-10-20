@@ -29,7 +29,7 @@ interface TooltipProps {
 
 export function Tooltip({ content, children, delay = 300, placement = 'top', avoidRef, disabled = false, toggleOnClick = false }: TooltipProps) {
   const id = useId()
-  const [portal, setPortal] = useState<Element | null>(null)
+  const [portal, setPortal] = useState<{ target: Element; hoverable: boolean } | null>(null)
   const timer = useRef<number>(0)
   const anchorRef = useRef<HTMLElement>(null)
   const tooltipRef = useRef<HTMLDivElement>(null)
@@ -44,11 +44,11 @@ export function Tooltip({ content, children, delay = 300, placement = 'top', avo
     }
   }, [originalRef])
 
-  const show = useCallback(() => setPortal(anchorRef.current?.closest('dialog[open]') ?? document.body), [])
-  const handleEnter = useCallback(() => {
+  const show = useCallback((hoverable: boolean) => setPortal({ target: anchorRef.current?.closest('dialog[open]') ?? document.body, hoverable }), [])
+  const handleEnter = useCallback((hoverable: boolean) => {
     if (disabled || !content) return
     clearTimeout(timer.current)
-    timer.current = window.setTimeout(show, delay)
+    timer.current = window.setTimeout(() => show(hoverable), delay)
   }, [delay, disabled, content, show])
 
   const close = useCallback(() => {
@@ -123,9 +123,9 @@ export function Tooltip({ content, children, delay = 300, placement = 'top', avo
         ref: setAnchor,
         title: undefined,
         'aria-describedby': [children.props['aria-describedby'], isTooltipVisible ? id : undefined].filter(Boolean).join(' ') || undefined,
-        onPointerEnter: event => { children.props.onPointerEnter?.(event); if (event.pointerType !== 'touch' && !event.buttons) handleEnter() },
+        onPointerEnter: event => { children.props.onPointerEnter?.(event); if (event.pointerType !== 'touch' && !event.buttons) handleEnter(true) },
         onPointerLeave: event => { children.props.onPointerLeave?.(event); handleLeave() },
-        onFocus: event => { children.props.onFocus?.(event); if (toggleOnClick || event.target.matches(':focus-visible')) handleEnter() },
+        onFocus: event => { children.props.onFocus?.(event); if (toggleOnClick || event.target.matches(':focus-visible')) handleEnter(false) },
         onBlur: event => { children.props.onBlur?.(event); if (!tooltipRef.current?.contains(event.relatedTarget)) close() },
         onPointerDown: event => { if (!toggleOnClick) close(); children.props.onPointerDown?.(event) },
         onClick: event => {
@@ -133,7 +133,7 @@ export function Tooltip({ content, children, delay = 300, placement = 'top', avo
           if (toggleOnClick && !disabled) {
             clearTimeout(timer.current)
             if (pinned.current) close()
-            else { pinned.current = true; show() }
+            else { pinned.current = true; show(true) }
           }
         },
       })}
@@ -143,12 +143,14 @@ export function Tooltip({ content, children, delay = 300, placement = 'top', avo
           ref={tooltipRef}
           role="tooltip"
           className={styles.tooltip}
-          style={{ visibility: 'hidden' }}
+          // Restoring keyboard focus after Escape must not block a different
+          // control under the description. Pointer-opened tips stay hoverable.
+          style={{ visibility: 'hidden', pointerEvents: portal.hoverable ? 'auto' : 'none' }}
           onMouseEnter={() => clearTimeout(timer.current)} onMouseLeave={handleLeave}
         >
           {content}
         </div>,
-        portal
+        portal.target
       )}
     </>
   )

@@ -1,7 +1,10 @@
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef, useCallback, useState } from 'react'
 import { useAppStore } from '../store'
 import { selectLayerTreeForNavigator } from '../store/selectors'
 import { NavigatorPreviewCache } from '../engine/navigator-preview-cache'
+import { flattenTree } from '../engine/flatten'
+import { collectRenderMaterials } from '../engine/material-dependencies'
+import { withPreparedMaterials } from '../engine/material-cache'
 
 const THROTTLE_MS = 150
 const previewCache = new NavigatorPreviewCache()
@@ -21,6 +24,8 @@ export function usePreview(canvasRef: React.RefObject<HTMLCanvasElement | null>,
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lastRenderTimeRef = useRef(0)
+  const generation = useRef(0)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!enabled) {
@@ -35,7 +40,8 @@ export function usePreview(canvasRef: React.RefObject<HTMLCanvasElement | null>,
     }
   }, [enabled, canvasRef])
 
-  const render = useCallback(() => {
+  const render = useCallback(async () => {
+    const current = ++generation.current
     const canvas = canvasRef.current
     if (!canvas || !enabled) return
     if (docWidth === 0 || docHeight === 0) {
@@ -44,7 +50,14 @@ export function usePreview(canvasRef: React.RefObject<HTMLCanvasElement | null>,
       canvas.height = 0
       return
     }
-    const result = previewCache.get(layerTree, docWidth, docHeight, selectedCells)
+    try {
+    const layers = collectRenderMaterials(() => flattenTree(layerTree, docWidth, docHeight, selectedCells))
+    const result = await withPreparedMaterials(layers, () => {
+      if (current !== generation.current) return null
+      return previewCache.get(layerTree, docWidth, docHeight, selectedCells)
+    }, () => current !== generation.current)
+    if (!result || current !== generation.current) return
+    setError(null)
     // Preserve the backing store when only the image changes.
     if (canvas.width !== result.width) canvas.width = result.width
     if (canvas.height !== result.height) canvas.height = result.height
@@ -53,9 +66,15 @@ export function usePreview(canvasRef: React.RefObject<HTMLCanvasElement | null>,
       ctx.clearRect(0, 0, canvas.width, canvas.height)
       ctx.drawImage(result, 0, 0)
     }
+    } catch (error) {
+      if (current !== generation.current) return
+      canvas.width = 1; canvas.height = 1
+      setError(error instanceof Error ? error.message : '全体プレビューを描画できませんでした')
+    }
   }, [canvasRef, layerTree, docWidth, docHeight, selectedCells, enabled])
 
   useEffect(() => {
+    const token = generation
     if (timerRef.current) clearTimeout(timerRef.current)
     if (!enabled) return
     const now = Date.now()
@@ -70,7 +89,9 @@ export function usePreview(canvasRef: React.RefObject<HTMLCanvasElement | null>,
       }, THROTTLE_MS - elapsed)
     }
     return () => {
+      token.current++
       if (timerRef.current) clearTimeout(timerRef.current)
     }
   }, [render, enabled])
+  return error
 }

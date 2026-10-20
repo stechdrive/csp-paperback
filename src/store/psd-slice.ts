@@ -23,7 +23,7 @@ export interface PsdSlice {
   docDpiY: number  // pixels per inch (0 = 不明)
   loadPsd: (buffer: ArrayBuffer, fileName: string, sourceDirectory?: string) => void
   loadParsedPsd: (psd: Psd, fileName: string, sourceDirectory?: string) => void
-  resetProject: () => void
+  resetProject: (retainSource?: Psd) => void
   resetPsd: () => void
   setLayerBlendMode: (layerId: string, blendMode: BlendMode, options?: HistoryOptions) => void
   setLayerOpacity: (layerId: string, opacity: number, options?: HistoryOptions) => void
@@ -137,6 +137,7 @@ export const createPsdSlice: StateCreator<AppStore, [], [], PsdSlice> = (set, ge
 
     const manualAnimFolderIds = sanitizeManualAnimFolderIds(tree, get().manualAnimFolderIds)
 
+    if (get().rawPsd !== psd) disposeMaterials(get().rawPsd)
     outputRenderQueue.clear()
     clearProjectSelectorCaches()
     set({
@@ -183,7 +184,8 @@ export const createPsdSlice: StateCreator<AppStore, [], [], PsdSlice> = (set, ge
     get().resetProject()
   },
 
-  resetProject: () => {
+  resetProject: (retainSource) => {
+    if (get().rawPsd !== retainSource) disposeMaterials(get().rawPsd)
     outputRenderQueue.clear()
     clearProjectSelectorCaches()
     set({
@@ -244,3 +246,4 @@ export const createPsdSlice: StateCreator<AppStore, [], [], PsdSlice> = (set, ge
     set({ layerTree: result.layers })
   },
 })
+import { disposeMaterials } from '../engine/material-cache'

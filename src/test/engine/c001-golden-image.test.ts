@@ -146,7 +146,7 @@ describe.each(['PSD + XDTS', 'CLIP + PSD', 'CLIP standalone'])('c001 golden (ima
     })
     expect(lazy.map(entry => entry.prepared!.names.flatName).sort()).toEqual([...rendered.keys()].sort())
     for (const entry of lazy) {
-      const canvas = 'createCanvas' in entry ? entry.createCanvas() : entry.canvas
+      const canvas = 'createCanvas' in entry ? await entry.createCanvas() : entry.canvas
       const png = (canvas as unknown as { toBuffer: (mime: 'image/png') => Buffer }).toBuffer('image/png')
       expect(png.equals(rendered.get(entry.prepared!.names.flatName)!)).toBe(true)
       canvas.width = 1; canvas.height = 1

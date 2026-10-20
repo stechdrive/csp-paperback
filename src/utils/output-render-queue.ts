@@ -5,17 +5,23 @@ import { outputSources } from '../engine/render-sources'
 import { hasVectorWarning, hasUnsupported3D } from '../engine/render-warning'
 import { OutputContextCache, renderWithContextCache } from '../engine/output-context-cache'
 import type { OutputRenderCache } from '../engine/cell-extractor'
+import { collectRenderMaterials } from '../engine/material-dependencies'
+import { withPreparedMaterials } from '../engine/material-cache'
+import { renderIssues, type RenderIssue } from './render-diagnostics'
+import type { ClipDiagnostic } from './clip/types'
 
 export interface RenderedOutput {
   canvas: HTMLCanvasElement
   sources: ReturnType<typeof outputSources>
   vectorWarning: boolean
   unsupported3D: boolean
+  diagnostics?: RenderIssue[]
 }
-export type RenderSize = 'full' | 'comparison' | 'thumbnail'
+export type RenderSize = 'full' | 'comparison' | 'thumbnail' | 'check'
 export type RenderResult = { image?: RenderedOutput; error?: string }
-type Job = { key: string; size: RenderSize; draw: (cache: OutputRenderCache) => RenderedOutput; users: number }
-const priority = { full: 0, comparison: 1, thumbnail: 2 }
+type Draw = (cache: OutputRenderCache, cancelled: () => boolean) => RenderedOutput | Promise<RenderedOutput>
+type Job = { key: string; size: RenderSize; draw: Draw; users: number }
+const priority = { full: 0, comparison: 1, thumbnail: 2, check: 3 }
 const cost = (result?: RenderResult) => result?.image ? result.image.canvas.width * result.image.canvas.height * 4 : 0
 
 /** Only visible consumers pin pixels. Notifications are scoped to each file/resolution. */
@@ -27,6 +33,9 @@ export class OutputRenderQueue {
   private pins = new Map<string, Map<RenderSize, number>>()
   private pauses = 0
   private renders = 0
+  private running = false
+  private generation = 0
+  private draws = new Map<string, Draw>()
   private budget: number
   private maxEntries: number
   // A single 4K common image may exceed the usual budget, but never grows unbounded.
@@ -62,8 +71,9 @@ export class OutputRenderQueue {
     let released = false
     return () => { if (released) return; released = true; this.pauses--; this.schedule() }
   }
-  request(file: OutputFile, size: RenderSize, draw: (cache: OutputRenderCache) => RenderedOutput): () => void {
+  request(file: OutputFile, size: RenderSize, draw: Draw): () => void {
     const key = file.renderKey
+    this.draws.set(key, draw)
     const sizes = this.pins.get(key) ?? new Map<RenderSize, number>()
     sizes.set(size, (sizes.get(size) ?? 0) + 1)
     this.pins.set(key, sizes)
@@ -86,18 +96,30 @@ export class OutputRenderQueue {
       if (count > 0) sizes.set(size, count)
       else sizes.delete(size)
       if (!sizes.size && this.pins.get(key) === sizes) this.pins.delete(key)
+      if (!sizes.size && !this.cache.has(key) && !this.jobs.some(job => job.key === key)) this.draws.delete(key)
       this.trim()
     }
   }
   clear() {
+    this.generation++
     if (this.timer !== undefined) clearTimeout(this.timer)
     this.timer = undefined
-    this.jobs = []; this.cache.clear(); this.pins.clear(); this.contexts.clear()
+    this.jobs = []; this.cache.clear(); this.pins.clear(); this.contexts.clear(); this.draws.clear()
     const callbacks = new Set([...this.listeners.values()].flatMap(sizes => [...sizes.values()].flatMap(listeners => [...listeners])))
     callbacks.forEach(listener => listener())
   }
+  retry(file: OutputFile) {
+    const draw = this.draws.get(file.renderKey)
+    if (!draw) return
+    this.cache.delete(file.renderKey)
+    for (const [size, users] of this.pins.get(file.renderKey) ?? []) {
+      this.jobs.push({ key: file.renderKey, size, users, draw })
+      this.listeners.get(file.renderKey)?.get(size)?.forEach(listener => listener())
+    }
+    this.schedule()
+  }
   private schedule() {
-    if (this.timer !== undefined || this.pauses || !this.jobs.length) return
+    if (this.timer !== undefined || this.running || this.pauses || !this.jobs.length) return
     this.timer = setTimeout(() => { this.timer = undefined; this.runNext() }, 0)
   }
   private trim() {
@@ -112,29 +134,33 @@ export class OutputRenderQueue {
         if (bytes + sizeBytes > this.budget || retained >= this.maxEntries) delete sizes[size]
         else bytes += sizeBytes
       }
-      if (!Object.keys(sizes).length) this.cache.delete(file)
+      if (!Object.keys(sizes).length) { this.cache.delete(file); this.draws.delete(file) }
       else retained++
     }
   }
-  private runNext() {
+  private async runNext() {
     this.jobs.sort((a, b) => priority[a.size] - priority[b.size])
     const first = this.jobs[0]
     if (!first) return
+    this.running = true
+    const generation = this.generation
+    const cancelled = () => generation !== this.generation || !this.pins.has(first.key)
     const jobs = this.jobs.filter(job => job.key === first.key)
     this.jobs = this.jobs.filter(job => job.key !== first.key)
     const record = { ...this.cache.get(first.key) }
     let temporary: HTMLCanvasElement | undefined
     try {
       let source = record.full?.image ?? (first.size !== 'full' ? record.comparison?.image : undefined)
-      if (!source) { source = first.draw(this.contexts); temporary = source.canvas; this.renders++ }
+      if (!source) { source = await first.draw(this.contexts, cancelled); temporary = source.canvas; this.renders++ }
+      if (cancelled()) return
       for (const job of jobs) {
         let image = source
         if (job.size !== 'full') {
           const canvas = document.createElement('canvas')
-          const scale = Math.min(1, (job.size === 'thumbnail' ? 160 : 1024) / Math.max(source.canvas.width, source.canvas.height))
+          const scale = job.size === 'check' ? 0 : Math.min(1, (job.size === 'thumbnail' ? 160 : 1024) / Math.max(source.canvas.width, source.canvas.height))
           canvas.width = Math.max(1, Math.round(source.canvas.width * scale))
           canvas.height = Math.max(1, Math.round(source.canvas.height * scale))
-          canvas.getContext('2d')!.drawImage(source.canvas, 0, 0, canvas.width, canvas.height)
+          if (job.size !== 'check') canvas.getContext('2d')!.drawImage(source.canvas, 0, 0, canvas.width, canvas.height)
           image = { ...source, canvas }
         }
         record[job.size] = { image }
@@ -142,12 +168,15 @@ export class OutputRenderQueue {
     } catch (error) {
       for (const job of jobs) record[job.size] = { error: error instanceof Error ? error.message : '画像を合成できませんでした' }
     } finally {
+      this.running = false
       // A downsample-only job owns this temporary full-size composite. Release
       // its GPU/CPU backing store now; never resize a cached or displayed image.
       if (temporary && !Object.values(record).some(result => result?.image?.canvas === temporary)) {
         temporary.width = 1; temporary.height = 1
       }
+      if (cancelled()) this.schedule()
     }
+    if (cancelled()) return
     this.cache.delete(first.key); this.cache.set(first.key, record)
     this.trim()
     const callbacks = new Set(jobs.flatMap(job => [...(this.listeners.get(job.key)?.get(job.size) ?? [])]))
@@ -167,4 +196,13 @@ export function renderOutputFile(file: OutputFile, table: ProjectSettings['proce
     if (canvas !== raw) { raw.width = 1; raw.height = 1 }
     return image
   }, image => image.canvas)
+}
+
+export function renderOutputFileAsync(file: OutputFile, table: ProjectSettings['processTable'], border: boolean,
+  cache?: OutputRenderCache, diagnostics: ClipDiagnostic[] = [], cancelled?: () => boolean): Promise<RenderedOutput> {
+  const layers = collectRenderMaterials(() => file.renderCanvas(new Map()))
+  return withPreparedMaterials(layers, () => {
+    const image = renderOutputFile(file, table, border, cache)
+    return { ...image, diagnostics: renderIssues(layers.filter(layer => image.sources.all.has(layer.id)), diagnostics) }
+  }, cancelled)
 }

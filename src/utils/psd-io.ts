@@ -2,6 +2,7 @@ import { decodeLayerPixels, readPsd } from 'ag-psd'
 import type { Layer, Psd } from 'ag-psd'
 import { Inflate } from 'pako'
 import { ImageBudget, imageBytes, MAX_INPUT_BYTES, MAX_LAYER_COUNT, MAX_LAYER_DEPTH } from './image-budget'
+import { ownMaterials, registerMaterial } from '../engine/material-cache'
 
 function dimensions(rect: { left?: number; right?: number; top?: number; bottom?: number }): [number, number] {
   return [(rect.right ?? 0) - (rect.left ?? 0), (rect.bottom ?? 0) - (rect.top ?? 0)]
@@ -33,7 +34,7 @@ function checkZipChannels(layer: Layer): void {
  * canvas要素としてレイヤーデータを取得（useImageData: false）
  * compositeImageData（結合済み画像）はスキップしてメモリ節約
  */
-export function readPsdFile(buffer: ArrayBuffer): Psd {
+export function readPsdFile(buffer: ArrayBuffer, lazy = false): Psd {
   if (buffer.byteLength > MAX_INPUT_BYTES) throw new Error('PSDファイルは1 GiBまで読み込めます')
   if (buffer.byteLength < 26) throw new Error('PSDヘッダーが不正です')
   const header = new DataView(buffer)
@@ -53,9 +54,32 @@ export function readPsdFile(buffer: ArrayBuffer): Psd {
     if (depth > MAX_LAYER_DEPTH || layers.length >= MAX_LAYER_COUNT) throw new Error('PSDのレイヤー数または階層が上限を超えました')
     // Include the decode working buffer at the document's bit depth, and both mask kinds.
     const bytesPerPixel = 4 * Math.max(1, (psd.bitsPerChannel ?? 8) / 8)
-    for (const rect of [layer, layer.mask, layer.realMask]) if (rect) budget.reserve(...dimensions(rect), bytesPerPixel)
+    const layerBudget = lazy ? new ImageBudget() : budget
+    for (const rect of [layer, layer.mask, layer.realMask]) if (rect) layerBudget.reserve(...dimensions(rect), bytesPerPixel)
     layers.push(layer)
     for (const child of layer.children ?? []) stack.push({ layer: child, depth: depth + 1 })
+  }
+  if (lazy) {
+    const disposers = layers.map(layer => {
+      const estimate = [layer, layer.mask, layer.realMask].reduce((n, rect) => {
+        if (!rect) return n
+        const [width, height] = dimensions(rect)
+        return n + width * height * 4
+      }, 0)
+      return registerMaterial(layer, estimate, async () => {
+        // decodeLayerPixels deletes rawData. Decode a shallow adapter so the
+        // original compressed channels survive eviction and can be reloaded.
+        const decoded: Layer = { ...layer, mask: layer.mask && { ...layer.mask }, realMask: layer.realMask && { ...layer.realMask } }
+        checkZipChannels(decoded)
+        decodeLayerPixels(decoded)
+        layer.canvas = decoded.canvas
+        if (decoded.mask) layer.mask = decoded.mask
+        if (decoded.realMask) layer.realMask = decoded.realMask
+        return { diagnostics: [] }
+      })
+    })
+    ownMaterials(psd, () => disposers.forEach(dispose => dispose()))
+    return psd
   }
   try {
     for (const layer of layers) { checkZipChannels(layer); decodeLayerPixels(layer) }

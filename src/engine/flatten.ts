@@ -5,6 +5,8 @@ import { collectAnimFolderAncestorIds } from './tree-builder'
 import { applyLayerMask, compositeGroup, compositeStack, createCanvas } from './compositor'
 import { resolveSelectedAnimCell } from '../utils/anim-cell-selection'
 import { withCanvasResources } from './render-resources'
+import { collectingMaterials, visitMaterial } from './material-dependencies'
+import { resolvedMaterialLayer } from './material-cache'
 
 /**
  * コアフラット化アルゴリズム
@@ -40,6 +42,8 @@ export function flattenTree(
   function flattenLayerContent(layer: CspLayer): FlatLayer[] {
     // 非表示は合成不参加
     if (layer.hidden || layer.uiHidden) return []
+    if (collectingMaterials()) visitMaterial(layer)
+    else layer = resolvedMaterialLayer(layer)
 
     // extraIgnoreOpacityIds に含まれるIDは100%として扱う（工程フォルダ本体等）
     // 指定がない場合は layer.opacity をそのまま使用（生のPSD状態を反映）
@@ -115,7 +119,8 @@ export function flattenTree(
     }
 
     // 通常レイヤー
-    const sourceCanvas = layer.agPsdRef.canvas ?? (layer.vectorRendering || layer.unsupported3D ? createCanvas(1, 1) : undefined)
+    if (collectingMaterials()) return []
+    const sourceCanvas = layer.agPsdRef.canvas ?? (layer.vectorRendering || layer.unsupported3D || layer.materialMissing ? createCanvas(1, 1) : undefined)
     if (!sourceCanvas) return []
     const canvas = applyMaterialEffects(sourceCanvas, layer.left, layer.top, layer.materialEffects, docWidth, docHeight, true)
     const fullSize = canvas !== sourceCanvas
@@ -158,6 +163,7 @@ export function compositeRoot(
   docHeight: number,
   background: 'white' | 'transparent' = 'white'
 ): HTMLCanvasElement {
+  if (collectingMaterials()) return createCanvas(1, 1)
   if (flatLayers.length === 0) {
     const empty = createCanvas(docWidth, docHeight)
     if (background === 'white') {

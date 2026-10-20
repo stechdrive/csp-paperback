@@ -1,5 +1,6 @@
 import type { CspLayer } from '../types'
 import { resolveSelectedAnimCell } from './anim-cell-selection'
+import { hasDeferredMaterial } from '../engine/material-cache'
 
 /**
  * Whether default flattening emits any FlatLayer, without drawing.
@@ -25,7 +26,7 @@ export function hasDefaultFlattenedContent(
       return selection !== null && hasContent(selection.cell)
     }
     if (layer.isFolder) return layer.children.some(hasContent)
-    return !!(layer.agPsdRef.canvas || layer.vectorRendering || layer.unsupported3D)
+    return !!(hasDeferredMaterial(layer.agPsdRef) || layer.agPsdRef.canvas || layer.vectorRendering || layer.unsupported3D)
   }
 
   return layers.some(hasContent)

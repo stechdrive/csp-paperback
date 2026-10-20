@@ -24,28 +24,30 @@ afterEach(() => {
 })
 
 describe('usePreview', () => {
-  it('composites once for the small and large navigator and updates both trailing views', () => {
+  it('composites once for the small and large navigator and updates both trailing views', async () => {
     const render = vi.spyOn(flatten, 'flattenToCanvas')
     const first = { current: document.createElement('canvas') }
     const second = { current: document.createElement('canvas') }
     renderHook(() => usePreview(first))
     renderHook(() => usePreview(second))
+    await act(async () => { await vi.runAllTimersAsync() })
     expect(render).toHaveBeenCalledTimes(1)
     const folderId = useAppStore.getState().layerTree[0].id
     act(() => useAppStore.setState({ selectedCells: new Map([[folderId, 1]]) }))
     expect(render).toHaveBeenCalledTimes(1)
-    act(() => vi.advanceTimersByTime(150))
+    await act(async () => { await vi.advanceTimersByTimeAsync(150) })
     expect(render).toHaveBeenCalledTimes(2)
     expect(first.current.getContext('2d')!.drawImage).toHaveBeenLastCalledWith(render.mock.results[1].value, 0, 0)
     expect(second.current.getContext('2d')!.drawImage).toHaveBeenLastCalledWith(render.mock.results[1].value, 0, 0)
   })
 
-  it('skips disabled views and cancels pending work when they are hidden', () => {
+  it('skips disabled views and cancels pending work when they are hidden', async () => {
     const render = vi.spyOn(flatten, 'flattenToCanvas')
     const ref = { current: document.createElement('canvas') }
     const { rerender } = renderHook(({ enabled }) => usePreview(ref, enabled), { initialProps: { enabled: false } })
     expect(render).not.toHaveBeenCalled()
     rerender({ enabled: true })
+    await act(async () => { await vi.runAllTimersAsync() })
     expect(render).toHaveBeenCalledTimes(1)
     act(() => useAppStore.setState({ selectedCells: new Map([['selection', 1]]) }))
     rerender({ enabled: false })

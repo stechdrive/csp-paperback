@@ -11,7 +11,7 @@ import { planExportEntriesFromState } from '../../utils/export-entries'
 import type { ClipDocument } from '../../utils/clip/types'
 import { recordComposite } from '../../engine/render-sources'
 
-vi.mock('../../utils/clip-io', () => ({ readClipFile: vi.fn() }))
+vi.mock('../../utils/clip-io', () => ({ readClipFile: vi.fn(), clipReader: vi.fn() }))
 vi.mock('../../utils/psd-io', () => ({ readPsdFile: vi.fn() }))
 vi.mock('../../platform/files', () => ({ allowTauriLaunchFilePaths: vi.fn(), loadableFilesFromPaths: vi.fn() }))
 vi.mock('../../utils/directory-builder', () => ({ saveEntriesToDirectoryPath: vi.fn() }))
@@ -105,7 +105,7 @@ describe('batch export with the real loader and project store', () => {
       return recordComposite(canvas, [{ canvas, sourceId: 'clip:art', opacity: 100, blendMode: 'normal', clipping: false, left: 0, top: 0 }])
     } }])
     vi.mocked(saveEntriesToDirectoryPath).mockImplementation(async entries => {
-      for (const entry of entries) if ('createCanvas' in entry) entry.createCanvas()
+      for (const entry of entries) if ('createCanvas' in entry) await entry.createCanvas()
       return 'C:/cuts/out'
     })
     const result = await runQuickExportBatch(['C:/cuts/a.clip', 'C:/cuts/b.clip', 'C:/cuts/b.psd'], vi.fn())

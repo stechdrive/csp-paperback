@@ -1,19 +1,35 @@
 /** Only canvases allocated inside this synchronous render may be released. */
+import { ImageResourceError } from '../utils/image-budget'
+
 let allocations: Set<HTMLCanvasElement> | undefined
+const trackedBytes = new WeakMap<HTMLCanvasElement, number>()
+let activeBytes = 0
+const MAX_RENDER_BYTES = 512 * 1024 * 1024
+
+function untrack(canvas: HTMLCanvasElement) {
+  activeBytes -= trackedBytes.get(canvas) ?? 0
+  trackedBytes.delete(canvas)
+}
 
 export function createRenderCanvas(width: number, height: number): HTMLCanvasElement {
+  const bytes = width * height * 4
+  if (allocations && activeBytes + bytes > MAX_RENDER_BYTES) {
+    throw new ImageResourceError('この画像の合成用メモリが上限を超えました。表示する素材を減らして再試行してください。出力は中止しました。')
+  }
   const canvas = document.createElement('canvas')
   canvas.width = width; canvas.height = height
   allocations?.add(canvas)
+  if (allocations) { trackedBytes.set(canvas, bytes); activeBytes += bytes }
   return canvas
 }
 
 export function releaseCanvas(canvas: HTMLCanvasElement): void {
+  untrack(canvas)
   canvas.width = 1; canvas.height = 1
 }
 
 /** Transfer a newly allocated canvas to an explicit cache owner. */
-export function detachCanvasResource(canvas: HTMLCanvasElement): void { allocations?.delete(canvas) }
+export function detachCanvasResource(canvas: HTMLCanvasElement): void { allocations?.delete(canvas); untrack(canvas) }
 
 export function withCanvasResources<T>(render: () => T,
   retain: (result: T, owned: ReadonlySet<HTMLCanvasElement>) => Iterable<HTMLCanvasElement>): T {
@@ -27,7 +43,10 @@ export function withCanvasResources<T>(render: () => T,
   } finally {
     allocations = parent
     for (const canvas of owned) {
-      if (kept.has(canvas)) parent?.add(canvas)
+      if (kept.has(canvas)) {
+        if (parent) parent.add(canvas)
+        else untrack(canvas)
+      }
       else releaseCanvas(canvas)
     }
   }

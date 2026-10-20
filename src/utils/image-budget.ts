@@ -21,3 +21,12 @@ export class ImageBudget {
     this.bytes += bytes
   }
 }
+/** A transient allocation limit, never a permanently missing source image. */
+export class ImageResourceError extends Error {}
+
+export function rethrowImageResourceError(error: unknown): void {
+  if (error instanceof ImageResourceError) throw error
+  if (error instanceof RangeError && /allocation|out of memory|array buffer|typed array length/i.test(error.message)) {
+    throw new ImageResourceError('素材の画像メモリを確保できませんでした。表示する素材を減らして再試行してください')
+  }
+}

@@ -97,7 +97,7 @@ it('parses compatibility and folder effects even when paired loading skips raste
   throw new Error('Missing fixture database')
 })
 
-it('records only contributing layers per exported file and keeps lazy rendering and release callbacks', () => {
+it('records only contributing layers per exported file and keeps lazy rendering and release callbacks', async () => {
   const canvas = document.createElement('canvas'), release = vi.fn()
   recordComposite(canvas, [{ canvas, sourceId: 'clip:used', left: 0, top: 0, opacity: 100, blendMode: 'normal', clipping: false }])
   const createCanvas = vi.fn(() => canvas)
@@ -108,7 +108,7 @@ it('records only contributing layers per exported file and keeps lazy rendering 
   expect(tracked.messages()).toEqual([])
   const entry = tracked.entries[0]
   if (!('createCanvas' in entry)) throw new Error('Expected lazy output')
-  entry.createCanvas()
+  await entry.createCanvas()
   expect(tracked.messages()).toEqual(['A_001.png — 使った素材の案内'])
   expect(entry.releaseRenderCache).toBe(release)
 })

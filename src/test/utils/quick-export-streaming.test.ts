@@ -37,7 +37,7 @@ describe('quick export uses the real lazy plan and directory writer', () => {
     const actualPlan = exportEntries.planExportEntriesFromState, canvases: HTMLCanvasElement[] = []
     vi.spyOn(exportEntries, 'planExportEntriesFromState').mockImplementation((...args) => actualPlan(...args).map(entry => {
       if (!('createCanvas' in entry)) throw new Error('eager export entry')
-      return { ...entry, createCanvas: () => { const canvas = entry.createCanvas(); canvases.push(canvas); return canvas } }
+      return { ...entry, createCanvas: async () => { const canvas = await entry.createCanvas(); canvases.push(canvas); return canvas } }
     }))
     let finish!: () => void
     const gate = new Promise<void>(resolve => { finish = resolve })

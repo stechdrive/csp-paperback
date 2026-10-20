@@ -83,7 +83,7 @@ describe('LayerTreePanel output navigation', () => {
     const { cell, process, expanded, collapsed } = renderTree({ manualOpen: true })
     expect(screen.queryByRole('group', { name: 'レイヤーパネルの表示' })).not.toBeInTheDocument()
     const files = screen.getByRole('listbox', { name: '出力ファイル' })
-    expect(within(screen.getByRole('listbox', { name: '出力ファイル' })).getAllByRole('option').map(option => option.textContent)).toEqual(['A_1.jpg', 'A_1_s.jpg'])
+    expect(within(screen.getByRole('listbox', { name: '出力ファイル' })).getAllByRole('option').map(option => option.querySelector('[data-output-name]')?.textContent)).toEqual(['A_1.jpg', 'A_1_s.jpg'])
     fireEvent.click(screen.getByRole('option', { name: 'A_1_s.jpg' }))
     expect(useAppStore.getState().selectedOutputSourceId).toBe(process.id)
     fireEvent.wheel(files, { shiftKey: true, deltaY: -100 })
@@ -109,7 +109,7 @@ describe('LayerTreePanel output navigation', () => {
     act(() => useAppStore.getState().undo())
     expect(within(screen.getByRole('listbox', { name: '出力ファイル' })).getByRole('option', { selected: true })).toHaveTextContent('A_1_s.jpg')
     act(() => useAppStore.setState({ outputConfig: { ...useAppStore.getState().outputConfig, format: 'png', excludedProcessSuffixes: ['_s'] } }))
-    expect(within(screen.getByRole('listbox', { name: '出力ファイル' })).getAllByRole('option').map(option => option.textContent)).toEqual(['A_1.png'])
+    expect(within(screen.getByRole('listbox', { name: '出力ファイル' })).getAllByRole('option').map(option => option.querySelector('[data-output-name]')?.textContent)).toEqual(['A_1.png'])
     expect(within(screen.getByRole('listbox', { name: '出力ファイル' })).queryByRole('option', { selected: true })).not.toBeInTheDocument()
   })
 

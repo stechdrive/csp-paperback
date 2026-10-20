@@ -5,6 +5,7 @@ import { useRenderedOutputs } from './useRenderedOutputs'
 import type { RenderedOutput } from '../utils/output-render-queue'
 
 export interface OutputPreviewEntry {
+  diagnostics?: RenderedOutput['diagnostics']
   vectorWarning?: boolean
   unsupported3D?: boolean
   canvas: HTMLCanvasElement

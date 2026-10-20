@@ -11,6 +11,21 @@ function image(): RenderedOutput {
 }
 
 describe('output render queue', () => {
+  it('discards an old async completion and continues with the new document', async () => {
+    const queue = new OutputRenderQueue(), old = file('old'), next = file('next')
+    let finish!: (value: RenderedOutput) => void
+    queue.request(old, 'full', () => new Promise(resolve => { finish = resolve }))
+    await vi.advanceTimersByTimeAsync(0)
+    queue.clear()
+    queue.request(next, 'full', image)
+    const obsolete = image()
+    finish(obsolete)
+    await vi.runAllTimersAsync()
+    expect(queue.get(old, 'full')).toBeUndefined()
+    expect(obsolete.canvas.width).toBe(1)
+    expect(queue.get(next, 'full')?.image?.canvas.width).toBe(300)
+    queue.clear()
+  })
   it('shares pending work, pins and notifications across different names for the same image', async () => {
     const queue = new OutputRenderQueue(), original = file('same-image')
     const renamed = { ...original, fileName: 'A_0001.png' }

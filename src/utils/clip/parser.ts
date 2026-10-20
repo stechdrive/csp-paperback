@@ -22,7 +22,12 @@ function rows(db: Database, table: string): Row[] {
 }
 const keyed = (records: Row[]) => new Map(records.map(r => [num(r, 'MainId'), r]))
 
-export async function parseClipDocument(bytes: Uint8Array, SQL: SqlJsStatic, includeRaster = true): Promise<ClipDocument> {
+export interface ClipSession {
+  document: ClipDocument
+  decode: (id: string) => Promise<{ layer: ClipLayer; diagnostics: ClipDiagnostic[] }>
+}
+
+export async function openClipSession(bytes: Uint8Array, SQL: SqlJsStatic): Promise<ClipSession> {
   const container = readContainer(bytes)
   const db = new SQL.Database(container.database)
   try {
@@ -128,30 +133,55 @@ export async function parseClipDocument(bytes: Uint8Array, SQL: SqlJsStatic, inc
       }
       timelines.push(timeline)
     }
-    if (includeRaster) {
-      const decode = createMaterialDecoder({ mipmaps, mipInfos, offscreens, thumbnails: rows(db, 'LayerThumbnail'), external: container.external,
+    const tables = { mipmaps, mipInfos, offscreens, thumbnails: rows(db, 'LayerThumbnail'), external: container.external,
         vectors, brushes: keyed(rows(db, 'BrushStyle')), brushGraphs: keyed(rows(db, 'BrushEffectorGraphData')),
         brushPatterns: keyed(rows(db, 'BrushPatternStyle')), brushImages: keyed(rows(db, 'BrushPatternImage')),
-      }, width, height, num(canvas, 'CanvasResolution'), diagnostics, compatibility)
-      async function walk(layers: ClipLayer[]): Promise<void> {
-        for (const layer of layers) {
-          try { await decode(layer, nativeRows.get(layer.id)!) }
-          catch (e) { diagnostics.push({ scope: 'raster', layerId: layer.id, message: `「${layer.name}」: ${errorMessage(e)}` }) }
-          await walk(layer.children)
-        }
       }
-      await walk(layers)
-    } else {
-      // Pairing skips expensive pixel decoding, not effect metadata. Folder
-      // effects can remain absent from the PSD and still need a truthful notice.
-      const walk = (layers: ClipLayer[]) => layers.forEach(layer => {
+    const nativeLayers = new Map<string, ClipLayer>()
+    const walk = (layers: ClipLayer[]) => layers.forEach(layer => {
+        nativeLayers.set(layer.id, layer)
         layer.effects = readMaterialEffects(nativeRows.get(layer.id)!, message => diagnostics.push({
           scope: 'raster', part: 'effect', layerId: layer.id, message: `「${layer.name}」: ${message}`,
         }))
         walk(layer.children)
       })
-      walk(layers)
+    walk(layers)
+    const document: ClipDocument = { width, height, dpi: num(canvas, 'CanvasResolution'), compatibility, layers, timelines, defaultTimelineId: defaultTimelineId ?? timelines[0]?.id ?? null, diagnostics }
+    return {
+      document,
+      async decode(id) {
+        const metadata = nativeLayers.get(id), row = nativeRows.get(id)
+        check(metadata && row, '素材の参照先がありません')
+        const layer: ClipLayer = { ...metadata, children: [] }
+        const diagnostics: ClipDiagnostic[] = []
+        // Per-request working buffers/brush images die after transfer. No
+        // document-wide decoded-byte counter and no retained pixel history.
+        const decode = createMaterialDecoder(tables, width, height, document.dpi, diagnostics, compatibility)
+        await decode(layer, row)
+        return { layer, diagnostics }
+      },
     }
-    return { width, height, dpi: num(canvas, 'CanvasResolution'), compatibility, layers, timelines, defaultTimelineId: defaultTimelineId ?? timelines[0]?.id ?? null, diagnostics }
   } finally { db.close() }
+}
+
+/** Eager adapter for format tests and callers that explicitly need pixel data. */
+export async function parseClipDocument(bytes: Uint8Array, SQL: SqlJsStatic, includeRaster = true): Promise<ClipDocument> {
+  const session = await openClipSession(bytes, SQL)
+  if (includeRaster) {
+    const walk = async (layers: ClipLayer[]) => {
+      for (const layer of layers) {
+        try {
+          const decoded = await session.decode(layer.id)
+          Object.assign(layer, { ...decoded.layer, children: layer.children })
+          session.document.diagnostics.push(...decoded.diagnostics)
+        } catch (error) {
+          session.document.diagnostics.push({ scope: 'raster', part: 'material', outcome: 'missing-content',
+            layerId: layer.id, message: `「${layer.name}」: ${errorMessage(error)}` })
+        }
+        await walk(layer.children)
+      }
+    }
+    await walk(session.document.layers)
+  }
+  return session.document
 }

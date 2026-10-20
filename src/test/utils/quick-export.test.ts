@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('../../utils/clip-io', () => ({ readClipFile: vi.fn() }))
+vi.mock('../../utils/clip-io', () => ({ readClipFile: vi.fn(), clipReader: vi.fn() }))
 vi.mock('../../utils/psd-io', () => ({ readPsdFile: vi.fn(() => ({ width: 1920, height: 1080 })) }))
 
 vi.mock('../../store', () => ({
@@ -91,7 +91,7 @@ describe('runQuickExport', () => {
     mockedBuildOutputEntries.mockReturnValue([{} as ExportEntry])
     mockedSaveEntries.mockResolvedValue('C:/cut/cut')
     await expect(runQuickExport(['C:/cut/cut.clip'], vi.fn())).resolves.toEqual({ outputDirectory: 'C:/cut/cut', entryCount: 1, warnings: [] })
-    expect(readClipFile).toHaveBeenCalledWith(expect.any(ArrayBuffer), true)
+    expect(readClipFile).toHaveBeenCalledWith(expect.any(ArrayBuffer), true, true)
     expect(state.loadClip).toHaveBeenCalledWith(source, 'cut.clip', 'C:/cut', undefined)
     expect(mockedSaveEntries).toHaveBeenCalledWith(expect.any(Array), DEFAULT_OUTPUT_CONFIG, 'cut.clip', 'C:/cut', 72, 72, expect.any(Function))
   })

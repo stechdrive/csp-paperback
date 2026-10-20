@@ -4,12 +4,12 @@ import styles from './PreviewPanel.module.css'
 
 export function PreviewCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  usePreview(canvasRef)
+  const error = usePreview(canvasRef)
 
   return (
-    <canvas
+    <>{error && <p role="alert">{error}</p>}<canvas
       ref={canvasRef}
       className={styles.canvas}
-    />
+    /></>
   )
 }

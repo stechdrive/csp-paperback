@@ -1,4 +1,5 @@
 import { applyMaterialEffects } from './material-effects'
+import { collectingMaterials, visitMaterial } from './material-dependencies'
 import { withCanvasResources } from './render-resources'
 import { recordOutputSources } from './render-sources'
 import { cellOutputId, layerOutputId, virtualOutputId } from '../utils/output-identity'
@@ -654,6 +655,11 @@ function applyContainerEffects(
   docWidth: number,
   docHeight: number,
 ): FlatLayer[] {
+  if (collectingMaterials()) {
+    visitMaterial(animFolder)
+    if (cell.isFolder && (cell.blendMode !== 'pass through' || cell.materialEffects)) visitMaterial(cell)
+    return flats
+  }
   let result = flats
   if (result.length === 0) return result
 
@@ -723,6 +729,10 @@ export function compositeWithContext(
   background: 'white' | 'transparent' = 'white',
   materialContext?: MaterialOutputContext[],
 ): HTMLCanvasElement {
+  if (collectingMaterials()) {
+    for (const context of materialContext ?? []) if (context.container) visitMaterial(context.container)
+    return createCanvas(1, 1)
+  }
   if (materialContext) {
     // Preserve ancestor boundaries: a folder color must not recolor the paper,
     // unrelated siblings, or another animation folder's saved composite.

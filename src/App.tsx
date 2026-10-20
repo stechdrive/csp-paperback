@@ -7,7 +7,6 @@ import { Toolbar } from './components/Toolbar'
 import { MainLayout } from './components/MainLayout'
 import { QuickExportDialog } from './components/QuickExportDialog'
 import { ExportStatus } from './components/ExportStatus'
-import { ClipImportNotice } from './components/ClipImportNotice'
 import { useExportJob } from './store/export-job'
 import { useAppStore } from './store'
 import { getQuickExportLaunchPaths } from './platform/launch'
@@ -62,7 +61,6 @@ function NormalApp() {
         </div>
         </div>
         <ExportStatus />
-        <ClipImportNotice isLoading={isLoading} />
       </div>
     </FileDropZone>
   )
