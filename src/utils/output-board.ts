@@ -99,7 +99,9 @@ export function mountOutputBoard(element: HTMLDivElement, background: HTMLCanvas
       gateButton.hidden = !rect || draftIds.has(files[gateIndex]?.outputId) || !!pointers.size || rect.width * camera.zoom < 60 || camera.zoom * 28 < 20 || x < 0 || x + 22 > width || y < 0 || y + 22 > height
       if (!gateButton.hidden) {
         gateButton.style.left = `${x}px`; gateButton.style.top = `${y}px`
-        gateButton.setAttribute('aria-label', `${files[gateIndex].relativePath}を${current.outputExclusions.has(files[gateIndex].gateId) ? '出力に戻す' : '出力から外す'}`)
+        const off = current.outputExclusions.has(files[gateIndex].gateId)
+        gateButton.setAttribute('aria-pressed', String(off))
+        gateButton.setAttribute('aria-label', `${files[gateIndex].relativePath}を${off ? '出力に戻す' : '出力から外す'}`)
       }
     }
     element.dataset.selectedCount = String(selected.size)
@@ -204,8 +206,14 @@ export function mountOutputBoard(element: HTMLDivElement, background: HTMLCanvas
     const prior = pointers.get(event.pointerId)
     if (!prior) {
       if (!(event.target as HTMLElement).closest('button')) {
-        const point = local(event), index = boardHit(layout, camera, point.x, point.y)
-        if (hover !== index && index >= 0) { hover = index; invalidate() }
+        const point = local(event)
+        let index = boardHit(layout, camera, point.x, point.y)
+        if (index < 0 && hover >= 0) {
+          const rect = boardRect(layout, hover), x = camera.x + rect.x * camera.zoom, y = camera.y + (rect.y + rect.height) * camera.zoom
+          // Keep the action reachable across the small gap below its image.
+          if (point.x >= x && point.x <= x + rect.width * camera.zoom && point.y >= y && point.y <= y + 26) index = hover
+        }
+        if (hover !== index) { hover = index; invalidate() }
       }
       return
     }
@@ -229,17 +237,16 @@ export function mountOutputBoard(element: HTMLDivElement, background: HTMLCanvas
     if (marquee && moved && event.type === 'pointerup') {
       marquee.end = point
       const ids = rangeSelection()!
-      const active = files.find(file => ids.has(file.outputId))
-      if (active && !ids.has(useAppStore.getState().activeOutputId ?? '')) useAppStore.getState().selectOutputFile(active.outputId)
-      useAppStore.setState({ selectedOutputIds: ids })
+      useAppStore.getState().setOutputSelection(ids)
     } else if (!moved && !multi && event.type === 'pointerup') {
       const now = performance.now()
       if (index !== clickIndex || now - clickTime > 400) clickSelection = useAppStore.getState().selectedOutputIds
       clickIndex = index; clickTime = now
+      if (index < 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey) useAppStore.getState().setOutputSelection(new Set())
       select(index, event.ctrlKey || event.metaKey || element.dataset.selectionMode === 'true', event.shiftKey)
       if (event.pointerType === 'touch' && element.dataset.selectionMode !== 'true') {
         if (index >= 0 && index === lastTap.index && now - lastTap.time < 350) {
-          if (clickSelection.has(files[index].outputId)) useAppStore.setState({ selectedOutputIds: new Set(clickSelection) })
+          if (clickSelection.has(files[index].outputId)) useAppStore.getState().setOutputSelection(clickSelection)
           switchOutputViewByTouch('single')
         }
         lastTap = { time: now, index }
@@ -255,7 +262,7 @@ export function mountOutputBoard(element: HTMLDivElement, background: HTMLCanvas
     const point = local(event), index = boardHit(layout, camera, point.x, point.y)
     if (index >= 0) {
       select(index)
-      if (clickSelection.has(files[index].outputId)) useAppStore.setState({ selectedOutputIds: new Set(clickSelection) })
+      if (clickSelection.has(files[index].outputId)) useAppStore.getState().setOutputSelection(clickSelection)
       useAppStore.getState().setOutputViewMode('single')
     }
   }
@@ -283,8 +290,8 @@ export function mountOutputBoard(element: HTMLDivElement, background: HTMLCanvas
     const current = files.findIndex(file => file.outputId === useAppStore.getState().activeOutputId)
     const delta = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: layout.columns, ArrowUp: -layout.columns }[event.key]
     if (delta !== undefined) { event.preventDefault(); select(Math.max(0, Math.min(files.length - 1, current + delta)), event.ctrlKey || event.metaKey, event.shiftKey) }
-    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'a') { event.preventDefault(); useAppStore.setState({ selectedOutputIds: new Set(orderedIds) }) }
-    if (event.key === 'Escape') { event.preventDefault(); if (marquee) cancel(); else useAppStore.setState({ selectedOutputIds: new Set() }) }
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'a') { event.preventDefault(); useAppStore.getState().setOutputSelection(new Set(orderedIds)) }
+    if (event.key === 'Escape') { event.preventDefault(); if (marquee) cancel(); else useAppStore.getState().setOutputSelection(new Set()) }
     if (event.key === 'ContextMenu' || (event.key === 'F10' && event.shiftKey)) { event.preventDefault(); const rect = element.getBoundingClientRect(); onMenu(rect.left + 12, rect.top + 12) }
     if (event.key === 'Enter' && current >= 0) { event.preventDefault(); useAppStore.getState().setOutputViewMode('single') }
     if (event.key === '+' || event.key === '=' || event.key === '-') { event.preventDefault(); interact(); zoom(width / 2, height / 2, event.key === '-' ? 1 / 1.2 : 1.2); settle() }

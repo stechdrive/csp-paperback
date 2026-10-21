@@ -1,0 +1,4 @@
+.icon { display: block; margin: auto; }
+.excluded { display: none; }
+:global(button[aria-pressed='true']) > .icon .excluded { display: inline; }
+:global(button[aria-pressed='true']) > .icon .enabled { display: none; }

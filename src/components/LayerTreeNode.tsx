@@ -375,7 +375,7 @@ export const LayerTreeNode = memo(function LayerTreeNodeView({
     internalDropRef(node)
   }, [internalDropRef])
 
-  const indentWidth = layer.depth * 16
+  const indentWidth = layer.depth * 12
 
   let typeIcon: ReactNode = <DocumentIcon />
   if (isAnimFolder) typeIcon = '🎬'
@@ -397,8 +397,8 @@ export const LayerTreeNode = memo(function LayerTreeNodeView({
   ].filter(Boolean).join(' ')
 
   const childIndentWidth = layer.children[0]?.depth != null
-    ? layer.children[0].depth * 16
-    : indentWidth + 16
+    ? layer.children[0].depth * 12
+    : indentWidth + 12
 
   return (
     <div ref={nodeRef} className={styles.node}>
@@ -492,19 +492,15 @@ export const LayerTreeNode = memo(function LayerTreeNodeView({
         </div>
 
         <div className={styles.statusColumns}>
-          <span className={styles.statusSlot} data-layer-column="output-state">
             {!!outputStatus?.excluded && <Tooltip content={`出力対象の設定で ${outputStatus.excluded} / ${outputStatus.total} 件をOFFにしています。レイヤーの表示状態は変わりません。`}>
-              <span className={styles.outputStatus} data-output-state={outputStatus.excluded === outputStatus.total ? 'off' : 'partial'}>
+              <span className={styles.outputStatus} data-layer-column="output-state" data-output-state={outputStatus.excluded === outputStatus.total ? 'off' : 'partial'}>
                 {outputStatus.excluded === outputStatus.total ? '出力OFF' : '一部OFF'}
               </span>
             </Tooltip>}
-          </span>
-          <span className={styles.statusSlot} data-layer-column="exclusion">
             {layer.individualOutputExcludedBy && <Tooltip content={`自身または祖先フォルダが除外リスト「${layer.individualOutputExcludedBy}」に一致するため、自動の書き出し対象の検出と自動表示を行いません。手動指定・仮想セルでの使用や、表示中の共通素材としての合成は可能です。`}>
-              <span className={styles.outputStatus} data-output-state="name-excluded">除外指定</span>
+              <span className={styles.outputStatus} data-layer-column="exclusion" data-output-state="name-excluded">除外指定</span>
             </Tooltip>}
-          </span>
-          <Tooltip content="選択した出力で使用しています。数字は含まれる素材数、Vは元の表示状態によらず仮想セルで使用している素材です。"><span className={styles.usageStatus} data-layer-column="usage" aria-hidden="true" /></Tooltip>
+          <Tooltip content="元のレイヤーは非表示ですが、選択した出力の仮想セル内で使用しています。"><span className={styles.outputStatus} data-layer-virtual-use hidden>仮想セル</span></Tooltip>
         </div>
 
         <span className={styles.controlSlot} data-layer-column="warning">

@@ -57,6 +57,9 @@ test('出力の操作は再クリック・Esc・外側フォーカス・スク�
 
 test('アプリ・出力・設定・ファイル名のポップアップは再クリックとキャンバスクリックで閉じる', async ({ page }) => {
   await load(page)
+  // Tile background clicks clear selection; use the single image to keep the
+  // filename trigger available while checking each popup's dismissal behavior.
+  await page.getByRole('button', { name: '１点表示', exact: true }).click()
   const cases = [
     { trigger: page.getByRole('button', { name: 'メニュー', exact: true }), popup: page.locator('#toolbar-app-menu') },
     { trigger: page.getByRole('button', { name: '出力', exact: true }), popup: page.getByRole('menu').filter({ has: page.getByRole('menuitem', { name: 'ZIP', exact: true }) }) },

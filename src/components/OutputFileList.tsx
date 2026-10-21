@@ -1,4 +1,5 @@
 import { Tooltip } from './Tooltip'
+import { OutputGateIcon } from './OutputGateIcon'
 import { memo, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useAppStore } from '../store'
@@ -138,11 +139,17 @@ export function OutputFileList({ active = true, onShowTree, onPreview }: { activ
     <div ref={list} className={styles.fileList} role="listbox" tabIndex={0} aria-label="出力ファイル" aria-multiselectable="true"
       aria-busy={checkedCount < files.length}
       aria-activedescendant={selectedIndex >= 0 ? `${id}-${selectedIndex}` : undefined}
+      onClick={event => {
+        if (!(event.target as HTMLElement).closest('[data-output-id], button') && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
+          useAppStore.getState().setOutputSelection(new Set()); list.current?.focus()
+        }
+      }}
       onKeyDown={event => {
         if (event.nativeEvent.isComposing) return
+        if (event.key === 'Escape') { event.preventDefault(); useAppStore.getState().setOutputSelection(new Set()) }
         const direction = event.key === 'ArrowDown' ? 1 : event.key === 'ArrowUp' ? -1 : event.key === 'Home' ? 'first' : event.key === 'End' ? 'last' : null
         if (direction !== null) { event.preventDefault(); move(direction, event.shiftKey) }
-        if ((event.ctrlKey || event.metaKey) && event.key === 'a') { event.preventDefault(); useAppStore.setState({ selectedOutputIds: new Set(visible.map(file => file.outputId)) }) }
+        if ((event.ctrlKey || event.metaKey) && event.key === 'a') { event.preventDefault(); useAppStore.getState().setOutputSelection(new Set(visible.map(file => file.outputId))) }
         if ((event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) && selectedIndex >= 0) {
           event.preventDefault(); const rect = event.currentTarget.getBoundingClientRect(); openMenu(visible[selectedIndex], rect.left + 10, rect.top + 20)
         }
@@ -155,16 +162,18 @@ export function OutputFileList({ active = true, onShowTree, onPreview }: { activ
           data-output-off={excluded.has(file.gateId)} aria-description={excluded.has(file.gateId) ? '出力OFF' : undefined}
           onClick={event => { list.current?.focus(); select(file, event.ctrlKey || event.metaKey, event.shiftKey) }}
           onContextMenu={event => { event.preventDefault(); openMenu(file, event.clientX, event.clientY) }}>
-          <OutputThumbnail file={file} active={active} /><span className={styles.outputName}>
-            <span data-output-name>{file.relativePath}</span>
+          <OutputThumbnail file={file} active={active} /><span data-output-name>{file.relativePath}</span>
+          <span className={styles.outputActions}>
+            <span className={styles.outputWarning}>{!draftIds.has(file.outputId) && <DiagnosticWarning issues={checkById.get(file.outputId)?.image?.diagnostics}
+              error={checkById.get(file.outputId)?.error} onRetry={checkById.get(file.outputId)?.error ? () => outputRenderQueue.retry(file) : undefined} />}
+            </span>
             {!draftIds.has(file.outputId) && <Tooltip content={excluded.has(file.gateId) ? '出力に戻す' : '出力から外す'}><button type="button" className={styles.outputGate}
               aria-label={`${file.relativePath}を${excluded.has(file.gateId) ? '出力に戻す' : '出力から外す'}`}
+              aria-pressed={excluded.has(file.gateId)}
               onDoubleClick={event => event.stopPropagation()} onClick={event => {
-                event.stopPropagation(); useAppStore.getState().setOutputsEnabled(new Set([file.outputId]), excluded.has(file.gateId))
-              }}><PaneIcon kind="close" /></button></Tooltip>}
-          </span>
-          <span className={styles.outputWarning}>{!draftIds.has(file.outputId) && <DiagnosticWarning issues={checkById.get(file.outputId)?.image?.diagnostics}
-            error={checkById.get(file.outputId)?.error} onRetry={checkById.get(file.outputId)?.error ? () => outputRenderQueue.retry(file) : undefined} />}
+                event.stopPropagation(); const state = useAppStore.getState()
+                state.setOutputsEnabled(new Set([file.outputId]), state.outputExclusions.has(file.gateId))
+              }}><OutputGateIcon /></button></Tooltip>}
           </span>
         </div>
       </div> })}</div>}
@@ -180,8 +189,8 @@ export function OutputFileList({ active = true, onShowTree, onPreview }: { activ
         const next = event.key === 'Home' ? 0 : event.key === 'End' ? buttons.length - 1 : (current + (event.key === 'ArrowDown' ? 1 : -1) + buttons.length) % buttons.length
         buttons[next]?.focus()
       }}>
-      <button role="menuitem" disabled={!visible.length} onClick={() => { useAppStore.setState({ selectedOutputIds: new Set(visible.map(file => file.outputId)) }); setMenu(null); list.current?.focus() }}>表示中の項目をすべて選択</button>
-      <button role="menuitem" disabled={!selectedIds.size} onClick={() => { useAppStore.setState({ selectedOutputIds: new Set() }); setMenu(null); list.current?.focus() }}>選択を解除</button>
+      <button role="menuitem" disabled={!visible.length} onClick={() => { useAppStore.getState().setOutputSelection(new Set(visible.map(file => file.outputId))); setMenu(null); list.current?.focus() }}>表示中の項目をすべて選択</button>
+      <button role="menuitem" disabled={!selectedIds.size} onClick={() => { useAppStore.getState().setOutputSelection(new Set()); setMenu(null); list.current?.focus() }}>選択を解除</button>
       <OutputGateActions onDone={() => { setMenu(null); list.current?.focus() }} />
       <span>{exportIds.size}件を書き出し</span>
       <button role="menuitem" disabled={isExporting || !exportIds.size} onClick={() => { setMenu(null); list.current?.focus(); void startExport('zip', exportIds) }}>選択項目をZIPに書き出し</button>

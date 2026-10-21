@@ -107,7 +107,7 @@ describe('output navigation selection', () => {
     expect(result.current.preview[0].outputId).toBe(file.outputId)
   })
 
-  it('range and modifier selection use output IDs, with an independent active preview', () => {
+  it('range and modifier selection use output IDs and keep the active preview within the selection', () => {
     navigationFixture()
     const files = selectOutputFiles(useAppStore.getState()), ids = files.map(file => file.outputId)
     useAppStore.getState().selectOutputFile(ids[0])
@@ -115,7 +115,7 @@ describe('output navigation selection', () => {
     expect([...useAppStore.getState().selectedOutputIds]).toEqual(ids.slice(0, 3))
     useAppStore.getState().selectOutputFile(ids[1], { toggle: true })
     expect([...useAppStore.getState().selectedOutputIds]).toEqual([ids[0], ids[2]])
-    expect(useAppStore.getState().activeOutputId).toBe(ids[1])
+    expect(useAppStore.getState().activeOutputId).toBe(ids[2])
   })
 
   it('placing and unplacing a virtual cell retains its preview identity', () => {

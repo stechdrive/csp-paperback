@@ -4,7 +4,7 @@ import type { TimelineTrack } from '../types/timeline'
 import { findFirstFrameOfCell, resolveCellsAtFrameByTrackNo } from '../utils/xdts-parser'
 import { buildDefaultVisibilityOverrides } from '../utils/default-visibility'
 import { DEFAULT_MOBILE_UI_SCALE, clampMobileUiScale } from '../utils/mobile-ui-scale'
-import { selectLayerTreeWithVisibility, selectOutputNavigation, selectOutputFiles } from './selectors'
+import { selectLayerTreeWithVisibility, selectOutputNavigation, selectOutputFiles, selectDraftOutputs } from './selectors'
 import { collectOutputRevealFolders, type OutputNavigationEntry } from '../utils/output-navigation'
 import { findLayerPath } from '../utils/layerNavigation'
 import { findTimelineCellChildIndex } from '../utils/anim-cell-selection'
@@ -12,7 +12,7 @@ import type { AppTheme } from '../theme'
 import { DEFAULT_APP_THEME } from '../theme'
 import type { AppStore } from './index'
 import type { HistoryOptions } from './history-slice'
-import { emptyOutputSelection, outputSelectionPatch, type OutputSelectionOptions } from './output-selection'
+import { clearedOutputSelection, emptyOutputSelection, outputSelectionPatch, type OutputSelectionOptions } from './output-selection'
 import { cellOutputId, virtualOutputId } from '../utils/output-identity'
 
 export interface UiSlice {
@@ -24,6 +24,7 @@ export interface UiSlice {
   outputSearch: string
   quickLookTarget: { layerId: string; virtualSetId?: string } | null
   selectOutputFile: (id: string, options?: OutputSelectionOptions) => void
+  setOutputSelection: (ids: ReadonlySet<string>) => void
   setOutputViewMode: (mode: 'tiles' | 'single') => void
   openQuickLook: (layerId: string, virtualSetId?: string) => void
   closeQuickLook: () => void
@@ -177,8 +178,23 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
       if (entry) state.selectOutputEntry(entry, options)
     } else {
       const draft = state.virtualSets.find(vs => !vs.insertionLayerId && virtualOutputId(vs.id) === id)
-      if (draft) set(outputSelectionPatch(state, id, draft.name, options))
+      if (draft) {
+        const patch = outputSelectionPatch(state, id, draft.name, options)
+        if (!patch.selectedOutputIds!.has(id)) state.setOutputSelection(patch.selectedOutputIds!)
+        else set({ ...patch, selectedOutputSourceId: null, focusedAnimFolderId: null })
+      }
     }
+  },
+  setOutputSelection: ids => {
+    const state = get()
+    const selectedOutputIds = new Set(ids)
+    if (!selectedOutputIds.size) { set(clearedOutputSelection()); return }
+    if (!state.activeOutputId || !selectedOutputIds.has(state.activeOutputId)) {
+      const next = [...selectOutputFiles(state), ...selectDraftOutputs(state)].find(file => selectedOutputIds.has(file.outputId))
+      if (!next) { set(clearedOutputSelection()); return }
+      state.selectOutputFile(next.outputId, { preserveTimeline: true })
+    }
+    set({ selectedOutputIds })
   },
   setOutputViewMode: outputViewMode => set({ outputViewMode }),
   openQuickLook: (layerId, virtualSetId) => set({ quickLookTarget: { layerId, virtualSetId } }),
@@ -225,6 +241,10 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
     const file = selectOutputFiles(state).find(file => file.sourceLayerId === entry.id)
     if (!file) return
     const outputSelection = outputSelectionPatch(state, file.outputId, file.relativePath, options)
+    if (!outputSelection.selectedOutputIds!.has(file.outputId)) {
+      state.setOutputSelection(outputSelection.selectedOutputIds!)
+      return entry
+    }
     outputSelection.transientExpandedFolders = options?.reveal
       ? collectOutputRevealFolders(selectLayerTreeWithVisibility(state), navigation, entry.kind === 'layer' ? entry.id : null, entry.kind === 'virtualSet' ? entry.id : null)
       : new Set()

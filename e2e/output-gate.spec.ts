@@ -39,7 +39,7 @@ async function rectangle(page: Page, a: number, b: number, keys: string[], cance
   await expect(board(page).locator('[data-board-marquee]')).toBeHidden()
 }
 async function gateMenu(page: Page, action: string) {
-  await board(page).getByRole('button', { name: 'タイル表示のメニュー', exact: true }).click()
+  await page.getByRole('button', { name: 'タイル表示のメニュー', exact: true }).click()
   await page.getByRole('menuitem', { name: action, exact: true }).click()
 }
 async function download(page: Page, action: () => Promise<void>) {

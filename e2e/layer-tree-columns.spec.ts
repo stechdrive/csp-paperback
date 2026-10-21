@@ -9,7 +9,7 @@ async function columns(page: Page) {
     Object.fromEntries([...row.querySelectorAll<HTMLElement>('[data-layer-column]')].map(cell => {
       const rect = cell.getBoundingClientRect()
       return [cell.dataset.layerColumn!, { x: rect.x, width: rect.width }]
-    })),
+    }).filter(([name]) => ['visibility', 'warning', 'animation', 'individual'].includes(String(name)))),
   ))
 }
 
@@ -19,7 +19,7 @@ async function expectAligned(page: Page) {
   const positions = await columns(page)
   expect(positions.length).toBeGreaterThan(5)
   for (const row of positions) {
-    expect(Object.keys(row)).toHaveLength(8)
+    expect(Object.keys(row)).toHaveLength(4)
     for (const [name, rect] of Object.entries(row)) {
       expect(rect.x, name).toBeCloseTo(positions[0][name].x, 1)
       expect(rect.width, name).toBeCloseTo(positions[0][name].width, 1)
@@ -43,7 +43,7 @@ async function resizeSource(page: Page, width: number) {
   expect(output.x + output.width).toBeLessThan(layers.x)
 }
 
-test('階層・指定・出力状態・使用状態が変わっても列を固定し、狭い幅でも収める', async ({ page }, testInfo) => {
+test('必要なラベルだけに幅を使い、操作列は階層や状態にかかわらず固定する', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 1920, height: 1000 })
   await page.goto('./')
   await page.getByRole('button', { name: 'サンプルデータで試す', exact: true }).click()
@@ -53,7 +53,11 @@ test('階層・指定・出力状態・使用状態が変わっても列を固�
     await resizeSource(page, width)
     const before = await expectAligned(page)
     await files(page).getByRole('option', { name: 'B_1_s.jpg', exact: true }).click()
-    await expect(tree(page).locator('[data-layer-column="usage"][data-contribution-count]').first()).toBeAttached()
+    await expect(tree(page).locator('[data-source-role]').first()).toBeAttached()
+    await expect(tree(page).locator('[data-layer-column="usage"], [data-contribution-count]')).toHaveCount(0)
+    const exclusion = tree(page).locator('[data-output-state="name-excluded"]').first()
+    expect(await exclusion.evaluate(el => parseFloat(getComputedStyle(el).fontSize))).toBeGreaterThan(0)
+    expect((await exclusion.boundingBox())!.width).toBeLessThan(50)
     expect(await expectAligned(page)).toEqual(before)
     await page.getByRole('button', { name: '書き出し設定', exact: true }).click()
     const settings = page.getByRole('dialog', { name: '書き出し設定', exact: true })
@@ -75,9 +79,32 @@ test('階層・指定・出力状態・使用状態が変わっても列を固�
   await tree(page).focus()
   await page.keyboard.press('Control+z')
   const memo = tree(page).locator('[data-layer-id]').filter({ has: page.getByText('memo', { exact: true }) })
+  const emptyLabels = memo.locator('[class*="_statusColumns_"]')
+  expect((await emptyLabels.boundingBox())!.width).toBe(0)
   await memo.getByRole('button', { name: 'この素材を別画像として書き出す', exact: true }).click()
   await expect(memo.getByRole('button', { name: 'この素材の個別書き出しを解除する' })).toHaveAttribute('aria-pressed', 'true')
   expect(await expectAligned(page)).toEqual(before)
+  const identity = memo.locator('[data-layer-column="name"]')
+  expect((await identity.boundingBox())!.width).toBeGreaterThan((await tree(page).boundingBox())!.width - 110)
+})
+
+test('非表示素材を仮想セルで使う場合だけ短いラベルを表示し、選択解除で消す', async ({ page }, info) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('./')
+  await page.getByRole('button', { name: 'サンプルデータで試す', exact: true }).click()
+  await files(page).getByRole('option', { name: '仮想セルテスト.jpg', exact: true }).click()
+  const original = tree(page).locator('[data-layer-id]').filter({ has: page.getByText('_原図', { exact: true }) })
+  const collapse = original.getByRole('button', { name: '_原図を折りたたむ', exact: true })
+  if (await collapse.count()) await collapse.click()
+  await original.getByRole('button', { name: 'レイヤーを非表示にする', exact: true }).click()
+  const label = original.locator('[data-layer-virtual-use]')
+  await expect(label).toBeVisible()
+  await expect(label).toHaveText('仮想セル')
+  expect((await label.boundingBox())!.width).toBeLessThan(50)
+  await page.screenshot({ path: info.outputPath('virtual-cell-label.png') })
+  await files(page).press('Escape')
+  await expect(label).toBeHidden()
+  await expect(tree(page).locator('[data-source-role]')).toHaveCount(0)
 })
 
 test('階層をまたいで縦一直線になぞり、1回のUndoとRedoで表示状態を復元する', async ({ page }) => {

@@ -23,8 +23,13 @@ export function outputSelectionPatch(state: AppStore, id: string, label: string,
 }
 
 export function emptyOutputSelection() {
+  return { ...clearedOutputSelection(), outputViewMode: 'tiles' as const, outputSearch: '', quickLookTarget: null }
+}
+
+/** Clearing an output selection preserves the view, search, camera and material editor. */
+export function clearedOutputSelection() {
   return { activeOutputId: null, activeOutputLabel: '', selectedOutputIds: new Set<string>(),
-    outputSelectionAnchor: null, outputViewMode: 'tiles' as const, outputSearch: '', quickLookTarget: null }
+    outputSelectionAnchor: null, selectedOutputSourceId: null, focusedAnimFolderId: null }
 }
 
 export type RangeSelectionMode = 'add' | 'remove' | 'toggle'

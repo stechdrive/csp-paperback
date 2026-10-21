@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useAppStore } from '../store'
 import type { BoardView } from '../utils/output-board'
 import { TiledOutputPreview } from './TiledOutputPreview'
@@ -60,6 +60,7 @@ export function PreviewPanel({ mode = 'output', onModeChange, active = true }: {
     diagnostics: checks[index]?.image?.diagnostics,
   })) : entries
   const boardView = useRef<BoardView | null>(null)
+  const [outputMenuTarget, setOutputMenuTarget] = useState<HTMLDivElement | null>(null)
   const setView = (view: 'tiles' | 'single') => {
     showOutputView(view, files); onModeChange?.('output')
   }
@@ -80,11 +81,12 @@ export function PreviewPanel({ mode = 'output', onModeChange, active = true }: {
       <span className={styles.toolbarDivider} />
       <button type="button" aria-label="タイル表示" aria-pressed={mode === 'output' && tiled} onClick={() => setView('tiles')}>▦ タイル</button>
       <button type="button" aria-label="１点表示" aria-pressed={mode === 'output' && !tiled} onClick={() => setView('single')}>▣ １点</button>
+      <div className={styles.outputMenuTarget} ref={setOutputMenuTarget} />
     </div>
     {!timelineData && !clipFileName && <div className={styles.noXdtsBanner}>対応するCLIPを追加すると、アニメーションフォルダとタイムラインを読み込めます。</div>}
     <div className={styles.view} hidden={mode !== 'output'} data-testid="output-view">
       <div className={styles.outputSection}>
-        {tiled ? active && mode === 'output' && <TiledOutputPreview view={boardView} /> :
+        {tiled ? active && mode === 'output' && <TiledOutputPreview view={boardView} menuTarget={outputMenuTarget} /> :
           <OutputPreview entries={entries} focusedAnimFolderId={focusedAnimFolderId} zoomPan={outputZoomPan} />}
       </div>
     </div>
