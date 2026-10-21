@@ -29,7 +29,8 @@ test('無効なボタンもマウスでは説明を表示できる', async ({ pa
 test('出力の操作は再クリック・Esc・外側フォーカス・スクロールで閉じ、選択と並べて表示を保つ', async ({ page }) => {
   await load(page)
   const first = files(page).getByRole('option', { name: 'B_1.jpg', exact: true })
-  const second = files(page).getByRole('option', { name: 'B_1_s.jpg', exact: true })
+  // Use an exposed row below the menu to exercise an actual outside click.
+  const second = files(page).getByRole('option', { name: '_BG.jpg', exact: true })
   await first.click()
   await more(page).click(); await expect(menu(page)).toBeVisible()
   await more(page).click(); await expect(menu(page)).toHaveCount(0)
