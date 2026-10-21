@@ -101,6 +101,9 @@ test('非表示素材を仮想セルで使う場合だけ短いラベルを表�
   await expect(label).toBeVisible()
   await expect(label).toHaveText('仮想セル')
   expect((await label.boundingBox())!.width).toBeLessThan(50)
+  // Escape should clear selection after any visibility-button tooltip closes.
+  await page.mouse.move(1, 1)
+  await expect(page.getByRole('tooltip')).toHaveCount(0)
   await page.screenshot({ path: info.outputPath('virtual-cell-label.png') })
   await files(page).press('Escape')
   await expect(label).toBeHidden()

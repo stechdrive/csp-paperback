@@ -42,7 +42,12 @@ for (const theme of ['paper', 'midnight', 'graphite']) {
     await expect(input).toHaveCSS('border-width', '0px')
     await expect(input).toHaveCSS('box-shadow', 'none')
     await input.evaluate(el => { el.setSelectionRange(0, 0); el.style.caretColor = 'transparent' })
-    expect((await slot.screenshot()).equals(pixels)).toBe(true)
+    const editingPixels = await slot.screenshot()
+    if (!editingPixels.equals(pixels)) {
+      await info.attach('before-edit', { body: pixels, contentType: 'image/png' })
+      await info.attach('during-edit', { body: editingPixels, contentType: 'image/png' })
+    }
+    expect(editingPixels.equals(pixels)).toBe(true)
     await input.fill('日本語/背景')
     await expect(page.getByRole('status', { name: '出力名の確認' })).toContainText('日本語_背景')
     expect(await slot.boundingBox()).toEqual(before)
