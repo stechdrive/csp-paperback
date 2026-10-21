@@ -4,7 +4,9 @@ import type { OutputFile } from './output-plan'
 import { outputRenderQueue as queue, renderOutputFileAsync } from './output-render-queue'
 import { boardHit, boardLayout, boardRect, boardRange, boardResolution, boardVisible, fitBoard, zoomBoard, type BoardCamera, type BoardLayout } from './preview-grid'
 import { combineOutputSelection, type RangeSelectionMode } from '../store/output-selection'
-import { OutputBoardRenderer, type BoardSprite } from './output-board-renderer'
+import { OutputBoardRenderer, drawBoardSprite, type BoardSprite } from './output-board-renderer'
+import { OutputDetail } from './output-detail'
+import { sizePreviewSurface } from './preview-surface'
 import { isTouchCompatibilityClick, switchOutputViewByTouch } from './output-view'
 import { formatZoom } from './preview-zoom'
 
@@ -21,7 +23,7 @@ export function mountOutputBoard(element: HTMLDivElement, background: HTMLCanvas
   const key = JSON.stringify([state.clipFileName, aspect, files.map(file => file.outputId)])
   let width = element.clientWidth, height = element.clientHeight, frame = 0, idle: ReturnType<typeof setTimeout> | undefined
   let pixelRatio = window.devicePixelRatio || 1
-  let resume: (() => void) | undefined, disposed = false
+  let disposed = false
   const retained = view.current?.key === key && view.current.document === document ? view.current : null
   let layout = retained ? retained.layout : boardLayout({ width, height }, files.length, aspect)
   let camera = retained ? { ...retained.camera } : fitBoard(layout, { width, height })
@@ -42,11 +44,12 @@ export function mountOutputBoard(element: HTMLDivElement, background: HTMLCanvas
   const rangeSelection = () => marquee && combineOutputSelection(marquee.initial, boardRange(layout, camera, marquee.start, marquee.end).map(index => files[index].outputId), marquee.mode)
   function invalidate() { if (!frame && !disposed) frame = requestAnimationFrame(draw) }
   const renderer = new OutputBoardRenderer(canvas, invalidate)
+  const detail = new OutputDetail(invalidate, state.projectSettings.processTable, state.outputConfig.revisionBorderEnabled, state.clipDiagnostics)
   function save() { view.current = { key, document, layout, camera: { ...camera } } }
   function draw() {
     frame = 0
     if (!width || !height || disposed) return
-    const ratio = Math.min(2, window.devicePixelRatio || 1), visible = boardVisible(layout, camera, { width, height })
+    const ratio = window.devicePixelRatio || 1, visible = boardVisible(layout, camera, { width, height })
     const edge = boardResolution(camera, visible.length, ratio)
     const current = useAppStore.getState()
     const selected = rangeSelection() ?? current.selectedOutputIds
@@ -55,9 +58,12 @@ export function mountOutputBoard(element: HTMLDivElement, background: HTMLCanvas
       return { key: file.renderKey, image: queue.best(file, edge)?.canvas, x: camera.x + rect.x * camera.zoom, y: camera.y + rect.y * camera.zoom,
         width: rect.width * camera.zoom, height: rect.height * camera.zoom }
     })
-    const w = Math.round(width * ratio), h = Math.round(height * ratio)
-    if (background.width !== w || background.height !== h) { background.width = w; background.height = h }
-    ctx.setTransform(ratio, 0, 0, ratio, 0, 0); ctx.clearRect(0, 0, width, height)
+    detail.begin()
+    const tiles = sprites.flatMap((sprite, i) => detail.sprites(files[visible[i]], { left: sprite.x, top: sprite.y, width: sprite.width, height: sprite.height }, { width, height }, ratio, sprite.image))
+    detail.end()
+    const surface = sizePreviewSurface(background, width, height, ratio)
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, background.width, background.height)
+    ctx.setTransform(ratio, 0, 0, ratio, -surface.x * ratio, -surface.y * ratio)
     ctx.font = '12px sans-serif'; ctx.textBaseline = 'top'
     for (let i = 0; i < sprites.length; i++) {
       const sprite = sprites[i], file = files[visible[i]], { x, y, width: w, height: h } = sprite
@@ -65,7 +71,6 @@ export function mountOutputBoard(element: HTMLDivElement, background: HTMLCanvas
       const off = current.outputExclusions.has(file.gateId)
       if (off) { ctx.strokeStyle = textColor; ctx.lineWidth = 1; ctx.setLineDash([3, 3]); ctx.strokeRect(x - 2, y - 2, w + 4, h + 4); ctx.setLineDash([]) }
       if (selected.has(file.outputId)) { ctx.strokeStyle = accent; ctx.lineWidth = 3; ctx.strokeRect(x - 1, y - 1, w + 2, h + 2) }
-      if (!renderer.available && sprite.image) ctx.drawImage(sprite.image, x, y, w, h)
       if (w >= 60 && camera.zoom * 28 >= 16) {
         ctx.save(); ctx.beginPath(); ctx.rect(x, y + h + 3, w - 24, 20); ctx.clip()
         ctx.fillStyle = textColor
@@ -77,8 +82,9 @@ export function mountOutputBoard(element: HTMLDivElement, background: HTMLCanvas
       }
       if (queue.get(file, edge)?.error && w > 50) { ctx.fillStyle = '#b33'; ctx.fillText('⚠ 合成を再試行', x + 6, y + 6) }
     }
-    const ready = renderer.draw(sprites, width, height, ratio)
-    for (const sprite of renderer.fallback) if (sprite.image) ctx.drawImage(sprite.image, sprite.x, sprite.y, sprite.width, sprite.height)
+    const ready = renderer.draw(tiles, width, height, ratio)
+    for (const sprite of renderer.available ? renderer.fallback : tiles) drawBoardSprite(ctx, sprite)
+    if (detail.error) { ctx.fillStyle = '#b33'; ctx.fillText('⚠ 画像を選び直して原寸表示を再試行', 12, 12) }
     if (marqueeElement) {
       marqueeElement.hidden = !marquee || !moved
       if (marquee) Object.assign(marqueeElement.style, { left: `${Math.min(marquee.start.x, marquee.end.x)}px`, top: `${Math.min(marquee.start.y, marquee.end.y)}px`,
@@ -101,7 +107,9 @@ export function mountOutputBoard(element: HTMLDivElement, background: HTMLCanvas
     element.dataset.columns = String(layout.columns); element.dataset.zoom = String(camera.zoom)
     element.dataset.camera = JSON.stringify(camera); element.dataset.layout = JSON.stringify(layout)
     element.dataset.textureBytes = String(renderer.textureBytes); element.dataset.resolution = String(edge)
-    element.setAttribute('aria-busy', String((renderer.available && !ready) || sprites.some((sprite, i) => !sprite.image && !queue.get(files[visible[i]], edge)?.error)))
+    element.dataset.detailPending = String(detail.pending)
+    element.dataset.cacheBytes = String(queue.getStats().bytes + detail.bytes)
+    element.setAttribute('aria-busy', String(detail.pending || (renderer.available && !ready) || sprites.some((sprite, i) => !sprite.image && !queue.get(files[visible[i]], edge)?.error)))
     const badge = element.querySelector('[data-board-zoom]')
     if (badge) badge.textContent = formatZoom(camera.zoom / actualZoom())
     save()
@@ -125,8 +133,8 @@ export function mountOutputBoard(element: HTMLDivElement, background: HTMLCanvas
         invalidate()
       }
       const unsubscribe = queue.subscribe([file], edge, complete)
-      const cancel = queue.request(file, edge, (cache, cancelled) => renderOutputFileAsync(file, state.projectSettings.processTable,
-        state.outputConfig.revisionBorderEnabled, cache, state.clipDiagnostics, cancelled))
+      const cancel = queue.request(file, edge, (cache, cancelled, requestedEdge) => renderOutputFileAsync(file, state.projectSettings.processTable,
+        state.outputConfig.revisionBorderEnabled, cache, state.clipDiagnostics, cancelled, requestedEdge))
       requests.set(file.renderKey, { edge, unsubscribe, release: cancel })
       if (queue.get(file, edge)) complete()
     }
@@ -134,9 +142,9 @@ export function mountOutputBoard(element: HTMLDivElement, background: HTMLCanvas
   }
   function settle() {
     clearTimeout(idle)
-    idle = setTimeout(() => { resume?.(); resume = undefined; requestImages() }, 140)
+    idle = setTimeout(requestImages, 140)
   }
-  function interact() { resume ??= queue.pause(); clearTimeout(idle) }
+  function interact() { clearTimeout(idle) }
   function move() {
     // Keep part of the board reachable, while allowing free panning around a sheet.
     camera.x = Math.min(width - 24, Math.max(24 - layout.width * camera.zoom, camera.x))
@@ -174,6 +182,7 @@ export function mountOutputBoard(element: HTMLDivElement, background: HTMLCanvas
     useAppStore.getState().selectOutputFile(files[index].outputId, { toggle, range, orderedIds })
     const edge = requests.get(files[index].renderKey)?.edge
     if (edge && queue.get(files[index], edge)?.error) queue.retry(files[index])
+    detail.retry(files[index])
   }
   const down = (event: PointerEvent) => {
     if (event.button !== 0 || (event.target as HTMLElement).closest('button')) return
@@ -321,7 +330,7 @@ export function mountOutputBoard(element: HTMLDivElement, background: HTMLCanvas
   requestImages()
   return { fit, actualSize, dispose() {
     disposed = true; save(); cancelAnimationFrame(frame); clearTimeout(idle); resize.disconnect(); unsubscribe()
-    resume?.(); for (const map of [requests, previous]) for (const request of map.values()) release(request)
+    detail.dispose(); for (const map of [requests, previous]) for (const request of map.values()) release(request)
     renderer.dispose(); background.width = background.height = 1; patternCanvas.width = patternCanvas.height = 1
     element.removeEventListener('wheel', wheel); element.removeEventListener('pointerdown', down); element.removeEventListener('pointermove', pointerMove)
     element.removeEventListener('pointerup', up); element.removeEventListener('pointercancel', up)

@@ -28,6 +28,8 @@ import { selectLayerTreeWithVisibility } from '../../store/selectors'
 import { DEFAULT_PROJECT_SETTINGS, DEFAULT_OUTPUT_CONFIG } from '../../types'
 import { useAppStore } from '../../store'
 import { planExportEntriesFromState } from '../../utils/export-entries'
+import { buildOutputPlan } from '../../utils/output-plan'
+import { renderOutputRegion } from '../../utils/output-region-render'
 import { Blob as NodeBlob } from 'node:buffer'
 import initSqlJs from 'sql.js'
 import { parseClipDocument } from '../../utils/clip/parser'
@@ -127,6 +129,21 @@ describe.each(['PSD + XDTS', 'CLIP + PSD', 'CLIP standalone'])('c001 golden (ima
       'transparent',
     )
     const all = [...entries, ...vsEntries]
+    // Preview windows must agree with the same CSP-golden composition, including virtual cels.
+    const previewFiles = buildOutputPlan(resolvedTree, { virtualSets, projectSettings: GOLDEN_PROJECT_SETTINGS,
+      docWidth: psd.width, docHeight: psd.height, timelineData: null,
+      outputConfig: { ...DEFAULT_OUTPUT_CONFIG, background: 'transparent', revisionBorderEnabled: false } })
+    for (const file of previewFiles) {
+      const full = all.find(entry => entry.flatName === file.flatName)!.canvas
+      for (const [left, top] of [[0, 0], [Math.floor(psd.width / 2), Math.floor(psd.height / 2)], [psd.width - 128, psd.height - 128]]) {
+        const region = { left: Math.max(0, left), top: Math.max(0, top), width: Math.min(128, psd.width - left), height: Math.min(128, psd.height - top) }
+        const image = await renderOutputRegion(file, region, 1, GOLDEN_PROJECT_SETTINGS.processTable, false)
+        const expected = full.getContext('2d')!.getImageData(region.left, region.top, region.width, region.height).data
+        const actual = image.canvas.getContext('2d')!.getImageData(0, 0, region.width, region.height).data
+        expect(Buffer.from(actual).equals(Buffer.from(expected)), `${mode}: ${file.flatName} window ${left},${top}`).toBe(true)
+        image.canvas.width = image.canvas.height = 1
+      }
+    }
     // 各 entry の canvas を PNG バッファへ
     const rendered = new Map<string, Buffer>()
     for (const e of all) {

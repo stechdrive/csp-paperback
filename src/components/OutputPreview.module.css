@@ -11,6 +11,20 @@
   justify-content: center;
 }
 
+.singleSurface {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.detailError {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  pointer-events: auto;
+}
+
 /* outputWrapper: zoomPanOuter + シークバーを横並びに配置 */
 .outputWrapper {
   flex: 1;

@@ -58,7 +58,7 @@ export function useZoomPan({ width, height }: BoardSize, document: unknown) {
     const pointers = new Map<number, { x: number; y: number }>()
     let origin = { x: 0, y: 0 }, moved = false
     const down = (event: PointerEvent) => {
-      if (event.button !== 0) return
+      if (event.button !== 0 || (event.target as HTMLElement).closest('button')) return
       event.preventDefault(); element.focus({ preventScroll: true }); element.setPointerCapture(event.pointerId)
       const point = local(event)
       if (!pointers.size) { origin = point; moved = false }
@@ -96,8 +96,8 @@ export function useZoomPan({ width, height }: BoardSize, document: unknown) {
 
   const contentStyle: CSSProperties = { position: 'absolute', left: 0, top: 0, width, height, maxWidth: 'none', maxHeight: 'none',
     transform: `translate(${view.x}px, ${view.y}px) scale(${view.zoom})`, transformOrigin: '0 0', willChange: 'transform',
-    imageRendering: view.zoom * pixelRatio >= 2 ? 'pixelated' : 'auto' }
+    imageRendering: view.zoom * pixelRatio >= 1 ? 'pixelated' : 'auto' }
   const containerStyle: CSSProperties = { cursor: dragging ? 'grabbing' : 'grab', userSelect: 'none', touchAction: 'none' }
-  return { containerRef: setElement, contentStyle, containerStyle, zoom: view.zoom * pixelRatio,
+  return { containerRef: setElement, contentStyle, containerStyle, camera: view, pixelRatio, element, zoom: view.zoom * pixelRatio,
     fit: () => controls.current.fit(), actualSize: () => controls.current.actualSize() }
 }

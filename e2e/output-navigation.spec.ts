@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import initSqlJs from 'sql.js'
 
@@ -148,12 +149,9 @@ function previewNames(page: Page) {
 }
 
 async function previewPixelHash(page: Page) {
-  return page.getByTestId('output-view').locator('canvas').evaluate((canvas: HTMLCanvasElement) => {
-    const pixels = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height).data
-    let hash = 2166136261
-    for (const value of pixels) hash = Math.imul(hash ^ value, 16777619)
-    return (hash >>> 0).toString(16)
-  })
+  const surface = page.getByTestId('single-preview-surface')
+  await expect(surface).toHaveAttribute('aria-busy', 'false')
+  return createHash('sha256').update(await surface.screenshot()).digest('hex')
 }
 
 async function wheel(page: Page, delta: number, shift = true) {
@@ -170,7 +168,7 @@ async function walkOutputs(page: Page, expected: string[]) {
     // A large wheel delta must still advance by exactly one final image.
     await wheel(page, 700)
     await expect(previewNames(page)).toHaveText([name])
-    await expect(page.getByTestId('output-view').locator('canvas')).toHaveCount(1)
+    await expect(page.getByTestId('output-view').locator('canvas[aria-label]')).toHaveCount(1)
   }
   await wheel(page, 700)
   await expect(previewNames(page)).toHaveText([expected.at(-1)!])

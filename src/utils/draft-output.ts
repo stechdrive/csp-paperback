@@ -7,6 +7,7 @@ import { flattenTree, compositeRoot } from '../engine/flatten'
 import { collectMembersInTreeOrder, buildMemberFlatsWithOverride } from './virtual-set-utils'
 import { recordOutputSources } from '../engine/render-sources'
 import { createOutputRenderKey } from './output-render-key'
+import { createRegionPreview } from '../engine/preview-region'
 
 /** Draft previews keep their former context and stay outside the export plan. */
 export function buildDraftOutputs(tree: CspLayer[], state: Pick<AppStore, 'virtualSets' | 'docWidth' | 'docHeight' | 'outputConfig'>): OutputFile[] {
@@ -15,6 +16,12 @@ export function buildDraftOutputs(tree: CspLayer[], state: Pick<AppStore, 'virtu
     renderKey: renderKey({ outputId: virtualOutputId(vs.id) }),
     outputId: virtualOutputId(vs.id), gateId: virtualOutputId(vs.id), sourceLayerId: vs.id, flatName: vs.name, path: '',
     relativePath: vs.name, fileName: vs.name, segments: [], names: { flatName: vs.name, path: '' },
+    preview: createRegionPreview(tree, state.docWidth, state.docHeight, (regionTree, w, h) => {
+      const members = collectMembersInTreeOrder(regionTree, new Set(vs.members.map(m => m.layerId)))
+      const flats = buildMemberFlatsWithOverride(vs.members, members, w, h, vs.visibilityOverrides, vs.layerOverrides ?? {})
+      const context = flattenTree(collectContextSourceLayers(regionTree), w, h)
+      return compositeRoot([...context, ...flats], w, h, state.outputConfig.background)
+    }),
     renderCanvas: () => {
       const { docWidth: w, docHeight: h } = state
       const members = collectMembersInTreeOrder(tree, new Set(vs.members.map(m => m.layerId)))

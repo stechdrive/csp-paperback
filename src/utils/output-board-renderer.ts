@@ -1,6 +1,14 @@
 /** Display-only WebGL2 atlas. Compositing and export keep the original Canvas renderer. */
-export interface BoardSprite { key: string; image?: HTMLCanvasElement; x: number; y: number; width: number; height: number }
-interface Slot { page: Page; index: number; image: HTMLCanvasElement; u: number; v: number; w: number; h: number; used: number }
+import type { PixelBounds } from '../engine/render-resources'
+import { sizePreviewSurface } from './preview-surface'
+export interface BoardSprite { key: string; image?: HTMLCanvasElement; source?: PixelBounds; nearest?: boolean; x: number; y: number; width: number; height: number }
+export function drawBoardSprite(ctx: CanvasRenderingContext2D, sprite: BoardSprite) {
+  if (!sprite.image) return
+  const source = sprite.source ?? { left: 0, top: 0, width: sprite.image.width, height: sprite.image.height }
+  ctx.imageSmoothingEnabled = !sprite.nearest; ctx.imageSmoothingQuality = 'high'
+  ctx.drawImage(sprite.image, source.left, source.top, source.width, source.height, sprite.x, sprite.y, sprite.width, sprite.height)
+}
+interface Slot { page: Page; index: number; image: WeakRef<HTMLCanvasElement>; width: number; height: number; u: number; v: number; used: number }
 interface Page { texture: WebGLTexture; edge: number; cell: number; free: number[]; slots: Set<string> }
 const budget = 32 * 1024 * 1024
 
@@ -65,7 +73,7 @@ export class OutputBoardRenderer {
     // Requests stay below WebGL2's guaranteed texture-size limit.
     if (cell > 2048) return undefined
     const old = this.slots.get(key)
-    if (old?.image === image) { old.used = this.frame; return old }
+    if (old?.image.deref() === image) { old.used = this.frame; return old }
     // Free obsolete large cells before allocating their smaller replacements.
     // This also permits zooming out when old detail pages filled the budget.
     if (old) this.remove(key)
@@ -93,8 +101,9 @@ export class OutputBoardRenderer {
     }
     const index = page.free.pop()!, columns = page.edge / cell, x = index % columns * cell, y = Math.floor(index / columns) * cell
     gl.bindTexture(gl.TEXTURE_2D, page.texture); gl.texSubImage2D(gl.TEXTURE_2D, 0, x, y, gl.RGBA, gl.UNSIGNED_BYTE, image)
-    const slot = { page, index, image, u: (x + .5) / page.edge, v: (y + .5) / page.edge,
-      w: Math.max(0, image.width - 1) / page.edge, h: Math.max(0, image.height - 1) / page.edge, used: this.frame }
+    // The GPU atlas must not keep an evicted CPU canvas alive.
+    const slot = { page, index, image: new WeakRef(image), width: image.width, height: image.height,
+      u: x / page.edge, v: y / page.edge, used: this.frame }
     this.slots.set(key, slot); page.slots.add(key)
     return slot
   }
@@ -102,35 +111,47 @@ export class OutputBoardRenderer {
     this.frame++
     this.fallback.length = 0
     if (this.lost) return false
-    const canvas = this.canvas, w = Math.max(1, Math.round(width * ratio)), h = Math.max(1, Math.round(height * ratio))
-    if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h }
+    const canvas = this.canvas, surface = sizePreviewSurface(canvas, width, height, ratio), w = canvas.width, h = canvas.height
     if (this.ctx) {
-      this.ctx.setTransform(ratio, 0, 0, ratio, 0, 0); this.ctx.clearRect(0, 0, width, height)
-      for (const sprite of sprites) if (sprite.image) this.ctx.drawImage(sprite.image, sprite.x, sprite.y, sprite.width, sprite.height)
+      this.ctx.setTransform(1, 0, 0, 1, 0, 0); this.ctx.clearRect(0, 0, w, h)
+      this.ctx.setTransform(ratio, 0, 0, ratio, -surface.x * ratio, -surface.y * ratio)
+      for (const sprite of sprites) drawBoardSprite(this.ctx, sprite)
       return true
     }
-    const gl = this.gl!, batches = new Map<Page, number[]>(), started = performance.now()
+    const gl = this.gl!, batches = new Map<Page, Map<boolean, number[]>>(), started = performance.now()
     let pending = false
     for (const sprite of sprites) { const slot = this.slots.get(sprite.key); if (slot) slot.used = this.frame }
     for (const sprite of sprites) {
       if (!sprite.image) continue
       let slot = this.slots.get(sprite.key)
-      if (slot?.image !== sprite.image) {
+      if (slot?.image.deref() !== sprite.image) {
         if (performance.now() - started < 4) slot = this.upload(sprite.key, sprite.image) ?? this.slots.get(sprite.key)
         else pending = true
       }
       // Keep every image visible even while transfers are deferred or the atlas is full.
       if (!slot) { this.fallback.push(sprite); continue }
-      const { x, y, width: sw, height: sh } = sprite, { u, v, w: uw, h: vh, page } = slot
-      const vertices = batches.get(page) ?? []
+      const { width: sw, height: sh } = sprite, { page } = slot
+      const x = sprite.x - surface.x, y = sprite.y - surface.y
+      const source = sprite.source ? {
+        left: sprite.source.left * slot.width / sprite.image.width, top: sprite.source.top * slot.height / sprite.image.height,
+        width: sprite.source.width * slot.width / sprite.image.width, height: sprite.source.height * slot.height / sprite.image.height,
+      } : { left: 0, top: 0, width: slot.width, height: slot.height }
+      const inset = sprite.nearest ? 0 : .5
+      const u = slot.u + (source.left + inset) / page.edge, v = slot.v + (source.top + inset) / page.edge
+      const uw = Math.max(0, source.width - 2 * inset) / page.edge, vh = Math.max(0, source.height - 2 * inset) / page.edge
+      const filters = batches.get(page) ?? new Map<boolean, number[]>(), nearest = !!sprite.nearest
+      const vertices = filters.get(nearest) ?? []
       vertices.push(x,y,u,v, x+sw,y,u+uw,v, x,y+sh,u,v+vh, x,y+sh,u,v+vh, x+sw,y,u+uw,v, x+sw,y+sh,u+uw,v+vh)
-      batches.set(page, vertices)
+      filters.set(nearest, vertices); batches.set(page, filters)
     }
     gl.viewport(0, 0, w, h); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT)
-    gl.useProgram(this.program!); gl.uniform2f(this.viewport!, width, height)
+    gl.useProgram(this.program!); gl.uniform2f(this.viewport!, surface.width, surface.height)
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer!)
-    for (const [page, vertices] of batches) {
-      gl.bindTexture(gl.TEXTURE_2D, page.texture); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.DYNAMIC_DRAW); gl.drawArrays(gl.TRIANGLES, 0, vertices.length / 4)
+    for (const [page, filters] of batches) for (const [nearest, vertices] of filters) {
+      gl.bindTexture(gl.TEXTURE_2D, page.texture)
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, nearest ? gl.NEAREST : gl.LINEAR)
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, nearest ? gl.NEAREST : gl.LINEAR)
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.DYNAMIC_DRAW); gl.drawArrays(gl.TRIANGLES, 0, vertices.length / 4)
     }
     if (pending) this.invalidate()
     return !pending

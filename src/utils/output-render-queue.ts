@@ -9,6 +9,7 @@ import { collectRenderMaterials } from '../engine/material-dependencies'
 import { withPreparedMaterials } from '../engine/material-cache'
 import { renderIssues, type RenderIssue } from './render-diagnostics'
 import type { ClipDiagnostic } from './clip/types'
+import { renderOutputOverview } from './output-region-render'
 
 export interface RenderedOutput {
   canvas: HTMLCanvasElement
@@ -21,7 +22,7 @@ export interface RenderedOutput {
 }
 export type RenderSize = 'full' | 'thumbnail' | 'check' | number
 export type RenderResult = { image?: RenderedOutput; error?: string }
-type Draw = (cache: OutputRenderCache, cancelled: () => boolean) => RenderedOutput | Promise<RenderedOutput>
+type Draw = (cache: OutputRenderCache, cancelled: () => boolean, edge: number) => RenderedOutput | Promise<RenderedOutput>
 type Job = { key: string; size: RenderSize; draw: Draw; users: number }
 const priority = (size: RenderSize) => size === 'full' ? 0 : typeof size === 'number' ? (size <= 64 ? 3 : 1) : size === 'thumbnail' ? 2 : 4
 const edge = (size: RenderSize) => size === 'full' ? Infinity : size === 'check' ? 0 : size === 'thumbnail' ? 160 : Number(size)
@@ -116,6 +117,7 @@ export class OutputRenderQueue {
     this.jobs = []; this.cache.clear(); this.pins.clear(); this.contexts.clear(); this.draws.clear()
     const callbacks = new Set([...this.listeners.values()].flatMap(sizes => [...sizes.values()].flatMap(listeners => [...listeners])))
     callbacks.forEach(listener => listener())
+    if (this === outputRenderQueue) outputDetailQueue.clear()
   }
   retry(file: OutputFile) {
     const draw = this.draws.get(file.renderKey)
@@ -163,8 +165,8 @@ export class OutputRenderQueue {
       let source = record.full?.image ?? Object.values(record).map(result => result?.image).find(image => image &&
         Math.max(image.canvas.width, image.canvas.height) >= Math.min(needed, Math.max(image.nativeWidth ?? Infinity, image.nativeHeight ?? Infinity)))
       if (!source) {
-        source = await first.draw(this.contexts, cancelled); temporary = source.canvas; this.renders++
-        source = { ...source, nativeWidth: source.canvas.width, nativeHeight: source.canvas.height }
+        source = await first.draw(this.contexts, cancelled, needed); temporary = source.canvas; this.renders++
+        source = { ...source, nativeWidth: source.nativeWidth ?? source.canvas.width, nativeHeight: source.nativeHeight ?? source.canvas.height }
       }
       if (cancelled()) return
       for (const job of jobs) {
@@ -200,6 +202,8 @@ export class OutputRenderQueue {
 }
 
 export const outputRenderQueue = new OutputRenderQueue()
+// Detail can finish between overview chunks; both still serialize source-material ownership.
+export const outputDetailQueue = new OutputRenderQueue(64 * 1024 * 1024, 128)
 
 export function renderOutputFile(file: OutputFile, table: ProjectSettings['processTable'], border: boolean, cache?: OutputRenderCache): RenderedOutput {
   return renderWithContextCache(cache, contexts => {
@@ -213,7 +217,10 @@ export function renderOutputFile(file: OutputFile, table: ProjectSettings['proce
 }
 
 export function renderOutputFileAsync(file: OutputFile, table: ProjectSettings['processTable'], border: boolean,
-  cache?: OutputRenderCache, diagnostics: ClipDiagnostic[] = [], cancelled?: () => boolean): Promise<RenderedOutput> {
+  cache?: OutputRenderCache, diagnostics: ClipDiagnostic[] = [], cancelled?: () => boolean, edge = Infinity): Promise<RenderedOutput> {
+  if (file.preview && Number.isFinite(edge) && file.preview.width * file.preview.height > 4 * 1024 * 1024) {
+    return renderOutputOverview(file, edge, table, border, diagnostics, cancelled ?? (() => false))
+  }
   const layers = collectRenderMaterials(() => file.renderCanvas(new Map()))
   return withPreparedMaterials(layers, () => {
     const image = renderOutputFile(file, table, border, cache)

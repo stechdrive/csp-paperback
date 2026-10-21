@@ -119,9 +119,9 @@ export function OutputPreview({ entries, zoomPan }: OutputPreviewProps) {
   const activeLabel = useAppStore(s => s.activeOutputLabel)
   const files = useAppStore(selectOutputFiles), drafts = useAppStore(selectDraftOutputs)
   const file = [...files, ...drafts].find(file => file.outputId === activeId)
-  const error = file ? outputRenderQueue.get(file, 'full')?.error : undefined
+  const error = file ? outputRenderQueue.get(file, 1024)?.error : undefined
   const transparent = outputConfig.format === 'png' && outputConfig.background === 'transparent'
-  const { containerRef, contentStyle, containerStyle } = zoomPan
+  const { containerRef, containerStyle } = zoomPan
 
   const isEmpty = !activeId && entries.length === 0
   const hasNoEntries = !isEmpty && entries.length === 0
@@ -161,15 +161,8 @@ export function OutputPreview({ entries, zoomPan }: OutputPreviewProps) {
             {error ?? (file ? '合成中…' : '現在の表示・書き出し設定では出力されません。レイヤーの表示状態・工程チェック、または素材の削除を確認してください。')}
           </div>
         )}
-        {entries.length > 0 && (
-          <div style={contentStyle}>
-            <div className={styles.list}>
-              {entries.map((e, i) => (
-                <OutputPreviewImage key={`${e.flatName}-${i}`} entry={e} transparent={transparent} />
-              ))}
-            </div>
-          </div>
-        )}
+        {entries.length > 0 && file && <OutputPreviewImage entry={entries[0]} file={file} transparent={transparent}
+          camera={zoomPan.camera} pixelRatio={zoomPan.pixelRatio} />}
       </div>
       {entries.length > 0 && <PreviewZoomControls {...zoomPan} />}
       <LayerSeekBar />
