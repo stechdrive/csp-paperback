@@ -77,7 +77,9 @@ A                       アニメーションフォルダ
 
 JPEG／PNG画像を、ZIPまたはフォルダへ保存できます。PNGは透明背景にも対応しています。
 
-今回書き出さない画像は、一覧やタイルの出力切替ボタン、または各ペイン右上の≡メニューの「選択を出力から外す」でOFFにできます。OFFの画像には×が付き、「出力に戻す」と消えます。名前・工程サフィックス・見た目を変更してもOFFを保ち、元のレイヤー表示や書き出し設定は変えません。タイルでもCtrl／Shiftで複数選択でき、Shift＋ドラッグで範囲追加、Ctrl＋ドラッグで反転、Ctrl＋Shift＋ドラッグで範囲解除できます（MacはCtrlの代わりにCommand）。空白クリックやEsc、≡メニューの「選択を解除」で未選択に戻せます。
+今回書き出さない画像は、出力一覧の左端やタイルのファイル名横にある出力除外アイコンでOFFにできます。アイコンは通常時もグレーで表示され、除外中は色と背景・枠で強調されます。選択中の画像のアイコンを押すと選択した出力をまとめて切り替え、押したままなぞると通過した画像を同じ状態にそろえます。除外中のアイコンを押せば出力に戻り、なぞり操作も1回のUndoで戻せます。各ペイン右上の≡メニューからも除外・復帰できます。名前・工程サフィックス・見た目を変更してもOFFを保ち、元のレイヤー表示や書き出し設定は変えません。
+
+一覧やタイルはCtrl／Shiftで複数選択でき、タイルではShift＋ドラッグで範囲追加、Ctrl＋ドラッグで反転、Ctrl＋Shift＋ドラッグで範囲解除できます（MacはCtrlの代わりにCommand）。空白クリックやEsc、≡メニューの「選択を解除」で未選択に戻せます。
 
 工程名はスタジオや作品によって異なります。初回は「工程フォルダリスト」の登録内容を確認し、使っているフォルダ名と出力ファイル名に付ける文字を設定してください。例えば「演出」に `_e`、「作監」に `_s` を対応させます。設定は保存でき、JSONファイルでスタッフや別の端末へ共有できます。
 
@@ -188,7 +190,9 @@ Virtual cels combine loaded cels, layouts, and other materials into additional o
 
 Save JPEG or PNG images as a ZIP archive or to a folder. PNG supports transparent backgrounds.
 
-Use the × beside an image or the pane menu to turn off individual outputs. They remain visible for review, and stay off when filenames, stage suffixes or appearance change. Restore them explicitly or use Undo; opening a new document clears these choices. Tiles support Ctrl/Cmd-click to toggle selection and Shift-click for a range. Shift-drag adds a rectangle, Ctrl/Cmd-drag toggles it, and Ctrl/Cmd+Shift-drag removes it. Ordinary dragging pans the board.
+Use the export exclusion icon at the left of each list row or beside a tile's filename to turn off an output. The icon stays visible in gray and gains a colored background and outline when excluded. Clicking an icon in the current selection changes all selected outputs; clicking an unselected image changes only that output. Drag across icons to apply the starting icon's new state to every image crossed. Click an excluded icon to restore output, or undo an entire sweep in one step. The pane menus also offer exclusion and restoration. Images remain visible for review and stay excluded when filenames, stage suffixes or appearance change. Opening a new document clears these choices.
+
+The list and tiles support Ctrl/Cmd-click to toggle selection and Shift-click for a range. On the board, Shift-drag adds a rectangle, Ctrl/Cmd-drag toggles it, and Ctrl/Cmd+Shift-drag removes it. Ordinary dragging pans the board.
 
 Stage names vary between studios and productions. On first use, check the stage folder list and set the folder names you use and the text to add to exported filenames. For example, map `演出` to `_e` and `作監` to `_s`. Save your settings and share them with other staff or devices as a JSON file.
 

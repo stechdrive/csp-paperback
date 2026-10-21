@@ -18,6 +18,7 @@ import { outputRenderQueue } from '../utils/output-render-queue'
 import { useVisibleOutputs, normalizeOutputSearch as normalize } from '../hooks/useVisibleOutputs'
 import { PaneIcon } from './PaneIcon'
 import { OutputGateActions } from './OutputGateActions'
+import { mountOutputGateGesture } from '../utils/output-gate-gesture'
 
 
 const OutputThumbnail = memo(function OutputThumbnail({ file, active }: { file: OutputFile; active: boolean }) {
@@ -72,7 +73,14 @@ export function OutputFileList({ active = true, onShowTree, onPreview }: { activ
   const draftIds = useMemo(() => new Set(drafts.map(file => file.outputId)), [drafts])
   const exportIds = new Set(files.filter(file => selectedIds.has(file.outputId) && !excluded.has(file.gateId)).map(file => file.outputId))
   const excludedCount = files.filter(file => excluded.has(file.gateId)).length
+  const selectedCount = files.filter(file => selectedIds.has(file.outputId)).length
   const hiddenSelected = [...selectedIds].filter(id => !visibleIds.has(id)).length
+
+  useEffect(() => {
+    if (!list.current || !active) return
+    const gesture = mountOutputGateGesture(list.current, files)
+    return () => gesture.dispose()
+  }, [active, files, visible])
 
   const select = useCallback((file: OutputFile, toggle = false, range = false) => {
     useAppStore.getState().selectOutputFile(file.outputId, { toggle, range, orderedIds: visible.map(file => file.outputId) })
@@ -155,26 +163,29 @@ export function OutputFileList({ active = true, onShowTree, onPreview }: { activ
         }
       }}>
       {!!visible.length && <div className={styles.virtualRows} style={{ height: virtual.height }}>
-      {virtual.indices.map(index => { const file = visible[index]; return <div key={file.outputId} className={styles.virtualRow} data-virtual-row={index} style={{ top: virtual.offsets[index] }}>
+      {virtual.indices.map(index => {
+        const file = visible[index], off = excluded.has(file.gateId)
+        const action = off ? '出力に戻す' : '出力から外す'
+        const description = selectedIds.has(file.outputId) && selectedCount > 1 ? `選択した${selectedCount}件を${action}` : action
+        return <div key={file.outputId} className={styles.virtualRow} data-virtual-row={index} style={{ top: virtual.offsets[index] }}>
         {draftIds.has(file.outputId) && !draftIds.has(visible[index - 1]?.outputId) && <div className={styles.draftHeading}>未配置の仮想セル · 書き出し対象外</div>}
         <div id={`${id}-${index}`} role="option" aria-label={file.relativePath} aria-selected={selectedIds.has(file.outputId)} aria-posinset={index + 1} aria-setsize={visible.length} className={styles.fileRow}
           data-output-id={file.outputId} data-output-source-id={file.sourceLayerId} data-active-output={file.outputId === activeId}
           data-output-off={excluded.has(file.gateId)} aria-description={excluded.has(file.gateId) ? '出力OFF' : undefined}
           onClick={event => { list.current?.focus(); select(file, event.ctrlKey || event.metaKey, event.shiftKey) }}
           onContextMenu={event => { event.preventDefault(); openMenu(file, event.clientX, event.clientY) }}>
-          <OutputThumbnail file={file} active={active} /><span data-output-name>{file.relativePath}</span>
-          <span className={styles.outputActions}>
+          <span className={styles.outputGateSlot}>
+            {!draftIds.has(file.outputId) && <Tooltip content={description}><button type="button" className={styles.outputGate}
+              data-output-gate={file.outputId} aria-label={`${file.relativePath}を${action}`} aria-description={description}
+              aria-pressed={off} onDoubleClick={event => event.stopPropagation()}><OutputGateIcon /></button></Tooltip>}
+          </span>
+          <span className={styles.outputThumbnailSlot}>
+            <OutputThumbnail file={file} active={active} />
             <span className={styles.outputWarning}>{!draftIds.has(file.outputId) && <DiagnosticWarning issues={checkById.get(file.outputId)?.image?.diagnostics}
               error={checkById.get(file.outputId)?.error} onRetry={checkById.get(file.outputId)?.error ? () => outputRenderQueue.retry(file) : undefined} />}
             </span>
-            {!draftIds.has(file.outputId) && <Tooltip content={excluded.has(file.gateId) ? '出力に戻す' : '出力から外す'}><button type="button" className={styles.outputGate}
-              aria-label={`${file.relativePath}を${excluded.has(file.gateId) ? '出力に戻す' : '出力から外す'}`}
-              aria-pressed={excluded.has(file.gateId)}
-              onDoubleClick={event => event.stopPropagation()} onClick={event => {
-                event.stopPropagation(); const state = useAppStore.getState()
-                state.setOutputsEnabled(new Set([file.outputId]), state.outputExclusions.has(file.gateId))
-              }}><OutputGateIcon /></button></Tooltip>}
           </span>
+          <span data-output-name>{file.relativePath}</span>
         </div>
       </div> })}</div>}
       {!visible.length && <div className={styles.empty}>{query ? '一致するファイルはありません' : '現在の設定で出力されるファイルはありません'}</div>}

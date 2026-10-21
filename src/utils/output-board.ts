@@ -1,5 +1,5 @@
 import { useAppStore } from '../store'
-import { selectDraftOutputs } from '../store/selectors'
+import { selectDraftOutputs, selectOutputFiles } from '../store/selectors'
 import type { OutputFile } from './output-plan'
 import { outputRenderQueue as queue, renderOutputFileAsync } from './output-render-queue'
 import { boardHit, boardLayout, boardRect, boardRange, boardResolution, boardVisible, fitBoard, zoomBoard, type BoardCamera, type BoardLayout } from './preview-grid'
@@ -9,6 +9,8 @@ import { OutputDetail } from './output-detail'
 import { sizePreviewSurface } from './preview-surface'
 import { isTouchCompatibilityClick, switchOutputViewByTouch } from './output-view'
 import { formatZoom } from './preview-zoom'
+import { mountOutputGateGesture, type OutputGateRect } from './output-gate-gesture'
+import { OUTPUT_GATE_ICON_PATH } from './output-gate-icon'
 
 export interface BoardView { key: string; document: unknown; layout: BoardLayout; camera: BoardCamera }
 type Request = { edge: number; release: () => void; unsubscribe: () => void }
@@ -16,7 +18,7 @@ type Request = { edge: number; release: () => void; unsubscribe: () => void }
 /** Owns gestures and GPU resources outside React's render cycle. */
 export function mountOutputBoard(element: HTMLDivElement, background: HTMLCanvasElement, canvas: HTMLCanvasElement,
   files: OutputFile[], view: { current: BoardView | null }, transparent: boolean,
-  onMenu: (x: number, y: number) => void = () => {}) {
+  onMenu: (x: number, y: number) => void = () => {}, onGateAction: (action: string) => void = () => {}) {
   const state = useAppStore.getState(), aspect = state.docWidth / Math.max(1, state.docHeight)
   const document = state.clipDocument ?? state.rawPsd ?? state.layerTree
   const draftIds = new Set(selectDraftOutputs(state).map(file => file.outputId))
@@ -36,10 +38,29 @@ export function mountOutputBoard(element: HTMLDivElement, background: HTMLCanvas
   const pattern = ctx.createPattern(patternCanvas, 'repeat')!
   const css = getComputedStyle(element), textColor = css.getPropertyValue('--color-text-secondary').trim() || '#aaa'
   const accent = css.getPropertyValue('--color-accent').trim() || '#9a90ff'
+  const gateColor = css.getPropertyValue('--color-text-dim').trim() || textColor
+  const gateBackground = `rgba(${css.getPropertyValue('--color-accent-rgb').trim() || '99, 102, 241'}, .16)`
+  const gateIcon = new Path2D(OUTPUT_GATE_ICON_PATH)
   const orderedIds = files.map(file => file.outputId)
   const marqueeElement = element.querySelector<HTMLElement>('[data-board-marquee]')!
   const gateButton = element.querySelector<HTMLButtonElement>('[data-board-gate]')!
   let hover = -1, gateIndex = -1
+  let gateAction = ''
+  function gateRect(index: number) {
+    if (index < 0 || draftIds.has(files[index]?.outputId)) return null
+    const rect = boardRect(layout, index)
+    const x = camera.x + (rect.x + rect.width) * camera.zoom - 22
+    const y = camera.y + (rect.y + rect.height) * camera.zoom + 2
+    return rect.width * camera.zoom >= 60 && camera.zoom * 28 >= 20 && x >= 0 && x + 22 <= width && y >= 0 && y + 22 <= height
+      ? { x, y } : null
+  }
+  const gateGesture = mountOutputGateGesture(element, files, (): OutputGateRect[] => {
+    const viewport = element.getBoundingClientRect()
+    return boardVisible(layout, camera, { width, height }).flatMap(index => {
+      const rect = gateRect(index)
+      return rect ? [{ id: files[index].outputId, left: viewport.left + rect.x, top: viewport.top + rect.y, width: 22, height: 22 }] : []
+    })
+  })
   let marquee: { start: { x: number; y: number }; end: { x: number; y: number }; initial: ReadonlySet<string>; mode: RangeSelectionMode } | undefined
   const rangeSelection = () => marquee && combineOutputSelection(marquee.initial, boardRange(layout, camera, marquee.start, marquee.end).map(index => files[index].outputId), marquee.mode)
   function invalidate() { if (!frame && !disposed) frame = requestAnimationFrame(draw) }
@@ -78,7 +99,17 @@ export function mountOutputBoard(element: HTMLDivElement, background: HTMLCanvas
         const draft = draftIds.has(file.outputId)
         ctx.fillText((draft ? '未配置 · ' : '') + (current.outputConfig.structure === 'hierarchy' ? file.names.path || file.names.flatName : file.names.flatName), x, y + h + 4)
         ctx.restore()
-        if (off) { ctx.fillStyle = textColor; ctx.fillText('×', x + w - 17, y + h + 4) }
+        const gate = gateRect(visible[i])
+        if (gate) {
+          ctx.save(); ctx.translate(gate.x, gate.y)
+          if (off) {
+            ctx.beginPath(); ctx.roundRect(.5, .5, 21, 21, 3)
+            ctx.fillStyle = gateBackground; ctx.fill(); ctx.strokeStyle = accent; ctx.lineWidth = 1; ctx.stroke()
+          }
+          ctx.translate(3, 3); ctx.scale(16 / 24, 16 / 24)
+          ctx.strokeStyle = off ? accent : gateColor; ctx.lineWidth = 1.7; ctx.lineCap = ctx.lineJoin = 'round'
+          ctx.stroke(gateIcon); ctx.restore()
+        }
       }
       if (queue.get(file, edge)?.error && w > 50) { ctx.fillStyle = '#b33'; ctx.fillText('⚠ 合成を再試行', x + 6, y + 6) }
     }
@@ -93,15 +124,20 @@ export function mountOutputBoard(element: HTMLDivElement, background: HTMLCanvas
     const active = files.findIndex(file => file.outputId === current.activeOutputId)
     gateIndex = hover >= 0 ? hover : element.contains(window.document.activeElement) ? active : -1
     if (gateButton) {
-      const rect = gateIndex >= 0 ? boardRect(layout, gateIndex) : null
-      const x = rect ? camera.x + (rect.x + rect.width) * camera.zoom - 22 : -1
-      const y = rect ? camera.y + (rect.y + rect.height) * camera.zoom + 2 : -1
-      gateButton.hidden = !rect || draftIds.has(files[gateIndex]?.outputId) || !!pointers.size || rect.width * camera.zoom < 60 || camera.zoom * 28 < 20 || x < 0 || x + 22 > width || y < 0 || y + 22 > height
-      if (!gateButton.hidden) {
-        gateButton.style.left = `${x}px`; gateButton.style.top = `${y}px`
-        const off = current.outputExclusions.has(files[gateIndex].gateId)
+      const rect = gateRect(gateIndex)
+      gateButton.hidden = !rect || !!pointers.size
+      if (!gateButton.hidden && rect) {
+        gateButton.style.left = `${rect.x}px`; gateButton.style.top = `${rect.y}px`
+        const file = files[gateIndex], off = current.outputExclusions.has(file.gateId)
+        const action = off ? '出力に戻す' : '出力から外す'
+        const count = current.selectedOutputIds.has(file.outputId)
+          ? selectOutputFiles(current).filter(file => current.selectedOutputIds.has(file.outputId)).length : 1
+        const description = count > 1 ? `選択した${count}件を${action}` : action
+        gateButton.dataset.outputGate = file.outputId
         gateButton.setAttribute('aria-pressed', String(off))
-        gateButton.setAttribute('aria-label', `${files[gateIndex].relativePath}を${off ? '出力に戻す' : '出力から外す'}`)
+        gateButton.setAttribute('aria-label', `${file.relativePath}を${action}`)
+        gateButton.setAttribute('aria-description', description)
+        if (gateAction !== description) { gateAction = description; onGateAction(description) }
       }
     }
     element.dataset.selectedCount = String(selected.size)
@@ -187,7 +223,7 @@ export function mountOutputBoard(element: HTMLDivElement, background: HTMLCanvas
     detail.retry(files[index])
   }
   const down = (event: PointerEvent) => {
-    if (event.button !== 0 || (event.target as HTMLElement).closest('button')) return
+    if (event.defaultPrevented || event.button !== 0 || (event.target as HTMLElement).closest('button')) return
     if (event.pointerType === 'touch') event.preventDefault()
     element.focus({ preventScroll: true }); element.setPointerCapture(event.pointerId); interact()
     const point = local(event)
@@ -203,11 +239,16 @@ export function mountOutputBoard(element: HTMLDivElement, background: HTMLCanvas
     if (pointers.size > 1) { multi = true; moved = true; marquee = undefined }
   }
   const pointerMove = (event: PointerEvent) => {
+    if (event.defaultPrevented) return
     const prior = pointers.get(event.pointerId)
     if (!prior) {
       if (!(event.target as HTMLElement).closest('button')) {
         const point = local(event)
         let index = boardHit(layout, camera, point.x, point.y)
+        if (index < 0) index = boardVisible(layout, camera, { width, height }).find(index => {
+          const gate = gateRect(index)
+          return gate && point.x >= gate.x && point.x <= gate.x + 22 && point.y >= gate.y && point.y <= gate.y + 22
+        }) ?? -1
         if (index < 0 && hover >= 0) {
           const rect = boardRect(layout, hover), x = camera.x + rect.x * camera.zoom, y = camera.y + (rect.y + rect.height) * camera.zoom
           // Keep the action reachable across the small gap below its image.
@@ -281,10 +322,6 @@ export function mountOutputBoard(element: HTMLDivElement, background: HTMLCanvas
     if (index >= 0 && !useAppStore.getState().selectedOutputIds.has(files[index].outputId)) select(index)
     onMenu(event.clientX, event.clientY)
   }
-  const toggleGate = () => {
-    const file = files[gateIndex]
-    if (file && !draftIds.has(file.outputId)) useAppStore.getState().setOutputsEnabled(new Set([file.outputId]), useAppStore.getState().outputExclusions.has(file.gateId))
-  }
   const keyboard = (event: KeyboardEvent) => {
     if (event.target !== element || event.isComposing) return
     const current = files.findIndex(file => file.outputId === useAppStore.getState().activeOutputId)
@@ -328,7 +365,7 @@ export function mountOutputBoard(element: HTMLDivElement, background: HTMLCanvas
   window.addEventListener('resize', resizeViewport)
   window.addEventListener('blur', cancel)
   element.addEventListener('contextmenu', contextMenu); element.addEventListener('pointerleave', leave)
-  gateButton?.addEventListener('click', toggleGate)
+  element.addEventListener('focusin', invalidate)
   element.addEventListener('wheel', wheel, { passive: false })
   element.addEventListener('pointerdown', down); element.addEventListener('pointermove', pointerMove)
   element.addEventListener('pointerup', up); element.addEventListener('pointercancel', up)
@@ -336,7 +373,7 @@ export function mountOutputBoard(element: HTMLDivElement, background: HTMLCanvas
   element.addEventListener('dblclick', doubleClick); element.addEventListener('keydown', keyboard)
   requestImages()
   return { fit, actualSize, dispose() {
-    disposed = true; save(); cancelAnimationFrame(frame); clearTimeout(idle); resize.disconnect(); unsubscribe()
+    disposed = true; save(); cancelAnimationFrame(frame); clearTimeout(idle); resize.disconnect(); unsubscribe(); gateGesture.dispose()
     detail.dispose(); for (const map of [requests, previous]) for (const request of map.values()) release(request)
     renderer.dispose(); background.width = background.height = 1; patternCanvas.width = patternCanvas.height = 1
     element.removeEventListener('wheel', wheel); element.removeEventListener('pointerdown', down); element.removeEventListener('pointermove', pointerMove)
@@ -346,6 +383,6 @@ export function mountOutputBoard(element: HTMLDivElement, background: HTMLCanvas
     window.removeEventListener('resize', resizeViewport)
     window.removeEventListener('blur', cancel)
     element.removeEventListener('contextmenu', contextMenu); element.removeEventListener('pointerleave', leave)
-    gateButton?.removeEventListener('click', toggleGate)
+    element.removeEventListener('focusin', invalidate)
   } }
 }

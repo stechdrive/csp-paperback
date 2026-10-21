@@ -18,6 +18,7 @@ export function TiledOutputPreview({ view, menuTarget }: { view: RefObject<Board
   const selectedCount = useAppStore(s => s.selectedOutputIds.size)
   const activeSelected = useAppStore(s => !!s.activeOutputId && s.selectedOutputIds.has(s.activeOutputId))
   const [selectionMode, setSelectionMode] = useState(false)
+  const [gateAction, setGateAction] = useState('出力から外す')
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null)
   const menuRef = useRef<HTMLDivElement>(null), menuButton = useRef<HTMLButtonElement>(null)
   const menuInvoker = useRef<HTMLElement | null>(null)
@@ -35,7 +36,7 @@ export function TiledOutputPreview({ view, menuTarget }: { view: RefObject<Board
       menuInvoker.current = viewport.current
       cancelAnimationFrame(menuFrame.current)
       menuFrame.current = requestAnimationFrame(() => setMenu({ x: Math.max(4, Math.min(x, window.innerWidth - 230)), y: Math.max(4, Math.min(y, window.innerHeight - 250)) }))
-    })
+    }, setGateAction)
     controller.current = board
     return () => { board.dispose(); controller.current = null; cancelAnimationFrame(menuFrame.current) }
   }, [files, view, transparent])
@@ -45,7 +46,7 @@ export function TiledOutputPreview({ view, menuTarget }: { view: RefObject<Board
     <canvas ref={background} className={styles.boardCanvas} aria-hidden="true" />
     <canvas ref={canvas} className={styles.boardCanvas} aria-hidden="true" />
     <div data-board-marquee className={styles.boardMarquee} hidden />
-    <Tooltip content="この画像を出力から外す／出力に戻す"><button type="button" data-board-gate className={styles.boardGate} hidden><OutputGateIcon /></button></Tooltip>
+    <Tooltip content={gateAction}><button type="button" data-board-gate className={styles.boardGate} hidden><OutputGateIcon /></button></Tooltip>
     <span className={styles.srOnly} role="option" aria-selected={activeSelected}>{activeLabel || '未選択'}</span>
     {!files.length && <div className={styles.boardEmpty}>表示する出力がありません</div>}
     <div className={styles.boardTools}>
