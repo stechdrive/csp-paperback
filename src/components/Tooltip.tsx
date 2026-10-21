@@ -72,6 +72,24 @@ export function Tooltip({ content, children, delay = 300, placement = 'top', avo
   useDismissableLayer({ open: isTooltipVisible, content: tooltipRef, trigger: anchorRef, tooltip: true,
     closeOnScroll: true, closeOnResize: true, onDismiss: close })
 
+  // Keep descriptions readable under the pointer without intercepting adjacent controls.
+  // Pointer events pass through ordinary tips, so track their visible bounds directly.
+  useEffect(() => {
+    if (!isTooltipVisible || !portal?.hoverable || toggleOnClick) return
+    const move = (event: PointerEvent) => {
+      if (event.pointerType === 'touch' || event.buttons) return
+      const inside = [anchorRef.current, tooltipRef.current].some(element => {
+        const rect = element?.getBoundingClientRect()
+        return rect && event.clientX >= rect.left && event.clientX <= rect.right
+          && event.clientY >= rect.top && event.clientY <= rect.bottom
+      })
+      clearTimeout(timer.current)
+      if (!inside) timer.current = window.setTimeout(close, 100)
+    }
+    document.addEventListener('pointermove', move)
+    return () => document.removeEventListener('pointermove', move)
+  }, [isTooltipVisible, portal?.hoverable, toggleOnClick, close])
+
   // 実寸で配置する。画面端で反転するときも出力例を避ける。
   useLayoutEffect(() => {
     const tip = tooltipRef.current
@@ -143,9 +161,9 @@ export function Tooltip({ content, children, delay = 300, placement = 'top', avo
           ref={tooltipRef}
           role="tooltip"
           className={styles.tooltip}
-          // Restoring keyboard focus after Escape must not block a different
-          // control under the description. Pointer-opened tips stay hoverable.
-          style={{ visibility: 'hidden', pointerEvents: portal.hoverable ? 'auto' : 'none' }}
+          // Only explicitly opened descriptions capture input. Plain hover/focus
+          // tips must never make a nearby layer button unclickable.
+          style={{ visibility: 'hidden', pointerEvents: toggleOnClick && portal.hoverable ? 'auto' : 'none' }}
           onMouseEnter={() => clearTimeout(timer.current)} onMouseLeave={handleLeave}
         >
           {content}

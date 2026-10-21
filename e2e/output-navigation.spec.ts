@@ -426,6 +426,14 @@ test('素材選択では出力とフレームを変えず、表示状態変更�
   await visibility(bodyInk).click()
   await expect(previewNames(page)).toHaveText(['B_1_s.jpg'])
   await expect.poll(() => previewPixelHash(page)).toBe(visiblePixels)
+  // Let the adjacent row's tooltip open; slow rendering exposed this overlap in CI.
+  await page.mouse.move(1, 1)
+  await visibility(bodyInk).hover()
+  await expect(page.getByRole('tooltip')).toHaveText('レイヤーを表示する')
+  const tip = (await page.getByRole('tooltip').boundingBox())!
+  await page.mouse.move(tip.x + tip.width / 2, tip.y + tip.height / 2)
+  await page.waitForTimeout(150) // longer than the tooltip's pointer-leave grace period
+  await expect(page.getByRole('tooltip')).toHaveText('レイヤーを表示する')
   await visibility(processInk).click()
   await expect(previewNames(page)).toHaveText(['B_1_s.jpg'])
   await expect.poll(() => previewPixelHash(page)).not.toBe(visiblePixels)
