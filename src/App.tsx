@@ -16,12 +16,12 @@ function NormalApp() {
   const { isLoading, error, notification, loadFiles } = useFileLoader()
   const { canUndo, canRedo, undo, redo } = useUndoRedo()
   const document = useAppStore(s => s.clipDocument ?? s.rawPsd)
-  const [preview, setPreview] = useState({ document, mode: 'navigator' as 'output' | 'navigator' })
+  const [preview, setPreview] = useState({ document, mode: 'output' as 'output' | 'navigator' })
   const isExporting = useExportJob(s => s.isExporting)
   const [virtualPanelOpen, setVirtualPanelOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<'virtual' | 'preview' | 'layer'>('preview')
   if (preview.document !== document) {
-    setPreview({ document, mode: 'navigator' })
+    setPreview({ document, mode: 'output' })
     setActiveTab('preview')
   }
   const changePreviewMode = (mode: 'output' | 'navigator') => {

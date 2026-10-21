@@ -16,13 +16,17 @@ export interface RenderedOutput {
   vectorWarning: boolean
   unsupported3D: boolean
   diagnostics?: RenderIssue[]
+  nativeWidth?: number
+  nativeHeight?: number
 }
-export type RenderSize = 'full' | 'comparison' | 'thumbnail' | 'check'
+export type RenderSize = 'full' | 'thumbnail' | 'check' | number
 export type RenderResult = { image?: RenderedOutput; error?: string }
 type Draw = (cache: OutputRenderCache, cancelled: () => boolean) => RenderedOutput | Promise<RenderedOutput>
 type Job = { key: string; size: RenderSize; draw: Draw; users: number }
-const priority = { full: 0, comparison: 1, thumbnail: 2, check: 3 }
+const priority = (size: RenderSize) => size === 'full' ? 0 : typeof size === 'number' ? (size <= 64 ? 3 : 1) : size === 'thumbnail' ? 2 : 4
+const edge = (size: RenderSize) => size === 'full' ? Infinity : size === 'check' ? 0 : size === 'thumbnail' ? 160 : Number(size)
 const cost = (result?: RenderResult) => result?.image ? result.image.canvas.width * result.image.canvas.height * 4 : 0
+const sizesOf = (sizes: Partial<Record<RenderSize, RenderResult>>) => Object.keys(sizes).map(size => /^\d+$/.test(size) ? Number(size) : size as RenderSize)
 
 /** Only visible consumers pin pixels. Notifications are scoped to each file/resolution. */
 export class OutputRenderQueue {
@@ -59,6 +63,11 @@ export class OutputRenderQueue {
     }
   }
   get(file: OutputFile, size: RenderSize): RenderResult | undefined { return this.cache.get(file.renderKey)?.[size] }
+  best(file: OutputFile, size: number): RenderedOutput | undefined {
+    const images = Object.entries(this.cache.get(file.renderKey) ?? {}).flatMap(([key, result]) => key !== 'check' && result?.image ? [result.image] : [])
+    images.sort((a, b) => Math.max(a.canvas.width, a.canvas.height) - Math.max(b.canvas.width, b.canvas.height))
+    return images.find(image => Math.max(image.canvas.width, image.canvas.height) >= size) ?? images.at(-1)
+  }
   getStats() {
     return { bytes: [...this.cache.values()].reduce((total, sizes) => total + Object.values(sizes).reduce((n, result) => n + cost(result), 0), 0),
       entries: this.cache.size, pending: this.jobs.length, renders: this.renders,
@@ -124,22 +133,22 @@ export class OutputRenderQueue {
   }
   private trim() {
     let bytes = 0, retained = 0
-    for (const [file, sizes] of this.cache) for (const size of Object.keys(sizes) as RenderSize[]) {
+    for (const [file, sizes] of this.cache) for (const size of sizesOf(sizes)) {
       if (this.pins.get(file)?.has(size)) bytes += cost(sizes[size])
     }
     for (const [file, sizes] of [...this.cache].reverse()) {
-      for (const size of Object.keys(sizes).reverse() as RenderSize[]) {
+      for (const size of sizesOf(sizes).reverse()) {
         if (this.pins.get(file)?.has(size)) continue
         const sizeBytes = cost(sizes[size])
-        if (bytes + sizeBytes > this.budget || retained >= this.maxEntries) delete sizes[size]
+        if (bytes + sizeBytes > this.budget || (!this.pins.has(file) && retained >= this.maxEntries)) delete sizes[size]
         else bytes += sizeBytes
       }
       if (!Object.keys(sizes).length) { this.cache.delete(file); this.draws.delete(file) }
-      else retained++
+      else if (!this.pins.has(file)) retained++
     }
   }
   private async runNext() {
-    this.jobs.sort((a, b) => priority[a.size] - priority[b.size])
+    this.jobs.sort((a, b) => priority(a.size) - priority(b.size))
     const first = this.jobs[0]
     if (!first) return
     this.running = true
@@ -150,14 +159,19 @@ export class OutputRenderQueue {
     const record = { ...this.cache.get(first.key) }
     let temporary: HTMLCanvasElement | undefined
     try {
-      let source = record.full?.image ?? (first.size !== 'full' ? record.comparison?.image : undefined)
-      if (!source) { source = await first.draw(this.contexts, cancelled); temporary = source.canvas; this.renders++ }
+      const needed = Math.max(...jobs.map(job => edge(job.size)))
+      let source = record.full?.image ?? Object.values(record).map(result => result?.image).find(image => image &&
+        Math.max(image.canvas.width, image.canvas.height) >= Math.min(needed, Math.max(image.nativeWidth ?? Infinity, image.nativeHeight ?? Infinity)))
+      if (!source) {
+        source = await first.draw(this.contexts, cancelled); temporary = source.canvas; this.renders++
+        source = { ...source, nativeWidth: source.canvas.width, nativeHeight: source.canvas.height }
+      }
       if (cancelled()) return
       for (const job of jobs) {
         let image = source
         if (job.size !== 'full') {
           const canvas = document.createElement('canvas')
-          const scale = job.size === 'check' ? 0 : Math.min(1, (job.size === 'thumbnail' ? 160 : 1024) / Math.max(source.canvas.width, source.canvas.height))
+          const scale = Math.min(1, edge(job.size) / Math.max(source.canvas.width, source.canvas.height))
           canvas.width = Math.max(1, Math.round(source.canvas.width * scale))
           canvas.height = Math.max(1, Math.round(source.canvas.height * scale))
           if (job.size !== 'check') canvas.getContext('2d')!.drawImage(source.canvas, 0, 0, canvas.width, canvas.height)

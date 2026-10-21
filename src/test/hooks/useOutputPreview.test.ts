@@ -143,12 +143,12 @@ describe('useOutputPreview', () => {
     expect(result.current).toEqual([])
   })
 
-  it('compares explicit output selections and filters disabled images', async () => {
+  it('keeps a single active preview even with multiple selections', async () => {
     processTree()
     const files = selectOutputFiles(useAppStore.getState()).slice(0, 2)
-    useAppStore.setState({ selectedOutputIds: new Set(files.map(file => file.outputId)), compareOutputs: true })
+    useAppStore.setState({ selectedOutputIds: new Set(files.map(file => file.outputId)), outputViewMode: 'tiles', activeOutputId: files[0].outputId })
     const { result } = renderHook(() => useOutputPreview())
-    await ready(result, 2)
+    await ready(result)
     act(() => useAppStore.setState({ outputConfig: { ...DEFAULT_OUTPUT_CONFIG, excludedProcessSuffixes: ['_e'] } }))
     await ready(result)
     expect(result.current[0].flatName).toBe('A_2.jpg')

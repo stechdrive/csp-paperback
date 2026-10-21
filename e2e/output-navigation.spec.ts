@@ -92,7 +92,7 @@ async function loadSample(page: Page, collapsed = false) {
     await page.route('**/sample/c001.clip', route => route.fulfill({ body, contentType: 'application/octet-stream' }))
   }
   await page.getByRole('button', { name: 'サンプルデータで試す', exact: true }).click()
-  await page.getByRole('button', { name: '出力プレビュー', exact: true }).click()
+  await page.getByRole('button', { name: '１点表示', exact: true }).click()
   await expect(previewNames(page)).toHaveText([sampleOutputs[0]], { timeout: 30000 })
 }
 
@@ -225,6 +225,7 @@ test('出力一覧は実ZIPと一致し、検索・選択・ツリー復帰・�
   await page.keyboard.up('Shift')
   await expect(previewNames(page)).toHaveText(['B_1_s.jpg'])
   await expect(files.getByRole('option', { selected: true })).toHaveText('B_1_s.jpg')
+  if (await page.getByRole('button', { name: '出力ファイル名を検索', exact: true }).isVisible()) await page.getByRole('button', { name: '出力ファイル名を検索', exact: true }).click()
   const search = page.getByRole('searchbox', { name: '出力ファイル名を検索' })
   await search.fill('_1_s')
   await expect(files.getByRole('option')).toHaveText(['B_1_s.jpg'])

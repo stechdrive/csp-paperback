@@ -81,6 +81,7 @@ test('同梱CLIPテンプレートを単独で読み込み、タイムライン�
   await page.goto('./')
   await page.locator('input[type=file][multiple]').setInputFiles('public/templates/csp-paperback-sample-template.clip')
   await expectLoadedFiles(page, ['csp-paperback-sample-template.clip'])
+  await page.getByRole('button', { name: '全体プレビュー', exact: true }).click()
   await expect(page.getByText('0秒1コマ', { exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: '出力', exact: true })).toBeEnabled()
 })

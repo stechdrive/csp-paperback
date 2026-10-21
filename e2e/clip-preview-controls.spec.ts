@@ -45,6 +45,7 @@ for (const device of [
         name: 'c001.clip', mimeType: 'application/octet-stream', buffer: await clipPreviewFixture(),
       })
       await expectLoadedFile(page, 'c001.clip')
+      await page.getByRole('button', { name: '全体プレビュー', exact: true }).click()
       await page.getByRole('button', { name: '書き出し設定', exact: true }).click()
       const sharedCut = page.getByRole('switch', { name: '兼用カット', exact: true })
       await expect(sharedCut).toBeChecked()

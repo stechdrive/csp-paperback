@@ -146,9 +146,11 @@ test('端の接続表示もホイールと仮想セルのドラッグを妨げ�
   await page.keyboard.up('Shift')
   await expect(page.getByTestId('preview-file-name')).toHaveText('A_1.jpg')
 
+  if (await page.getByRole('button', { name: '出力ファイル名を検索', exact: true }).isVisible()) await page.getByRole('button', { name: '出力ファイル名を検索', exact: true }).click()
   await page.getByRole('searchbox').fill('no-such-output')
   await expect(page.getByTestId('output-connections').locator('path')).toHaveCount(0)
   await expect(page.locator('[data-connection-kind]')).toHaveCount(0)
+  if (await page.getByRole('button', { name: '出力ファイル名を検索', exact: true }).isVisible()) await page.getByRole('button', { name: '出力ファイル名を検索', exact: true }).click()
   await page.getByRole('searchbox').fill('')
   await expect.poll(() => page.getByTestId('output-connections').locator('path').count()).toBeGreaterThan(0)
 

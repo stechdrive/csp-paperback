@@ -19,7 +19,7 @@ function positionFor(button: HTMLButtonElement) {
 }
 
 /** Keep names outside the canvas layout, including multi-output cells and long paths. */
-export function OutputPreviewFiles({ entries, structure }: { entries: OutputPreviewEntry[]; structure: 'flat' | 'hierarchy' }) {
+export function OutputPreviewFiles({ entries, structure }: { entries: Omit<OutputPreviewEntry, 'canvas'>[]; structure: 'flat' | 'hierarchy' }) {
   const id = useId()
   const trigger = useRef<HTMLButtonElement>(null)
   const popup = useRef<HTMLDivElement>(null)

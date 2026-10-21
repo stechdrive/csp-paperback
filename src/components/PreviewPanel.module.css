@@ -405,3 +405,6 @@
   color: var(--color-text-primary);
 }
 .previewToolbar button:focus-visible { outline: 2px solid var(--color-accent); }
+.toolbarDivider { height: 16px; width: 1px; background: var(--color-border-subtle); margin: 0 4px; }
+
+@media (max-width: 735px) { .previewToolbar { gap: 2px; padding: 4px; align-items: center; } .previewToolbar button { padding: 4px 8px; font-size: 12px; min-height: 30px; white-space: nowrap; } }

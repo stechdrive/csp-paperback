@@ -19,10 +19,10 @@ export function outputSelectionPatch(state: AppStore, id: string, label: string,
     else ids.add(id)
   }
   return { activeOutputId: id, activeOutputLabel: label, selectedOutputIds: ids,
-    outputSelectionAnchor: options?.range ? state.outputSelectionAnchor : id, compareOutputs: false }
+    outputSelectionAnchor: options?.range ? state.outputSelectionAnchor : id }
 }
 
 export function emptyOutputSelection() {
   return { activeOutputId: null, activeOutputLabel: '', selectedOutputIds: new Set<string>(),
-    outputSelectionAnchor: null, compareOutputs: false, quickLookTarget: null }
+    outputSelectionAnchor: null, outputViewMode: 'tiles' as const, outputSearch: '', quickLookTarget: null }
 }

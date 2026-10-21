@@ -6,7 +6,7 @@ import { useZoomPan } from '../hooks/useZoomPan'
 import { useOutputNavigation } from '../hooks/useOutputNavigation'
 import type { OutputPreviewEntry } from '../hooks/useOutputPreview'
 import { OutputPreviewImage } from './OutputPreviewImage'
-import { TiledOutputPreview } from './TiledOutputPreview'
+import { isTouchCompatibilityClick, switchOutputViewByTouch } from '../utils/output-view'
 import styles from './OutputPreview.module.css'
 
 /** モバイル用縦シークバー — レイヤーツリーのShift+スクロールと同等の操作 */
@@ -111,8 +111,9 @@ interface OutputPreviewProps {
 }
 
 export function OutputPreview({ entries, zoomPan }: OutputPreviewProps) {
+  const touchStart = useRef<{ x: number; y: number; time: number } | null>(null)
+  const lastTap = useRef(0)
   const outputConfig = useAppStore(s => s.outputConfig)
-  const tiled = useAppStore(s => s.compareOutputs)
   const activeId = useAppStore(s => s.activeOutputId)
   const activeLabel = useAppStore(s => s.activeOutputLabel)
   const files = useAppStore(selectOutputFiles), drafts = useAppStore(selectDraftOutputs)
@@ -124,8 +125,6 @@ export function OutputPreview({ entries, zoomPan }: OutputPreviewProps) {
   const isEmpty = !activeId && entries.length === 0
   const hasNoEntries = !isEmpty && entries.length === 0
 
-  if (tiled) return <TiledOutputPreview entries={entries} transparent={transparent} />
-
   return (
     <div className={styles.outputWrapper}>
       <div
@@ -133,6 +132,23 @@ export function OutputPreview({ entries, zoomPan }: OutputPreviewProps) {
         className={styles.zoomPanOuter}
         style={entries.length > 0 ? containerStyle : undefined}
         onMouseDown={entries.length > 0 ? onMouseDown : undefined}
+        onDoubleClick={() => { if (!isTouchCompatibilityClick()) useAppStore.getState().setOutputViewMode('tiles') }}
+        tabIndex={0}
+        aria-label="１点表示の画像"
+        onKeyDown={event => { if (event.key === 'Enter' && event.target === event.currentTarget) useAppStore.getState().setOutputViewMode('tiles') }}
+        onTouchStart={event => { touchStart.current = event.touches.length === 1 ? { x: event.touches[0].clientX, y: event.touches[0].clientY, time: performance.now() } : null }}
+        onTouchMove={event => {
+          const start = touchStart.current
+          if (event.touches.length !== 1 || (start && Math.hypot(event.touches[0].clientX - start.x, event.touches[0].clientY - start.y) > 8)) touchStart.current = null
+        }}
+        onTouchEnd={() => {
+          const now = performance.now()
+          if (touchStart.current && now - touchStart.current.time < 250) {
+            if (now - lastTap.current < 350) switchOutputViewByTouch('tiles')
+            lastTap.current = now
+          }
+          touchStart.current = null
+        }}
       >
         {isEmpty && (
           <div className={styles.empty}>

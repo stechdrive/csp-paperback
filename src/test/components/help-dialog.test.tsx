@@ -90,7 +90,7 @@ describe('HelpDialog information architecture', () => {
     expect(text).not.toContain('メンバー')
     expect(text).not.toContain('困ったとき')
     expect(document.querySelector('[data-help-highlight="全体プレビュー"]')).toBeInTheDocument()
-    expect(text).toContain('並べて表示')
+    expect(text).toContain('タイル表示')
     expect(text).toContain('書き出し中は画面下部に進捗')
   })
 

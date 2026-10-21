@@ -88,6 +88,7 @@ describe('LayerTreePanel output navigation', () => {
     expect(useAppStore.getState().selectedOutputSourceId).toBe(process.id)
     fireEvent.wheel(files, { shiftKey: true, deltaY: -100 })
     expect(useAppStore.getState().selectedOutputSourceId).toBe(cell.id)
+    fireEvent.click(screen.getByRole('button', { name: '出力ファイル名を検索' }))
     fireEvent.change(screen.getByRole('searchbox'), { target: { value: '_s' } })
     fireEvent.keyDown(files, { key: 'ArrowDown' })
     expect(within(screen.getByRole('listbox', { name: '出力ファイル' })).getByRole('option', { selected: true })).toHaveTextContent('A_1_s.jpg')

@@ -14,8 +14,9 @@ import styles from './LayerTreePanel.module.css'
 import warningStyles from './RenderWarning.module.css'
 import { DiagnosticWarning } from './DiagnosticWarning'
 import { outputRenderQueue } from '../utils/output-render-queue'
+import { useVisibleOutputs, normalizeOutputSearch as normalize } from '../hooks/useVisibleOutputs'
+import { PaneIcon } from './PaneIcon'
 
-const normalize = (value: string) => value.normalize('NFKC').toLocaleLowerCase()
 
 const OutputThumbnail = memo(function OutputThumbnail({ file, active }: { file: OutputFile; active: boolean }) {
   const ref = useRef<HTMLCanvasElement>(null)
@@ -43,11 +44,12 @@ export function OutputFileList({ active = true, onShowTree, onPreview }: { activ
   const checkedCount = checks.filter(Boolean).length
   const warningCount = checks.filter(result => result?.error || result?.image?.diagnostics?.length).length
   const drafts = useAppStore(selectDraftOutputs)
-  const navigation = useAppStore(selectOutputNavigation)
   const activeId = useAppStore(s => s.activeOutputId)
   const selectedIds = useAppStore(s => s.selectedOutputIds)
-  const compare = useAppStore(s => s.compareOutputs)
-  const [search, setSearch] = useState('')
+  const search = useAppStore(s => s.outputSearch)
+  const setSearch = (outputSearch: string) => useAppStore.setState({ outputSearch })
+  const [searchOpen, setSearchOpen] = useState(false)
+  const searchInput = useRef<HTMLInputElement>(null), searchButton = useRef<HTMLButtonElement>(null)
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null)
   const menuFrame = useRef(0)
   useEffect(() => () => cancelAnimationFrame(menuFrame.current), [])
@@ -58,11 +60,7 @@ export function OutputFileList({ active = true, onShowTree, onPreview }: { activ
   const list = useRef<HTMLDivElement>(null)
   const id = useId()
   const query = normalize(search.trim())
-  const ordered = useMemo(() => {
-    const byId = new Map(files.map(file => [file.sourceLayerId, file]))
-    return navigation.entries.flatMap(entry => byId.has(entry.id) ? [byId.get(entry.id)!] : [])
-  }, [files, navigation])
-  const visible = useMemo(() => [...ordered, ...drafts].filter(file => normalize(file.relativePath).includes(query)), [ordered, drafts, query])
+  const visible = useVisibleOutputs()
   const selectedIndex = visible.findIndex(file => file.outputId === activeId)
   // A context-menu target is already under the pointer. Revealing it again can
   // scroll the list and immediately dismiss the menu we just opened.
@@ -111,14 +109,27 @@ export function OutputFileList({ active = true, onShowTree, onPreview }: { activ
     // registering the menu's scroll-to-dismiss handler.
     cancelAnimationFrame(menuFrame.current)
     menuFrame.current = requestAnimationFrame(() => {
-      setMenu({ x: Math.max(4, Math.min(x, window.innerWidth - 230)), y: Math.max(4, Math.min(y, window.innerHeight - 150)) })
+      setMenu({ x: Math.max(4, Math.min(x, window.innerWidth - 230)), y: Math.max(4, Math.min(y, window.innerHeight - 230)) })
     })
   }
   return <>
-    <div className={styles.listHeading}><Tooltip content="Shift+スクロールで出力を切り替え"><strong data-tooltip="Shift+スクロールで出力を切り替え">出力一覧</strong></Tooltip><span className={styles.fileCount}>{files.length}件</span>
-      <Tooltip content="選択中の出力をツリーで表示"><button data-tooltip="選択中の出力をツリーで表示" type="button" onClick={onShowTree} disabled={!activeId} aria-label="選択中の出力をツリーで表示">↗</button></Tooltip></div>
-    <div className={styles.listTools}>
-      <input type="search" aria-label="出力ファイル名を検索" placeholder="ファイル名を検索" value={search} onChange={event => setSearch(event.target.value)} />
+    <div className={styles.paneToolbar} role="group" aria-label="出力一覧の操作">
+      {searchOpen || search ? <>
+        <input ref={searchInput} autoFocus type="search" aria-label="出力ファイル名を検索" placeholder="ファイル名を検索" value={search}
+          onChange={event => setSearch(event.target.value)} onKeyDown={event => {
+            if (event.key === 'Escape' && !event.nativeEvent.isComposing) { setSearch(''); setSearchOpen(false); requestAnimationFrame(() => searchButton.current?.focus()) }
+          }} />
+        <button type="button" aria-label="検索を解除して閉じる" onClick={() => { setSearch(''); setSearchOpen(false); requestAnimationFrame(() => searchButton.current?.focus()) }}><PaneIcon kind="close" /></button>
+      </> : <>
+        <span className={styles.paneCount}>{files.length}件</span>
+        <Tooltip content="ファイル名を検索"><button ref={searchButton} type="button" aria-label="出力ファイル名を検索" onClick={() => setSearchOpen(true)}><PaneIcon kind="search" /></button></Tooltip>
+      </>}
+      {selectedIds.size > 0 && <Tooltip content={`${selectedIds.size}選択${hiddenSelected ? `（一覧外${hiddenSelected}）` : ''}`}><small className={styles.selectionCount}>{selectedIds.size}選択{hiddenSelected > 0 ? `（一覧外${hiddenSelected}）` : ''}</small></Tooltip>}
+      <Tooltip content="選択中の出力をツリーで表示"><button type="button" onClick={onShowTree} disabled={!activeId} aria-label="選択中の出力をツリーで表示">↗</button></Tooltip>
+      <Tooltip content="出力一覧のメニュー"><button ref={moreRef} type="button" aria-label="出力一覧のメニュー" aria-haspopup="menu" aria-expanded={!!menu} onClick={event => {
+        menuInvoker.current = event.currentTarget
+        const rect = event.currentTarget.getBoundingClientRect(); setMenu(menu ? null : { x: Math.max(4, Math.min(rect.right - 224, window.innerWidth - 230)), y: Math.min(rect.bottom + 4, window.innerHeight - 230) })
+      }}><PaneIcon kind="menu" /></button></Tooltip>
     </div>
     {warningCount > 0 && <div className={warningStyles.status} role="status">要確認 {warningCount}件</div>}
     <div ref={list} className={styles.fileList} role="listbox" tabIndex={0} aria-label="出力ファイル" aria-multiselectable="true"
@@ -148,15 +159,6 @@ export function OutputFileList({ active = true, onShowTree, onPreview }: { activ
       </div> })}</div>}
       {!visible.length && <div className={styles.empty}>{query ? '一致するファイルはありません' : '現在の設定で出力されるファイルはありません'}</div>}
     </div>
-    <div className={styles.selectionTools}>
-      <span>{selectedIds.size}選択{hiddenSelected > 0 ? `（一覧外${hiddenSelected}）` : ''}</span>
-      <Tooltip content="8件まで、ズームと表示幅に合わせて並べます。1件を選ぶと原寸で確認できます。"><button data-tooltip="8件まで、ズームと表示幅に合わせて並べます。1件を選ぶと原寸で確認できます。" type="button" aria-label="選択項目を並べて表示" aria-pressed={compare} disabled={selectedIds.size < 2 || selectedIds.size > 8}
-        onClick={() => { useAppStore.getState().setCompareOutputs(!compare); onPreview?.() }}>並べて表示</button></Tooltip>
-      <button ref={moreRef} type="button" aria-label="選択項目の操作" aria-haspopup="menu" aria-expanded={!!menu} disabled={!exportIds.size} onClick={event => {
-        menuInvoker.current = event.currentTarget
-        const rect = event.currentTarget.getBoundingClientRect(); setMenu(menu ? null : { x: Math.max(4, Math.min(rect.left, window.innerWidth - 230)), y: Math.max(4, rect.top - 144) })
-      }}>⋯</button>
-    </div>
     {error && <div className={styles.exportError} role="alert">{error}</div>}
     {menu && createPortal(<div ref={menuRef} role="menu" aria-label="選択した出力の操作" className={styles.outputMenu} style={{ left: menu.x, top: menu.y }}
       onKeyDown={event => {
@@ -167,6 +169,8 @@ export function OutputFileList({ active = true, onShowTree, onPreview }: { activ
         const next = event.key === 'Home' ? 0 : event.key === 'End' ? buttons.length - 1 : (current + (event.key === 'ArrowDown' ? 1 : -1) + buttons.length) % buttons.length
         buttons[next]?.focus()
       }}>
+      <button role="menuitem" disabled={!visible.length} onClick={() => { useAppStore.setState({ selectedOutputIds: new Set(visible.map(file => file.outputId)) }); setMenu(null); list.current?.focus() }}>表示中の項目をすべて選択</button>
+      <button role="menuitem" disabled={!selectedIds.size} onClick={() => { useAppStore.setState({ selectedOutputIds: new Set() }); setMenu(null); list.current?.focus() }}>選択を解除</button>
       <span>{exportIds.size}件を書き出し</span>
       <button role="menuitem" disabled={isExporting || !exportIds.size} onClick={() => { setMenu(null); list.current?.focus(); void startExport('zip', exportIds) }}>選択項目をZIPに書き出し</button>
       {supportsDirectoryExport() && <button role="menuitem" disabled={isExporting || !exportIds.size} onClick={() => { setMenu(null); list.current?.focus(); void startExport('directory', exportIds) }}>選択項目をフォルダに書き出し</button>}

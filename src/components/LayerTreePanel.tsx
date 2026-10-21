@@ -11,6 +11,8 @@ import { OutputFileList } from './OutputFileList'
 import { OutputConnections } from './OutputConnections'
 import { QuickLook } from './QuickLook'
 import { Tooltip } from './Tooltip'
+import { PaneMenu } from './PaneMenu'
+import { PaneIcon } from './PaneIcon'
 import type { BlendMode } from '../types'
 import { mergeExpandedFolders } from '../utils/layerNavigation'
 import styles from './LayerTreePanel.module.css'
@@ -115,10 +117,6 @@ export function LayerTreePanel({ active = true, onPreviewOutput }: { active?: bo
         }} />
       </div>
       <div className={styles.contents}>
-      <div className={styles.listHeading}><strong>素材レイヤー</strong>
-        <Tooltip content="素材単体を確認（Space）"><button data-tooltip="素材単体を確認（Space）" type="button" disabled={!selectedLayer} aria-label="選択素材をクイックルック"
-          onClick={() => selectedLayerId && useAppStore.getState().openQuickLook(selectedLayerId)}>⌕</button></Tooltip>
-      </div>
       {/* 選択レイヤーの合成モード・不透明度コントロール */}
       <BlendOpacityBar
         blendMode={selectedLayer?.blendMode ?? 'normal'}
@@ -128,11 +126,11 @@ export function LayerTreePanel({ active = true, onPreviewOutput }: { active?: bo
         onBlendModeChange={handleBlendModeChange}
         onOpacityChangeStart={handleOpacityChangeStart}
         onOpacityChange={handleOpacityChange}
-        actions={<Tooltip content="すべての表示/非表示を読み込み時に戻す（出力にも反映）">
-          <button className={styles.resetBtn} onClick={resetVisibility} aria-label={t.layerTree.resetVisibility}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M3 10a9 9 0 1 1 2.6 8.5M3 4v6h6" /></svg>
-          </button>
-        </Tooltip>}
+        actions={<>
+          <Tooltip content="素材単体を確認（Space）"><button className={styles.paneIcon} type="button" disabled={!selectedLayer} aria-label="選択素材をクイックルック"
+            onClick={() => selectedLayerId && useAppStore.getState().openQuickLook(selectedLayerId)}><PaneIcon kind="quicklook" /></button></Tooltip>
+          <PaneMenu label="素材レイヤーのメニュー"><Tooltip content="すべての表示/非表示を読み込み時に戻す（出力にも反映）"><button role="menuitem" onClick={resetVisibility}>{t.layerTree.resetVisibility}</button></Tooltip></PaneMenu>
+        </>}
       />
 
       <div

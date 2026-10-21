@@ -116,11 +116,11 @@ describe('preview resource limits', () => {
   it('renders a sheet once for simultaneous tile and thumbnail requests', async () => {
     const queue = new OutputRenderQueue(), a = file('a'), draw = vi.fn(image)
     queue.request(a, 'thumbnail', draw)
-    queue.request(a, 'comparison', draw)
+    queue.request(a, 1024, draw)
     await vi.runAllTimersAsync()
     expect(draw).toHaveBeenCalledTimes(1)
     expect(queue.get(a, 'full')).toBeUndefined()
-    expect(queue.get(a, 'comparison')?.image?.canvas.width).toBe(300)
+    expect(queue.get(a, 1024)?.image?.canvas.width).toBe(300)
     expect(queue.get(a, 'thumbnail')?.image?.canvas.width).toBe(160)
     queue.clear()
   })
@@ -161,5 +161,48 @@ it('immediately releases temporary native-resolution pixels after making thumbna
   await vi.runAllTimersAsync()
   expect(source.canvas.width).toBe(1)
   expect(queue.get(a, 'thumbnail')?.image?.canvas.width).toBe(160)
+  queue.clear()
+})
+
+
+it('reuses higher-resolution pixels, preserves numeric pins and reports native dimensions', async () => {
+  const queue = new OutputRenderQueue(240000), a = file('lod'), draw = vi.fn(image)
+  const release = queue.request(a, 512, draw)
+  await vi.runAllTimersAsync()
+  queue.request(a, 64, draw)
+  await vi.runAllTimersAsync()
+  expect(draw).toHaveBeenCalledTimes(1)
+  expect(queue.get(a, 64)?.image?.canvas.width).toBe(64)
+  expect(queue.get(a, 64)?.image?.nativeWidth).toBe(300)
+  expect(queue.best(a, 128)?.canvas.width).toBe(300)
+  release()
+  queue.request(file('other'), 'full', image)
+  await vi.runAllTimersAsync()
+  expect(queue.get(a, 512)).toBeUndefined()
+  expect(queue.get(a, 64)?.image?.canvas.width).toBe(64)
+  queue.clear()
+})
+
+it('prioritizes a selected output thumbnail over a large overview backlog', async () => {
+  const queue = new OutputRenderQueue(), order: string[] = []
+  for (let i = 0; i < 100; i++) queue.request(file(String(i)), 16, () => { order.push(String(i)); return image() })
+  queue.request(file('selected'), 'thumbnail', () => { order.push('selected'); return image() })
+  await vi.runAllTimersAsync()
+  expect(order[0]).toBe('selected')
+  expect(order).toHaveLength(101)
+  queue.clear()
+})
+
+it('retains small overview pixels for live outputs without a count-based eviction', async () => {
+  const queue = new OutputRenderQueue(1024 * 1024, 1), releases: (() => void)[] = []
+  for (let i = 0; i < 12; i++) {
+    const output = file(String(i))
+    queue.request(output, 'check', image)
+    releases.push(queue.request(output, 16, image))
+  }
+  await vi.runAllTimersAsync()
+  releases.forEach(release => release())
+  for (let i = 0; i < 12; i++) expect(queue.get(file(String(i)), 16)?.image?.canvas.width).toBe(16)
+  expect(queue.getStats().bytes).toBeLessThan(1024 * 1024)
   queue.clear()
 })

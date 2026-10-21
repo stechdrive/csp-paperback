@@ -1,8 +1,10 @@
 import { expect, test } from '@playwright/test'
 
-test('新規読込は中央で全体を表示し、右ペインの高さを使わない', async ({ page }, testInfo) => {
+test('新規読込はタイルを表示し、全体表示の状態も保持する', async ({ page }, testInfo) => {
   await page.goto('./')
   await page.getByRole('button', { name: 'サンプルデータで試す', exact: true }).click()
+  await expect(page.getByTestId('tiled-preview')).toBeVisible()
+  await page.getByRole('button', { name: '全体プレビュー', exact: true }).click()
   const whole = page.getByTestId('navigator-view')
   await expect(whole).toBeVisible()
   await expect.poll(() => whole.locator('canvas').evaluate(canvas => canvas.width)).toBeGreaterThan(1)
@@ -21,38 +23,8 @@ test('新規読込は中央で全体を表示し、右ペインの高さを使�
   expect(await tree.boundingBox()).toEqual(before)
   await page.getByRole('button', { name: '出力プレビュー', exact: true }).click()
   await page.locator('input[type=file][multiple]').setInputFiles('public/sample/c001.clip')
-  await expect(whole).toBeVisible()
+  await expect(page.getByTestId('tiled-preview')).toBeVisible()
   await page.screenshot({ path: testInfo.outputPath('whole-preview.png') })
-})
-
-test('ズーム・ペイン幅に応じて複数列へ並べ直し、画面に収め直せる', async ({ page }, testInfo) => {
-  await page.setViewportSize({ width: 1600, height: 950 })
-  await page.goto('./')
-  await page.getByRole('button', { name: 'サンプルデータで試す', exact: true }).click()
-  const rows = page.getByRole('listbox', { name: '出力ファイル' }).getByRole('option')
-  await rows.nth(0).click()
-  for (let i = 1; i < 8; i++) await rows.nth(i).click({ modifiers: ['Control'] })
-  await page.getByRole('button', { name: '選択項目を並べて表示', exact: true }).click()
-  const tiled = page.getByTestId('tiled-preview'), grid = tiled.locator('[data-columns]')
-  await expect(tiled.locator('canvas')).toHaveCount(8)
-  expect(await tiled.locator('figcaption').allTextContents()).toEqual(await rows.locator('..').getByRole('option', { selected: true }).allTextContents())
-  const initialColumns = Number(await grid.getAttribute('data-columns'))
-  expect(initialColumns).toBeGreaterThan(1)
-  const bounds = await tiled.locator('figure').evaluateAll(items => items.map(item => ({ x: item.getBoundingClientRect().x, y: item.getBoundingClientRect().y })))
-  expect(bounds[0].y).toBe(bounds[1].y)
-  expect(bounds[0].x).toBeLessThan(bounds[1].x)
-  const viewport = page.getByTestId('tiled-viewport')
-  await viewport.hover()
-  for (let i = 0; i < 5; i++) await page.mouse.wheel(0, 80)
-  await expect.poll(async () => Number(await grid.getAttribute('data-columns'))).toBeGreaterThan(initialColumns)
-  for (let i = 0; i < 12; i++) await page.mouse.wheel(0, -80)
-  await expect.poll(async () => Number(await grid.getAttribute('data-columns'))).toBeLessThan(initialColumns)
-  await tiled.getByRole('button', { name: '並べた画像を画面に収める' }).click()
-  await expect(grid).toHaveAttribute('data-columns', String(initialColumns))
-  await page.setViewportSize({ width: 960, height: 640 })
-  await expect.poll(() => viewport.evaluate(element => element.scrollWidth <= element.clientWidth + 1 && element.scrollHeight <= element.clientHeight + 1)).toBe(true)
-  expect(await tiled.locator('canvas').evaluateAll(canvases => canvases.every(canvas => Math.max(canvas.width, canvas.height) <= 1024))).toBe(true)
-  await page.screenshot({ path: testInfo.outputPath('tiled-preview.png') })
 })
 
 test('通常書き出しは進捗とファイル名を示して操作を止め、終了時に自動解除する', async ({ page }, testInfo) => {
@@ -103,36 +75,4 @@ test('保存先キャンセルと保存失敗のどちらでも操作ロック�
   await expect(page.locator('.app-workspace')).not.toHaveAttribute('inert', '')
   await page.getByRole('button', { name: '出力プレビュー', exact: true }).click()
   await expect(page.getByTestId('output-view')).toBeVisible()
-})
-
-test.describe('タッチで並べて表示', () => {
-  test.use({ hasTouch: true, isMobile: true, viewport: { width: 390, height: 844 } })
-  test('ピンチで列数を変更し、横にはみ出さず全件表示へ戻れる', async ({ page }) => {
-    await page.goto('./')
-    await page.getByRole('button', { name: 'サンプルデータで試す', exact: true }).tap()
-    await expect(page.getByTestId('navigator-view')).toBeVisible()
-    await expect.poll(() => page.getByTestId('navigator-view').locator('canvas').evaluate(canvas => canvas.width)).toBeGreaterThan(1)
-    const tabs = page.getByRole('navigation', { name: '作業パネル' })
-    for (let i = 0; i < 8; i++) {
-      await tabs.getByRole('button', { name: 'レイヤー' }).tap()
-      await page.getByRole('listbox', { name: '出力ファイル' }).getByRole('option').nth(i).click({ modifiers: i ? ['Control'] : [] })
-    }
-    await tabs.getByRole('button', { name: 'レイヤー' }).tap()
-    await page.getByRole('button', { name: '選択項目を並べて表示', exact: true }).tap()
-    const tiled = page.getByTestId('tiled-preview'), grid = tiled.locator('[data-columns]')
-    await expect(tiled.locator('canvas')).toHaveCount(8)
-    const initial = Number(await grid.getAttribute('data-columns'))
-    expect(initial).toBeGreaterThan(1)
-    const rect = (await page.getByTestId('tiled-viewport').boundingBox())!
-    const x = rect.x + rect.width / 2, y = rect.y + rect.height / 2
-    const cdp = await page.context().newCDPSession(page)
-    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: x - 20, y }, { x: x + 20, y }] })
-    await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x - 85, y }, { x: x + 85, y }] })
-    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
-    await expect.poll(async () => Number(await grid.getAttribute('data-columns'))).toBeLessThan(initial)
-    await tiled.getByRole('button', { name: '並べた画像を画面に収める' }).tap()
-    await expect(grid).toHaveAttribute('data-columns', String(initial))
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
-    await cdp.detach()
-  })
 })

@@ -20,10 +20,11 @@ export interface UiSlice {
   activeOutputLabel: string
   selectedOutputIds: Set<string>
   outputSelectionAnchor: string | null
-  compareOutputs: boolean
+  outputViewMode: 'tiles' | 'single'
+  outputSearch: string
   quickLookTarget: { layerId: string; virtualSetId?: string } | null
   selectOutputFile: (id: string, options?: OutputSelectionOptions) => void
-  setCompareOutputs: (compare: boolean) => void
+  setOutputViewMode: (mode: 'tiles' | 'single') => void
   openQuickLook: (layerId: string, virtualSetId?: string) => void
   closeQuickLook: () => void
   mobileUiScale: number
@@ -179,7 +180,7 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
       if (draft) set(outputSelectionPatch(state, id, draft.name, options))
     }
   },
-  setCompareOutputs: compareOutputs => set({ compareOutputs: compareOutputs && get().selectedOutputIds.size <= 8 }),
+  setOutputViewMode: outputViewMode => set({ outputViewMode }),
   openQuickLook: (layerId, virtualSetId) => set({ quickLookTarget: { layerId, virtualSetId } }),
   closeQuickLook: () => set({ quickLookTarget: null }),
   mobileUiScale: DEFAULT_MOBILE_UI_SCALE,
