@@ -1,0 +1,43 @@
+.slot { position: relative; }
+.text { white-space: inherit; }
+.aliased { text-decoration: underline dotted; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+/* Keep the display text's line box in place. Only its pixels are replaced. */
+.input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  text-align: inherit;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  outline: none;
+  box-shadow: none;
+  background: transparent;
+  appearance: none;
+  user-select: text;
+}
+.feedback {
+  position: fixed;
+  z-index: 1200;
+  width: max-content;
+  max-width: min(360px, calc(100vw - 8px));
+  max-height: calc(100vh - 8px);
+  overflow: auto;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 4px;
+  background: var(--color-surface-tooltip);
+  color: var(--color-text-primary);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+}
+.feedback p { margin: 4px 0; }
+.example { font-family: monospace; }

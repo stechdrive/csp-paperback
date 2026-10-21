@@ -48,6 +48,7 @@ export interface PlannedOutputEntry extends Omit<OutputEntry, 'canvas'> {
   outputId: string
   gateId: string
   animFolderId?: string
+  outputBaseName?: string
   outputTarget?: OutputTarget
   renderCanvas: (cache: OutputRenderCache) => HTMLCanvasElement
 }
@@ -193,6 +194,7 @@ function planCells(
       sourceLayerId: unit.sourceLayerId,
       sourceCellId: cell.id,
       animFolderId: animFolder.id,
+      outputBaseName: displayName,
       outputTarget: cellOutputTarget(animFolder, unit, projectSettings.processTable, parentProcessSuffix ?? (parentSuffix || undefined)),
       processSuffixes: collectProcessSuffixes(parentSuffix, unit.processSuffix ?? ''),
     })
@@ -915,6 +917,7 @@ export function planAllEntries(
   excludeAutoMarked = false,
   processSuffixPosition: ProcessSuffixPosition = 'after-cell',
   timelineData?: TimelineData | null,
+  outputAliases?: ReadonlyMap<string, string>,
 ): PlannedOutputEntry[] {
   const entries: PlannedOutputEntry[] = []
 
@@ -931,12 +934,16 @@ export function planAllEntries(
   // XDTS がある場合も読み込み時に確定した trackNo 割当を使い、
   // 手動指定分だけその後ろに疑似 trackNo を追加する。
   const assignmentMap = buildEffectiveAnimationAssignment(tree)
-  const displayNameMap = computeDisplayNames(tree, assignmentMap, animParentSuffixMap)
+  // Sheet numbering belongs to source tracks, never to user-facing output aliases.
+  const sequenceGroupNames = computeDisplayNames(tree, assignmentMap, animParentSuffixMap)
+  const displayNameMap = outputAliases?.size
+    ? computeDisplayNames(tree, assignmentMap, animParentSuffixMap, outputAliases)
+    : sequenceGroupNames
   const sequenceNamingPlan = buildSequenceNamingPlan(
     tree,
     projectSettings,
     timelineData,
-    displayNameMap,
+    sequenceGroupNames,
   )
 
   /**
@@ -1007,9 +1014,10 @@ export function planAllEntries(
           return recordOutputSources(compositeWithContext(layerFlats, lower, upper, docWidth, docHeight, background,
             collectMaterialOutputContext(layer.id, tree, docWidth, docHeight)), layerFlats)
         }
-        const fileName = `${layer.originalName}.jpg`
+        const outputBaseName = outputAliases?.get(layer.id) ?? layer.originalName
+        const fileName = `${outputBaseName}.jpg`
         entries.push({ outputId: layerOutputId(layer.id), gateId: layerOutputId(layer.id), path: fileName, flatName: fileName, renderCanvas, sourceLayerId: layer.id,
-          outputTarget: individualOutputTarget(layer, projectSettings.processTable) })
+          outputBaseName, outputTarget: individualOutputTarget(layer, projectSettings.processTable) })
 
         // フォルダなら子も走査して内包マーク済みレイヤーを出力する。
         // 各子マーク済みレイヤーは独立して collectMarkedLayerContext を呼ぶが、

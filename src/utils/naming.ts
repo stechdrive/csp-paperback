@@ -8,6 +8,7 @@ import type {
   ProcessSuffixPosition,
   SequenceDigitMode,
 } from '../types'
+import { appendFileNameSuffix } from './path-sanitize'
 
 export const MIN_SEQUENCE_DIGITS = 1
 export const MAX_SEQUENCE_DIGITS = 4
@@ -25,14 +26,12 @@ export function resolveNameCollisions(names: string[]): string[] {
 
   for (const name of names) {
     const key = name.toLowerCase()
-    const ext = getExtension(name)
-    const base = name.slice(0, name.length - ext.length)
     let candidate = name
     let nextIndex = nextIndexes.get(key) ?? 1
 
     while (used.has(candidate.toLowerCase())) {
       nextIndex += 1
-      candidate = `${base}_${nextIndex}${ext}`
+      candidate = appendFileNameSuffix(name, `_${nextIndex}`)
     }
 
     nextIndexes.set(key, nextIndex)
@@ -41,14 +40,6 @@ export function resolveNameCollisions(names: string[]): string[] {
   }
 
   return result
-}
-
-/**
- * ファイル名から拡張子を取得（ドット含む、例: '.jpg'）
- */
-function getExtension(name: string): string {
-  const dotIndex = name.lastIndexOf('.')
-  return dotIndex >= 0 ? name.slice(dotIndex) : ''
 }
 
 /**

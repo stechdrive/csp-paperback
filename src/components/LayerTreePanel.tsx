@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAppStore } from '../store'
 import { useLocale } from '../i18n/locale'
-import { selectLayerTreeWithVisibility, selectLayerById, selectOutputNavigation } from '../store/selectors'
+import { selectLayerTreeWithVisibility, selectLayerById, selectOutputNavigation, selectOutputAliasTargets } from '../store/selectors'
 import { useOutputNavigation } from '../hooks/useOutputNavigation'
 import { useDragAutoScroll } from '../hooks/useDragDrop'
 import { LayerTreeNode } from './LayerTreeNode'
@@ -14,8 +14,17 @@ import { Tooltip } from './Tooltip'
 import { PaneMenu } from './PaneMenu'
 import { PaneIcon } from './PaneIcon'
 import type { BlendMode } from '../types'
-import { mergeExpandedFolders } from '../utils/layerNavigation'
+import { findLayerPath, mergeExpandedFolders } from '../utils/layerNavigation'
 import styles from './LayerTreePanel.module.css'
+
+// An abandoned edit must not retain the previous document's source images.
+const editDocumentKeys = new WeakMap<object, symbol>()
+function editDocumentKey(source: object | null): symbol | null {
+  if (!source) return null
+  let key = editDocumentKeys.get(source)
+  if (!key) { key = Symbol(); editDocumentKeys.set(source, key) }
+  return key
+}
 
 export function LayerTreePanel({ active = true, onPreviewOutput }: { active?: boolean; onPreviewOutput?: () => void }) {
   const relationshipRef = useRef<HTMLDivElement>(null)
@@ -42,6 +51,24 @@ export function LayerTreePanel({ active = true, onPreviewOutput }: { active?: bo
   const selectedLayer = useAppStore(s => selectedLayerId ? selectLayerById(s, selectedLayerId) : null)
 
   const treeRef = useRef<HTMLDivElement>(null)
+  const documentKey = useAppStore(s => editDocumentKey(s.rawPsd))
+  const aliasTargets = useAppStore(selectOutputAliasTargets)
+  const selectedAlias = useAppStore(s => selectedLayerId ? s.outputAliases.get(selectedLayerId) : undefined)
+  const [editingName, setEditingName] = useState<{ id: string; document: symbol | null } | null>(null)
+  const editingNameId = editingName?.document === documentKey && aliasTargets.has(editingName.id) ? editingName.id : null
+  const handleEditName = useCallback((id: string) => {
+    const state = useAppStore.getState()
+    if (!selectOutputAliasTargets(state).has(id)) return
+    state.selectLayer(id)
+    const path = findLayerPath(selectLayerTreeWithVisibility(state), id)
+    useAppStore.setState({ transientExpandedFolders: new Set([...state.transientExpandedFolders,
+      ...path.slice(0, -1).map(layer => layer.id)]) })
+    setEditingName({ id, document: editDocumentKey(state.rawPsd) })
+  }, [])
+  const handleFinishName = useCallback((restoreFocus: boolean) => {
+    setEditingName(null)
+    if (restoreFocus) treeRef.current?.focus({ preventScroll: true })
+  }, [])
   const handleSelectLayer = useCallback((id: string) => {
     selectLayer(id); treeRef.current?.focus({ preventScroll: true })
   }, [selectLayer])
@@ -63,6 +90,7 @@ export function LayerTreePanel({ active = true, onPreviewOutput }: { active?: bo
     if (!element) return
     let pendingScroll: number | undefined
     const handleWheel = (event: WheelEvent) => {
+      if (event.target instanceof Element && event.target.closest('input, textarea, [contenteditable="true"]')) return
       const delta = event.deltaY || event.deltaX
       if (!event.shiftKey || !delta || selectOutputNavigation(useAppStore.getState()).entries.length === 0) return
       event.preventDefault()
@@ -129,7 +157,15 @@ export function LayerTreePanel({ active = true, onPreviewOutput }: { active?: bo
         actions={<>
           <Tooltip content="素材単体を確認（Space）"><button className={styles.paneIcon} type="button" disabled={!selectedLayer} aria-label="選択素材をクイックルック"
             onClick={() => selectedLayerId && useAppStore.getState().openQuickLook(selectedLayerId)}><PaneIcon kind="quicklook" /></button></Tooltip>
-          <PaneMenu label="素材レイヤーのメニュー"><Tooltip content="すべての表示/非表示を読み込み時に戻す（出力にも反映）"><button role="menuitem" onClick={resetVisibility}>{t.layerTree.resetVisibility}</button></Tooltip></PaneMenu>
+          <PaneMenu label="素材レイヤーのメニュー">
+            <button role="menuitem" disabled={!selectedLayerId || !aliasTargets.has(selectedLayerId)} onClick={event => {
+              event.preventDefault(); if (selectedLayerId) handleEditName(selectedLayerId)
+            }}>出力名を指定…</button>
+            <button role="menuitem" disabled={selectedAlias === undefined} onClick={() => {
+              if (selectedLayerId) useAppStore.getState().resetOutputAlias(selectedLayerId)
+            }}>元の名前を使う</button>
+            <Tooltip content="すべての表示/非表示を読み込み時に戻す（出力にも反映）"><button role="menuitem" onClick={resetVisibility}>{t.layerTree.resetVisibility}</button></Tooltip>
+          </PaneMenu>
         </>}
       />
 
@@ -140,6 +176,9 @@ export function LayerTreePanel({ active = true, onPreviewOutput }: { active?: bo
         tabIndex={0}
         aria-label="素材レイヤー"
         onKeyDown={event => {
+          if (event.key === 'F2' && event.target === event.currentTarget && !event.nativeEvent.isComposing && selectedLayerId) {
+            event.preventDefault(); handleEditName(selectedLayerId)
+          }
           if (event.key === ' ' && event.target === event.currentTarget && !event.nativeEvent.isComposing && selectedLayerId) {
             event.preventDefault(); useAppStore.getState().openQuickLook(selectedLayerId)
           }
@@ -156,6 +195,9 @@ export function LayerTreePanel({ active = true, onPreviewOutput }: { active?: bo
           tree.map(layer => (
             <LayerTreeNode
               key={layer.id}
+              editingNameId={editingNameId}
+              onEditName={handleEditName}
+              onFinishName={handleFinishName}
               layer={layer}
               onSelect={handleSelectLayer}
               onToggleVisibility={toggleLayerVisibility}

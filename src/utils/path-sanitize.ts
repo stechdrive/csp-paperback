@@ -94,6 +94,24 @@ export function sanitizeOutputPath(path: string): string {
 
 export const sanitizeZipPath = sanitizeOutputPath
 
+/** Folder names have no extension; reserve room for their disambiguation suffix. */
+export function appendPathSegmentSuffix(name: string, suffix: string): string {
+  return truncateUtf8Raw(name, 255 - new TextEncoder().encode(suffix).length) + suffix
+}
+
+/** Append a collision suffix without overflowing the last path segment's UTF-8 budget. */
+export function appendFileNameSuffix(path: string, suffix: string): string {
+  const slash = path.lastIndexOf('/')
+  const prefix = path.slice(0, slash + 1)
+  const name = path.slice(slash + 1)
+  const dot = name.lastIndexOf('.')
+  const encoder = new TextEncoder()
+  const ext = dot >= 0 && encoder.encode(name.slice(dot)).length <= 32 ? name.slice(dot) : ''
+  const base = name.slice(0, name.length - ext.length)
+  const budget = 255 - encoder.encode(suffix + ext).length
+  return prefix + truncateUtf8Raw(base, budget) + suffix + ext
+}
+
 /**
  * 文字列を UTF-8 エンコード後のバイト長で truncate する。
  * マルチバイト境界を超えないよう安全に切る。拡張子があれば末尾を維持する。

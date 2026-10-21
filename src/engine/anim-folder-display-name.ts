@@ -1,4 +1,5 @@
 import type { CspLayer } from '../types'
+import { appendPathSegmentSuffix } from '../utils/path-sanitize'
 
 /**
  * 割当済みアニメフォルダに対する displayName(出力フォルダ名・ファイル名プレフィックスのベース)を計算する。
@@ -45,6 +46,7 @@ export function computeDisplayNames(
   tree: CspLayer[],
   assignment: Map<string, number>,  // layerId → trackNo
   parentSuffixByLayerId: Map<string, string>,  // layerId → parentSuffix (processTable 由来)
+  outputAliases?: ReadonlyMap<string, string>,
 ): Map<string, string> {  // layerId → displayName
   const displayNames = new Map<string, string>()
   if (assignment.size === 0) return displayNames
@@ -71,7 +73,7 @@ export function computeDisplayNames(
   for (const [layerId, trackNo] of assignment) {
     const layer = layerById.get(layerId)
     if (!layer) continue
-    const baseName = layer.originalName.trim()
+    const baseName = outputAliases?.get(layer.id) ?? layer.originalName.trim()
     const parentSuffix = parentSuffixByLayerId.get(layerId) ?? ''
     const member: NamespaceMember = {
       layer,
@@ -109,7 +111,7 @@ export function computeDisplayNames(
 
     for (const family of orderedFamilies) {
       for (const member of family) {
-        const candidate = allocateDisplayName(member.baseName, literalBaseLowers, usedNames)
+        const candidate = allocateDisplayName(member.baseName, literalBaseLowers, usedNames, !!outputAliases?.size)
         usedNames.add(candidate.toLowerCase())
         displayNames.set(member.layer.id, candidate)
       }
@@ -130,13 +132,14 @@ function allocateDisplayName(
   baseName: string,
   literalBaseLowers: Set<string>,
   usedNames: Set<string>,
+  limitLength: boolean,
 ): string {
   const baseLower = baseName.toLowerCase()
   if (!usedNames.has(baseLower)) return baseName
 
   let n = 2
   while (true) {
-    const candidate = `${baseName}(${n})`
+    const candidate = limitLength ? appendPathSegmentSuffix(baseName, `(${n})`) : `${baseName}(${n})`
     const lower = candidate.toLowerCase()
     if (!usedNames.has(lower) && !literalBaseLowers.has(lower)) {
       return candidate

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useAppStore } from '../store'
-import { selectLayerTreeWithVisibility } from '../store/selectors'
+import { selectLayerTreeWithVisibility, selectOutputAliasTargets } from '../store/selectors'
+import { describeOutputSource } from '../utils/output-alias'
 import { findLayerPath } from '../utils/layerNavigation'
 import { compositeRoot, flattenTree } from '../engine/flatten'
 import { buildMemberFlatsWithOverride } from '../utils/virtual-set-utils'
@@ -12,6 +13,7 @@ import styles from './QuickLook.module.css'
 export function QuickLook() {
   const target = useAppStore(s => s.quickLookTarget)
   const tree = useAppStore(selectLayerTreeWithVisibility)
+  const alias = useAppStore(s => target && selectOutputAliasTargets(s).has(target.layerId) ? s.outputAliases.get(target.layerId) : undefined)
   const sets = useAppStore(s => s.virtualSets)
   const cells = useAppStore(s => s.selectedCells)
   const width = useAppStore(s => s.docWidth), height = useAppStore(s => s.docHeight)
@@ -61,7 +63,7 @@ export function QuickLook() {
     onCancel={event => { event.preventDefault(); event.stopPropagation(); close() }}
     onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); close() } }}
     onClick={event => { if (event.target === event.currentTarget) close() }}>
-    <header><strong>{layer?.originalName ?? '素材が見つかりません'}</strong><button autoFocus onClick={close} aria-label="クイックルックを閉じる">✕</button></header>
+    <header><strong>{layer ? describeOutputSource(layer, alias) : '素材が見つかりません'}</strong><button autoFocus onClick={close} aria-label="クイックルックを閉じる">✕</button></header>
     <div className={styles.image}><canvas ref={canvas} />{error && <p role="alert">{error}</p>}</div>
     <p>素材単体の確認{target.virtualSetId ? ' · 仮想セル内の設定' : ''}。合成先の背景・用紙は含みません。</p>
   </dialog>

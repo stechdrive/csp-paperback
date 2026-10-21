@@ -58,7 +58,7 @@
 }
 @container (max-width: 399px) {
   .outputs { --output-row-height: 48px; }
-  .fileRow { min-height: 48px; grid-template-columns: 48px minmax(0, 1fr) 22px; }
+  .fileRow { min-height: 48px; grid-template-columns: 20px 48px minmax(0, 1fr); }
   .outputThumbnail { height: 34px; width: 48px; }
 }
 

@@ -143,6 +143,7 @@ export const createPsdSlice: StateCreator<AppStore, [], [], PsdSlice> = (set, ge
     set({
       ...emptyOutputSelection(),
       outputExclusions: new Set(),
+      outputAliases: new Map(),
       rawPsd: psd,
       psdFileName: fileName,
       psdSourceDirectory: sourceDirectory ?? null,
@@ -192,6 +193,7 @@ export const createPsdSlice: StateCreator<AppStore, [], [], PsdSlice> = (set, ge
     set({
       ...emptyOutputSelection(),
       outputExclusions: new Set(),
+      outputAliases: new Map(),
       clipDocument: null,
       clipFileName: null,
       clipSourceDirectory: null,

@@ -14,7 +14,7 @@ export function PaneMenu({ label, children }: { label: string; children: ReactNo
   return <><Tooltip content={label}><button ref={trigger} type="button" className={styles.paneIcon} aria-label={label} aria-haspopup="menu" aria-expanded={!!position}
     onClick={() => { const rect = trigger.current!.getBoundingClientRect(); setPosition(position ? null : { left: Math.max(4, Math.min(rect.right - 224, window.innerWidth - 228)), top: rect.bottom + 4 }) }}><PaneIcon kind="menu" /></button></Tooltip>
     {position && createPortal(<div ref={content} role="menu" aria-label={label} className={styles.outputMenu} style={position}
-      onClick={event => { if ((event.target as HTMLElement).closest('button')) { setPosition(null); trigger.current?.focus() } }}
+      onClick={event => { if ((event.target as HTMLElement).closest('button')) { setPosition(null); if (!event.defaultPrevented) trigger.current?.focus() } }}
       onKeyDown={event => {
         if (!['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return
         event.preventDefault()

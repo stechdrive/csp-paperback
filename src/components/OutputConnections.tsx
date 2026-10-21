@@ -2,7 +2,8 @@ import { Tooltip } from './Tooltip'
 import { useEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import { createPortal } from 'react-dom'
 import { useAppStore } from '../store'
-import { selectDraftOutputs, selectLayerTreeWithVisibility, selectOutputFiles } from '../store/selectors'
+import { selectDraftOutputs, selectLayerTreeWithVisibility, selectOutputFiles, selectOutputAliasTargets } from '../store/selectors'
+import { describeOutputSource } from '../utils/output-alias'
 import { useRenderedOutputs } from '../hooks/useRenderedOutputs'
 import { useDismissableLayer } from '../hooks/useDismissableLayer'
 import type { CspLayer } from '../types'
@@ -21,6 +22,8 @@ export function OutputConnections({ container, treeElement, active = true }: { c
   const files = useAppStore(selectOutputFiles)
   const drafts = useAppStore(selectDraftOutputs)
   const tree = useAppStore(selectLayerTreeWithVisibility)
+  const aliases = useAppStore(s => s.outputAliases)
+  const aliasTargets = useAppStore(selectOutputAliasTargets)
   const activeId = useAppStore(s => s.activeOutputId)
   const selected = useMemo(() => [...files, ...drafts].filter(file => file.outputId === activeId), [files, drafts, activeId])
   const [result] = useRenderedOutputs(selected, 'thumbnail', active)
@@ -63,7 +66,8 @@ export function OutputConnections({ container, treeElement, active = true }: { c
         const visible = [...path].reverse().find(layer => rows.has(layer.id))
         if (!visible) continue
         const row = rows.get(visible.id)!, value = used.get(row) ?? {
-          id: visible.id, path: (layerPaths.get(visible.id) ?? []).map(layer => layer.originalName).join(' / '), count: 0, content: false,
+          id: visible.id, path: (layerPaths.get(visible.id) ?? []).map(layer => describeOutputSource(layer,
+            aliasTargets.has(layer.id) ? aliases.get(layer.id) : undefined)).join(' / '), count: 0, content: false,
         }
         value.count++; value.content ||= result.image.sources.content.has(id)
         used.set(row, value)
@@ -144,7 +148,7 @@ export function OutputConnections({ container, treeElement, active = true }: { c
     window.addEventListener('resize', schedule)
     schedule()
     return () => { clear(); cancelAnimationFrame(frame); observer.disconnect(); mutation.disconnect(); root.removeEventListener('scroll', schedule, true); fileList.removeEventListener('output-layout', schedule); root.removeEventListener('wheel', wheel); window.removeEventListener('resize', schedule) }
-  }, [activeId, result, layerPaths, container, treeElement])
+  }, [activeId, result, layerPaths, container, treeElement, aliases, aliasTargets])
 
   useDismissableLayer({ open: !!visiblePopup, content: popupRef, trigger: { current: visiblePopup?.trigger ?? null },
     closeOnScroll: true, closeOnResize: true, initialFocus: () => popupRef.current?.querySelector('button'),

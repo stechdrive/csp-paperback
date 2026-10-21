@@ -15,12 +15,12 @@ export type OutputFile = PlannedOutputEntry & PreparedOutputEntry & {
 /** Export order matters: resolve collisions before sorting or searching the list. */
 export function buildOutputPlan(
   tree: CspLayer[],
-  state: Pick<AppStore, 'projectSettings' | 'docWidth' | 'docHeight' | 'virtualSets' | 'timelineData' | 'outputConfig'>,
+  state: Pick<AppStore, 'projectSettings' | 'docWidth' | 'docHeight' | 'virtualSets' | 'timelineData' | 'outputConfig'> & Partial<Pick<AppStore, 'outputAliases'>>,
   config: OutputConfig = state.outputConfig,
 ): OutputFile[] {
   const plans = [
     ...planAllEntries(tree, state.projectSettings, state.docWidth, state.docHeight,
-      config.background, false, config.processSuffixPosition, state.timelineData)
+      config.background, false, config.processSuffixPosition, state.timelineData, state.outputAliases)
       .filter(entry => !isOutputTargetExcluded(entry.outputTarget, config)),
     ...planVirtualSetEntries(tree, state.virtualSets, state.docWidth, state.docHeight, config.background),
   ]

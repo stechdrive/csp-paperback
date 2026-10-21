@@ -36,7 +36,7 @@ export function collectOutputNavigation(
   projectSettings: ProjectSettings,
   outputConfig: OutputConfig,
   virtualSets: VirtualSet[],
-  options: { includeHidden?: boolean; includeExcluded?: boolean } = {},
+  options: { includeHidden?: boolean; includeExcluded?: boolean; outputAliases?: ReadonlyMap<string, string> } = {},
 ): OutputNavigation {
   const rowPositions = new Map<string, number>()
   const ancestors = new Map<string, string[]>()
@@ -71,7 +71,7 @@ export function collectOutputNavigation(
         for (const unit of collectCellOutputUnits(layer, projectSettings.processTable, options)) {
           const outputTarget = cellOutputTarget(layer, unit, projectSettings.processTable, parentSuffixes.get(layer.id))
           if (!options.includeExcluded && isOutputTargetExcluded(outputTarget, outputConfig)) continue
-          const label = `${layer.name} / ${unit.cell.name}${unit.processSuffix !== undefined ? ` / ${unit.layers.map(l => l.name).join(' + ')}` : ''}`
+          const label = `${options.outputAliases?.get(layer.id) ?? layer.name} / ${unit.cell.name}${unit.processSuffix !== undefined ? ` / ${unit.layers.map(l => l.name).join(' + ')}` : ''}`
           entries.push({
             id: unit.sourceLayerId,
             kind: 'layer',
@@ -89,7 +89,7 @@ export function collectOutputNavigation(
         !isAutoMarkedContainerOutputSuppressed(layer, options.includeHidden)) {
         const outputTarget = individualOutputTarget(layer, projectSettings.processTable)
         if (options.includeExcluded || !isOutputTargetExcluded(outputTarget, outputConfig)) {
-          entries.push({ id: layer.id, kind: 'layer', label: layer.name, outputTarget,
+          entries.push({ id: layer.id, kind: 'layer', label: options.outputAliases?.get(layer.id) ?? layer.name, outputTarget,
             ancestorIds: ancestors.get(layer.id) ?? [], memberIds: collectIds([layer]) })
         }
       }

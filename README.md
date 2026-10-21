@@ -58,6 +58,8 @@ A                       アニメーションフォルダ
 
 出力先は、アニメーションフォルダごとに分ける方法と、すべての画像を一つのフォルダにまとめる方法を選べます。
 
+元の名前を出力時だけ変えたい場合は、素材ツリーの名前をダブルクリック、または選択してF2で別名を指定できます。アニメーションフォルダと個別出力する素材が対象で、`_`・辞書・手動指定から検出したものも含みます。入力中に実際の出力名と使用できない文字・同名の調整を確認でき、Enterで確定、Escで取り消します。別名には点線の下線が付き、元の名前はツールチップで確認できます。素材ツリーの≡メニューからも指定・解除できます。元のCLIP・PSDやセル番号は変わりません。別名は開いている文書内で保持し、次の文書には引き継ぎません。
+
 ### 元のCLIPを変えずに、書き出し時の不透明度を調整する
 
 作画作業中に見やすくするために調整した不透明度を、書き出しのためだけにクリスタで変更し直す必要はありません。アニメーション・セル・工程フォルダは、書き出し時に100%として扱います。
@@ -170,6 +172,8 @@ Use the original CSP cel names or assign sequential numbers. You can configure w
 When stages use separate tracks, revisions starting on the same frame as a drawing can be exported with the same number as that drawing.
 
 Choose between separate output folders for each animation folder and a single folder containing all images.
+
+To change a name only for export, double-click its name in the material tree or select it and press F2. Animation folders and individual outputs support aliases, including folders detected from `_`, registered names, or manual marks. The editor previews filenames and adjustments for invalid characters or collisions. Enter applies the alias; Esc cancels. A dotted underline marks aliases, and the tooltip shows the original name. The tree's ≡ menu also lets you edit or reset the alias. Source CLIP/PSD names and cel numbering stay intact. Aliases belong to the open document and are cleared when loading another document.
 
 ### Adjust opacity for export without changing the original CLIP
 

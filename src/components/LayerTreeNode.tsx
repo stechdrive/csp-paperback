@@ -15,6 +15,7 @@ import {
 } from '../utils/virtual-set-insertion'
 import { isAutoMarkedContainerOutputSuppressed } from '../utils/auto-marked-container'
 import { Tooltip } from './Tooltip'
+import { LayerOutputName } from './LayerOutputName'
 import { LayerDiagnosticWarning } from './DiagnosticWarning'
 import styles from './LayerTreeNode.module.css'
 import type { HistoryOptions } from '../store/history-slice'
@@ -26,6 +27,9 @@ const FOLDER_INSIDE_ZONE_START = 0.35
 const FOLDER_INSIDE_ZONE_END = 0.65
 
 interface LayerTreeNodeProps {
+  editingNameId?: string | null
+  onEditName?: (id: string) => void
+  onFinishName?: (restoreFocus: boolean) => void
   layer: CspLayer
   onSelect: (id: string) => void
   onToggleVisibility: (id: string, options?: HistoryOptions) => void
@@ -218,6 +222,9 @@ function VirtualSetBadge({ vs, indentWidth, onClear }: {
 }
 
 export const LayerTreeNode = memo(function LayerTreeNodeView({
+  editingNameId,
+  onEditName,
+  onFinishName,
   layer,
   onSelect,
   onToggleVisibility,
@@ -428,7 +435,7 @@ export const LayerTreeNode = memo(function LayerTreeNodeView({
         className={rowClass}
         data-layer-id={layer.id}
         onClick={handleRowClick}
-        draggable={draggable}
+        draggable={editingNameId === layer.id ? false : draggable}
         onDragStart={onDragStart}
         onDragEnd={onDragEnd}
         onPointerDown={onPointerDown}
@@ -486,9 +493,8 @@ export const LayerTreeNode = memo(function LayerTreeNodeView({
 
           <span className={`${styles.typeIcon} ${isCell ? styles.typeIconCell : ''} ${isAutoProcessAnimFolder ? styles.typeIconAutoProcess : ''}`}>{typeIcon}</span>
 
-          <Tooltip content={layer.originalName}><span data-tooltip={layer.originalName} className={nameClass}>
-            {(layer.autoMarked || isAutoProcessAnimFolder) ? layer.originalName : (layer.name || layer.originalName)}
-          </span></Tooltip>
+          <LayerOutputName layer={layer} className={nameClass} editing={editingNameId === layer.id}
+            onEdit={onEditName} onFinish={onFinishName} />
         </div>
 
         <div className={styles.statusColumns}>
@@ -555,6 +561,9 @@ export const LayerTreeNode = memo(function LayerTreeNodeView({
           {layer.children.map((child, index) => (
             <LayerTreeNode
               key={child.id}
+              editingNameId={editingNameId}
+              onEditName={onEditName}
+              onFinishName={onFinishName}
               layer={child}
               onSelect={onSelect}
               onToggleVisibility={onToggleVisibility}
