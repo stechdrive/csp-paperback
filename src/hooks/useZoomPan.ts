@@ -1,262 +1,103 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
-import type React from 'react'
+import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
+import { zoomBoard, type BoardCamera, type BoardSize } from '../utils/preview-grid'
 
-const ZOOM_MIN = 0.1
-const ZOOM_MAX = 8
-const ZOOM_STEP = 1.15
-
-interface ViewState {
-  zoom: number
-  panX: number
-  panY: number
-}
-
-/**
- * ズーム（マウスホイール / ピンチ）とパン（ドラッグ / タッチ）を管理するフック。
- * containerRef を zoom/pan 対象の外側コンテナに、contentStyle を内側コンテンツに適用する。
- * ズームはカーソル位置を基準点として行う。
- * コンテンツがビューポートに収まる軸ではセンタリングを強制する。
- */
-export function useZoomPan() {
-  const [el, setEl] = useState<HTMLElement | null>(null)
-  const [view, setView] = useState<ViewState>({ zoom: 1, panX: 0, panY: 0 })
+/** Image coordinates are original document pixels. CSS scaling never defines 100%. */
+export function useZoomPan({ width, height }: BoardSize, document: unknown) {
+  const [element, setElement] = useState<HTMLElement | null>(null)
+  const [view, setView] = useState<BoardCamera>({ x: 0, y: 0, zoom: 1 })
+  const [pixelRatio, setPixelRatio] = useState(window.devicePixelRatio || 1)
   const [dragging, setDragging] = useState(false)
-  const viewRef = useRef(view)
+  const camera = useRef(view), ratio = useRef(pixelRatio)
+  const retained = useRef<{ document: unknown; width: number; height: number; viewport: BoardSize } | null>(null)
+  const controls = useRef({ fit: () => {}, actualSize: () => {} })
 
-  useEffect(() => {
-    viewRef.current = view
-  }, [view])
-
-  /** コンテンツがちょうどビューポートに収まるズーム率（動的下限） */
-  const getFitZoom = (container: HTMLElement): number => {
-    const content = container.firstElementChild as HTMLElement | null
-    if (!content) return ZOOM_MIN
-    const contentW = content.offsetWidth || 1
-    const contentH = content.offsetHeight || 1
-    const fit = Math.min(container.clientWidth / contentW, container.clientHeight / contentH)
-    return Math.max(Math.min(fit, 1), ZOOM_MIN)
-  }
-
-  /**
-   * コンテンツがビューポートに収まる軸の pan をセンタリング値に強制。
-   * flexbox が unscaled レイアウトをセンタリングしているため、
-   * scaled コンテンツのセンタリングには panX = (cw - scaledW)/2 - ox が必要。
-   */
-  const clampPan = (panX: number, panY: number, zoom: number, container: HTMLElement): { panX: number; panY: number } => {
-    const content = container.firstElementChild as HTMLElement | null
-    if (!content) return { panX, panY }
-    const cw = container.clientWidth
-    const ch = container.clientHeight
-    const ox = content.offsetLeft
-    const oy = content.offsetTop
-    const scaledW = content.offsetWidth * zoom
-    const scaledH = content.offsetHeight * zoom
-    return {
-      panX: scaledW <= cw ? (cw - scaledW) / 2 - ox : panX,
-      panY: scaledH <= ch ? (ch - scaledH) / 2 - oy : panY,
+  useLayoutEffect(() => {
+    if (!element || !width || !height) return
+    const size = () => ({ width: element.clientWidth, height: element.clientHeight })
+    const fitCamera = (): BoardCamera => {
+      const viewport = size(), zoom = Math.max(.00001, Math.min((viewport.width - 32) / width, (viewport.height - 32) / height))
+      return { zoom, x: (viewport.width - width * zoom) / 2, y: (viewport.height - height * zoom) / 2 }
     }
-  }
-
-  // ホイールズーム（passive: false でスクロールを抑制）
-  useEffect(() => {
-    if (!el) return
-    const onWheel = (e: WheelEvent) => {
-      e.preventDefault()
-      const rect = el.getBoundingClientRect()
-      const mx = e.clientX - rect.left
-      const my = e.clientY - rect.top
-      // コンテンツ要素のレイアウトオフセット（flexboxセンタリング分）を差し引く
-      const content = el.firstElementChild as HTMLElement | null
-      const ox = content?.offsetLeft ?? 0
-      const oy = content?.offsetTop ?? 0
-      const lx = mx - ox
-      const ly = my - oy
-      const zoomMin = getFitZoom(el)
-      setView(prev => {
-        const factor = e.deltaY < 0 ? ZOOM_STEP : 1 / ZOOM_STEP
-        const newZoom = Math.max(zoomMin, Math.min(ZOOM_MAX, prev.zoom * factor))
-        const rawPanX = lx + (prev.panX - lx) * newZoom / prev.zoom
-        const rawPanY = ly + (prev.panY - ly) * newZoom / prev.zoom
-        const clamped = clampPan(rawPanX, rawPanY, newZoom, el)
-        return { zoom: newZoom, ...clamped }
-      })
+    const update = (next: BoardCamera) => {
+      const viewport = size(), w = width * next.zoom, h = height * next.zoom
+      next.x = w <= viewport.width ? (viewport.width - w) / 2 : Math.min(viewport.width - 24, Math.max(24 - w, next.x))
+      next.y = h <= viewport.height ? (viewport.height - h) / 2 : Math.min(viewport.height - 24, Math.max(24 - h, next.y))
+      camera.current = next; setView(next)
     }
-    el.addEventListener('wheel', onWheel, { passive: false })
-    return () => el.removeEventListener('wheel', onWheel)
-  }, [el])
-
-  // タッチパン & ピンチズーム（passive: false でブラウザのスクロール/ズームを抑制）
-  useEffect(() => {
-    if (!el) return
-
-    let touchState: {
-      startPanX: number
-      startPanY: number
-      startX: number
-      startY: number
-      startDist: number | null // null = 1本指
-      startZoom: number
-      midX: number
-      midY: number
-    } | null = null
-
-    const dist = (a: Touch, b: Touch) =>
-      Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY)
-
-    const onTouchStart = (e: TouchEvent) => {
-      if (e.touches.length === 1) {
-        e.preventDefault()
-        const t = e.touches[0]
-        const v = viewRef.current
-        touchState = {
-          startPanX: v.panX,
-          startPanY: v.panY,
-          startX: t.clientX,
-          startY: t.clientY,
-          startDist: null,
-          startZoom: v.zoom,
-          midX: 0,
-          midY: 0,
-        }
-      } else if (e.touches.length === 2) {
-        e.preventDefault()
-        const [a, b] = [e.touches[0], e.touches[1]]
-        const v = viewRef.current
-        const rect = el.getBoundingClientRect()
-        const mx = (a.clientX + b.clientX) / 2 - rect.left
-        const my = (a.clientY + b.clientY) / 2 - rect.top
-        const content = el.firstElementChild as HTMLElement | null
-        const ox = content?.offsetLeft ?? 0
-        const oy = content?.offsetTop ?? 0
-        touchState = {
-          startPanX: v.panX,
-          startPanY: v.panY,
-          startX: (a.clientX + b.clientX) / 2,
-          startY: (a.clientY + b.clientY) / 2,
-          startDist: dist(a, b),
-          startZoom: v.zoom,
-          midX: mx - ox,
-          midY: my - oy,
-        }
+    const zoom = (x: number, y: number, factor: number) => update(zoomBoard(camera.current, x, y, factor,
+      Math.min(fitCamera().zoom / 4, 1 / ratio.current), Math.max(8 / ratio.current, fitCamera().zoom)))
+    controls.current = {
+      fit: () => update(fitCamera()),
+      actualSize: () => zoom(element.clientWidth / 2, element.clientHeight / 2, 1 / (ratio.current * camera.current.zoom)),
+    }
+    const resize = () => {
+      const viewport = size()
+      if (!viewport.width || !viewport.height) return
+      const old = retained.current, nextRatio = window.devicePixelRatio || 1
+      if (!old || old.document !== document || old.width !== width || old.height !== height) update(fitCamera())
+      else {
+        const next = { ...camera.current, x: camera.current.x + (viewport.width - old.viewport.width) / 2,
+          y: camera.current.y + (viewport.height - old.viewport.height) / 2 }
+        update(zoomBoard(next, viewport.width / 2, viewport.height / 2, ratio.current / nextRatio, .000001, Infinity))
       }
+      ratio.current = nextRatio; setPixelRatio(nextRatio)
+      retained.current = { document, width, height, viewport }
     }
-
-    const onTouchMove = (e: TouchEvent) => {
-      if (!touchState) return
-      e.preventDefault()
-
-      const container = el
-
-      if (e.touches.length === 1 && touchState.startDist === null) {
-        // 1本指パン
-        const t = e.touches[0]
-        const rawPanX = touchState.startPanX + t.clientX - touchState.startX
-        const rawPanY = touchState.startPanY + t.clientY - touchState.startY
-        setView(prev => {
-          const clamped = clampPan(rawPanX, rawPanY, prev.zoom, container)
-          return { ...prev, ...clamped }
-        })
-      } else if (e.touches.length === 2 && touchState.startDist !== null) {
-        // 2本指ピンチズーム + パン
-        const [a, b] = [e.touches[0], e.touches[1]]
-        const curDist = dist(a, b)
-        const scale = curDist / touchState.startDist
-        const zoomMin = getFitZoom(container)
-        const newZoom = Math.max(zoomMin, Math.min(ZOOM_MAX, touchState.startZoom * scale))
-
-        // 中心点を基準にズーム
-        const lx = touchState.midX
-        const ly = touchState.midY
-        const rawPanX = lx + (touchState.startPanX - lx) * newZoom / touchState.startZoom
-        const rawPanY = ly + (touchState.startPanY - ly) * newZoom / touchState.startZoom
-
-        // + 2本指の平行移動分
-        const curMidX = (a.clientX + b.clientX) / 2
-        const curMidY = (a.clientY + b.clientY) / 2
-        const dx = curMidX - touchState.startX
-        const dy = curMidY - touchState.startY
-
-        const clamped = clampPan(rawPanX + dx, rawPanY + dy, newZoom, container)
-        setView({ zoom: newZoom, ...clamped })
-      }
+    resize()
+    const observer = new ResizeObserver(resize); observer.observe(element)
+    window.addEventListener('resize', resize)
+    const local = (event: { clientX: number; clientY: number }) => {
+      const rect = element.getBoundingClientRect(); return { x: event.clientX - rect.left, y: event.clientY - rect.top }
     }
-
-    const onTouchEnd = (e: TouchEvent) => {
-      if (e.touches.length === 0) {
-        touchState = null
-      } else if (e.touches.length === 1 && touchState?.startDist !== null) {
-        // ピンチ → 1本指に戻った: 新しいパン開始点をセット
-        const t = e.touches[0]
-        const v = viewRef.current
-        touchState = {
-          startPanX: v.panX,
-          startPanY: v.panY,
-          startX: t.clientX,
-          startY: t.clientY,
-          startDist: null,
-          startZoom: v.zoom,
-          midX: 0,
-          midY: 0,
-        }
-      }
+    const wheel = (event: WheelEvent) => {
+      if (!event.deltaY) return
+      event.preventDefault()
+      const point = local(event), delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? element.clientHeight : 1)
+      zoom(point.x, point.y, Math.exp(-Math.max(-160, Math.min(160, delta)) * .002))
     }
-
-    el.addEventListener('touchstart', onTouchStart, { passive: false })
-    el.addEventListener('touchmove', onTouchMove, { passive: false })
-    el.addEventListener('touchend', onTouchEnd)
-
+    const pointers = new Map<number, { x: number; y: number }>()
+    let origin = { x: 0, y: 0 }, moved = false
+    const down = (event: PointerEvent) => {
+      if (event.button !== 0) return
+      event.preventDefault(); element.focus({ preventScroll: true }); element.setPointerCapture(event.pointerId)
+      const point = local(event)
+      if (!pointers.size) { origin = point; moved = false }
+      pointers.set(event.pointerId, point)
+    }
+    const move = (event: PointerEvent) => {
+      const prior = pointers.get(event.pointerId)
+      if (!prior) return
+      const point = local(event), before = [...pointers.values()]
+      pointers.set(event.pointerId, point)
+      moved ||= Math.hypot(point.x - origin.x, point.y - origin.y) > 4
+      if (pointers.size === 2) {
+        const after = [...pointers.values()], mid = (p: typeof before) => ({ x: (p[0].x + p[1].x) / 2, y: (p[0].y + p[1].y) / 2 })
+        const a = mid(before), b = mid(after), distance = (p: typeof before) => Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y)
+        zoom(a.x, a.y, distance(after) / Math.max(1, distance(before)))
+        update({ ...camera.current, x: camera.current.x + b.x - a.x, y: camera.current.y + b.y - a.y })
+        moved = true
+      } else if (moved) update({ ...camera.current, x: camera.current.x + point.x - prior.x, y: camera.current.y + point.y - prior.y })
+      if (moved) setDragging(true)
+    }
+    const up = (event: PointerEvent) => { pointers.delete(event.pointerId); if (!pointers.size) setDragging(false) }
+    const key = (event: KeyboardEvent) => {
+      if (event.target !== element || event.isComposing) return
+      if (event.key === '0' || event.key === '1') { event.preventDefault(); controls.current[event.key === '0' ? 'fit' : 'actualSize']() }
+    }
+    element.addEventListener('wheel', wheel, { passive: false })
+    element.addEventListener('pointerdown', down); element.addEventListener('pointermove', move)
+    element.addEventListener('pointerup', up); element.addEventListener('pointercancel', up); element.addEventListener('keydown', key)
     return () => {
-      el.removeEventListener('touchstart', onTouchStart)
-      el.removeEventListener('touchmove', onTouchMove)
-      el.removeEventListener('touchend', onTouchEnd)
+      observer.disconnect(); window.removeEventListener('resize', resize)
+      element.removeEventListener('wheel', wheel); element.removeEventListener('pointerdown', down); element.removeEventListener('pointermove', move)
+      element.removeEventListener('pointerup', up); element.removeEventListener('pointercancel', up); element.removeEventListener('keydown', key)
     }
-  }, [el])
+  }, [element, width, height, document])
 
-  // ドラッグパン
-  const onMouseDown = useCallback((e: React.MouseEvent) => {
-    if (e.button !== 0 || !el) return
-    e.preventDefault()
-    setDragging(true)
-    const startX = e.clientX
-    const startY = e.clientY
-    const { panX: startPanX, panY: startPanY } = viewRef.current
-    const container = el
-
-    const onMove = (ev: MouseEvent) => {
-      setView(prev => {
-        const rawPanX = startPanX + ev.clientX - startX
-        const rawPanY = startPanY + ev.clientY - startY
-        const clamped = clampPan(rawPanX, rawPanY, prev.zoom, container)
-        return { ...prev, ...clamped }
-      })
-    }
-    const onUp = () => {
-      setDragging(false)
-      window.removeEventListener('mousemove', onMove)
-      window.removeEventListener('mouseup', onUp)
-    }
-    window.addEventListener('mousemove', onMove)
-    window.addEventListener('mouseup', onUp)
-  }, [el])
-
-  const contentStyle: React.CSSProperties = {
-    transform: `translate(${view.panX}px, ${view.panY}px) scale(${view.zoom})`,
-    transformOrigin: '0 0',
-    willChange: 'transform',
-    imageRendering: view.zoom >= 2 ? 'pixelated' : 'auto',
-  }
-
-  const containerStyle: React.CSSProperties = {
-    cursor: dragging ? 'grabbing' : 'grab',
-    userSelect: 'none',
-    touchAction: 'none',
-  }
-
-  return {
-    containerRef: setEl as (el: HTMLElement | null) => void,
-    contentStyle,
-    containerStyle,
-    onMouseDown,
-    zoom: view.zoom,
-  }
+  const contentStyle: CSSProperties = { position: 'absolute', left: 0, top: 0, width, height, maxWidth: 'none', maxHeight: 'none',
+    transform: `translate(${view.x}px, ${view.y}px) scale(${view.zoom})`, transformOrigin: '0 0', willChange: 'transform',
+    imageRendering: view.zoom * pixelRatio >= 2 ? 'pixelated' : 'auto' }
+  const containerStyle: CSSProperties = { cursor: dragging ? 'grabbing' : 'grab', userSelect: 'none', touchAction: 'none' }
+  return { containerRef: setElement, contentStyle, containerStyle, zoom: view.zoom * pixelRatio,
+    fit: () => controls.current.fit(), actualSize: () => controls.current.actualSize() }
 }

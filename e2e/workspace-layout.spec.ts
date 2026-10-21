@@ -23,10 +23,10 @@ for (const viewport of [{ width: 960, height: 640 }, { width: 1280, height: 820 
     const sourceBefore = await source.boundingBox()
     await expect(page.getByTestId('navigator-panel')).toHaveCount(0)
     const treeBounds = (await page.getByTestId('layer-tree').boundingBox())!
-    // The persistent output/source headings add one compact row.
     const listBounds = (await page.getByRole('listbox', { name: '出力ファイル' }).boundingBox())!
-    const stacked = listBounds.y + listBounds.height <= treeBounds.y
-    expect(treeBounds.height + (stacked ? listBounds.height : 0)).toBeGreaterThan(viewport.height - 240)
+    expect(listBounds.x + listBounds.width).toBeLessThan(treeBounds.x)
+    expect(Math.abs(listBounds.y - treeBounds.y)).toBeLessThan(4)
+    expect(treeBounds.height).toBeGreaterThan(viewport.height - 240)
     await expect(page.getByTestId('layer-panel-footer')).toHaveCount(0)
     await expect(page.getByRole('group', { name: 'レイヤーパネルの表示' })).toHaveCount(0)
     await expect(page.getByRole('listbox', { name: '出力ファイル' })).toBeVisible()
@@ -58,6 +58,8 @@ for (const viewport of [{ width: 960, height: 640 }, { width: 1280, height: 820 
     await expect(virtual).toBeVisible()
     expect((await source.boundingBox())!.width).toBeLessThanOrEqual(sourceBefore!.width)
     expect((await mainNav.boundingBox())!.width).toBeGreaterThanOrEqual(300)
+    const narrowList = (await page.getByRole('listbox', { name: '出力ファイル' }).boundingBox())!
+    expect(narrowList.x + narrowList.width).toBeLessThan((await page.getByTestId('layer-tree').boundingBox())!.x)
     await virtual.getByRole('textbox', { name: '新規仮想セル' }).click()
     const memo = source.locator('[data-layer-id]').filter({ has: page.getByText('memo', { exact: true }) }).first()
     await memo.dragTo(virtual.getByText('＋ レイヤーをドロップして追加', { exact: true }))

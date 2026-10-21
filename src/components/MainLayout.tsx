@@ -28,7 +28,8 @@ export function MainLayout({ previewMode, onPreviewModeChange, virtualPanelOpen,
     const available = (layoutRef.current?.clientWidth ?? window.innerWidth) - 248
       - (side === 'left' ? rightWidth : virtualPanelOpen ? leftWidth : 0)
     const onMove = (move: globalThis.PointerEvent) => {
-      const width = Math.max(220, Math.min(Math.max(220, available), startWidth + (move.clientX - startX) * (side === 'left' ? 1 : -1)))
+      const minimum = side === 'left' ? 220 : 380
+      const width = Math.max(minimum, Math.min(Math.max(minimum, available), startWidth + (move.clientX - startX) * (side === 'left' ? 1 : -1)))
       if (side === 'left') setLeftWidth(width)
       else setRightWidth(width)
     }

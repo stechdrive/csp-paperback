@@ -26,7 +26,8 @@ export function TiledOutputPreview({ view }: { view: RefObject<BoardView | null>
     <span className={styles.srOnly} role="option" aria-selected="true">{activeLabel || '未選択'}</span>
     {!files.length && <div className={styles.boardEmpty}>表示する出力がありません</div>}
     <div className={styles.boardTools}>
-      <span data-board-zoom>100%</span>
+      <span data-board-zoom aria-label="表示倍率" />
+      <Tooltip content="画像の1ピクセルを画面の1ピクセルで表示"><button type="button" onClick={() => controller.current?.actualSize()}>100%</button></Tooltip>
       <button type="button" onClick={() => controller.current?.fit()}>画面に収める</button>
       <Tooltip content="現在の表示幅に合わせて配置を作り直す"><button type="button" onClick={() => controller.current?.fit(true)}>整列</button></Tooltip>
     </div>

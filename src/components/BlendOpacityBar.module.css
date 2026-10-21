@@ -32,6 +32,12 @@
   opacity: 0.4;
 }
 
+@container layer-tree (max-width: 259px) {
+  .opacityScrubberLabel { display: none; }
+  .bar .opacityScrubber, .bar .opacityEditInput { width: 3rem; }
+  .bar .opacityScrubber { justify-content: flex-end; gap: 0; }
+}
+
 /* ドラッグスクラバー */
 .opacityScrubber {
   display: flex;

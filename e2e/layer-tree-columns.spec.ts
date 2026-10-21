@@ -36,7 +36,9 @@ async function resizeSource(page: Page, width: number) {
   await page.mouse.down()
   await page.mouse.move(x + box.width - width, y, { steps: 5 })
   await page.mouse.up()
-  await expect.poll(async () => (await source.boundingBox())!.width).toBeCloseTo(width, 0)
+  await expect.poll(async () => (await source.boundingBox())!.width).toBeCloseTo(Math.max(380, width), 0)
+  const output = (await files(page).boundingBox())!, layers = (await tree(page).boundingBox())!
+  expect(output.x + output.width).toBeLessThan(layers.x)
 }
 
 test('階層・指定・出力状態・使用状態が変わっても列を固定し、狭い幅でも収める', async ({ page }, testInfo) => {

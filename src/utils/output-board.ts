@@ -5,6 +5,7 @@ import { outputRenderQueue as queue, renderOutputFileAsync } from './output-rend
 import { boardHit, boardLayout, boardRect, boardResolution, boardVisible, fitBoard, zoomBoard, type BoardCamera, type BoardLayout } from './preview-grid'
 import { OutputBoardRenderer, type BoardSprite } from './output-board-renderer'
 import { isTouchCompatibilityClick, switchOutputViewByTouch } from './output-view'
+import { formatZoom } from './preview-zoom'
 
 export interface BoardView { key: string; document: unknown; layout: BoardLayout; camera: BoardCamera }
 type Request = { edge: number; release: () => void; unsubscribe: () => void }
@@ -17,6 +18,7 @@ export function mountOutputBoard(element: HTMLDivElement, background: HTMLCanvas
   const draftIds = new Set(selectDraftOutputs(state).map(file => file.outputId))
   const key = JSON.stringify([state.clipFileName, aspect, files.map(file => file.outputId)])
   let width = element.clientWidth, height = element.clientHeight, frame = 0, idle: ReturnType<typeof setTimeout> | undefined
+  let pixelRatio = window.devicePixelRatio || 1
   let resume: (() => void) | undefined, disposed = false
   const retained = view.current?.key === key && view.current.document === document ? view.current : null
   let layout = retained ? retained.layout : boardLayout({ width, height }, files.length, aspect)
@@ -70,7 +72,7 @@ export function mountOutputBoard(element: HTMLDivElement, background: HTMLCanvas
     element.dataset.textureBytes = String(renderer.textureBytes); element.dataset.resolution = String(edge)
     element.setAttribute('aria-busy', String((renderer.available && !ready) || sprites.some((sprite, i) => !sprite.image && !queue.get(files[visible[i]], edge)?.error)))
     const badge = element.querySelector('[data-board-zoom]')
-    if (badge) badge.textContent = Math.round(camera.zoom / fitBoard(layout, { width, height }).zoom * 100) + '%'
+    if (badge) badge.textContent = formatZoom(camera.zoom / actualZoom())
     save()
   }
   function release(request: Request) { request.unsubscribe(); request.release() }
@@ -111,8 +113,18 @@ export function mountOutputBoard(element: HTMLDivElement, background: HTMLCanvas
     invalidate()
   }
   function zoom(x: number, y: number, factor: number) {
-    camera = zoomBoard(camera, x, y, factor, fitBoard(layout, { width, height }).zoom / 4)
+    const fit = fitBoard(layout, { width, height }).zoom, actual = actualZoom()
+    camera = zoomBoard(camera, x, y, factor, Math.min(fit / 4, actual / 4), Math.max(actual * 8, fit))
     move()
+  }
+  function actualZoom() { return state.docWidth / layout.tileWidth / (window.devicePixelRatio || 1) }
+  function actualSize() {
+    if (!files.length) return
+    const current = files.findIndex(file => file.outputId === useAppStore.getState().activeOutputId)
+    const rect = boardRect(layout, current >= 0 ? current : Math.max(0, boardHit(layout, camera, width / 2, height / 2)))
+    const zoom = actualZoom()
+    camera = { zoom, x: width / 2 - (rect.x + rect.width / 2) * zoom, y: height / 2 - (rect.y + rect.height / 2) * zoom }
+    invalidate(); requestImages()
   }
   const local = (event: { clientX: number; clientY: number }) => { const rect = element.getBoundingClientRect(); return { x: event.clientX - rect.left, y: event.clientY - rect.top } }
   const wheel = (event: WheelEvent) => {
@@ -182,6 +194,7 @@ export function mountOutputBoard(element: HTMLDivElement, background: HTMLCanvas
     if (event.key === 'Enter' && current >= 0) { event.preventDefault(); useAppStore.getState().setOutputViewMode('single') }
     if (event.key === '+' || event.key === '=' || event.key === '-') { event.preventDefault(); interact(); zoom(width / 2, height / 2, event.key === '-' ? 1 / 1.2 : 1.2); settle() }
     if (event.key === '0') fit()
+    if (event.key === '1') actualSize()
   }
   const unsubscribe = useAppStore.subscribe((current, old) => {
     if (current.activeOutputId !== old.activeOutputId) {
@@ -199,24 +212,30 @@ export function mountOutputBoard(element: HTMLDivElement, background: HTMLCanvas
     if (rearrange) layout = boardLayout({ width, height }, files.length, aspect)
     camera = fitBoard(layout, { width, height }); invalidate(); requestImages()
   }
-  const resize = new ResizeObserver(() => {
+  const resizeViewport = () => {
     const nextWidth = element.clientWidth, nextHeight = element.clientHeight
     if (!nextWidth || !nextHeight) return
     camera.x += (nextWidth - width) / 2; camera.y += (nextHeight - height) / 2
+    const nextRatio = window.devicePixelRatio || 1
+    camera = zoomBoard(camera, nextWidth / 2, nextHeight / 2, pixelRatio / nextRatio, .000001, Infinity)
+    pixelRatio = nextRatio
     width = nextWidth; height = nextHeight; invalidate(); requestImages()
-  })
+  }
+  const resize = new ResizeObserver(resizeViewport)
   resize.observe(element)
+  window.addEventListener('resize', resizeViewport)
   element.addEventListener('wheel', wheel, { passive: false })
   element.addEventListener('pointerdown', down); element.addEventListener('pointermove', pointerMove)
   element.addEventListener('pointerup', up); element.addEventListener('pointercancel', up)
   element.addEventListener('dblclick', doubleClick); element.addEventListener('keydown', keyboard)
   requestImages()
-  return { fit, dispose() {
+  return { fit, actualSize, dispose() {
     disposed = true; save(); cancelAnimationFrame(frame); clearTimeout(idle); resize.disconnect(); unsubscribe()
     resume?.(); for (const map of [requests, previous]) for (const request of map.values()) release(request)
     renderer.dispose(); background.width = background.height = 1; patternCanvas.width = patternCanvas.height = 1
     element.removeEventListener('wheel', wheel); element.removeEventListener('pointerdown', down); element.removeEventListener('pointermove', pointerMove)
     element.removeEventListener('pointerup', up); element.removeEventListener('pointercancel', up)
     element.removeEventListener('dblclick', doubleClick); element.removeEventListener('keydown', keyboard)
+    window.removeEventListener('resize', resizeViewport)
   } }
 }

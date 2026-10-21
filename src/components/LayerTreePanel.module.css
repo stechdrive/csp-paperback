@@ -44,8 +44,8 @@
 .outputMenu button:hover, .outputMenu button:focus-visible { background: var(--color-surface-hover-strong); }
 .outputMenu button:disabled { opacity: .4; }
 .exportError { font-size: .7rem; padding: 6px; color: var(--color-text-secondary); }
-/* Keep enough space for the fixed tree columns and a readable layer name. */
-@container (max-width: 859px) {
+/* Only the mobile workspace stacks panes; desktop keeps the source connections horizontal. */
+@media (pointer: coarse) and (max-width: 1024px) {
   .relationship { flex-direction: column; gap: 8px; }
   .outputs { flex: 0 1 45%; min-height: 110px; border-right: 0; border-bottom: 1px solid var(--color-border-strong); }
   .relationship > .contents { flex: 1 1 50%; min-height: 100px; }

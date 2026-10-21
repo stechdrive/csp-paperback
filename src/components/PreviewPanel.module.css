@@ -43,23 +43,8 @@
   width: auto;
   height: auto;
   display: block;
-  border: 1px solid var(--color-border-subtle);
+  outline: 1px solid var(--color-border-subtle);
   background: var(--color-surface-1);
-}
-
-.zoomBadge {
-  position: absolute;
-  right: .5rem;
-  top: .5rem;
-  pointer-events: none;
-  font-size: .65rem;
-  color: var(--color-text-primary);
-  background: rgba(var(--color-surface-1-rgb), .9);
-  border: 1px solid var(--color-border-strong);
-  border-radius: 3px;
-  padding: .05rem .3rem;
-  font-variant-numeric: tabular-nums;
-  flex-shrink: 0;
 }
 
 .iconButton {

@@ -6,6 +6,7 @@ import { useVisibleOutputs } from '../hooks/useVisibleOutputs'
 import { useRenderedOutputs } from '../hooks/useRenderedOutputs'
 import { useOutputPreview } from '../hooks/useOutputPreview'
 import { useZoomPan } from '../hooks/useZoomPan'
+import { showOutputView } from '../utils/output-view'
 import { OutputPreview } from './OutputPreview'
 import { ExportSettings } from './ExportSettings'
 import { ExportSettingsPopover } from './ExportSettingsPopover'
@@ -42,6 +43,8 @@ function StartupExportSettings() {
 export function PreviewPanel({ mode = 'output', onModeChange, active = true }: { mode?: PreviewMode; onModeChange?: (mode: PreviewMode) => void; active?: boolean }) {
   const clipFileName = useAppStore(s => s.clipFileName)
   const docWidth = useAppStore(s => s.docWidth)
+  const docHeight = useAppStore(s => s.docHeight)
+  const document = useAppStore(s => s.clipDocument ?? s.rawPsd)
   const timelineData = useAppStore(s => s.timelineData)
   const xdtsFileName = useAppStore(s => s.xdtsFileName)
   const focusedAnimFolderId = useAppStore(s => s.focusedAnimFolderId)
@@ -58,11 +61,9 @@ export function PreviewPanel({ mode = 'output', onModeChange, active = true }: {
   })) : entries
   const boardView = useRef<BoardView | null>(null)
   const setView = (view: 'tiles' | 'single') => {
-    const state = useAppStore.getState()
-    if (view === 'single' && !state.activeOutputId && files[0]) state.selectOutputFile(files[0].outputId)
-    state.setOutputViewMode(view); onModeChange?.('output')
+    showOutputView(view, files); onModeChange?.('output')
   }
-  const outputZoomPan = useZoomPan()
+  const outputZoomPan = useZoomPan({ width: docWidth, height: docHeight }, document)
   if (docWidth === 0) {
     return <div className={styles.panel}>
       <StartupExportSettings />
@@ -85,7 +86,6 @@ export function PreviewPanel({ mode = 'output', onModeChange, active = true }: {
       <div className={styles.outputSection}>
         {tiled ? active && mode === 'output' && <TiledOutputPreview view={boardView} /> :
           <OutputPreview entries={entries} focusedAnimFolderId={focusedAnimFolderId} zoomPan={outputZoomPan} />}
-        {!tiled && outputZoomPan.zoom !== 1 && <span className={styles.zoomBadge}>{Math.round(outputZoomPan.zoom * 100)}%</span>}
       </div>
     </div>
     <div className={styles.view} hidden={mode !== 'navigator'} data-testid="navigator-view">

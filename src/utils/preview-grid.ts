@@ -14,8 +14,8 @@ export function fitBoard(layout: BoardLayout, size: BoardSize): BoardCamera {
   const zoom = Math.max(.00001, Math.min((size.width - 32) / layout.width, (size.height - 32) / layout.height))
   return { zoom, x: (size.width - layout.width * zoom) / 2, y: (size.height - layout.height * zoom) / 2 }
 }
-export function zoomBoard(camera: BoardCamera, x: number, y: number, factor: number, minimum: number): BoardCamera {
-  const zoom = Math.max(minimum, Math.min(16, camera.zoom * factor)), scale = zoom / camera.zoom
+export function zoomBoard(camera: BoardCamera, x: number, y: number, factor: number, minimum: number, maximum = 16): BoardCamera {
+  const zoom = Math.max(minimum, Math.min(maximum, camera.zoom * factor)), scale = zoom / camera.zoom
   return { zoom, x: x - (x - camera.x) * scale, y: y - (y - camera.y) * scale }
 }
 export function boardRect(layout: BoardLayout, index: number) {

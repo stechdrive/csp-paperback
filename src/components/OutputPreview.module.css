@@ -20,40 +20,45 @@
 }
 
 .list {
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
   gap: 0;
 }
 
 .thumbnail {
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 0.5rem;
-  border-bottom: 1px solid var(--color-surface-1);
 }
 
 .thumbnail:last-child {
   border-bottom: none;
 }
 
-/* canvas の intrinsic サイズを基準にアスペクト比を保ってコンテナ幅に収める */
+/* The viewport scales this original-document-sized surface. */
 .thumbCanvas {
-  max-width: 100%;
-  height: auto;
+  width: 100%;
+  height: 100%;
   display: block;
-  border: 1px solid var(--color-border-subtle);
-  border-radius: 3px;
+  outline: 1px solid var(--color-border-subtle);
 }
 
 /* 通常モード: 暗い背景 */
 .thumbDark {
+  width: 100%;
+  height: 100%;
   background: var(--color-surface-1);
   line-height: 0;
 }
 
 /* 透過PNGモード: チェッカーボード */
 .thumbCheckerboard {
+  width: 100%;
+  height: 100%;
   background-color: #f0f0f0;
   background-image:
     linear-gradient(45deg, #c8c8c8 25%, transparent 25%),

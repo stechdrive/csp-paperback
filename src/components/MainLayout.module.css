@@ -22,6 +22,7 @@
 
 .rightPane {
   flex-shrink: 0;
+  min-width: 380px;
   max-width: min(52%, calc(100% - var(--virtual-pane-width, 0px) - 308px));
   overflow: hidden;
   display: flex;
@@ -61,6 +62,7 @@
     max-width: none;
     flex: 1;
     min-height: 0;
+    min-width: 0;
   }
   .layout[data-mobile-tab="preview"] .leftPane, .layout[data-mobile-tab="preview"] .rightPane, .layout[data-mobile-tab="virtual"] .centerPane, .layout[data-mobile-tab="virtual"] .rightPane, .layout[data-mobile-tab="layer"] .leftPane, .layout[data-mobile-tab="layer"] .centerPane {
     display: none;

@@ -6,6 +6,7 @@ import { useZoomPan } from '../hooks/useZoomPan'
 import { useOutputNavigation } from '../hooks/useOutputNavigation'
 import type { OutputPreviewEntry } from '../hooks/useOutputPreview'
 import { OutputPreviewImage } from './OutputPreviewImage'
+import { PreviewZoomControls } from './PreviewZoomControls'
 import { isTouchCompatibilityClick, switchOutputViewByTouch } from '../utils/output-view'
 import styles from './OutputPreview.module.css'
 
@@ -120,7 +121,7 @@ export function OutputPreview({ entries, zoomPan }: OutputPreviewProps) {
   const file = [...files, ...drafts].find(file => file.outputId === activeId)
   const error = file ? outputRenderQueue.get(file, 'full')?.error : undefined
   const transparent = outputConfig.format === 'png' && outputConfig.background === 'transparent'
-  const { containerRef, contentStyle, containerStyle, onMouseDown } = zoomPan
+  const { containerRef, contentStyle, containerStyle } = zoomPan
 
   const isEmpty = !activeId && entries.length === 0
   const hasNoEntries = !isEmpty && entries.length === 0
@@ -131,7 +132,6 @@ export function OutputPreview({ entries, zoomPan }: OutputPreviewProps) {
         ref={containerRef as React.RefCallback<HTMLDivElement>}
         className={styles.zoomPanOuter}
         style={entries.length > 0 ? containerStyle : undefined}
-        onMouseDown={entries.length > 0 ? onMouseDown : undefined}
         onDoubleClick={() => { if (!isTouchCompatibilityClick()) useAppStore.getState().setOutputViewMode('tiles') }}
         tabIndex={0}
         aria-label="１点表示の画像"
@@ -152,7 +152,7 @@ export function OutputPreview({ entries, zoomPan }: OutputPreviewProps) {
       >
         {isEmpty && (
           <div className={styles.empty}>
-            出力一覧で画像を選択すると<br />ここに書き出し結果を表示します。<br />素材単体の確認はツリー選択後にSpace。
+            表示する出力がありません
           </div>
         )}
         {hasNoEntries && (
@@ -171,6 +171,7 @@ export function OutputPreview({ entries, zoomPan }: OutputPreviewProps) {
           </div>
         )}
       </div>
+      {entries.length > 0 && <PreviewZoomControls {...zoomPan} />}
       <LayerSeekBar />
     </div>
   )
