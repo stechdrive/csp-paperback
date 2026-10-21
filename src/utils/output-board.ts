@@ -10,7 +10,7 @@ import { sizePreviewSurface } from './preview-surface'
 import { isTouchCompatibilityClick, switchOutputViewByTouch } from './output-view'
 import { formatZoom } from './preview-zoom'
 import { mountOutputGateGesture, type OutputGateRect } from './output-gate-gesture'
-import { OUTPUT_GATE_ICON_PATH } from './output-gate-icon'
+import { OUTPUT_GATE_ICON_PATH, OUTPUT_GATE_SLASH_PATH } from './output-gate-icon'
 
 export interface BoardView { key: string; document: unknown; layout: BoardLayout; camera: BoardCamera }
 type Request = { edge: number; release: () => void; unsubscribe: () => void }
@@ -39,8 +39,9 @@ export function mountOutputBoard(element: HTMLDivElement, background: HTMLCanvas
   const css = getComputedStyle(element), textColor = css.getPropertyValue('--color-text-secondary').trim() || '#aaa'
   const accent = css.getPropertyValue('--color-accent').trim() || '#9a90ff'
   const gateColor = css.getPropertyValue('--color-text-dim').trim() || textColor
-  const gateBackground = `rgba(${css.getPropertyValue('--color-accent-rgb').trim() || '99, 102, 241'}, .16)`
+  const excludedGateColor = css.getPropertyValue('--color-danger').trim() || '#f38ba8'
   const gateIcon = new Path2D(OUTPUT_GATE_ICON_PATH)
+  const gateSlash = new Path2D(OUTPUT_GATE_SLASH_PATH)
   const orderedIds = files.map(file => file.outputId)
   const marqueeElement = element.querySelector<HTMLElement>('[data-board-marquee]')!
   const gateButton = element.querySelector<HTMLButtonElement>('[data-board-gate]')!
@@ -74,6 +75,9 @@ export function mountOutputBoard(element: HTMLDivElement, background: HTMLCanvas
     const edge = boardResolution(camera, visible.length, ratio)
     const current = useAppStore.getState()
     const selected = rangeSelection() ?? current.selectedOutputIds
+    const active = files.findIndex(file => file.outputId === current.activeOutputId)
+    gateIndex = hover >= 0 ? hover : element.contains(window.document.activeElement) ? active : -1
+    const buttonRect = gateButton && !pointers.size ? gateRect(gateIndex) : null
     const sprites: BoardSprite[] = visible.map(index => {
       const rect = boardRect(layout, index), file = files[index]
       return { key: file.renderKey, image: queue.best(file, edge)?.canvas, x: camera.x + rect.x * camera.zoom, y: camera.y + rect.y * camera.zoom,
@@ -99,16 +103,15 @@ export function mountOutputBoard(element: HTMLDivElement, background: HTMLCanvas
         const draft = draftIds.has(file.outputId)
         ctx.fillText((draft ? '未配置 · ' : '') + (current.outputConfig.structure === 'hierarchy' ? file.names.path || file.names.flatName : file.names.flatName), x, y + h + 4)
         ctx.restore()
-        const gate = gateRect(visible[i])
+        // The transparent DOM button draws its own icon; avoid painting it twice.
+        const gate = visible[i] === gateIndex && buttonRect ? null : gateRect(visible[i])
         if (gate) {
           ctx.save(); ctx.translate(gate.x, gate.y)
-          if (off) {
-            ctx.beginPath(); ctx.roundRect(.5, .5, 21, 21, 3)
-            ctx.fillStyle = gateBackground; ctx.fill(); ctx.strokeStyle = accent; ctx.lineWidth = 1; ctx.stroke()
-          }
           ctx.translate(3, 3); ctx.scale(16 / 24, 16 / 24)
-          ctx.strokeStyle = off ? accent : gateColor; ctx.lineWidth = 1.7; ctx.lineCap = ctx.lineJoin = 'round'
-          ctx.stroke(gateIcon); ctx.restore()
+          ctx.strokeStyle = off ? excludedGateColor : gateColor; ctx.lineWidth = 1.7; ctx.lineCap = ctx.lineJoin = 'round'
+          ctx.stroke(gateIcon)
+          if (off) ctx.stroke(gateSlash)
+          ctx.restore()
         }
       }
       if (queue.get(file, edge)?.error && w > 50) { ctx.fillStyle = '#b33'; ctx.fillText('⚠ 合成を再試行', x + 6, y + 6) }
@@ -121,13 +124,10 @@ export function mountOutputBoard(element: HTMLDivElement, background: HTMLCanvas
       if (marquee) Object.assign(marqueeElement.style, { left: `${Math.min(marquee.start.x, marquee.end.x)}px`, top: `${Math.min(marquee.start.y, marquee.end.y)}px`,
         width: `${Math.abs(marquee.end.x - marquee.start.x)}px`, height: `${Math.abs(marquee.end.y - marquee.start.y)}px` })
     }
-    const active = files.findIndex(file => file.outputId === current.activeOutputId)
-    gateIndex = hover >= 0 ? hover : element.contains(window.document.activeElement) ? active : -1
     if (gateButton) {
-      const rect = gateRect(gateIndex)
-      gateButton.hidden = !rect || !!pointers.size
-      if (!gateButton.hidden && rect) {
-        gateButton.style.left = `${rect.x}px`; gateButton.style.top = `${rect.y}px`
+      gateButton.hidden = !buttonRect
+      if (buttonRect) {
+        gateButton.style.left = `${buttonRect.x}px`; gateButton.style.top = `${buttonRect.y}px`
         const file = files[gateIndex], off = current.outputExclusions.has(file.gateId)
         const action = off ? '出力に戻す' : '出力から外す'
         const count = current.selectedOutputIds.has(file.outputId)

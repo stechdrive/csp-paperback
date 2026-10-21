@@ -73,6 +73,8 @@ export function mountOutputGateGesture(element: HTMLElement, files: OutputFile[]
     const file = id ? byId.get(id) : undefined
     if (!file || (event.target instanceof Element && event.target.closest('button') && !button)) return
     event.preventDefault()
+    // Preventing pointerdown keeps focus-visible's prior keyboard state in some browsers.
+    element.dataset.outputGatePointerFocus = 'true'
     ;(button ?? element).focus({ preventScroll: true })
     element.setPointerCapture(event.pointerId)
     suppressClick = true
@@ -100,6 +102,7 @@ export function mountOutputGateGesture(element: HTMLElement, files: OutputFile[]
     if (file) { event.stopPropagation(); startChange(file) }
   }
   const key = (event: KeyboardEvent) => {
+    delete element.dataset.outputGatePointerFocus
     if (!stroke || ['Shift', 'Control', 'Meta', 'Alt'].includes(event.key)) return
     if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation() }
     finish()
@@ -122,6 +125,7 @@ export function mountOutputGateGesture(element: HTMLElement, files: OutputFile[]
   document.addEventListener('visibilitychange', hidden)
   return { dispose() {
     finish(); unsubscribe()
+    delete element.dataset.outputGatePointerFocus
     element.removeEventListener('pointerdown', down)
     element.removeEventListener('pointermove', move)
     element.removeEventListener('lostpointercapture', up)

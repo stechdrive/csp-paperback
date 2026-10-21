@@ -1,2 +1,3 @@
-/** The same export-with-slash outline is used by SVG buttons and the canvas board. */
-export const OUTPUT_GATE_ICON_PATH = 'M4 14v6h16v-3M12 3v6m-4-2 4-4 4 4M3 3l18 18'
+/** Shared paper outline; the slash is added only when output is excluded. */
+export const OUTPUT_GATE_ICON_PATH = 'M14 3H5v18h14V8ZM14 3v5h5'
+export const OUTPUT_GATE_SLASH_PATH = 'M3 3l18 18'
