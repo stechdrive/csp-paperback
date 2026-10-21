@@ -16,7 +16,7 @@ export function planExportEntriesFromState(
 ): ExportEntry[] {
   const plans = outputConfig === state.outputConfig ? selectOutputFiles(state)
     : buildOutputPlan(selectLayerTreeWithVisibility(state), state, outputConfig)
-  const selected = selectedIds ? plans.filter(plan => selectedIds.has(plan.outputId)) : plans
+  const selected = plans.filter(plan => !state.outputExclusions?.has(plan.gateId) && (!selectedIds || selectedIds.has(plan.outputId)))
   const contextCache = new OutputContextCache(24 * 1024 * 1024, 2, 64 * 1024 * 1024)
   return selected.map(file => ({
     path: file.path, flatName: file.flatName, sourceLayerId: file.sourceLayerId,
@@ -34,7 +34,7 @@ export function buildOutputEntriesFromState(
   const plans = outputConfig === state.outputConfig
     ? selectOutputFiles(state)
     : buildOutputPlan(selectLayerTreeWithVisibility(state), state, outputConfig)
-  const selected = selectedIds ? plans.filter(plan => selectedIds.has(plan.outputId)) : plans
+  const selected = plans.filter(plan => !state.outputExclusions?.has(plan.gateId) && (!selectedIds || selectedIds.has(plan.outputId)))
   return applyRevisionBorders(renderOutputPlans(selected), state.projectSettings.processTable,
     outputConfig.revisionBorderEnabled).map((entry, index) => ({ ...entry, prepared: selected[index] }))
 }

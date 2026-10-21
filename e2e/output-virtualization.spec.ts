@@ -41,7 +41,7 @@ test('1200件の画面外を含む検索・範囲選択・キー移動・接続�
   const first = (await active(page).textContent())!
   await list(page).press('Shift+End')
   await expectActiveVisible(page)
-  await expect(page.getByText('1200選択', { exact: true })).toBeVisible()
+  await expect(page.getByTestId('source-panel').getByText('1200選択', { exact: true })).toBeVisible()
   await expect(active(page)).toHaveAttribute('aria-posinset', '1200')
   const last = (await active(page).textContent())!
   await list(page).press('ArrowUp')
@@ -65,11 +65,11 @@ test('1200件の画面外を含む検索・範囲選択・キー移動・接続�
   await list(page).dispatchEvent('wheel', { deltaY: 1 })
   await list(page).evaluate(el => { el.scrollTop = el.scrollHeight })
   await list(page).getByRole('option', { name: last, exact: true }).click({ modifiers: ['Shift'] })
-  await expect(page.getByText('1200選択', { exact: true })).toBeVisible()
+  await expect(page.getByTestId('source-panel').getByText('1200選択', { exact: true })).toBeVisible()
   await search(page).fill('Ａ＿１９') // NFKC and case folding still search every item.
   await expect(page.getByText('1200選択（一覧外1189）', { exact: true })).toBeVisible()
   await list(page).press('Control+a')
-  await expect(page.getByText('11選択', { exact: true })).toBeVisible()
+  await expect(page.getByTestId('source-panel').getByText('11選択', { exact: true })).toBeVisible()
   await list(page).press('End')
   await expect(active(page)).toHaveAttribute('aria-posinset', '11')
   await search(page).fill('no-such-output')
@@ -82,7 +82,7 @@ test('1200件の画面外を含む検索・範囲選択・キー移動・接続�
   await list(page).dispatchEvent('wheel', { deltaY: 1 })
   await list(page).evaluate(el => { el.scrollTop = el.scrollHeight })
   await list(page).getByRole('option', { name: last, exact: true }).click({ modifiers: ['Control'] })
-  await expect(page.getByText('2選択', { exact: true })).toBeVisible()
+  await expect(page.getByTestId('source-panel').getByText('2選択', { exact: true })).toBeVisible()
   await list(page).press('Shift+F10')
   const menu = page.getByRole('menu', { name: '選択した出力の操作' })
   await expect(menu).toContainText('2件を書き出し')

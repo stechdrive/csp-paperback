@@ -77,6 +77,8 @@ A                       アニメーションフォルダ
 
 JPEG／PNG画像を、ZIPまたはフォルダへ保存できます。PNGは透明背景にも対応しています。
 
+今回書き出さない画像は、一覧やタイルの×、または≡メニューの「選択を出力から外す」でOFFにできます。名前・工程サフィックス・見た目を変更してもOFFを保ち、元のレイヤー表示や書き出し設定は変えません。「出力に戻す」で復帰できます。タイルでもCtrl／Shiftで複数選択でき、Shift＋ドラッグで範囲追加、Ctrl＋ドラッグで反転、Ctrl＋Shift＋ドラッグで範囲解除できます（MacはCtrlの代わりにCommand）。
+
 工程名はスタジオや作品によって異なります。初回は「工程フォルダリスト」の登録内容を確認し、使っているフォルダ名と出力ファイル名に付ける文字を設定してください。例えば「演出」に `_e`、「作監」に `_s` を対応させます。設定は保存でき、JSONファイルでスタッフや別の端末へ共有できます。
 
 アプリ内のサンプルから、出力結果を試せます。詳しい操作と設定はアプリ内ヘルプで確認できます。
@@ -185,6 +187,8 @@ Virtual cels combine loaded cels, layouts, and other materials into additional o
 4. Review images and filenames in the output preview, select the stages or materials you need, and export them together.
 
 Save JPEG or PNG images as a ZIP archive or to a folder. PNG supports transparent backgrounds.
+
+Use the × beside an image or the pane menu to turn off individual outputs. They remain visible for review, and stay off when filenames, stage suffixes or appearance change. Restore them explicitly or use Undo; opening a new document clears these choices. Tiles support Ctrl/Cmd-click to toggle selection and Shift-click for a range. Shift-drag adds a rectangle, Ctrl/Cmd-drag toggles it, and Ctrl/Cmd+Shift-drag removes it. Ordinary dragging pans the board.
 
 Stage names vary between studios and productions. On first use, check the stage folder list and set the folder names you use and the text to add to exported filenames. For example, map `演出` to `_e` and `作監` to `_s`. Save your settings and share them with other staff or devices as a JSON file.
 

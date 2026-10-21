@@ -1,4 +1,5 @@
 import { useAppStore } from '../store'
+import { selectEnabledOutputCount } from '../store/output-gate-slice'
 import { useExport } from '../hooks/useExport'
 import { useLocale } from '../i18n/locale'
 import { Tooltip } from './Tooltip'
@@ -10,6 +11,7 @@ interface ExportDialogProps {
 }
 
 export function ExportDialog({ onClose }: ExportDialogProps) {
+  const enabledOutputCount = useAppStore(selectEnabledOutputCount)
   const outputConfig = useAppStore(s => s.outputConfig)
   const projectSettings = useAppStore(s => s.projectSettings)
   const setFormat = useAppStore(s => s.setFormat)
@@ -142,7 +144,7 @@ export function ExportDialog({ onClose }: ExportDialogProps) {
           <button className={styles.cancelBtn} onClick={onClose} disabled={isExporting}>
             {t.export.cancel}
           </button>
-          <button className={styles.exportBtn} onClick={handleExport} disabled={isExporting}>
+          <button className={styles.exportBtn} onClick={handleExport} disabled={isExporting || !enabledOutputCount}>
             {isExporting ? t.export.exporting : t.export.exportZip}
           </button>
         </div>

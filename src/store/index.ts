@@ -13,6 +13,7 @@ import { createProjectSlice, type ProjectSlice } from './project-slice'
 import { createOutputSlice, type OutputSlice } from './output-slice'
 import { createUiSlice, type UiSlice } from './ui-slice'
 import { createHistorySlice, type HistorySlice } from './history-slice'
+import { createOutputGateSlice, type OutputGateSlice } from './output-gate-slice'
 import { DEFAULT_MOBILE_UI_SCALE, clampMobileUiScale } from '../utils/mobile-ui-scale'
 import { DEFAULT_APP_THEME, isAppTheme } from '../theme'
 import { validateProjectSettings, validateOutputConfig } from '../utils/settings-validation'
@@ -26,6 +27,7 @@ export type AppStore =
   ProjectSlice &
   OutputSlice &
   UiSlice &
+  OutputGateSlice &
   HistorySlice
 
 type PersistedSettings = {
@@ -63,6 +65,7 @@ export const useAppStore = create<AppStore>()(
       ...createOutputSlice(...a),
       ...createUiSlice(...a),
       ...createHistorySlice(...a),
+      ...createOutputGateSlice(...a),
     }),
     {
       name: 'csp-paperback:settings',

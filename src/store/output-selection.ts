@@ -12,7 +12,7 @@ export function outputSelectionPatch(state: AppStore, id: string, label: string,
   let ids = new Set([id])
   if (options?.range && state.outputSelectionAnchor && options.orderedIds) {
     const a = options.orderedIds.indexOf(state.outputSelectionAnchor), b = options.orderedIds.indexOf(id)
-    if (a >= 0 && b >= 0) ids = new Set(options.orderedIds.slice(Math.min(a, b), Math.max(a, b) + 1))
+    if (a >= 0 && b >= 0) ids = new Set([...(options.toggle ? state.selectedOutputIds : []), ...options.orderedIds.slice(Math.min(a, b), Math.max(a, b) + 1)])
   } else if (options?.toggle) {
     ids = new Set(state.selectedOutputIds)
     if (ids.has(id)) ids.delete(id)
@@ -25,4 +25,15 @@ export function outputSelectionPatch(state: AppStore, id: string, label: string,
 export function emptyOutputSelection() {
   return { activeOutputId: null, activeOutputLabel: '', selectedOutputIds: new Set<string>(),
     outputSelectionAnchor: null, outputViewMode: 'tiles' as const, outputSearch: '', quickLookTarget: null }
+}
+
+export type RangeSelectionMode = 'add' | 'remove' | 'toggle'
+/** Always combine with the pointer-down snapshot, never the last pointer move. */
+export function combineOutputSelection(initial: ReadonlySet<string>, affected: readonly string[], mode: RangeSelectionMode): Set<string> {
+  const next = new Set(initial)
+  for (const id of affected) {
+    if (mode === 'remove' || (mode === 'toggle' && initial.has(id))) next.delete(id)
+    else next.add(id)
+  }
+  return next
 }

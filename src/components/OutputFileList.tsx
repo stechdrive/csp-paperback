@@ -16,6 +16,7 @@ import { DiagnosticWarning } from './DiagnosticWarning'
 import { outputRenderQueue } from '../utils/output-render-queue'
 import { useVisibleOutputs, normalizeOutputSearch as normalize } from '../hooks/useVisibleOutputs'
 import { PaneIcon } from './PaneIcon'
+import { OutputGateActions } from './OutputGateActions'
 
 
 const OutputThumbnail = memo(function OutputThumbnail({ file, active }: { file: OutputFile; active: boolean }) {
@@ -46,6 +47,7 @@ export function OutputFileList({ active = true, onShowTree, onPreview }: { activ
   const drafts = useAppStore(selectDraftOutputs)
   const activeId = useAppStore(s => s.activeOutputId)
   const selectedIds = useAppStore(s => s.selectedOutputIds)
+  const excluded = useAppStore(s => s.outputExclusions)
   const search = useAppStore(s => s.outputSearch)
   const setSearch = (outputSearch: string) => useAppStore.setState({ outputSearch })
   const [searchOpen, setSearchOpen] = useState(false)
@@ -67,7 +69,8 @@ export function OutputFileList({ active = true, onShowTree, onPreview }: { activ
   const virtual = useVirtualOutputRows(list, visible, selectedIndex, active && !menu)
   const visibleIds = useMemo(() => new Set(visible.map(file => file.outputId)), [visible])
   const draftIds = useMemo(() => new Set(drafts.map(file => file.outputId)), [drafts])
-  const exportIds = new Set(files.filter(file => selectedIds.has(file.outputId)).map(file => file.outputId))
+  const exportIds = new Set(files.filter(file => selectedIds.has(file.outputId) && !excluded.has(file.gateId)).map(file => file.outputId))
+  const excludedCount = files.filter(file => excluded.has(file.gateId)).length
   const hiddenSelected = [...selectedIds].filter(id => !visibleIds.has(id)).length
 
   const select = useCallback((file: OutputFile, toggle = false, range = false) => {
@@ -109,7 +112,7 @@ export function OutputFileList({ active = true, onShowTree, onPreview }: { activ
     // registering the menu's scroll-to-dismiss handler.
     cancelAnimationFrame(menuFrame.current)
     menuFrame.current = requestAnimationFrame(() => {
-      setMenu({ x: Math.max(4, Math.min(x, window.innerWidth - 230)), y: Math.max(4, Math.min(y, window.innerHeight - 230)) })
+      setMenu({ x: Math.max(4, Math.min(x, window.innerWidth - 230)), y: Math.max(4, Math.min(y, window.innerHeight - 380)) })
     })
   }
   return <>
@@ -121,14 +124,14 @@ export function OutputFileList({ active = true, onShowTree, onPreview }: { activ
           }} />
         <button type="button" aria-label="検索を解除して閉じる" onClick={() => { setSearch(''); setSearchOpen(false); requestAnimationFrame(() => searchButton.current?.focus()) }}><PaneIcon kind="close" /></button>
       </> : <>
-        <span className={styles.paneCount}>{files.length}件</span>
+        <span className={styles.paneCount}>{files.length}件{excludedCount > 0 && `・OFF ${excludedCount}`}</span>
         <Tooltip content="ファイル名を検索"><button ref={searchButton} type="button" aria-label="出力ファイル名を検索" onClick={() => setSearchOpen(true)}><PaneIcon kind="search" /></button></Tooltip>
       </>}
       {selectedIds.size > 0 && <Tooltip content={`${selectedIds.size}選択${hiddenSelected ? `（一覧外${hiddenSelected}）` : ''}`}><small className={styles.selectionCount}>{selectedIds.size}選択{hiddenSelected > 0 ? `（一覧外${hiddenSelected}）` : ''}</small></Tooltip>}
       <Tooltip content="選択中の出力をツリーで表示"><button type="button" onClick={onShowTree} disabled={!activeId} aria-label="選択中の出力をツリーで表示">↗</button></Tooltip>
       <Tooltip content="出力一覧のメニュー"><button ref={moreRef} type="button" aria-label="出力一覧のメニュー" aria-haspopup="menu" aria-expanded={!!menu} onClick={event => {
         menuInvoker.current = event.currentTarget
-        const rect = event.currentTarget.getBoundingClientRect(); setMenu(menu ? null : { x: Math.max(4, Math.min(rect.right - 224, window.innerWidth - 230)), y: Math.min(rect.bottom + 4, window.innerHeight - 230) })
+        const rect = event.currentTarget.getBoundingClientRect(); setMenu(menu ? null : { x: Math.max(4, Math.min(rect.right - 224, window.innerWidth - 230)), y: Math.max(4, Math.min(rect.bottom + 4, window.innerHeight - 380)) })
       }}><PaneIcon kind="menu" /></button></Tooltip>
     </div>
     {warningCount > 0 && <div className={warningStyles.status} role="status">要確認 {warningCount}件</div>}
@@ -149,9 +152,17 @@ export function OutputFileList({ active = true, onShowTree, onPreview }: { activ
         {draftIds.has(file.outputId) && !draftIds.has(visible[index - 1]?.outputId) && <div className={styles.draftHeading}>未配置の仮想セル · 書き出し対象外</div>}
         <div id={`${id}-${index}`} role="option" aria-label={file.relativePath} aria-selected={selectedIds.has(file.outputId)} aria-posinset={index + 1} aria-setsize={visible.length} className={styles.fileRow}
           data-output-id={file.outputId} data-output-source-id={file.sourceLayerId} data-active-output={file.outputId === activeId}
+          data-output-off={excluded.has(file.gateId)} aria-description={excluded.has(file.gateId) ? '出力OFF' : undefined}
           onClick={event => { list.current?.focus(); select(file, event.ctrlKey || event.metaKey, event.shiftKey) }}
           onContextMenu={event => { event.preventDefault(); openMenu(file, event.clientX, event.clientY) }}>
-          <OutputThumbnail file={file} active={active} /><span data-output-name>{file.relativePath}</span>
+          <OutputThumbnail file={file} active={active} /><span className={styles.outputName}>
+            <span data-output-name>{file.relativePath}</span>
+            {!draftIds.has(file.outputId) && <Tooltip content={excluded.has(file.gateId) ? '出力に戻す' : '出力から外す'}><button type="button" className={styles.outputGate}
+              aria-label={`${file.relativePath}を${excluded.has(file.gateId) ? '出力に戻す' : '出力から外す'}`}
+              onDoubleClick={event => event.stopPropagation()} onClick={event => {
+                event.stopPropagation(); useAppStore.getState().setOutputsEnabled(new Set([file.outputId]), excluded.has(file.gateId))
+              }}><PaneIcon kind="close" /></button></Tooltip>}
+          </span>
           <span className={styles.outputWarning}>{!draftIds.has(file.outputId) && <DiagnosticWarning issues={checkById.get(file.outputId)?.image?.diagnostics}
             error={checkById.get(file.outputId)?.error} onRetry={checkById.get(file.outputId)?.error ? () => outputRenderQueue.retry(file) : undefined} />}
           </span>
@@ -171,6 +182,7 @@ export function OutputFileList({ active = true, onShowTree, onPreview }: { activ
       }}>
       <button role="menuitem" disabled={!visible.length} onClick={() => { useAppStore.setState({ selectedOutputIds: new Set(visible.map(file => file.outputId)) }); setMenu(null); list.current?.focus() }}>表示中の項目をすべて選択</button>
       <button role="menuitem" disabled={!selectedIds.size} onClick={() => { useAppStore.setState({ selectedOutputIds: new Set() }); setMenu(null); list.current?.focus() }}>選択を解除</button>
+      <OutputGateActions onDone={() => { setMenu(null); list.current?.focus() }} />
       <span>{exportIds.size}件を書き出し</span>
       <button role="menuitem" disabled={isExporting || !exportIds.size} onClick={() => { setMenu(null); list.current?.focus(); void startExport('zip', exportIds) }}>選択項目をZIPに書き出し</button>
       {supportsDirectoryExport() && <button role="menuitem" disabled={isExporting || !exportIds.size} onClick={() => { setMenu(null); list.current?.focus(); void startExport('directory', exportIds) }}>選択項目をフォルダに書き出し</button>}

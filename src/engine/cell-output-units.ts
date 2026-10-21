@@ -9,6 +9,8 @@ export interface CellOutputUnit {
   sourceLayerId: string
   /** Absent for the body; an empty suffix is still a distinct process output. */
   processSuffix?: string
+  /** Complete process group, including temporarily hidden folders. */
+  processLayerIds?: string[]
   layers: CspLayer[]
   ignoreOpacityIds?: Set<string>
 }
@@ -49,11 +51,17 @@ export function collectCellOutputUnits(
 
     const bodyLayers: CspLayer[] = []
     const processGroups = new Map<string, CspLayer[]>()
+    const processIdentities = new Map<string, string[]>()
     for (const sub of cell.children) {
-      if (!options.includeHidden && (sub.hidden || sub.uiHidden)) continue
       const suffix = sub.isFolder && (explicitlyIncludedBranch || !isAutomaticOutputSuppressed(sub))
         ? folderNameToSuffix.get(normalizeProcessFolderName(sub.originalName))
         : undefined
+      if (suffix !== undefined) {
+        const ids = processIdentities.get(suffix) ?? []
+        ids.push(sub.id)
+        processIdentities.set(suffix, ids)
+      }
+      if (!options.includeHidden && (sub.hidden || sub.uiHidden)) continue
       if (suffix === undefined) {
         bodyLayers.push(sub)
       } else {
@@ -68,7 +76,7 @@ export function collectCellOutputUnits(
       units.push({ cell, cellIndex, sourceLayerId: cell.id, layers: bodyLayers })
     }
     for (const [processSuffix, layers] of processGroups) {
-      units.push({ cell, cellIndex, sourceLayerId: layers[0].id, processSuffix, layers, ignoreOpacityIds: new Set(layers.map(layer => layer.id)) })
+      units.push({ cell, cellIndex, sourceLayerId: layers[0].id, processSuffix, processLayerIds: processIdentities.get(processSuffix), layers, ignoreOpacityIds: new Set(layers.map(layer => layer.id)) })
     }
   }
 

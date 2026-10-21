@@ -34,7 +34,8 @@ async function expectRowConnected(page: Page, row: Locator) {
 }
 
 test('画面外の接続先を名前で確認して移動でき、スクロール・開閉・リサイズ後も線がつながる', async ({ page }, testInfo) => {
-  await page.setViewportSize({ width: 960, height: 640 })
+  // Compact rows fit the selected sources at 640px; use a short viewport to exercise overflow.
+  await page.setViewportSize({ width: 960, height: 400 })
   const errors: string[] = []
   page.on('pageerror', error => errors.push(error.message))
   await loadSample(page)
@@ -126,7 +127,7 @@ test.describe('タッチと上下配置', () => {
 })
 
 test('端の接続表示もホイールと仮想セルのドラッグを妨げず、検索後に古い線を残さない', async ({ page }) => {
-  await page.setViewportSize({ width: 960, height: 640 })
+  await page.setViewportSize({ width: 960, height: 400 })
   await loadSample(page)
   await files(page).getByRole('option', { name: 'B_1_s.jpg', exact: true }).click()
   await expectConnectedEndpoint(page, 'below')

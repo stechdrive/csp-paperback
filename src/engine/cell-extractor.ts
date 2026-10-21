@@ -2,7 +2,7 @@ import { applyMaterialEffects } from './material-effects'
 import { collectingMaterials, visitMaterial } from './material-dependencies'
 import { withCanvasResources } from './render-resources'
 import { recordOutputSources } from './render-sources'
-import { cellOutputId, layerOutputId, virtualOutputId } from '../utils/output-identity'
+import { cellOutputId, cellGateId, layerOutputId, virtualOutputId } from '../utils/output-identity'
 import {
   DEFAULT_PROJECT_SETTINGS,
   resolveCellPrefixSeparator,
@@ -46,6 +46,7 @@ export type ContextFactory = (cache: OutputRenderCache) => OutputContext
 export type OutputRenderCache = Map<ContextFactory, OutputContext>
 export interface PlannedOutputEntry extends Omit<OutputEntry, 'canvas'> {
   outputId: string
+  gateId: string
   animFolderId?: string
   outputTarget?: OutputTarget
   renderCanvas: (cache: OutputRenderCache) => HTMLCanvasElement
@@ -185,6 +186,7 @@ function planCells(
     })
     entries.push({
       outputId: cellOutputId(animFolder.id, cell.id, unit.processSuffix),
+      gateId: cellGateId(animFolder.id, cell.id, unit.processLayerIds),
       path: `${folderName}/${fileName}`,
       flatName: fileName,
       renderCanvas,
@@ -633,7 +635,7 @@ export function planVirtualSetEntries(
         collectMaterialOutputContext(insertionLayerId, tree, docWidth, docHeight, vs.insertionPosition)), vsFlats)
     }
     const fileName = `${vs.name}.jpg`
-    entries.push({ outputId: virtualOutputId(vs.id), path: fileName, flatName: fileName, renderCanvas, sourceLayerId: vs.id })
+    entries.push({ outputId: virtualOutputId(vs.id), gateId: virtualOutputId(vs.id), path: fileName, flatName: fileName, renderCanvas, sourceLayerId: vs.id })
   }
   resolveFlatNameCollisions(entries)
   return entries
@@ -1006,7 +1008,7 @@ export function planAllEntries(
             collectMaterialOutputContext(layer.id, tree, docWidth, docHeight)), layerFlats)
         }
         const fileName = `${layer.originalName}.jpg`
-        entries.push({ outputId: layerOutputId(layer.id), path: fileName, flatName: fileName, renderCanvas, sourceLayerId: layer.id,
+        entries.push({ outputId: layerOutputId(layer.id), gateId: layerOutputId(layer.id), path: fileName, flatName: fileName, renderCanvas, sourceLayerId: layer.id,
           outputTarget: individualOutputTarget(layer, projectSettings.processTable) })
 
         // フォルダなら子も走査して内包マーク済みレイヤーを出力する。

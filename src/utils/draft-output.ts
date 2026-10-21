@@ -13,7 +13,7 @@ export function buildDraftOutputs(tree: CspLayer[], state: Pick<AppStore, 'virtu
   const renderKey = createOutputRenderKey(tree, state.docWidth, state.docHeight, state.outputConfig.background, state.virtualSets)
   return state.virtualSets.filter(vs => !vs.insertionLayerId).map(vs => ({
     renderKey: renderKey({ outputId: virtualOutputId(vs.id) }),
-    outputId: virtualOutputId(vs.id), sourceLayerId: vs.id, flatName: vs.name, path: '',
+    outputId: virtualOutputId(vs.id), gateId: virtualOutputId(vs.id), sourceLayerId: vs.id, flatName: vs.name, path: '',
     relativePath: vs.name, fileName: vs.name, segments: [], names: { flatName: vs.name, path: '' },
     renderCanvas: () => {
       const { docWidth: w, docHeight: h } = state

@@ -504,7 +504,7 @@ export const LayerTreeNode = memo(function LayerTreeNodeView({
               <span className={styles.outputStatus} data-output-state="name-excluded">除外指定</span>
             </Tooltip>}
           </span>
-          <span className={styles.usageStatus} data-layer-column="usage" aria-hidden="true" />
+          <Tooltip content="選択した出力で使用しています。数字は含まれる素材数、Vは元の表示状態によらず仮想セルで使用している素材です。"><span className={styles.usageStatus} data-layer-column="usage" aria-hidden="true" /></Tooltip>
         </div>
 
         <span className={styles.controlSlot} data-layer-column="warning">

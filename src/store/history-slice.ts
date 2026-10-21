@@ -19,6 +19,7 @@ interface LayerAppearance {
 
 /** アンドゥ/リドゥで復元する状態のスナップショット */
 export interface UndoableState {
+  outputExclusions: Set<string>
   singleMarks: Map<string, SingleMark>
   virtualSets: VirtualSet[]
   manualAnimFolderIds: Set<string>
@@ -43,6 +44,7 @@ export interface HistorySlice {
 /** 現在の undoable state を deep copy してスナップショットを返す */
 function snapshot(s: AppStore): UndoableState {
   return {
+    outputExclusions: new Set(s.outputExclusions),
     singleMarks: new Map(s.singleMarks),
     virtualSets: s.virtualSets.map(vs => ({
       ...vs,
@@ -141,6 +143,7 @@ function restoreSnapshot(
     : null
 
   const nextState: Partial<AppStore> = {
+    outputExclusions: state.outputExclusions,
     singleMarks: state.singleMarks,
     virtualSets: state.virtualSets,
     manualAnimFolderIds: state.manualAnimFolderIds,

@@ -21,6 +21,20 @@ export function zoomBoard(camera: BoardCamera, x: number, y: number, factor: num
 export function boardRect(layout: BoardLayout, index: number) {
   return { x: index % layout.columns * layout.stepX, y: Math.floor(index / layout.columns) * layout.stepY, width: layout.tileWidth, height: layout.tileHeight }
 }
+
+/** Screen-space rectangle; inspect only the intersecting rows and columns. */
+export function boardRange(layout: BoardLayout, camera: BoardCamera, a: { x: number; y: number }, b: { x: number; y: number }): number[] {
+  const left = (Math.min(a.x, b.x) - camera.x) / camera.zoom, right = (Math.max(a.x, b.x) - camera.x) / camera.zoom
+  const top = (Math.min(a.y, b.y) - camera.y) / camera.zoom, bottom = (Math.max(a.y, b.y) - camera.y) / camera.zoom
+  const result: number[] = []
+  const x0 = Math.max(0, Math.floor(left / layout.stepX)), x1 = Math.min(layout.columns - 1, Math.floor(right / layout.stepX))
+  const y0 = Math.max(0, Math.floor(top / layout.stepY)), y1 = Math.min(Math.ceil(layout.count / layout.columns) - 1, Math.floor(bottom / layout.stepY))
+  for (let row = y0; row <= y1; row++) for (let column = x0; column <= x1; column++) {
+    const index = row * layout.columns + column
+    if (index < layout.count && column * layout.stepX + layout.tileWidth >= left && row * layout.stepY + layout.tileHeight >= top) result.push(index)
+  }
+  return result
+}
 export function boardHit(layout: BoardLayout, camera: BoardCamera, x: number, y: number) {
   const wx = (x - camera.x) / camera.zoom, wy = (y - camera.y) / camera.zoom
   if (wx < 0 || wy < 0) return -1

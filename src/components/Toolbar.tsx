@@ -1,6 +1,7 @@
 import { useDismissableLayer } from '../hooks/useDismissableLayer'
 import { useRef, useState } from 'react'
 import { useAppStore } from '../store'
+import { selectEnabledOutputCount } from '../store/output-gate-slice'
 import { useLocale } from '../i18n/locale'
 import { useExport } from '../hooks/useExport'
 import { useIsMobile } from '../hooks/useIsMobile'
@@ -132,6 +133,7 @@ export function Toolbar({ onFiles, isLoading, error, notification, canUndo, canR
     setOpenPopover(null)
     await startExport(destination)
   }
+  const enabledOutputCount = useAppStore(selectEnabledOutputCount)
   const files = [clipFileName, psdFileName, xdtsFileName].filter(Boolean)
   const statusMessage = error || exportError || (isLoading ? t.toolbar.loading : isExporting ? `${t.export.exporting} ${Math.round(progress * 100)}%` : notification || files.join(' / '))
   const statusClass = error || exportError ? styles.error : isLoading || isExporting ? styles.loading : notification ? styles.notification : styles.fileInfo
@@ -194,12 +196,12 @@ export function Toolbar({ onFiles, isLoading, error, notification, canUndo, canR
 
         <Tooltip content={canExportToDirectory ? desktopRuntime ? t.export.triggerHintChoiceDesktop : t.export.triggerHintChoiceBrowser : t.export.triggerHintZip} placement="bottom" disabled={openPopover === 'export'}>
           <div className={styles.menuWrap} ref={exportMenuRef}>
-            <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={() => canExportToDirectory ? setOpenPopover(openPopover === 'export' ? null : 'export') : void handleExportSelect('zip')} disabled={(!psdFileName && !clipFileName) || isExporting || isLoading} aria-label={isExporting ? t.export.exporting : t.toolbar.export} aria-haspopup={canExportToDirectory ? 'menu' : undefined} aria-expanded={canExportToDirectory ? openPopover === 'export' : undefined}>
+            <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={() => canExportToDirectory ? setOpenPopover(openPopover === 'export' ? null : 'export') : void handleExportSelect('zip')} disabled={(!psdFileName && !clipFileName) || !enabledOutputCount || isExporting || isLoading} aria-label={isExporting ? t.export.exporting : t.toolbar.export} aria-haspopup={canExportToDirectory ? 'menu' : undefined} aria-expanded={canExportToDirectory ? openPopover === 'export' : undefined}>
               <Icon name="export" /><span>{t.toolbar.export}</span>{canExportToDirectory && <span className={styles.exportCaret}>▾</span>}
             </button>
             {canExportToDirectory && openPopover === 'export' && <div className={`${styles.popover} ${styles.exportMenu}`} role="menu">
-              <button className={styles.menuItem} onClick={() => void handleExportSelect('zip')} disabled={isExporting} role="menuitem">{t.export.destinationZip}</button>
-              <button className={styles.menuItem} onClick={() => void handleExportSelect('directory')} disabled={isExporting} role="menuitem">{t.export.destinationDirectory}</button>
+              <button className={styles.menuItem} onClick={() => void handleExportSelect('zip')} disabled={isExporting || !enabledOutputCount} role="menuitem">{t.export.destinationZip}</button>
+              <button className={styles.menuItem} onClick={() => void handleExportSelect('directory')} disabled={isExporting || !enabledOutputCount} role="menuitem">{t.export.destinationDirectory}</button>
             </div>}
           </div>
         </Tooltip>
