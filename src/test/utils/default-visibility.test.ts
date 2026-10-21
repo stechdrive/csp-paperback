@@ -110,7 +110,7 @@ describe('default visibility overrides', () => {
     expect(overrides.get(topCell.id)).toBe(true)
   })
 
-  it('XDTS後読み時はユーザーが既に触った目玉状態を上書きしない', () => {
+  it('XDTS後読み時はユーザーが既に触った表示状態を上書きしない', () => {
     const animA = makeFolder('A', [
       makeLayer({ name: '1' }),
       makeLayer({ name: '2' }),

@@ -36,9 +36,9 @@
 .sourcePopup small { color: var(--color-text-secondary); }
 .tree [data-source-role] { box-shadow: inset 3px 0 0 var(--color-accent); }
 .tree [data-source-role='context'] { box-shadow: inset 3px 0 0 var(--color-text-subtle); }
-.tree [data-source-role]::after { content: attr(data-contribution-count); font-size: .6rem; color: var(--color-accent); margin-left: auto; padding: 0 4px; white-space: nowrap; }
-.fileRow { display: flex; align-items: center; gap: 7px; padding: 6px !important; min-height: 54px; box-sizing: border-box; user-select: none; }
+.fileRow { display: grid; grid-template-columns: 60px minmax(0, 1fr) 24px; align-items: center; gap: 7px; padding: 6px !important; min-height: 54px; box-sizing: border-box; user-select: none; }
 .fileRow > span { min-width: 0; overflow-wrap: anywhere; }
+.outputWarning { display: flex; align-items: center; justify-content: center; }
 .fileRow[data-active-output='true'] { box-shadow: inset 3px 0 0 var(--color-accent); }
 .outputThumbnail { width: 60px; height: 44px; object-fit: contain; flex-shrink: 0; border: 1px solid var(--color-border-subtle); border-radius: 3px; background: repeating-conic-gradient(#9992 0% 25%, transparent 0% 50%) 0 0 / 10px 10px; }
 .selectionTools { display: flex; gap: 4px; align-items: center; padding: 4px 6px; border-top: 1px solid var(--color-border-subtle); font-size: .65rem; min-height: 26px; }
@@ -52,11 +52,15 @@
 .outputMenu button:hover, .outputMenu button:focus-visible { background: var(--color-surface-hover-strong); }
 .outputMenu button:disabled { opacity: .4; }
 .exportError { font-size: .7rem; padding: 6px; color: var(--color-text-secondary); }
-@container (max-width: 399px) {
+/* Keep enough space for the fixed tree columns and a readable layer name. */
+@container (max-width: 859px) {
   .relationship { flex-direction: column; gap: 8px; }
-  .outputs { --output-row-height: 48px; flex: 0 1 45%; min-height: 110px; border-right: 0; border-bottom: 1px solid var(--color-border-strong); }
+  .outputs { flex: 0 1 45%; min-height: 110px; border-right: 0; border-bottom: 1px solid var(--color-border-strong); }
   .relationship > .contents { flex: 1 1 50%; min-height: 100px; }
-  .fileRow { min-height: 48px; }
+}
+@container (max-width: 399px) {
+  .outputs { --output-row-height: 48px; }
+  .fileRow { min-height: 48px; grid-template-columns: 48px minmax(0, 1fr) 24px; }
   .outputThumbnail { height: 34px; width: 48px; }
 }
 
@@ -106,6 +110,7 @@
 }
 
 .contents {
+  container: layer-tree / inline-size;
   display: flex;
   flex-direction: column;
   flex: 1;

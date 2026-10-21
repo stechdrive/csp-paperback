@@ -35,7 +35,7 @@ export function OutputTargetControls({ configTarget = 'current', avoidRef }: {
   const hasBody = !loaded || targets.some(target => target.body)
   return <div className={styles.targetControls}>
     <div className={styles.chipGroup} role="group" aria-label="出力対象">
-      {hasBody && <Tooltip content="修正工程に属さないセル画像をまとめて切り替えます。OFFにしても、同じセル内の修正画像は残ります。目玉の表示状態は変えません。" avoidRef={avoidRef}>
+      {hasBody && <Tooltip content="修正工程に属さないセル画像をまとめて切り替えます。OFFにしても、同じセル内の修正画像は残ります。レイヤーの表示状態は変えません。" avoidRef={avoidRef}>
         <button type="button" className={styles.chip} aria-pressed={!config.excludeBody}
           onClick={() => setExcludeBody(!config.excludeBody, configTarget)}>
           <span className={styles.checkMark} aria-hidden="true">{!config.excludeBody ? '✓' : ''}</span>作画
@@ -49,7 +49,7 @@ export function OutputTargetControls({ configTarget = 'current', avoidRef }: {
         const enabled = !excluded && states.every(Boolean)
         const mixed = !excluded && !enabled && states.some(Boolean)
         const legacyNames = group.flatMap(target => target.legacyIndividualName === undefined ? [] : [target.legacyIndividualName])
-        return <Tooltip key={entry.suffix} content={`対象フォルダ名: ${entry.folderNames.join(', ')}\n目玉を変えず、この工程の画像を書き出すか切り替えます。`} avoidRef={avoidRef}>
+        return <Tooltip key={entry.suffix} content={`対象フォルダ名: ${entry.folderNames.join(', ')}\nレイヤーの表示状態を変えず、この工程の画像を書き出すか切り替えます。`} avoidRef={avoidRef}>
           <button type="button" className={styles.chip} aria-label={name}
             aria-pressed={mixed ? 'mixed' : enabled} onClick={() => setProcess(entry.suffix, !enabled, legacyNames, configTarget)}>
             <span className={styles.checkMark} aria-hidden="true">{mixed ? '−' : enabled ? '✓' : ''}</span>
@@ -62,7 +62,7 @@ export function OutputTargetControls({ configTarget = 'current', avoidRef }: {
         const states = group.targets.map(target => isIndividualOutputEnabled(target, config))
         const enabled = states.every(Boolean)
         const mixed = !enabled && states.some(Boolean)
-        return <Tooltip key={key} content={`「${group.name}」を別画像として書き出します。同名の素材をまとめて切り替えます。\n目玉の表示状態は変えません。`} avoidRef={avoidRef}>
+        return <Tooltip key={key} content={`「${group.name}」を別画像として書き出します。同名の素材をまとめて切り替えます。\nレイヤーの表示状態は変えません。`} avoidRef={avoidRef}>
           <button type="button" className={styles.chip} aria-label={`${group.name} 個別書き出し`}
             aria-pressed={mixed ? 'mixed' : enabled} onClick={() => setIndividual(group.name, !enabled, configTarget)}>
             <span className={styles.checkMark} aria-hidden="true">{mixed ? '−' : enabled ? '✓' : ''}</span>

@@ -34,7 +34,29 @@ function expansion(layer: Locator) {
   return layer.locator('button[aria-expanded]')
 }
 function visibility(layer: Locator) {
-  return layer.locator('button[aria-pressed]')
+  return layer.locator('button[data-layer-column="visibility"]')
+}
+
+/** The small sample can span two virtualized viewports in the stacked layout. */
+async function listedSampleNames(files: Locator, count: number) {
+  await expect(files.getByRole('option').first()).toHaveAttribute('aria-setsize', String(count))
+  const originalTop = await files.evaluate(element => element.scrollTop)
+  const names = new Map<number, string>()
+  const collect = async () => {
+    for (const row of await files.getByRole('option').evaluateAll(rows => rows.map(row => ({
+      index: Number(row.getAttribute('aria-posinset')), name: row.getAttribute('aria-label')!,
+    })))) names.set(row.index, row.name)
+  }
+  await files.dispatchEvent('wheel', { deltaY: 1 })
+  await files.evaluate(element => { element.scrollTop = 0 })
+  await expect(files.locator('[aria-posinset="1"]')).toBeAttached()
+  await collect()
+  await files.evaluate(element => { element.scrollTop = element.scrollHeight })
+  await expect(files.locator(`[aria-posinset="${count}"]`)).toBeAttached()
+  await collect()
+  await files.evaluate((element, top) => { element.scrollTop = top }, originalTop)
+  expect(names.size).toBe(count)
+  return [...names].sort(([a], [b]) => a - b).map(([, name]) => name)
 }
 
 /** Change saved folder visibility or expansion; keep the sample's artwork and hierarchy. */
@@ -189,8 +211,8 @@ test('出力一覧は実ZIPと一致し、検索・選択・ツリー復帰・�
   // Keep a manually opened branch while exploring a different branch in the list.
   await expansion(row(page, 'instructions')).click()
   const files = page.getByRole('listbox', { name: '出力ファイル' })
-  await expect(files.getByRole('option')).toHaveText(sampleOutputs)
-  expect((await exportedImageNames(page)).sort()).toEqual((await files.getByRole('option').allTextContents()).sort())
+  expect(await listedSampleNames(files, sampleOutputs.length)).toEqual(sampleOutputs)
+  expect((await exportedImageNames(page)).sort()).toEqual((await listedSampleNames(files, sampleOutputs.length)).sort())
   expect(await navigator.boundingBox()).toEqual(navigatorBefore)
 
   await page.getByRole('button', { name: '全体プレビュー', exact: true }).click()
@@ -216,7 +238,7 @@ test('出力一覧は実ZIPと一致し、検索・選択・ツリー復帰・�
   await expect(expansion(row(page, 'instructions'))).toHaveAttribute('aria-expanded', 'true')
   await visibility(row(page, 'processB')).click()
   await files.focus()
-  await expect(files.getByRole('option')).toHaveCount(8)
+  await expect(files.getByRole('option').first()).toHaveAttribute('aria-setsize', '8')
   await expect(files.getByRole('option', { selected: true })).toHaveCount(0)
   await expect(previewNames(page)).toHaveCount(0)
   await page.keyboard.press('Control+z')
@@ -231,7 +253,7 @@ test('出力一覧は実ZIPと一致し、検索・選択・ツリー復帰・�
   await expect(files.getByRole('option')).toHaveCount(8)
   await expect(files.getByRole('option', { selected: true })).toHaveText('B/B_1_s.png')
   await expect(previewNames(page)).toHaveText(['B/B_1_s.png'])
-  expect((await exportedImageNames(page)).sort()).toEqual((await files.getByRole('option').allTextContents()).sort())
+  expect((await exportedImageNames(page)).sort()).toEqual((await listedSampleNames(files, 8)).sort())
   await page.getByRole('button', { name: '全体プレビュー', exact: true }).click()
   expect(await navigator.boundingBox()).toEqual(navigatorBefore)
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
@@ -275,7 +297,7 @@ test('工程と個別素材を出力対象から外すとShift巡回も実ZIPと
   await walkOutputs(page, included)
 })
 
-test('作画本体をOFFにしても目玉と修正を保持し、状態表示と実ZIPが一致する', async ({ page }, testInfo) => {
+test('作画本体をOFFにしても表示状態と修正を保持し、状態表示と実ZIPが一致する', async ({ page }, testInfo) => {
   await loadSample(page)
   await page.getByRole('button', { name: '書き出し設定', exact: true }).click()
   const settings = page.getByRole('dialog', { name: '書き出し設定', exact: true })
@@ -294,7 +316,7 @@ test('作画本体をOFFにしても目玉と修正を保持し、状態表示�
   await page.screenshot({ path: testInfo.outputPath('output-targets.png') })
 })
 
-test('非表示の個別対象は読み込み設定に従って目玉をONにし、設定OFFなら元の表示を保つ', async ({ page }) => {
+test('非表示の個別対象は読み込み設定に従って表示状態をONにし、設定OFFなら元の表示を保つ', async ({ page }) => {
   const body = await closedSample(true)
   await page.route('**/sample/c001.clip', route => route.fulfill({ body, contentType: 'application/octet-stream' }))
   await loadSample(page)
@@ -386,7 +408,7 @@ test('手動で開いた階層は保持し、手動で閉じた階層も次の�
 })
 
 
-test('素材選択では出力とフレームを変えず、目玉変更だけを合成へ反映する', async ({ page }) => {
+test('素材選択では出力とフレームを変えず、表示状態変更だけを合成へ反映する', async ({ page }) => {
   await loadSample(page, true)
   const files = page.getByRole('listbox', { name: '出力ファイル' })
   await files.getByRole('option', { name: 'B_1_s.jpg', exact: true }).click()

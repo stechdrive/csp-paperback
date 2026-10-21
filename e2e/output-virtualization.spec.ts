@@ -94,7 +94,8 @@ test('1200件の画面外を含む検索・範囲選択・キー移動・接続�
 
 test('折り返す長い名前と未配置セルの高さを測り、リサイズと検索後も行を重ねない', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 820 })
-  const folder = '長い素材名と工程名を省略せずに確認するためのアニメーションフォルダ'.repeat(2)
+  // Wrap across several lines without exceeding the 255-byte filename limit.
+  const folder = '長い素材名と工程名を省略せずに確認するためのアニメーションフォルダ'.repeat(3).slice(0, 80)
   await load(page, 180, folder)
   const checkRows = async () => {
     await expect.poll(() => list(page).evaluate(el => {

@@ -32,7 +32,7 @@ export function buildDefaultVisibilityOverrides(
 
 /**
  * 既存の visibilityOverrides に、XDTS 未使用セルの初期OFFだけを追加する。
- * overwrite=false の場合、ユーザーが既に触った目玉状態は尊重する。
+ * overwrite=false の場合、ユーザーが既に触った表示状態は尊重する。
  */
 export function addXdtsUnusedCellHiddenOverrides(
   layers: CspLayer[],

@@ -74,9 +74,9 @@ test('アプリ・出力・設定・ファイル名のポップアップは再�
 test('設定・色指定・ヘルプは背面へのTabとUndoを止め、Escで最前面だけ閉じてフォーカスを戻す', async ({ page }) => {
   await load(page)
   const memo = tree(page).locator('[data-layer-id]').filter({ has: page.getByText('memo', { exact: true }) })
-  await more(page).click(); await memo.getByRole('button', { name: 'プレビューから非表示にする' }).click()
+  await more(page).click(); await memo.getByRole('button', { name: 'レイヤーを非表示にする' }).click()
   await expect(menu(page)).toHaveCount(0)
-  const eye = memo.getByRole('button', { name: 'プレビューに表示する' })
+  const eye = memo.getByRole('button', { name: 'レイヤーを表示する' })
   await expect(eye).toHaveAttribute('aria-pressed', 'false')
   const settingsButton = page.getByRole('button', { name: '設定', exact: true })
   await settingsButton.click()
@@ -107,7 +107,7 @@ test('設定・色指定・ヘルプは背面へのTabとUndoを止め、Escで�
   await page.keyboard.press('Escape'); await expect(help).toHaveCount(0)
   await expect(helpButton).toBeFocused()
   await tree(page).focus(); await page.keyboard.press('Control+z')
-  await expect(memo.getByRole('button', { name: 'プレビューから非表示にする' })).toHaveAttribute('aria-pressed', 'true')
+  await expect(memo.getByRole('button', { name: 'レイヤーを非表示にする' })).toHaveAttribute('aria-pressed', 'true')
 })
 
 test('ツールチップはキーボードでも表示し、警告のポータルは親一覧を閉じずに操作できる', async ({ page }) => {

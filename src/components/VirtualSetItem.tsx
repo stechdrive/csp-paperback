@@ -25,7 +25,7 @@ interface VirtualSetItemProps {
 // モジュールレベルのDnD状態
 let _draggingMemberInfo: { setId: string; layerIds: string[] } | null = null
 
-// 目玉アイコンなぞり一括トグル用ドラッグ状態（右ツリーと同じパターン）
+// 表示切替ボタンのなぞり一括トグル用ドラッグ状態（右ツリーと同じパターン）
 // targetVisible: ドラッグ開始時に決定した「適用する表示状態」
 
 function Chevron({ open }: { open: boolean }) {

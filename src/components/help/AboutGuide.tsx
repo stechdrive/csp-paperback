@@ -245,7 +245,7 @@ export function AboutGuide() {
 
         <h3 className={styles.subsectionTitle}>このレイヤー構成から生成される画像</h3>
         <p className={styles.paragraph}>
-          目がONの通常レイヤー<code>memo</code>と<code>Frame</code>は各画像へ重なります。
+          表示中の通常レイヤー<code>memo</code>と<code>Frame</code>は各画像へ重なります。
           「単体」の素材と「工程」の素材は、それぞれ別画像になり、作画本体へは混ざりません。
         </p>
 
@@ -293,8 +293,8 @@ export function AboutGuide() {
         </div>
 
         <div className={styles.callout}>
-          この構成では、目がOFFの<code>_pool</code>と<code>用紙</code>は、どの画像にも含まれません。
-          ほかのレイヤー構成でも、目がOFFなら出力されないというルールは同じです。
+          この構成では、非表示の<code>_pool</code>と<code>用紙</code>は、どの画像にも含まれません。
+          ほかのレイヤー構成でも、非表示なら出力されないというルールは同じです。
         </div>
 
         <h3 className={styles.subsectionTitle}>仮想セルの場合</h3>

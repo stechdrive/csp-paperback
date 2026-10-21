@@ -24,7 +24,9 @@ for (const viewport of [{ width: 960, height: 640 }, { width: 1280, height: 820 
     await expect(page.getByTestId('navigator-panel')).toHaveCount(0)
     const treeBounds = (await page.getByTestId('layer-tree').boundingBox())!
     // The persistent output/source headings add one compact row.
-    expect(treeBounds.height).toBeGreaterThan(viewport.height - 170)
+    const listBounds = (await page.getByRole('listbox', { name: '出力ファイル' }).boundingBox())!
+    const stacked = listBounds.y + listBounds.height <= treeBounds.y
+    expect(treeBounds.height + (stacked ? listBounds.height : 0)).toBeGreaterThan(viewport.height - 240)
     await expect(page.getByTestId('layer-panel-footer')).toHaveCount(0)
     await expect(page.getByRole('group', { name: 'レイヤーパネルの表示' })).toHaveCount(0)
     await expect(page.getByRole('listbox', { name: '出力ファイル' })).toBeVisible()

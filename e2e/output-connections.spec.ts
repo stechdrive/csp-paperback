@@ -40,7 +40,7 @@ test('画面外の接続先を名前で確認して移動でき、スクロー�
   await loadSample(page)
   await expect(page.getByRole('group', { name: 'レイヤーパネルの表示' })).toHaveCount(0)
   await files(page).getByRole('option', { name: 'B_1_s.jpg', exact: true }).click()
-  const eyes = await tree(page).locator('button[aria-pressed]').evaluateAll(buttons => buttons.map(button => button.getAttribute('aria-pressed')))
+  const eyes = await tree(page).locator('button[data-layer-column="visibility"]').evaluateAll(buttons => buttons.map(button => button.getAttribute('aria-pressed')))
   await expectConnectedEndpoint(page, 'below')
   await page.screenshot({ path: testInfo.outputPath('offscreen-below.png') })
   await endpoint(page, 'below').click()
@@ -59,7 +59,7 @@ test('画面外の接続先を名前で確認して移動でき、スクロー�
   await expect(tree(page)).toBeFocused()
   await expectConnectedEndpoint(page, 'above')
   await expect(page.getByTestId('preview-file-name')).toHaveText('B_1_s.jpg')
-  expect(await tree(page).locator('button[aria-pressed]').evaluateAll(buttons => buttons.map(button => button.getAttribute('aria-pressed')))).toEqual(eyes)
+  expect(await tree(page).locator('button[data-layer-column="visibility"]').evaluateAll(buttons => buttons.map(button => button.getAttribute('aria-pressed')))).toEqual(eyes)
 
   await endpoint(page, 'above').click()
   await files(page).focus()

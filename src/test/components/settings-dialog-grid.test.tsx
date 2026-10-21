@@ -38,7 +38,7 @@ describe('SettingsDialog process table grid', () => {
     expect(useAppStore.getState().projectSettings.processTable[0]).toEqual(original)
   })
 
-  it('読み込み時の表示設定を変えても現在の目玉を変更しない', () => {
+  it('読み込み時の表示設定を変えても現在の表示状態を変更しない', () => {
     render(<SettingsDialog onClose={vi.fn()} />)
     const eyes = useAppStore.getState().visibilityOverrides
     fireEvent.click(screen.getByRole('checkbox', { name: '対象フォルダを非表示でも表示して読み込む' }))

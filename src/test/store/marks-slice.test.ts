@@ -31,7 +31,7 @@ describe('marks-slice - singleMark', () => {
 })
 
 describe('marks-slice - virtualSet', () => {
-  it('PSDで非表示だった素材を目玉で表示してから追加すると仮想セルでも表示を引き継ぐ', () => {
+  it('PSDで非表示だった素材を表示に切り替えてから追加すると仮想セルでも表示を引き継ぐ', () => {
     const tree = buildLayerTree(makePsd({ children: [makeLayer({ name: 'hidden', hidden: true })] }))
     useAppStore.setState({ layerTree: tree })
     useAppStore.getState().toggleLayerVisibility(tree[0].id)

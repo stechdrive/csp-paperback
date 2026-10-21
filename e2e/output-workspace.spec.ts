@@ -19,7 +19,7 @@ test.beforeEach(async ({ page }) => {
   await expect(preview(page)).toHaveText('仮想セルテスト.jpg')
 })
 
-test('サムネと合成元を常時示し、素材のQuick Lookは目玉・中央画像・Undoを変更しない', async ({ page }, testInfo) => {
+test('サムネと合成元を常時示し、素材のQuick Lookは表示状態・中央画像・Undoを変更しない', async ({ page }, testInfo) => {
   const errors: string[] = []
   page.on('pageerror', error => errors.push(error.message))
   await file(page, 'B_1_s.jpg').click()
@@ -29,7 +29,7 @@ test('サムネと合成元を常時示し、素材のQuick Lookは目玉・中�
   expect(await page.getByTestId('output-connections').evaluate(el => getComputedStyle(el).pointerEvents)).toBe('none')
   const memo = tree(page).locator('[data-layer-id]').filter({ has: page.getByText('memo', { exact: true }) })
   await memo.getByText('memo', { exact: true }).click()
-  const eyes = await tree(page).locator('button[aria-pressed]').evaluateAll(buttons => buttons.map(button => button.getAttribute('aria-pressed')))
+  const eyes = await tree(page).locator('button[data-layer-column="visibility"]').evaluateAll(buttons => buttons.map(button => button.getAttribute('aria-pressed')))
   await page.keyboard.press('Space')
   const look = page.getByRole('dialog', { name: '素材のクイックルック' })
   await expect(look).toBeVisible()
@@ -39,21 +39,21 @@ test('サムネと合成元を常時示し、素材のQuick Lookは目玉・中�
   await expect(look).toHaveCount(0)
   await expect(tree(page)).toBeFocused()
   await expect(preview(page)).toHaveText('B_1_s.jpg')
-  expect(await tree(page).locator('button[aria-pressed]').evaluateAll(buttons => buttons.map(button => button.getAttribute('aria-pressed')))).toEqual(eyes)
+  expect(await tree(page).locator('button[data-layer-column="visibility"]').evaluateAll(buttons => buttons.map(button => button.getAttribute('aria-pressed')))).toEqual(eyes)
   const search = page.getByRole('searchbox')
   await search.fill('A')
   await page.keyboard.press('Space')
   await expect(search).toHaveValue('A ')
   await expect(look).toHaveCount(0)
   await search.fill('')
-  await memo.getByRole('button', { name: 'プレビューから非表示にする' }).click()
+  await memo.getByRole('button', { name: 'レイヤーを非表示にする' }).click()
   await search.fill('memo')
   await page.keyboard.press('Control+z')
-  await expect(memo.getByRole('button', { name: 'プレビューに表示する' })).toHaveAttribute('aria-pressed', 'false')
+  await expect(memo.getByRole('button', { name: 'レイヤーを表示する' })).toHaveAttribute('aria-pressed', 'false')
   await search.fill('')
   await tree(page).focus()
   await page.keyboard.press('Control+z')
-  await expect(memo.getByRole('button', { name: 'プレビューから非表示にする' })).toHaveAttribute('aria-pressed', 'true')
+  await expect(memo.getByRole('button', { name: 'レイヤーを非表示にする' })).toHaveAttribute('aria-pressed', 'true')
   expect(errors).toEqual([])
 })
 
@@ -96,6 +96,7 @@ test('未配置の仮想セルを確認し、素材追加・挿入・解除・Un
   await memo.dragTo(item.getByText('レイヤーをドロップ', { exact: true }))
   await expect(page.locator('#toolbar-app-menu')).toHaveCount(0)
   await expect(item.getByText('memo', { exact: true })).toBeVisible()
+  await list(page).evaluate(element => { element.scrollTop = element.scrollHeight })
   await expect(list(page)).toContainText('未配置の仮想セル')
   await file(page, '確認用').click()
   await expect(preview(page)).toHaveText('確認用')
@@ -113,8 +114,8 @@ test('未配置の仮想セルを確認し、素材追加・挿入・解除・Un
   await expect(preview(page)).toHaveText('確認用.jpg')
 })
 
-test('目玉のなぞりは1回のUndoで戻り、pointercancel後はほかの目玉を変えない', async ({ page }) => {
-  const eyes = tree(page).locator('button[aria-pressed]')
+test('表示状態のなぞりは1回のUndoで戻り、pointercancel後はほかの表示状態を変えない', async ({ page }) => {
+  const eyes = tree(page).locator('button[data-layer-column="visibility"]')
   const first = eyes.nth(0), second = eyes.nth(1)
   const a = (await first.boundingBox())!, b = (await second.boundingBox())!
   await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2)

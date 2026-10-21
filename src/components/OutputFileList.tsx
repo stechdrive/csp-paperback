@@ -49,6 +49,8 @@ export function OutputFileList({ active = true, onShowTree, onPreview }: { activ
   const compare = useAppStore(s => s.compareOutputs)
   const [search, setSearch] = useState('')
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null)
+  const menuFrame = useRef(0)
+  useEffect(() => () => cancelAnimationFrame(menuFrame.current), [])
   const { startExport, isExporting, error } = useExport(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const moreRef = useRef<HTMLButtonElement>(null)
@@ -62,7 +64,9 @@ export function OutputFileList({ active = true, onShowTree, onPreview }: { activ
   }, [files, navigation])
   const visible = useMemo(() => [...ordered, ...drafts].filter(file => normalize(file.relativePath).includes(query)), [ordered, drafts, query])
   const selectedIndex = visible.findIndex(file => file.outputId === activeId)
-  const virtual = useVirtualOutputRows(list, visible, selectedIndex, active)
+  // A context-menu target is already under the pointer. Revealing it again can
+  // scroll the list and immediately dismiss the menu we just opened.
+  const virtual = useVirtualOutputRows(list, visible, selectedIndex, active && !menu)
   const visibleIds = useMemo(() => new Set(visible.map(file => file.outputId)), [visible])
   const draftIds = useMemo(() => new Set(drafts.map(file => file.outputId)), [drafts])
   const exportIds = new Set(files.filter(file => selectedIds.has(file.outputId)).map(file => file.outputId))
@@ -102,7 +106,13 @@ export function OutputFileList({ active = true, onShowTree, onPreview }: { activ
   const openMenu = (file: OutputFile, x: number, y: number) => {
     menuInvoker.current = list.current
     if (!useAppStore.getState().selectedOutputIds.has(file.outputId)) select(file)
-    setMenu({ x: Math.max(4, Math.min(x, window.innerWidth - 230)), y: Math.max(4, Math.min(y, window.innerHeight - 150)) })
+    // Pointer/focus and selection can queue a scroll event even when the row
+    // has already reached its final position. Let that event finish before
+    // registering the menu's scroll-to-dismiss handler.
+    cancelAnimationFrame(menuFrame.current)
+    menuFrame.current = requestAnimationFrame(() => {
+      setMenu({ x: Math.max(4, Math.min(x, window.innerWidth - 230)), y: Math.max(4, Math.min(y, window.innerHeight - 150)) })
+    })
   }
   return <>
     <div className={styles.listHeading}><Tooltip content="Shift+スクロールで出力を切り替え"><strong data-tooltip="Shift+スクロールで出力を切り替え">出力一覧</strong></Tooltip><span className={styles.fileCount}>{files.length}件</span>
@@ -126,14 +136,15 @@ export function OutputFileList({ active = true, onShowTree, onPreview }: { activ
       {!!visible.length && <div className={styles.virtualRows} style={{ height: virtual.height }}>
       {virtual.indices.map(index => { const file = visible[index]; return <div key={file.outputId} className={styles.virtualRow} data-virtual-row={index} style={{ top: virtual.offsets[index] }}>
         {draftIds.has(file.outputId) && !draftIds.has(visible[index - 1]?.outputId) && <div className={styles.draftHeading}>未配置の仮想セル · 書き出し対象外</div>}
-        <Tooltip content={file.relativePath}><div data-tooltip={file.relativePath} id={`${id}-${index}`} role="option" aria-label={file.relativePath} aria-selected={selectedIds.has(file.outputId)} aria-posinset={index + 1} aria-setsize={visible.length} className={styles.fileRow}
+        <div id={`${id}-${index}`} role="option" aria-label={file.relativePath} aria-selected={selectedIds.has(file.outputId)} aria-posinset={index + 1} aria-setsize={visible.length} className={styles.fileRow}
           data-output-id={file.outputId} data-output-source-id={file.sourceLayerId} data-active-output={file.outputId === activeId}
           onClick={event => { list.current?.focus(); select(file, event.ctrlKey || event.metaKey, event.shiftKey) }}
           onContextMenu={event => { event.preventDefault(); openMenu(file, event.clientX, event.clientY) }}>
           <OutputThumbnail file={file} active={active} /><span data-output-name>{file.relativePath}</span>
-          {!draftIds.has(file.outputId) && <DiagnosticWarning issues={checkById.get(file.outputId)?.image?.diagnostics}
+          <span className={styles.outputWarning}>{!draftIds.has(file.outputId) && <DiagnosticWarning issues={checkById.get(file.outputId)?.image?.diagnostics}
             error={checkById.get(file.outputId)?.error} onRetry={checkById.get(file.outputId)?.error ? () => outputRenderQueue.retry(file) : undefined} />}
-        </div></Tooltip>
+          </span>
+        </div>
       </div> })}</div>}
       {!visible.length && <div className={styles.empty}>{query ? '一致するファイルはありません' : '現在の設定で出力されるファイルはありません'}</div>}
     </div>

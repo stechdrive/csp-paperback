@@ -59,12 +59,12 @@ function wheel({ deltaY = 100, deltaX = 0, shiftKey = true } = {}) {
 }
 
 describe('LayerTreePanel output navigation', () => {
-  it('出力OFFと一部OFFを目玉とは独立して示し、OFFでも行を操作できる', () => {
+  it('出力OFFと一部OFFを表示状態とは独立して示し、OFFでも行を操作できる', () => {
     const { anim, body, process } = renderTree({ manualOpen: true })
     act(() => useAppStore.getState().setExcludeBody(true))
     expect(row(anim.id)!.querySelector('[data-output-state="partial"]')).toHaveTextContent('一部OFF')
     expect(row(body.id)!.querySelector('[data-output-state="off"]')).toHaveTextContent('出力OFF')
-    expect(row(body.id)!.querySelector('button[aria-pressed]')).toHaveAttribute('aria-pressed', 'true')
+    expect(row(body.id)!.querySelector('button[data-layer-column="visibility"]')).toHaveAttribute('aria-pressed', 'true')
     expect(row(process.id)!.querySelector('[data-output-state]')).toBeNull()
     act(() => useAppStore.getState().toggleProcessSuffixExclusion('_s'))
     expect(row(anim.id)!.querySelector('[data-output-state="off"]')).toHaveTextContent('出力OFF')
@@ -77,7 +77,7 @@ describe('LayerTreePanel output navigation', () => {
     resetTestStore({ layerTree: tree, docWidth: 100, docHeight: 100 })
     render(<LayerTreePanel />)
     expect(row(tree[0].id)!.querySelector('[data-output-state="name-excluded"]')).toHaveTextContent('除外指定')
-    expect(row(tree[0].id)!.querySelector('button[aria-pressed]')).toHaveAttribute('aria-pressed', 'true')
+    expect(row(tree[0].id)!.querySelector('button[data-layer-column="visibility"]')).toHaveAttribute('aria-pressed', 'true')
   })
   it('shares list, search and tree selection while preserving manual folder state', () => {
     const { cell, process, expanded, collapsed } = renderTree({ manualOpen: true })
@@ -155,7 +155,7 @@ describe('LayerTreePanel output navigation', () => {
     wheel()
     expect(row(body.id)).toBeInTheDocument()
 
-    fireEvent.click(row(cell.id)!.querySelector('button')!)
+    fireEvent.click(row(cell.id)!.querySelector('button[aria-expanded]')!)
     const collapsed = useAppStore.getState().userCollapsedFolders
     expect(collapsed.has(cell.id)).toBe(true)
     expect(row(body.id)).not.toBeInTheDocument()
@@ -210,7 +210,7 @@ describe('LayerTreePanel output navigation', () => {
     wheel()
     fireEvent.click(row(body.id)!)
     expect(useAppStore.getState().selectedLayerId).toBe(body.id)
-    fireEvent.click(row(cell.id)!.querySelector('button')!)
+    fireEvent.click(row(cell.id)!.querySelector('button[aria-expanded]')!)
     expect(row(body.id)).not.toBeInTheDocument()
     const beforeSeek = useAppStore.getState()
     act(() => useAppStore.getState().seekToFrame(2))
@@ -226,7 +226,7 @@ describe('LayerTreePanel output navigation', () => {
     wheel()
     const before = useAppStore.getState()
     expect(before.selectedLayerId).toBeNull()
-    const eye = row(process.id)!.querySelector('button[aria-label="プレビューから非表示にする"]')!
+    const eye = row(process.id)!.querySelector('button[aria-label="レイヤーを非表示にする"]')!
     fireEvent.mouseDown(eye, { button: 0 })
     fireEvent.mouseUp(eye, { button: 0 })
     fireEvent.click(eye, { detail: 1 })

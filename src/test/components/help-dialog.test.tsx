@@ -82,7 +82,7 @@ describe('HelpDialog information architecture', () => {
     expect(text).toContain('アニメーションフォルダ名')
     expect(text).toContain('出力対象')
     expect(text).toContain('A_2_e.jpg')
-    expect(text).toContain('目がOFFのレイヤーやフォルダは、プレビューにも出力にも含まれません')
+    expect(text).toContain('非表示のレイヤーやフォルダは、プレビューにも出力にも含まれません')
     expect(text).toContain('タイムラインへセルとして登録する必要がない')
     expect(text).toContain('仮想セルへ、右ペインから出力に使うレイヤーを追加')
     expect(text).not.toContain('対応が読込時に確定')

@@ -142,7 +142,7 @@ export function OutputPreview({ entries, zoomPan }: OutputPreviewProps) {
         {hasNoEntries && (
           <div className={styles.empty}>
             {activeLabel && <><strong>{activeLabel}</strong><br /></>}
-            {error ?? (file ? '合成中…' : '現在の表示・書き出し設定では出力されません。目玉・工程チェック、または素材の削除を確認してください。')}
+            {error ?? (file ? '合成中…' : '現在の表示・書き出し設定では出力されません。レイヤーの表示状態・工程チェック、または素材の削除を確認してください。')}
           </div>
         )}
         {entries.length > 0 && (

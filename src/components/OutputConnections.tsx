@@ -45,7 +45,12 @@ export function OutputConnections({ container, treeElement, active = true }: { c
     if (!root || !treeRoot || !fileList) return
     let frame = 0
     const marked = new Set<HTMLElement>()
-    const clear = () => marked.forEach(row => { delete row.dataset.sourceRole; delete row.dataset.contributionCount; row.removeAttribute('aria-description') })
+    const clear = () => marked.forEach(row => {
+      delete row.dataset.sourceRole
+      delete row.dataset.contributionCount
+      row.querySelector('[data-layer-column="usage"]')?.removeAttribute('data-contribution-count')
+      row.removeAttribute('aria-description')
+    })
     const update = () => {
       frame = 0; clear(); marked.clear()
       const fileRow = fileList.querySelector<HTMLElement>('[data-active-output="true"]')
@@ -83,7 +88,8 @@ export function OutputConnections({ container, treeElement, active = true }: { c
         row.dataset.sourceRole = value.content ? 'content' : 'context'
         const hidden = layerPaths.get(value.id)?.some(layer => layer.hidden || layer.uiHidden)
         row.dataset.contributionCount = hidden ? '仮想セルで使用' : value.count > 1 ? `${value.count}要素` : '使用'
-        row.setAttribute('aria-description', hidden ? '元の目玉はOFFですが、仮想セル内の表示設定で使用しています' : value.content ? '選択した出力の素材' : '一緒に合成する用紙・指示など')
+        row.querySelector('[data-layer-column="usage"]')?.setAttribute('data-contribution-count', row.dataset.contributionCount)
+        row.setAttribute('aria-description', hidden ? '元のレイヤーは非表示ですが、仮想セル内の表示設定で使用しています' : value.content ? '選択した出力の素材' : '一緒に合成する用紙・指示など')
         const rect = row.getBoundingClientRect()
         return [{ value, center: (rect.top + rect.bottom) / 2 }]
       })

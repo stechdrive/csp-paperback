@@ -3,13 +3,54 @@
 }
 
 .row {
-  display: flex;
+  --control-size: 24px;
+  display: grid;
+  grid-template-columns: var(--control-size) minmax(0, 1fr) max-content repeat(3, var(--control-size));
   align-items: center;
-  gap: 0.25rem;
-  padding: 0.2rem 0.4rem;
+  column-gap: 0.2rem;
+  padding: 0 0.4rem;
   border-radius: 3px;
   cursor: pointer;
-  min-height: 26px;
+  min-height: 28px;
+}
+
+/* Only the identity is indented. Controls and status columns keep their slots
+   when a button is inapplicable or a diagnostic appears/disappears. */
+.identity {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.statusColumns {
+  display: grid;
+  grid-template-columns: 5em 5em 7em;
+  align-items: center;
+  column-gap: 0.1rem;
+  font-size: 0.65rem;
+}
+
+.statusSlot, .controlSlot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+
+.controlSlot {
+  min-height: var(--control-size);
+}
+
+.usageStatus {
+  color: var(--color-accent);
+  white-space: nowrap;
+  text-align: center;
+}
+
+.usageStatus::after {
+  content: attr(data-contribution-count);
 }
 
 .row:hover {
@@ -78,8 +119,10 @@
 }
 
 .visibilityBtn {
-  width: 18px;
-  height: 18px;
+  width: var(--control-size);
+  min-height: 28px;
+  height: 100%;
+  align-self: stretch;
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -212,6 +255,7 @@
   font-size: 0.875rem;
   color: var(--color-text-primary);
   flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -260,8 +304,8 @@
 }
 
 .animBtn {
-  width: 18px;
-  height: 18px;
+  width: var(--control-size);
+  height: var(--control-size);
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -278,6 +322,7 @@
 }
 
 .row:hover .animBtn,
+.row:focus-within .animBtn,
 .rowSelected .animBtn {
   opacity: 1;
 }
@@ -289,8 +334,8 @@
 }
 
 .markBtn {
-  width: 18px;
-  height: 18px;
+  width: var(--control-size);
+  height: var(--control-size);
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -307,6 +352,7 @@
 }
 
 .row:hover .markBtn,
+.row:focus-within .markBtn,
 .rowSelected .markBtn {
   opacity: 1;
 }
@@ -448,9 +494,10 @@
 /* ─── モバイル最適化 ─── */
 @media (pointer: coarse) and (max-width: 1024px) {
   .row {
+    --control-size: 28px;
     min-height: 2.25rem;
-    gap: 0.35rem;
-    padding: 0.3rem 0.5rem;
+    column-gap: 0.2rem;
+    padding: 0 0.5rem;
   }
 
   .expandBtn {
@@ -463,8 +510,7 @@
   }
 
   .visibilityBtn {
-    width: 1.75rem;
-    height: 1.75rem;
+    min-height: 2.25rem;
   }
 
   .visibilityIcon {
@@ -525,4 +571,26 @@
   border-radius: 3px;
   color: var(--color-text-secondary);
   white-space: nowrap;
+}
+
+/* On narrow trees every row reserves the same second line for statuses. The
+   visibility target spans both lines so a vertical sweep has no dead gaps. */
+@container layer-tree (max-width: 479px) {
+  .row {
+    grid-template-columns: var(--control-size) minmax(0, 1fr) repeat(3, var(--control-size));
+    grid-template-rows: minmax(28px, auto) 18px;
+  }
+
+  .visibilityBtn {
+    grid-column: 1;
+    grid-row: 1 / 3;
+  }
+
+  .identity { grid-column: 2; grid-row: 1; }
+  .controlSlot { grid-row: 1; }
+  .statusColumns {
+    grid-column: 2 / -1;
+    grid-row: 2;
+    justify-content: end;
+  }
 }

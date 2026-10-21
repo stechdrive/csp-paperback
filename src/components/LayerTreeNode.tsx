@@ -21,8 +21,6 @@ import type { HistoryOptions } from '../store/history-slice'
 import { selectLayerVirtualInsertions, selectOutputRowStatuses } from '../store/selectors'
 import { visibilityDrag } from '../utils/visibility-gesture'
 
-// 目玉アイコンをなぞって一括トグルするためのモジュールレベルドラッグ状態
-// targetHidden: ドラッグ開始時に決定した「適用する非表示状態」
 type DropPlacement = VirtualSetInsertionPosition | 'inside'
 const FOLDER_INSIDE_ZONE_START = 0.35
 const FOLDER_INSIDE_ZONE_END = 0.65
@@ -268,6 +266,11 @@ export const LayerTreeNode = memo(function LayerTreeNodeView({
     !isCell &&
     !isXdtsAnimFolder &&
     (isManualAnimFolder || !hasAnimDescendant)
+  const visibilityLabel = isUiHidden ? 'レイヤーを表示する' : 'レイヤーを非表示にする'
+  const animLabel = isManualAnimFolder
+    ? '手動アニメーションフォルダ指定を解除する'
+    : 'このフォルダを手動でアニメーションフォルダとして扱う'
+  const markLabel = isMarked ? 'この素材の個別書き出しを解除する' : 'この素材を別画像として書き出す'
 
   const handleRowClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
@@ -433,36 +436,10 @@ export const LayerTreeNode = memo(function LayerTreeNodeView({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        <div className={styles.indent} style={{ width: indentWidth }} />
-
-        {layer.isFolder ? (
-          <Tooltip content={isTransientExpanded
-            ? 'Shift+スクロール巡回で自動展開中\nクリックで閉じると元の閉じた状態に戻ります。次の巡回では必要な経路を再び開きます'
-            : ''
-          }>
-            <button className={styles.expandBtn} onClick={handleExpandClick}
-              aria-label={`${layer.originalName}を${isExpanded ? '折りたたむ' : '展開する'}`} aria-expanded={isExpanded}>
-              <svg
-                className={[
-                  styles.expandChevron,
-                  isExpanded ? styles.expandChevronOpen : '',
-                  isTransientExpanded ? styles.expandChevronTransient : '',
-                ].filter(Boolean).join(' ')}
-                viewBox="0 0 10 10"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path d="M3 2 L7 5 L3 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
-          </Tooltip>
-        ) : (
-          <div className={styles.expandPlaceholder} />
-        )}
-
-        <Tooltip content={isUiHidden ? 'プレビューに表示する' : 'プレビューから非表示にする'}>
+        <Tooltip content={visibilityLabel}>
           <button
             type="button"
+            data-layer-column="visibility"
             className={`${styles.visibilityBtn} ${isUiHidden ? styles.visibilityBtnHidden : styles.visibilityBtnVisible}`}
             onMouseDown={handleVisibilityMouseDown}
             onMouseEnter={handleVisibilityMouseEnter}
@@ -473,56 +450,97 @@ export const LayerTreeNode = memo(function LayerTreeNodeView({
               visibilityMouseHandled.current = false
             }}
             onKeyDown={() => { visibilityMouseHandled.current = false }}
-            aria-label={isUiHidden ? 'プレビューに表示する' : 'プレビューから非表示にする'}
+            aria-label={visibilityLabel}
             aria-pressed={!isUiHidden}
           >
             {!isUiHidden && <VisibilityIcon />}
           </button>
         </Tooltip>
 
-        <span className={`${styles.typeIcon} ${isCell ? styles.typeIconCell : ''} ${isAutoProcessAnimFolder ? styles.typeIconAutoProcess : ''}`}>{typeIcon}</span>
+        <div className={styles.identity} data-layer-column="name">
+          <div className={styles.indent} style={{ width: indentWidth }} />
+          {layer.isFolder ? (
+            <Tooltip content={isTransientExpanded
+              ? 'Shift+スクロール巡回で自動展開中\nクリックで閉じると元の閉じた状態に戻ります。次の巡回では必要な経路を再び開きます'
+              : ''
+            }>
+              <button className={styles.expandBtn} onClick={handleExpandClick}
+                aria-label={`${layer.originalName}を${isExpanded ? '折りたたむ' : '展開する'}`} aria-expanded={isExpanded}>
+                <svg
+                  className={[
+                    styles.expandChevron,
+                    isExpanded ? styles.expandChevronOpen : '',
+                    isTransientExpanded ? styles.expandChevronTransient : '',
+                  ].filter(Boolean).join(' ')}
+                  viewBox="0 0 10 10"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path d="M3 2 L7 5 L3 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            </Tooltip>
+          ) : (
+            <div className={styles.expandPlaceholder} />
+          )}
 
-        <Tooltip content={layer.originalName}><span data-tooltip={layer.originalName} className={nameClass}>
-          {(layer.autoMarked || isAutoProcessAnimFolder) ? layer.originalName : (layer.name || layer.originalName)}
-        </span></Tooltip>
+          <span className={`${styles.typeIcon} ${isCell ? styles.typeIconCell : ''} ${isAutoProcessAnimFolder ? styles.typeIconAutoProcess : ''}`}>{typeIcon}</span>
 
-        {!!outputStatus?.excluded && <Tooltip content={`出力対象の設定で ${outputStatus.excluded} / ${outputStatus.total} 件をOFFにしています。目玉の表示状態は変わりません。`}>
-          <span className={styles.outputStatus} data-output-state={outputStatus.excluded === outputStatus.total ? 'off' : 'partial'}>
-            {outputStatus.excluded === outputStatus.total ? '出力OFF' : '一部OFF'}
+          <Tooltip content={layer.originalName}><span data-tooltip={layer.originalName} className={nameClass}>
+            {(layer.autoMarked || isAutoProcessAnimFolder) ? layer.originalName : (layer.name || layer.originalName)}
+          </span></Tooltip>
+        </div>
+
+        <div className={styles.statusColumns}>
+          <span className={styles.statusSlot} data-layer-column="output-state">
+            {!!outputStatus?.excluded && <Tooltip content={`出力対象の設定で ${outputStatus.excluded} / ${outputStatus.total} 件をOFFにしています。レイヤーの表示状態は変わりません。`}>
+              <span className={styles.outputStatus} data-output-state={outputStatus.excluded === outputStatus.total ? 'off' : 'partial'}>
+                {outputStatus.excluded === outputStatus.total ? '出力OFF' : '一部OFF'}
+              </span>
+            </Tooltip>}
           </span>
-        </Tooltip>}
-        {layer.individualOutputExcludedBy && <Tooltip content={`自身または祖先フォルダが除外リスト「${layer.individualOutputExcludedBy}」に一致するため、自動の書き出し対象の検出と自動表示を行いません。手動指定・仮想セルでの使用や、表示中の共通素材としての合成は可能です。`}>
-          <span className={styles.outputStatus} data-output-state="name-excluded">除外指定</span>
-        </Tooltip>}
+          <span className={styles.statusSlot} data-layer-column="exclusion">
+            {layer.individualOutputExcludedBy && <Tooltip content={`自身または祖先フォルダが除外リスト「${layer.individualOutputExcludedBy}」に一致するため、自動の書き出し対象の検出と自動表示を行いません。手動指定・仮想セルでの使用や、表示中の共通素材としての合成は可能です。`}>
+              <span className={styles.outputStatus} data-output-state="name-excluded">除外指定</span>
+            </Tooltip>}
+          </span>
+          <span className={styles.usageStatus} data-layer-column="usage" aria-hidden="true" />
+        </div>
 
-        <LayerDiagnosticWarning layer={layer} />
-        {canToggleManualAnimFolder && (
-          <Tooltip content={isManualAnimFolder
-            ? '手動アニメーションフォルダ指定を解除する'
-            : 'このフォルダを手動でアニメーションフォルダとして扱う'
-          }>
-            <button
-              className={`${styles.animBtn} ${isManualAnimFolder ? styles.animBtnActive : ''}`}
-              onClick={handleAnimClick}
-            >
-              🎬
-            </button>
-          </Tooltip>
-        )}
+        <span className={styles.controlSlot} data-layer-column="warning">
+          <LayerDiagnosticWarning layer={layer} />
+        </span>
+        <span className={styles.controlSlot} data-layer-column="animation">
+          {canToggleManualAnimFolder && (
+            <Tooltip content={animLabel}>
+              <button
+                type="button"
+                aria-label={animLabel}
+                aria-pressed={isManualAnimFolder}
+                className={`${styles.animBtn} ${isManualAnimFolder ? styles.animBtnActive : ''}`}
+                onClick={handleAnimClick}
+              >
+                🎬
+              </button>
+            </Tooltip>
+          )}
+        </span>
 
-        {!isOutputAutoMarked && !layer.isAnimationFolder && (
-          <Tooltip content={isMarked
-            ? 'この素材の個別書き出しを解除する'
-            : 'この素材を別画像として書き出す\nタイムライン登録なしでも出力される'
-          }>
-            <button
-              className={`${styles.markBtn} ${isMarked ? styles.markBtnActive : ''}`}
-              onClick={handleMarkClick}
-            >
-              ★
-            </button>
-          </Tooltip>
-        )}
+        <span className={styles.controlSlot} data-layer-column="individual">
+          {!isOutputAutoMarked && !layer.isAnimationFolder && (
+            <Tooltip content={isMarked ? markLabel : `${markLabel}\nタイムライン登録なしでも出力される`}>
+              <button
+                type="button"
+                aria-label={markLabel}
+                aria-pressed={isMarked}
+                className={`${styles.markBtn} ${isMarked ? styles.markBtnActive : ''}`}
+                onClick={handleMarkClick}
+              >
+                ★
+              </button>
+            </Tooltip>
+          )}
+        </span>
       </div>
 
       {/* フォルダ配下に入る挿入ライン。行強調と短いラインで同階層挿入と区別する。 */}
