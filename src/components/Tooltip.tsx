@@ -63,6 +63,8 @@ export function Tooltip({ content, children, delay = 300, placement = 'top', avo
 
   useEffect(() => {
     if (!disabled) return
+    // Cancel pending timers and forget pinned content before the tooltip is re-enabled.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     close()
   }, [disabled, close])
 

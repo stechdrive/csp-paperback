@@ -16,15 +16,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7.1.0
         with:
-          node-version: 24
+          node-version-file: .node-version
           cache: npm
 
       - name: Install dependencies
@@ -59,19 +59,19 @@ jobs:
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7.0.1
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7.1.0
         with:
-          node-version: 24
+          node-version-file: .node-version
           cache: npm
 
-      - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@stable
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@1.99.1
         with:
           targets: ${{ matrix.rustTargets }}
 
@@ -79,7 +79,7 @@ jobs:
         run: npm ci
 
       - name: Build and upload Tauri release assets
-        uses: tauri-apps/tauri-action@v0.6.2
+        uses: tauri-apps/tauri-action@action-v1.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CARGO_HOME: ${{ runner.temp }}/cargo-home
@@ -95,9 +95,9 @@ jobs:
             Version: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
           releaseDraft: true
           prerelease: false
-          includeUpdaterJson: false
+          uploadUpdaterJson: false
           uploadPlainBinary: ${{ matrix.uploadPlainBinary }}
-          assetNamePattern: CSP-Paperback_[version]_${{ matrix.assetPlatform }}[ext]
+          releaseAssetNamePattern: CSP-Paperback_[version]_${{ matrix.assetPlatform }}[ext]
           args: ${{ matrix.args }}
 
       - name: Audit release artifacts for path leaks

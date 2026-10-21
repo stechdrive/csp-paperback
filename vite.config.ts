@@ -13,6 +13,8 @@ export default defineConfig({
   },
   test: {
     environment: 'jsdom',
+    // Let jsdom own per-test Web Storage instead of Node's process-wide globals.
+    execArgv: ['--no-experimental-webstorage'],
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
     // 既定の除外に加え、.claude/ 配下（ワークツリー等）を除外
@@ -22,6 +24,7 @@ export default defineConfig({
       '**/.{idea,git,cache,output,temp}/**',
       '**/.claude/**',
       '**/.tmp/**',
+      '**/.vitest/**',
       '**/e2e/**',
     ],
     coverage: {

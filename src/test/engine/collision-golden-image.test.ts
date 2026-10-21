@@ -16,6 +16,7 @@ import { buildLayerTree, detectAnimationFoldersByXdts } from '../../engine/tree-
 import { extractAllEntries } from '../../engine/cell-extractor'
 import { selectLayerTreeWithVisibility } from '../../store/selectors'
 import { DEFAULT_PROJECT_SETTINGS, type CspLayer } from '../../types'
+import { compareGoldenPixels, GOLDEN_CHANNEL_TOLERANCE } from '../helpers/compare-golden-pixels'
 
 const GOLDEN_PROJECT_SETTINGS = {
   ...DEFAULT_PROJECT_SETTINGS,
@@ -27,7 +28,6 @@ const GOLDEN_PROJECT_SETTINGS = {
 
 const REPO_ROOT = path.resolve(__dirname, '../../..')
 const FIXTURE_DIR = path.join(REPO_ROOT, 'testdata', 'collision')
-const MAX_CHANNEL_TOLERANCE = 1
 
 interface CollisionCase {
   manualAnimFolderPaths: string[][]
@@ -152,21 +152,14 @@ async function expectRenderedToMatchGolden(
     const goldenData = goldenCanvas.getContext('2d').getImageData(0, 0, goldenImage.width, goldenImage.height).data
     const renderedData = renderedCanvas.getContext('2d').getImageData(0, 0, renderedImage.width, renderedImage.height).data
 
-    let overTolerance = 0
-    let maxDiff = 0
-    for (let i = 0; i < goldenData.length; i++) {
-      const diff = Math.abs(goldenData[i] - renderedData[i])
-      if (diff > maxDiff) maxDiff = diff
-      if (diff > MAX_CHANNEL_TOLERANCE) overTolerance++
-    }
-
-    if (overTolerance > 0) {
+    const diff = compareGoldenPixels(goldenData, renderedData)
+    if (diff.overTolerancePixels > 0) {
       fs.mkdirSync(dumpDir, { recursive: true })
       fs.writeFileSync(path.join(dumpDir, `golden_${goldenName}`), goldenBuf)
       fs.writeFileSync(path.join(dumpDir, `actual_${goldenName}`), renderedBuf)
       mismatches.push(
-        `${goldenName}: ${overTolerance} channels differ by > ${MAX_CHANNEL_TOLERANCE} ` +
-        `(maxChannelDiff=${maxDiff})`,
+        `${goldenName}: ${diff.overTolerancePixels} pixels differ by > ${GOLDEN_CHANNEL_TOLERANCE} ` +
+        `(maxAlphaDiff=${diff.maxAlphaDiff}, maxBlackDiff=${diff.maxBlackDiff}, maxWhiteDiff=${diff.maxWhiteDiff})`,
       )
     }
   }

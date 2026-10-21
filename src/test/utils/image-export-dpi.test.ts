@@ -16,7 +16,7 @@ describe('DPI updates without copying compressed image bodies', () => {
     expected.set([1, 1, 44, 0, 144], 13)
     const sizes: number[] = [], original = NativeBlob.prototype.arrayBuffer
     vi.spyOn(NativeBlob.prototype, 'arrayBuffer').mockImplementation(function(this: NativeBlob) { sizes.push(this.size); return original.call(this) })
-    const actual = await output(new NativeBlob([input]), 'jpg')
+    const actual = await output(new NativeBlob([Uint8Array.from(input)]), 'jpg')
     expect(sizes).toEqual([18])
     expect(await bytes(actual)).toEqual(expected)
   })
@@ -38,7 +38,7 @@ describe('DPI updates without copying compressed image bodies', () => {
     const png = canvas.toBuffer('image/png')
     const sizes: number[] = [], original = NativeBlob.prototype.arrayBuffer
     vi.spyOn(NativeBlob.prototype, 'arrayBuffer').mockImplementation(function(this: NativeBlob) { sizes.push(this.size); return original.call(this) })
-    const first = await output(new NativeBlob([png]), 'png')
+    const first = await output(new NativeBlob([Uint8Array.from(png)]), 'png')
     expect(sizes.every(size => size === 8)).toBe(true)
     expect(sizes.reduce((a, b) => a + b, 0)).toBeLessThan(png.length / 100)
     const result = await bytes(first)

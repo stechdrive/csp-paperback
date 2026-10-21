@@ -1,5 +1,5 @@
 import { Tooltip } from './Tooltip'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Modal } from './Modal'
 import { hexToRgb, normalizeHexColor, rgbToHex } from '../utils/process-color'
 import styles from './SettingsDialog.module.css'
@@ -14,11 +14,14 @@ export function ProcessColorPicker({ color, label, onChange }: ProcessColorPicke
   const normalizedColor = normalizeHexColor(color) ?? '#FBECE6'
   const [open, setOpen] = useState(false)
   const [hexDraft, setHexDraft] = useState(normalizedColor.slice(1))
+  const [draftColor, setDraftColor] = useState(normalizedColor)
   const rgb = hexToRgb(normalizedColor)
 
-  useEffect(() => {
+  // Reset a partial HEX edit when another control changes the selected color.
+  if (draftColor !== normalizedColor) {
+    setDraftColor(normalizedColor)
     setHexDraft(normalizedColor.slice(1))
-  }, [normalizedColor])
+  }
 
   const updateRgb = (channel: 'r' | 'g' | 'b', rawValue: string) => {
     const parsed = Number.parseInt(rawValue, 10)

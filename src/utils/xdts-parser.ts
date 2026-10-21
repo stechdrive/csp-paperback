@@ -60,7 +60,7 @@ export function parseXdts(text: string): TimelineData {
   try {
     data = JSON.parse(jsonText.trim())
   } catch (e) {
-    throw new Error(`xdtsのJSON解析に失敗しました: ${e}`)
+    throw new Error(`xdtsのJSON解析に失敗しました: ${e}`, { cause: e })
   }
 
   // ドキュメントレベルのメタデータ（最初のtimeTableを使用）

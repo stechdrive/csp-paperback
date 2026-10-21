@@ -13,8 +13,8 @@
  *
  * 比較ポリシー:
  * - ファイル名集合・ファイル数は完全一致を要求する。
- * - 画素は最大 1 階調 (alpha/RGB) の差まで許容する。CSP 手動書き出しと合成エンジンの
- *   アンチエイリアス端丸め誤差を吸収するため。1 階調を超える差はゴールデン退行として fail。
+ * - 画素は alpha と黒・白背景へ合成した RGB をそれぞれ最大 1 階調まで許容する。
+ *   半透明画素の丸めを考慮しつつ、色・不透明度・位置の差を検出する。
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import fs from 'node:fs'
@@ -35,6 +35,7 @@ import initSqlJs from 'sql.js'
 import { parseClipDocument } from '../../utils/clip/parser'
 import { buildClipLayerTree, clipRenderingSource } from '../../engine/clip-tree'
 import { vi } from 'vitest'
+import { compareGoldenPixels, GOLDEN_CHANNEL_TOLERANCE } from '../helpers/compare-golden-pixels'
 
 const GOLDEN_PROJECT_SETTINGS = {
   ...DEFAULT_PROJECT_SETTINGS,
@@ -48,9 +49,6 @@ import { buildC001VirtualSets } from '../../sample/c001-virtual-set'
 const REPO_ROOT = path.resolve(__dirname, '../../..')
 const TESTDATA = path.join(REPO_ROOT, 'testdata')
 const GOLDEN_DIR = path.join(TESTDATA, 'golden')
-
-/** 許容する最大チャンネル差分 (0〜255)。CSP 書き出しと合成エンジンの丸め誤差吸収用 */
-const MAX_CHANNEL_TOLERANCE = 1
 
 // ── document.createElement('canvas') を @napi-rs/canvas にすり替え ──
 // ag-psd はレイヤー画像を document.createElement('canvas') で作る前提なので、
@@ -81,7 +79,7 @@ describe.each(['PSD + XDTS', 'CLIP + PSD', 'CLIP standalone'])('c001 golden (ima
   beforeAll(() => { patchDocumentCreateElement(); vi.stubGlobal('Blob', NodeBlob) })
   afterAll(() => { restoreDocumentCreateElement(); vi.unstubAllGlobals() })
 
-  it('matches PNG names and pixels within 1 channel for all input paths', async () => {
+  it('matches PNG names, alpha and composited RGB within one level for all input paths', async () => {
     // 実データ読み込み
     const psdBuf = fs.readFileSync(path.join(TESTDATA, 'c001.psd'))
     const xdtsText = fs.readFileSync(path.join(TESTDATA, 'c001.xdts'), 'utf-8')
@@ -210,20 +208,14 @@ describe.each(['PSD + XDTS', 'CLIP + PSD', 'CLIP standalone'])('c001 golden (ima
       const gData = gCanvas.getContext('2d').getImageData(0, 0, gImg.width, gImg.height).data
       const rData = rCanvas.getContext('2d').getImageData(0, 0, rImg.width, rImg.height).data
 
-      let overTolerance = 0
-      let maxDiff = 0
-      for (let i = 0; i < gData.length; i++) {
-        const d = Math.abs(gData[i] - rData[i])
-        if (d > maxDiff) maxDiff = d
-        if (d > MAX_CHANNEL_TOLERANCE) overTolerance++
-      }
-      if (overTolerance > 0) {
+      const diff = compareGoldenPixels(gData, rData)
+      if (diff.overTolerancePixels > 0) {
         fs.mkdirSync(DUMP_DIR, { recursive: true })
         fs.writeFileSync(path.join(DUMP_DIR, `golden_${name}`), gBuf)
         fs.writeFileSync(path.join(DUMP_DIR, `actual_${name}`), rBuf)
         mismatches.push(
-          `${name}: ${overTolerance} channels differ by > ${MAX_CHANNEL_TOLERANCE} ` +
-          `(maxChannelDiff=${maxDiff})`,
+          `${name}: ${diff.overTolerancePixels} pixels differ by > ${GOLDEN_CHANNEL_TOLERANCE} ` +
+          `(maxAlphaDiff=${diff.maxAlphaDiff}, maxBlackDiff=${diff.maxBlackDiff}, maxWhiteDiff=${diff.maxWhiteDiff})`,
         )
       }
     }
