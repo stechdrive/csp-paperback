@@ -58,7 +58,7 @@ describe('native preview regions', () => {
         const image = await renderOutputRegion(file, region, 1, [], false)
         expect(pixels(image.canvas).equals(pixels(full.canvas, region.left, region.top, region.width, region.height)), `${kind} at ${region.left},${region.top}`).toBe(true)
       }
-    })
+    }, 30_000) // Full native effect comparisons also run under coverage on shared CI CPUs.
 
   it('keeps revision borders at document edges, never at internal tile edges', async () => {
     const tree = buildLayerTree(makePsd({ children: [makeLayer({ name: '_sheet', canvas: paint(1103, 713) })] }))
