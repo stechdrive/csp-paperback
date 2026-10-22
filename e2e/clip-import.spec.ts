@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import { expect, test, type Page } from './fixtures'
+import { clickLayerAction } from './helpers/layer-action'
 
 async function expectLoadedFiles(page: Page, files: string[]) {
   await page.getByRole('button', { name: 'メニュー', exact: true }).click()
@@ -77,13 +78,28 @@ test('CLIP単独で出力でき、後からPSDを追加すると純正画像へ�
   expect(requests.filter(url => /^https?:/.test(url)).every(url => new URL(url).hostname === '127.0.0.1')).toBe(true)
 })
 
-test('同梱CLIPテンプレートを単独で読み込み、タイムラインを表示できる', async ({ page }) => {
+test('同梱CLIPテンプレートのタイムラインを読み込み、空の自動出力は省いて手動指定は許可する', async ({ page }) => {
   await page.goto('./')
   await page.locator('input[type=file][multiple]').setInputFiles('public/templates/csp-paperback-sample-template.clip')
   await expectLoadedFiles(page, ['csp-paperback-sample-template.clip'])
   await page.getByRole('button', { name: '全体プレビュー', exact: true }).click()
   await expect(page.getByText('0秒1コマ', { exact: true })).toBeVisible()
-  await expect(page.getByRole('button', { name: '出力', exact: true })).toBeEnabled()
+  const output = page.getByRole('button', { name: '出力', exact: true })
+  const files = page.getByRole('listbox', { name: '出力ファイル' })
+  await expect(files.getByRole('option')).toHaveCount(0)
+  await expect(output).toBeDisabled()
+  const tree = page.getByTestId('layer-tree')
+  const directions = tree.locator('[data-layer-id]').filter({ has: page.getByText('_撮影指示', { exact: true }) })
+  const expand = directions.getByRole('button', { name: '_撮影指示を展開する' })
+  if (await expand.count()) await expand.click()
+  const empty = tree.locator('[data-layer-id]').filter({ has: page.getByText('_PAN', { exact: true }) })
+  await expect(empty.locator('[data-layer-output-role]')).toHaveCount(0)
+  await clickLayerAction(page, empty, 'individual')
+  await expect(files.getByRole('option', { name: '_PAN.jpg', exact: true })).toBeVisible()
+  await expect(output).toBeEnabled()
+  await tree.focus(); await tree.press('Control+z')
+  await expect(files.getByRole('option')).toHaveCount(0)
+  await expect(output).toBeDisabled()
 })
 
 test('デスクトップのCSP設定でも同梱WorkerとWASMを実行できる', async ({ page, context }) => {
