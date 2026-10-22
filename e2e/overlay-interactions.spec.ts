@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Page } from './fixtures'
 import { clipVectorFixture } from './helpers/clip-vector-fixture'
 
 const files = (page: Page) => page.getByRole('listbox', { name: '出力ファイル' })

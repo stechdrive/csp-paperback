@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Page } from './fixtures'
 import { manyOutputs } from './helpers/many-outputs'
 
 const board = (page: Page) => page.getByTestId('tiled-preview')
@@ -134,7 +134,7 @@ test('context loss uses Canvas pixels and restores the GPU display without losin
   await load(page)
   await expect(board(page)).toHaveAttribute('data-backend', 'webgl2')
   const camera = await board(page).getAttribute('data-camera')
-  await board(page).locator('canvas').last().evaluate(canvas => {
+  await board(page).locator('canvas').last().evaluate((canvas: HTMLCanvasElement) => {
     const gl = canvas.getContext('webgl2')!, extension = gl.getExtension('WEBGL_lose_context')!
     extension.loseContext(); setTimeout(() => extension.restoreContext(), 1000)
   })
@@ -146,7 +146,7 @@ test('context loss uses Canvas pixels and restores the GPU display without losin
 test('Canvas fallback provides the same navigation when WebGL2 is unavailable', async ({ page }, info) => {
   await page.addInitScript(() => {
     const original = HTMLCanvasElement.prototype.getContext
-    HTMLCanvasElement.prototype.getContext = function(type: string, ...args: unknown[]) {
+    HTMLCanvasElement.prototype.getContext = function(this: HTMLCanvasElement, type: string, ...args: unknown[]) {
       if (type === 'webgl2') return null
       return original.call(this, type, ...args)
     } as typeof original

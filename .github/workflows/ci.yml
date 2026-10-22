@@ -7,6 +7,10 @@ on:
   pull_request:
   workflow_dispatch:
 
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   quality-gate:
     runs-on: ubuntu-latest
@@ -31,12 +35,16 @@ jobs:
       - name: Run quality gate
         run: npm run check:ci
 
-      - name: Upload browser report on failure
+      - name: Upload test diagnostics on failure
         if: failure()
         uses: actions/upload-artifact@v7.0.2
         with:
-          name: playwright-report
-          path: playwright-report/
+          name: test-diagnostics
+          path: |
+            playwright-report/
+            test-results/
+            .tmp/*-golden-image-diff/
+          include-hidden-files: true
           if-no-files-found: ignore
           retention-days: 7
 

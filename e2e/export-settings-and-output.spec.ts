@@ -1,5 +1,5 @@
 import { readFile, writeFile } from 'node:fs/promises'
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Page } from './fixtures'
 
 async function expectSampleLoaded(page: Page) {
   await page.getByRole('button', { name: 'メニュー', exact: true }).click()

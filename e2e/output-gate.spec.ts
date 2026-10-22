@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Page } from './fixtures'
 import { readFile } from 'node:fs/promises'
 import { unzipSync } from 'fflate'
 import { manyOutputs } from './helpers/many-outputs'
@@ -233,7 +233,7 @@ test('高速ななぞりと往復は同じ状態にそろえ、1回のUndoとRed
 test('pointercancelとフォーカス喪失でなぞりを終了し、次の操作は別のUndoになる', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 }); await load(page)
   await list(page).press('Escape')
-  await list(page).evaluate(el => el.addEventListener('pointerdown', event => { el.dataset.testPointer = String(event.pointerId) }))
+  await list(page).evaluate((el: HTMLElement) => el.addEventListener('pointerdown', event => { el.dataset.testPointer = String(event.pointerId) }))
   const a = await listGatePoint(page, 0), b = await listGatePoint(page, 1)
   for (const reason of ['pointercancel', 'blur']) {
     await page.mouse.move(a.x, a.y); await page.mouse.down()

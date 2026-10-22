@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Page } from './fixtures'
 import { manyOutputs } from './helpers/many-outputs'
 
 const list = (page: Page) => page.getByRole('listbox', { name: '出力ファイル', exact: true })

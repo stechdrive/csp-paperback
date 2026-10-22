@@ -36,6 +36,28 @@ jobs:
       - name: Run quality gate
         run: npm run check:ci
 
+      - name: Upload test diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: release-test-diagnostics
+          path: |
+            playwright-report/
+            test-results/
+            .tmp/*-golden-image-diff/
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Upload coverage summary
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: release-coverage-summary
+          path: coverage/coverage-summary.json
+          if-no-files-found: ignore
+          retention-days: 7
+
   build-desktop:
     name: Build ${{ matrix.assetPlatform }}
     needs: quality-gate

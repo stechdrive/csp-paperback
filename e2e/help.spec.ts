@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from './fixtures'
 
 test('独立したタブから各社テンプレート向けの設定と共有方法を確認できる', async ({ page }) => {
   const pageErrors: string[] = []

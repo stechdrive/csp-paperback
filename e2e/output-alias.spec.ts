@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Page } from './fixtures'
 import { readFile } from 'node:fs/promises'
 import { unzipSync } from 'fflate'
 import { manyOutputs } from './helpers/many-outputs'
@@ -41,7 +41,7 @@ for (const theme of ['paper', 'midnight', 'graphite']) {
     expect(editing).toEqual(font)
     await expect(input).toHaveCSS('border-width', '0px')
     await expect(input).toHaveCSS('box-shadow', 'none')
-    await input.evaluate(el => { el.setSelectionRange(0, 0); el.style.caretColor = 'transparent' })
+    await input.evaluate((el: HTMLInputElement) => { el.setSelectionRange(0, 0); el.style.caretColor = 'transparent' })
     const editingPixels = await slot.screenshot()
     if (!editingPixels.equals(pixels)) {
       await info.attach('before-edit', { body: pixels, contentType: 'image/png' })

@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import { unzipSync } from 'fflate'
-import { expect, test } from '@playwright/test'
+import { expect, test } from './fixtures'
 import { clipDecodingFixture } from './helpers/clip-decoding'
 
 for (const kind of ['raster', 'vector'] as const) test(`疎な${kind}素材をWorkerで復元し、全出力と文書切り替えを保つ`, async ({ page }) => {

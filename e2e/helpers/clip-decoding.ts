@@ -8,7 +8,7 @@ const chunk = (tag: string, body: Uint8Array) => Buffer.concat([Buffer.from(tag)
 
 /** Large blank paper with small raster/vector artwork; no production data. */
 export async function clipDecodingFixture(kind: 'raster' | 'vector', width = 4096, height = 3072, count = 12): Promise<Buffer> {
-  const SQL = await initSqlJs({ wasmBinary: readFileSync('node_modules/sql.js/dist/sql-wasm.wasm') })
+  const SQL = await initSqlJs({ wasmBinary: new Uint8Array(readFileSync('node_modules/sql.js/dist/sql-wasm.wasm')).buffer })
   const db = new SQL.Database(), external: Buffer[] = []
   const addExternal = (id: string, data: Uint8Array) => external.push(chunk('CHNKExta', Buffer.concat([u64(id.length), Buffer.from(id), u64(data.length), data])))
   try {

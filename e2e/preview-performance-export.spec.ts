@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from './fixtures'
 
 test('新規読込はタイルを表示し、全体表示の状態も保持する', async ({ page }, testInfo) => {
   await page.goto('./')
@@ -7,7 +7,7 @@ test('新規読込はタイルを表示し、全体表示の状態も保持す�
   await page.getByRole('button', { name: '全体プレビュー', exact: true }).click()
   const whole = page.getByTestId('navigator-view')
   await expect(whole).toBeVisible()
-  await expect.poll(() => whole.locator('canvas').evaluate(canvas => canvas.width)).toBeGreaterThan(1)
+  await expect.poll(() => whole.locator('canvas').evaluate((canvas: HTMLCanvasElement) => canvas.width)).toBeGreaterThan(1)
   await expect(page.getByTestId('navigator-panel')).toHaveCount(0)
   const tree = page.getByTestId('layer-tree')
   const before = await tree.boundingBox()
@@ -17,7 +17,7 @@ test('新規読込はタイルを表示し、全体表示の状態も保持す�
   await page.getByRole('listbox', { name: '出力ファイル' }).getByRole('option', { name: 'B_1.jpg', exact: true }).click()
   await expect(page.getByTestId('preview-file-name')).toHaveText('B_1.jpg')
   // Hidden canvases release their backing storage while retaining zoom state.
-  await expect.poll(() => whole.locator('canvas').evaluate(canvas => canvas.width)).toBe(1)
+  await expect.poll(() => whole.locator('canvas').evaluate((canvas: HTMLCanvasElement) => canvas.width)).toBe(1)
   await page.getByRole('button', { name: '全体プレビュー', exact: true }).click()
   expect(await whole.locator('canvas').evaluate(canvas => canvas.style.transform)).toBe(transform)
   expect(await tree.boundingBox()).toEqual(before)

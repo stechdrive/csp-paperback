@@ -1,4 +1,4 @@
-import { expect, test, type Locator, type Page } from '@playwright/test'
+import { expect, test, type Locator, type Page } from './fixtures'
 import { createCanvas, loadImage } from '@napi-rs/canvas'
 import { pixelOutput } from './helpers/pixel-output'
 
@@ -42,7 +42,7 @@ for (const canvas2d of [false, true]) test(`translucent native windows replace t
   test.setTimeout(90000)
   if (canvas2d) await page.addInitScript(() => {
     const original = HTMLCanvasElement.prototype.getContext
-    HTMLCanvasElement.prototype.getContext = function (type: string, ...args: unknown[]) {
+    HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, type: string, ...args: unknown[]) {
       return type === 'webgl2' ? null : original.call(this, type, ...args)
     } as typeof original
   })
@@ -74,7 +74,7 @@ for (const { ratio, canvas2d } of [{ ratio: 1 }, { ratio: 1.25 }, { ratio: 2 }, 
       const errors: string[] = []; page.on('pageerror', error => errors.push(error.message))
       if (canvas2d) await page.addInitScript(() => {
         const original = HTMLCanvasElement.prototype.getContext
-        HTMLCanvasElement.prototype.getContext = function (type: string, ...args: unknown[]) {
+        HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, type: string, ...args: unknown[]) {
           return type === 'webgl2' ? null : original.call(this, type, ...args)
         } as typeof original
       })
@@ -97,7 +97,7 @@ for (const { ratio, canvas2d } of [{ ratio: 1 }, { ratio: 1.25 }, { ratio: 2 }, 
         }
         expect(Number(await surface.getAttribute('data-texture-bytes'))).toBeLessThanOrEqual(32 * 1024 * 1024)
         expect(Number(await surface.getAttribute('data-cache-bytes'))).toBeLessThanOrEqual(112 * 1024 * 1024)
-        const dimensions = await surface.locator('canvas').evaluateAll(canvases => canvases.map(c => ({
+        const dimensions = await surface.locator('canvas').evaluateAll((canvases: HTMLCanvasElement[]) => canvases.map(c => ({
           width: c.width, height: c.height, screenWidth: c.clientWidth * devicePixelRatio, screenHeight: c.clientHeight * devicePixelRatio,
         })))
         for (const d of dimensions) { expect(d.width).toBeLessThanOrEqual(Math.ceil(d.screenWidth)); expect(d.height).toBeLessThanOrEqual(Math.ceil(d.screenHeight)) }

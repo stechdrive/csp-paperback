@@ -17,19 +17,10 @@ export default defineConfig({
     execArgv: ['--no-experimental-webstorage'],
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
-    // 既定の除外に加え、.claude/ 配下（ワークツリー等）を除外
-    exclude: [
-      '**/node_modules/**',
-      '**/dist/**',
-      '**/.{idea,git,cache,output,temp}/**',
-      '**/.claude/**',
-      '**/.tmp/**',
-      '**/.vitest/**',
-      '**/e2e/**',
-    ],
+    include: ['src/test/**/*.test.{ts,tsx}'],
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'json-summary', 'html'],
+      reporter: ['text-summary', 'json-summary', 'html'],
       reportsDirectory: './coverage',
       include: ['src/**/*.{ts,tsx}'],
       exclude: [
@@ -38,10 +29,14 @@ export default defineConfig({
         'src/test/**',
       ],
       thresholds: {
-        statements: 45,
-        branches: 43,
-        functions: 42,
-        lines: 47,
+        statements: 65,
+        branches: 61,
+        functions: 62,
+        lines: 68,
+        // Protect core behavior independently of UI code exercised by Playwright.
+        'src/engine/**': { statements: 91, branches: 87, functions: 91, lines: 92 },
+        'src/store/**': { statements: 86, branches: 80, functions: 89, lines: 89 },
+        'src/utils/clip/**': { statements: 90, branches: 84, functions: 87, lines: 93 },
       },
     },
   },

@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Page } from './fixtures'
 import { clipVectorFixture } from './helpers/clip-vector-fixture'
 
 const tree = (page: Page) => page.getByTestId('layer-tree')
@@ -8,7 +8,7 @@ async function columns(page: Page) {
   return tree(page).locator('[data-layer-id]').evaluateAll(rows => rows.map(row =>
     Object.fromEntries([...row.querySelectorAll<HTMLElement>('[data-layer-column]')].map(cell => {
       const rect = cell.getBoundingClientRect()
-      return [cell.dataset.layerColumn!, { x: rect.x, width: rect.width }]
+      return [cell.dataset.layerColumn!, { x: rect.x, width: rect.width }] as const
     }).filter(([name]) => ['visibility', 'warning', 'animation', 'individual'].includes(String(name)))),
   ))
 }

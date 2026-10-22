@@ -1,10 +1,10 @@
 import { initializeCanvas, writePsdBuffer } from 'ag-psd'
-import { createCanvas } from '@napi-rs/canvas'
+import { createPsdCanvas } from './psd-canvas'
 
 export function manyOutputs(count = 1200, folder = 'A', width = 64, height = 48) {
-  initializeCanvas(createCanvas)
+  initializeCanvas(createPsdCanvas)
   const children = Array.from({ length: count }, (_, i) => {
-    const canvas = createCanvas(width, height), context = canvas.getContext('2d')
+    const canvas = createPsdCanvas(width, height), context = canvas.getContext('2d')!
     context.fillStyle = `hsl(${i * 17},65%,50%)`; context.fillRect(3, 4, 54, 36)
     context.fillStyle = '#111'; context.font = '12px sans-serif'; context.fillText(String(i + 1), 8, 25)
     return { name: String(i + 1), canvas }

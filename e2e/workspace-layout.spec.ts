@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from './fixtures'
 
 for (const viewport of [{ width: 960, height: 640 }, { width: 1280, height: 820 }]) {
   test(`中央表示の切替で右ペインを動かさず、仮想セルの編集場所を確保する（${viewport.width}px）`, async ({ page }, testInfo) => {
@@ -41,7 +41,7 @@ for (const viewport of [{ width: 960, height: 640 }, { width: 1280, height: 820 
     expect(await source.boundingBox()).toEqual(sourceBefore)
     await expect(timeline).toBeVisible()
     const canvas = mainNav.locator('canvas')
-    await expect.poll(() => canvas.evaluate(el => el.width)).toBeGreaterThan(1)
+    await expect.poll(() => canvas.evaluate((el: HTMLCanvasElement) => el.width)).toBeGreaterThan(1)
     await canvas.hover()
     await page.mouse.wheel(0, -100)
     await expect(canvas).not.toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)')

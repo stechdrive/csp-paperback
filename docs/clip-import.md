@@ -317,6 +317,8 @@ EXEのビルドと起動引数の処理テストは、EXE自体の画面操作�
 
 ## 回帰検証の参照先
 
+テスト環境ごとの保証範囲と実行方法は[テスト基盤](testing.md)を参照する。
+
 | 対象 | 検証内容と参照先 |
 |---|---|
 | 入力経路の互換性 | 公開サンプルのCLIP単独・CLIP＋PSD・PSD＋XDTSを使う。[構造照合](../src/test/engine/clip-import.test.ts)、[出力順・命名](../src/test/engine/clip-output-order.test.ts)、[ゴールデン画像](../src/test/engine/c001-golden-image.test.ts) |

@@ -1,4 +1,4 @@
-import { expect, test, type Locator, type Page } from '@playwright/test'
+import { expect, test, type Locator, type Page } from './fixtures'
 
 const tree = (page: Page) => page.getByTestId('layer-tree')
 const files = (page: Page) => page.getByRole('listbox', { name: '出力ファイル' })

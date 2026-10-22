@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises'
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Page } from './fixtures'
 import { clipVectorFixture } from './helpers/clip-vector-fixture'
 
 async function expectLoadedFile(page: Page, file: string) {
