@@ -292,10 +292,6 @@
   margin: 1rem 0 1.3rem;
 }
 
-.figureCompact {
-  max-width: 640px;
-}
-
 .figureFrame {
   position: relative;
   overflow: hidden;
@@ -323,27 +319,11 @@
   pointer-events: none;
 }
 
-.figureHighlightLabel {
-  position: absolute;
-  top: -3px;
-  left: -3px;
+.figureLegend {
   display: block;
-  width: max-content;
-  max-width: min(14rem, 80vw);
-  padding: 0.18rem 0.42rem 0.2rem;
-  border-radius: 0 0 4px 0;
-  background: #e11d48;
-  color: #fff;
-  font-size: clamp(0.55rem, 1.25vw, 0.72rem);
+  margin-bottom: 0.25rem;
+  color: var(--color-text-secondary);
   font-weight: 700;
-  line-height: 1.1;
-  white-space: nowrap;
-}
-
-.figureHighlightLabelRight {
-  right: -3px;
-  left: auto;
-  border-radius: 0 0 0 4px;
 }
 
 .figureCaption {

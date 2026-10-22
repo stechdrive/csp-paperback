@@ -1,0 +1,104 @@
+{
+  "startup-guide.png": {
+    "width": 1440,
+    "height": 1000,
+    "sha256": "6890a9449eca8bfc463f0b6a2421155db46dbe2c1468212fd2140e25e4c4f393",
+    "regions": {
+      "startupSettings": {
+        "x": 0,
+        "y": 4.4,
+        "width": 63.61,
+        "height": 25.04
+      }
+    }
+  },
+  "loaded-overview.png": {
+    "width": 1440,
+    "height": 1000,
+    "sha256": "f8dfbd412be129724aff6961b6630771cdc1eed4a1dbc5e3ba6f85d2bbf78eae",
+    "regions": {
+      "virtualCels": {
+        "x": 0,
+        "y": 4.4,
+        "width": 16.67,
+        "height": 95.6
+      },
+      "preview": {
+        "x": 16.94,
+        "y": 4.4,
+        "width": 46.67,
+        "height": 95.6
+      },
+      "layers": {
+        "x": 63.89,
+        "y": 4.4,
+        "width": 36.11,
+        "height": 95.6
+      },
+      "output": {
+        "x": 16.94,
+        "y": 7.9,
+        "width": 46.67,
+        "height": 88.9
+      }
+    }
+  },
+  "whole-preview.png": {
+    "width": 1440,
+    "height": 1000,
+    "sha256": "19d75eeb77f327d821e15866972eace45083039d05d20fcf091ca1147f82f0c7",
+    "regions": {
+      "navigator": {
+        "x": 16.94,
+        "y": 7.74,
+        "width": 46.67,
+        "height": 89.06
+      }
+    }
+  },
+  "export-settings.png": {
+    "width": 732,
+    "height": 269,
+    "sha256": "481e46b5eaa4a19b81157be19d1625aa5b14bc49e1ca510f1c5abee228fa2900",
+    "regions": {
+      "exportSettings": {
+        "x": 2.19,
+        "y": 6.28,
+        "width": 95.63,
+        "height": 87.58
+      }
+    }
+  },
+  "output-menu.png": {
+    "width": 184,
+    "height": 142,
+    "sha256": "02f7603d3acd7d23a34a457b0846e531dc67812f79b428fdfe5c204eff8e2107",
+    "regions": {
+      "outputMenu": {
+        "x": 8.7,
+        "y": 3.87,
+        "width": 86.96,
+        "height": 84.51
+      }
+    }
+  },
+  "settings-dialog.png": {
+    "width": 912,
+    "height": 882,
+    "sha256": "ceedb972a383371f59e713c9410928028509b13ae5f28870846e9fc0c8be5f78",
+    "regions": {
+      "settingsDialog": {
+        "x": 1.75,
+        "y": 1.81,
+        "width": 96.49,
+        "height": 96.37
+      },
+      "processSettings": {
+        "x": 4.5,
+        "y": 33.45,
+        "width": 91.01,
+        "height": 31.63
+      }
+    }
+  }
+}

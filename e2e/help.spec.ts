@@ -104,7 +104,7 @@ for (const { width, theme } of [
   test.describe(`レイヤー説明 ${width}px / ${theme}`, () => {
     test.use({ viewport: { width, height: 1000 }, hasTouch: width < 800, isMobile: width < 800 })
 
-    test('全構造例で階層・名前・出力名を横にはみ出さずに読める', async ({ page }, info) => {
+    test('全構造例のアイコンと文字が重ならず、画面画像と赤枠を読める', async ({ page }, info) => {
       await page.addInitScript(theme => {
         localStorage.setItem('csp-paperback:settings', JSON.stringify({ state: { activeTheme: theme }, version: 2 }))
       }, theme)
@@ -116,24 +116,63 @@ for (const { width, theme } of [
         await page.getByRole('button', { name: '? ヘルプ', exact: true }).click()
       }
       const dialog = page.getByRole('dialog', { name: 'CSP Paperback ヘルプ' })
-      for (const tab of [/機能ガイド/, /このツールについて/, /各社テンプレートへの対応/]) {
+      const capturedImages = new Set<string>()
+      for (const tab of [/クイックガイド/, /機能ガイド/, /このツールについて/, /各社テンプレートへの対応/]) {
         await dialog.getByRole('tab', { name: tab }).click()
         const examples = dialog.locator('[data-help-example]')
-        expect(await examples.count()).toBeGreaterThan(0)
+        if (tab.source !== 'クイックガイド') expect(await examples.count()).toBeGreaterThan(0)
         const overflows = await examples.evaluateAll(elements => elements.flatMap(example =>
           [example, ...example.querySelectorAll<HTMLElement>('[data-help-layer], [data-layer-name]')]
             .filter(el => el.scrollWidth > el.clientWidth + 1)
             .map(el => el.textContent),
         ))
         expect(overflows).toEqual([])
+        // Measure glyphs, not just element boxes: emoji can paint beyond a fixed-width slot.
+        const collisions = await examples.locator('[data-help-layer]').evaluateAll(rows => rows.flatMap(row => {
+          const icon = row.querySelector('[data-layer-icon]')!
+          const name = row.querySelector('[data-layer-name]')!
+          const range = document.createRange()
+          range.selectNodeContents(icon)
+          const glyph = range.getBoundingClientRect()
+          const slot = icon.getBoundingClientRect()
+          range.selectNodeContents(name)
+          const text = range.getBoundingClientRect()
+          const gap = text.left - glyph.right
+          return gap < 3 || glyph.left < slot.left - 0.5 || glyph.right > slot.right + 0.5
+            ? [{ name: name.textContent, gap, glyphWidth: glyph.width, slotWidth: slot.width }] : []
+        }))
+        expect(collisions).toEqual([])
         expect(await dialog.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true)
-        if (tab.source === '機能ガイド') {
-          const process = dialog.locator('[data-help-example="cel-process"]')
-          await process.scrollIntoViewIfNeeded()
-          await expect(process.getByText('B1_s.jpg', { exact: true })).toBeVisible()
-          await process.screenshot({ path: info.outputPath(`help-process-${width}-${theme}.png`) })
+
+        for (const example of await examples.all()) {
+          await example.scrollIntoViewIfNeeded()
+          await example.screenshot({ path: info.outputPath(`${await example.getAttribute('data-help-example')}-${width}-${theme}.png`) })
+        }
+
+        for (const image of await dialog.locator('img[src*="/help/"]').all()) {
+          await image.scrollIntoViewIfNeeded()
+          await expect.poll(() => image.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth > 0)).toBe(true)
+          const src = (await image.getAttribute('src'))!
+          expect(src).toMatch(/\?v=[a-f0-9]{12}$/)
+          const figure = image.locator('xpath=ancestor::figure')
+          const imageBox = (await image.boundingBox())!
+          const captionBox = (await figure.locator('figcaption').boundingBox())!
+          expect(captionBox.y).toBeGreaterThanOrEqual(imageBox.y + imageBox.height)
+          for (const highlight of await figure.locator('[data-help-highlight]').all()) {
+            const box = (await highlight.boundingBox())!
+            expect(box.x).toBeGreaterThanOrEqual(imageBox.x - 1)
+            expect(box.y).toBeGreaterThanOrEqual(imageBox.y - 1)
+            expect(box.x + box.width).toBeLessThanOrEqual(imageBox.x + imageBox.width + 1)
+            expect(box.y + box.height).toBeLessThanOrEqual(imageBox.y + imageBox.height + 1)
+          }
+          if (!capturedImages.has(src)) {
+            const file = src.split('/').at(-1)!.split('?')[0]
+            await figure.screenshot({ path: info.outputPath(`figure-${width}-${theme}-${file}`) })
+            capturedImages.add(src)
+          }
         }
       }
+      expect(capturedImages.size).toBe(6)
     })
   })
 }

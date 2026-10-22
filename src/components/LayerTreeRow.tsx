@@ -41,7 +41,7 @@ export function LayerExpandIcon({ expanded = false, transient = false }: { expan
 
 function LayerTypeIcon({ kind, autoProcess }: { kind: LayerItemKind; autoProcess: boolean }) {
   return <span className={`${styles.typeIcon} ${kind === 'cell' ? styles.typeIconCell : ''} ${autoProcess ? styles.typeIconAutoProcess : ''}`}
-    aria-hidden="true">
+    aria-hidden="true" data-layer-icon={kind}>
     {kind === 'animation' ? '🎬' : kind === 'cell' ? '🎞' : kind === 'folder' ? '📁' : (
       <svg className={styles.docIcon} viewBox="0 0 16 16" fill="none">
         <path d="M4 2 H10 L13 5 V13 A1 1 0 0 1 12 14 H4 A1 1 0 0 1 3 13 V3 A1 1 0 0 1 4 2 Z"

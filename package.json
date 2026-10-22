@@ -1,7 +1,7 @@
 {
   "name": "csp-paperback",
   "private": true,
-  "version": "1.33.291",
+  "version": "1.33.292",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -12,6 +12,7 @@
     "audit:artifacts": "node scripts/audit-artifacts.mjs",
     "generate:testdata:collision": "node scripts/generate-collision-fixture.mjs",
     "generate:testdata:context-pruning": "node scripts/generate-context-pruning-fixture.mjs",
+    "help:capture": "node scripts/capture-help.mjs",
     "lint": "eslint .",
     "typecheck": "tsc -b",
     "preview": "vite preview",
