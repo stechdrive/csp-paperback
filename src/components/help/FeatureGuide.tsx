@@ -3,6 +3,7 @@ import { HELP_HIGHLIGHTS } from './helpHighlights'
 import { ja } from '../../i18n/ja'
 import { OutputSettingsGuide } from './OutputSettingsGuide'
 import { LayerExpandIcon, LayerVisibilityIcon } from '../LayerTreeRow'
+import { LayerIcon } from '../LayerIcon'
 import { HelpLayerTree } from './HelpLayerTree'
 import { HelpAnimationFolderExample } from './HelpAnimationFolderExample'
 import { individualLayers, clipAnimationLayers, trackProcessLayers, celProcessLayers } from './layerExamples'
@@ -261,9 +262,9 @@ export function FeatureGuide() {
             </p>
           </div>
           <div>
-            <span>🎬</span>
+            <span><LayerIcon kind="animation" /></span>
             <p>
-              <strong>アニメーションフォルダの補助指定（行の右端の🎬）</strong>：
+              <strong>アニメーションフォルダの補助指定</strong>：
               フォルダ直下の子をセルとして扱い、1枚ずつ出力します。
             </p>
           </div>
@@ -278,8 +279,10 @@ export function FeatureGuide() {
 
         <ul className={styles.list}>
           <li>選択したレイヤーの合成モードと不透明度は、レイヤーツリー直上の1行で変更できます。</li>
+          <li>名前の左の記号でラスター・ベクター・3D・画像素材・ベタ塗り・用紙などを確認できます。左端の色はCLIPのパレットカラーです。名前の右にはレイヤーカラー・境界効果・マスクが付いている場合だけ表示されます。境界とマスクが両方ある場合も別々の記号で表示し、無効なマスクには斜線を付けます。</li>
+          <li>狭い幅では行の右端の「…」（個別書き出し指定中は星）から、出力名の編集・個別書き出し・アニメーションフォルダの手動指定を操作できます。効果が多い場合は「+件数」で残りを確認できます。種類や効果の記号はCLIPの設定を示し、描画の警告は別に表示されます。</li>
           <li>表示切替・警告・各種指定はそれぞれ同じ列に並びます。出力との関係は接続線と行の強調で確認できます。必要な行だけに「出力OFF」「一部OFF」「除外指定」を表示します。元のツリーでは非表示でも、選択した出力の仮想セル内で使う素材には「仮想セル」と表示します。詳細は各表示にポインターを合わせて確認できます。一覧で画像をOFFにしてもツリーの状態表示は変更しません。</li>
-          <li>素材レイヤー上部の≡メニューから、レイヤーの表示状態を初期状態へ戻します。合成モード・不透明度や★・🎬の指定、画像ごとの出力OFFはそのままです。</li>
+          <li>素材レイヤー上部の≡メニューから、レイヤーの表示状態を初期状態へ戻します。合成モード・不透明度や個別書き出し・手動アニメーション指定、画像ごとの出力OFFはそのままです。</li>
           <li>Shift＋スクロールで、書き出される画像単位（セル本体・工程別画像・個別書き出し・仮想セル）を順番に確認できます。セル内の補助レイヤーや、出力設定で除外した項目は飛ばします。</li>
           <li>巡回先は出力画像の行まで一時的に展開し、通り過ぎると元の閉じた状態に戻ります。手動で開いたフォルダは開いたままです。一時展開中も手動で開閉でき、次の巡回では必要な経路を再び開きます。</li>
           <li>Ctrl＋Z／Ctrl＋Shift＋Zで、操作を戻す／やり直すことができます。</li>
@@ -349,19 +352,19 @@ export function FeatureGuide() {
         <p className={styles.paragraph}>
           CLIPに保存されたアニメーションフォルダを直接認識し、
           直下のセルを1枚ずつ出力します。通常フォルダをセル群として扱いたい場合は、
-          素材レイヤーの行の右端にある🎬ボタン（★の左隣）で追加指定します。
+          素材レイヤーの行の右端から追加指定します。狭い幅では「…」を開き、「このフォルダを手動でアニメーションフォルダとして扱う」を選びます。
         </p>
 
         <p className={styles.paragraph}>
-          指定すると右端の🎬に色付きの枠が付き、名前の左側も📁から🎬へ、直下の子は🎞へ変わります。
-          指定中はそのフォルダの★ボタンが隠れます。右端の🎬をもう一度押すと解除できます。
+          指定すると名前の左側がアニメーションフォルダの記号に変わり、直下の子の名前がセルの色になります。子の種類アイコンは元の種類を保ちます。
+          指定中はそのフォルダの個別書き出し操作が隠れます。同じ補助操作から手動指定を解除できます。
           左側のアイコンはレイヤーの種類を示す表示です。
         </p>
 
         <div className={styles.priorityFlow}>
           <span>CLIPから直接認識</span>
           <b>→</b>
-          <span>必要なフォルダだけ🎬で追加</span>
+          <span>必要なフォルダだけ手動指定</span>
           <b>→</b>
           <span>直下の子を1枚ずつ出力</span>
         </div>
@@ -369,7 +372,7 @@ export function FeatureGuide() {
         <div className={styles.compareGrid}>
           <div>
             <HelpLayerTree label="CLIPから認識される例" layers={clipAnimationLayers} exampleId="clip-animation" />
-            <p className={styles.paragraph}>CLIPから認識されたフォルダは、最初から左側が🎬です。右端の手動指定ボタンは表示されません。アニメーションフォルダAのタイムラインと、直下のセル1・2を対応付けます。</p>
+            <p className={styles.paragraph}>CLIPから認識されたフォルダは、最初からアニメーションフォルダの記号です。手動指定の操作は表示されません。アニメーションフォルダAのタイムラインと、直下のセル1・2を対応付けます。</p>
           </div>
           <div>
             <HelpAnimationFolderExample />
@@ -546,7 +549,7 @@ _原図`}</pre>
         </div>
 
         <div className={styles.callout}>
-          クイック書き出しでは、読み込み後に★や🎬を追加する画面は表示されません。
+          クイック書き出しでは、読み込み後に個別書き出しやアニメーションフォルダの手動指定を追加する画面は表示されません。
           カットごとに指定を変えたい場合は、通常起動で素材を読み込んでから書き出してください。
         </div>
       </Section>

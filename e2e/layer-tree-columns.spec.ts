@@ -15,7 +15,7 @@ async function columns(page: Page) {
 
 async function expectAligned(page: Page) {
   const heights = await tree(page).locator('[data-layer-id]').evaluateAll(rows => rows.map(row => row.getBoundingClientRect().height))
-  expect(heights.every(height => height === 24), `row heights: ${heights.join(',')}`).toBe(true)
+  expect(heights.every(height => height === 22), `row heights: ${heights.join(',')}`).toBe(true)
   const positions = await columns(page)
   expect(positions.length).toBeGreaterThan(5)
   for (const row of positions) {

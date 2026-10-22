@@ -4,6 +4,32 @@ import type { ClipPixels } from './types'
 
 type Stop = { position: number; rgba: number[] }
 
+/** Identify a fill without allocating or decoding a canvas-sized image. */
+export function readGradientKind(bytes: Uint8Array): 'fill' | 'gradient' | undefined {
+  try {
+    const r = new Reader(bytes)
+    r.take(8)
+    let geometry = false, colors = false, flat = false
+    while (r.position < bytes.length) {
+      const name = r.wideName()
+      if (name === 'GradationSetting') { r.take(68); geometry = true }
+      else {
+        const part = new Reader(r.take(r.u32()))
+        if (name === 'GradationData') colors = part.bytes.length >= 16
+        if (name === 'GradationSettingAdd0001') {
+          flat = !!part.u32()
+          if (flat) part.take(12)
+        }
+      }
+    }
+    return flat ? 'fill' : geometry && colors ? 'gradient' : undefined
+  } catch {
+    // A malformed display hint must not prevent the rest of the document loading.
+    // The rendering decoder reports any unusable material when it is requested.
+    return undefined
+  }
+}
+
 /** Generate the known gradient forms when no saved layer image is available. */
 export function readGradient(bytes: Uint8Array, width: number, height: number, offsetX: number, offsetY: number, report: (message: string) => void): ClipPixels {
   const r = new Reader(bytes)

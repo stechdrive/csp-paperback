@@ -136,6 +136,10 @@ function convertLayer(
     uiHidden: false,
     expanded: layer.sectionDivider?.type === 1, // OpenFolder(1)=展開, ClosedFolder(2)=折りたたみ
     hasAdjustmentLayer: hasAdjustment(layer),
+    display: {
+      kind: folder ? 'folder' : layer.text ? 'text' : layer.adjustment ? 'adjustment' : 'raster',
+      mask: layer.mask ? layer.mask.disabled ? 'disabled' : 'enabled' : undefined,
+    },
   }
 }
 

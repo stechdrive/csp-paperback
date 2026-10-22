@@ -1,5 +1,6 @@
 import type { MouseEventHandler } from 'react'
 import { Tooltip } from './Tooltip'
+import { LayerIcon } from './LayerIcon'
 import styles from './LayerTree.module.css'
 
 interface ToggleProps {
@@ -13,7 +14,9 @@ export function LayerAnimationButton({ active, onClick }: ToggleProps) {
     : 'このフォルダを手動でアニメーションフォルダとして扱う'
   return <Tooltip content={label}>
     <button type="button" aria-label={label} aria-pressed={active}
-      className={`${styles.animBtn} ${active ? styles.animBtnActive : ''}`} onClick={onClick}>🎬</button>
+      className={`${styles.animBtn} ${active ? styles.animBtnActive : ''}`} onClick={onClick}>
+      <LayerIcon kind="animation" /><span className={styles.actionLabel}>{label}</span>
+    </button>
   </Tooltip>
 }
 
@@ -21,6 +24,8 @@ export function LayerIndividualButton({ active, onClick }: ToggleProps) {
   const label = active ? 'この素材の個別書き出しを解除する' : 'この素材を別画像として書き出す'
   return <Tooltip content={active ? label : `${label}\nタイムライン登録なしでも出力される`}>
     <button type="button" aria-label={label} aria-pressed={active}
-      className={`${styles.markBtn} ${active ? styles.markBtnActive : ''}`} onClick={onClick}>★</button>
+      className={`${styles.markBtn} ${active ? styles.markBtnActive : ''}`} onClick={onClick}>
+      <LayerIcon kind="star" /><span className={styles.actionLabel}>{label}</span>
+    </button>
   </Tooltip>
 }

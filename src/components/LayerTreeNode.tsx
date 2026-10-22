@@ -20,7 +20,7 @@ import { LayerTreeRow, LayerVisibility } from './LayerTreeRow'
 import { LayerAnimationButton, LayerIndividualButton } from './LayerOutputButtons'
 import styles from './LayerTree.module.css'
 import type { HistoryOptions } from '../store/history-slice'
-import { selectLayerVirtualInsertions, selectOutputRowStatuses } from '../store/selectors'
+import { selectLayerVirtualInsertions, selectOutputAliasTargets, selectOutputRowStatuses } from '../store/selectors'
 import { visibilityDrag } from '../utils/visibility-gesture'
 
 type DropPlacement = VirtualSetInsertionPosition | 'inside'
@@ -191,6 +191,7 @@ export const LayerTreeNode = memo(function LayerTreeNodeView({
 }: LayerTreeNodeProps) {
   const outputStatus = useAppStore(s => selectOutputRowStatuses(s).get(layer.id))
   const isSelected = useAppStore(s => s.selectedLayerId === layer.id)
+  const canRename = useAppStore(s => selectOutputAliasTargets(s).has(layer.id))
   const hasSingleMark = useAppStore(s => s.singleMarks.has(layer.id))
   const isManualAnimFolder = useAppStore(s => s.manualAnimFolderIds.has(layer.id))
   const hasAnimDescendant = useAppStore(s => layer.isFolder && !isCell && hasEffectiveAnimDescendant(layer, s.manualAnimFolderIds))
@@ -359,6 +360,7 @@ export const LayerTreeNode = memo(function LayerTreeNodeView({
       <LayerTreeRow
         ref={setRowRef}
         name={layer.originalName}
+        metadata={layer.display}
         depth={layer.depth}
         kind={isAnimFolder ? 'animation' : isCell ? 'cell' : layer.isFolder ? 'folder' : 'layer'}
         autoProcess={isAutoProcessAnimFolder}
@@ -406,6 +408,8 @@ export const LayerTreeNode = memo(function LayerTreeNodeView({
           <Tooltip content="元のレイヤーは非表示ですが、選択した出力の仮想セル内で使用しています。"><span className={styles.outputStatus} data-layer-virtual-use hidden>仮想セル</span></Tooltip>
         </>}
         controls={{
+          rename: canRename && onEditName ? () => onEditName(layer.id) : undefined,
+          individualActive: isMarked,
           warning: <LayerDiagnosticWarning layer={layer} />,
           animation: canToggleManualAnimFolder && (
             <LayerAnimationButton active={isManualAnimFolder} onClick={handleAnimClick} />

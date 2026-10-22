@@ -16,7 +16,7 @@ describe('HelpLayerTree', () => {
     })
     const before = useAppStore.getState()
     render(<HelpAnimationFolderExample />)
-    const example = screen.getByRole('figure', { name: '右端の🎬で指定・解除する例' })
+    const example = screen.getByRole('figure', { name: 'アニメーションフォルダを指定・解除する例' })
     const folder = example.querySelector('[data-help-layer="effect"]')!
     const child = example.querySelector('[data-help-layer="effect1"]')!
     const animation = () => within(folder as HTMLElement).getByRole('button', { name: /アニメーションフォルダ/ })

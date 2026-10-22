@@ -1,6 +1,7 @@
 import type { Layer, BlendMode } from 'ag-psd'
 import type { AnimationFolderInfo } from './animation'
 import type { MaterialAdjustment, MaterialEffects } from './rendering'
+import type { LayerDisplayMetadata } from './layer-display'
 
 export type { BlendMode }
 
@@ -31,6 +32,7 @@ export interface CspLayer {
   expanded: boolean        // レイヤーツリーUI展開状態
   hasAdjustmentLayer: boolean // 調整レイヤーを含む（v1では警告表示用）
   nativeBlendMode?: number
+  display?: LayerDisplayMetadata
   materialEffects?: MaterialEffects
   adjustment?: MaterialAdjustment
   vectorRendering?: 'approximate' | 'unavailable'

@@ -32,7 +32,7 @@ function row(page: Page, name: SampleLayer) {
   return page.getByTestId('layer-tree').locator(`[data-layer-id="clip:${sampleLayers[name]}"]`)
 }
 function expansion(layer: Locator) {
-  return layer.locator('button[aria-expanded]')
+  return layer.locator('[data-layer-column="name"] button[aria-expanded]')
 }
 function visibility(layer: Locator) {
   return layer.locator('button[data-layer-column="visibility"]')

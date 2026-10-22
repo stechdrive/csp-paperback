@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { LayerDisplayMetadata } from '../../types/layer-display'
 import { LayerTreeRow, LayerVisibility, type LayerItemKind, type LayerTreeRowControls } from '../LayerTreeRow'
 import styles from './HelpLayerTree.module.css'
 
@@ -6,6 +7,7 @@ export interface HelpLayer {
   id: string
   name: string
   kind: LayerItemKind
+  metadata?: LayerDisplayMetadata
   children?: readonly HelpLayer[]
   hidden?: boolean
   autoMarked?: boolean
@@ -37,6 +39,7 @@ export function HelpLayerTree({ label, layers, exampleId, caption, renderControl
         return <li key={layer.id}>
           <div className={`${styles.entry} ${layer.output ? styles.entryOutput : ''} ${renderControls ? styles.entryInteractive : ''}`} data-help-layer={layer.id}>
             <LayerTreeRow name={layer.name} depth={depth} kind={layer.kind} autoMarked={layer.autoMarked}
+              metadata={layer.metadata}
               dimmed={hidden} expanded={expanded} example={!renderControls}
               selected={!!renderControls && selectedId === layer.id}
               onClick={renderControls ? () => setSelectedId(layer.id) : undefined}

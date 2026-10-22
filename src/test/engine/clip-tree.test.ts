@@ -28,6 +28,20 @@ function build(clip: ClipDocument, psd: Psd = clipRenderingSource(clip)) {
 }
 
 describe('CLIP and PSD pairing within animation cels', () => {
+  it('retains identification and disabled masks in both paths without applying CLIP effects twice', () => {
+    const { clip, content } = fixture()
+    const effects = { layerColor: { main: [20, 60, 200] as [number, number, number], sub: [255, 255, 255] as [number, number, number] },
+      edge: { radius: 2, color: [255, 0, 0] as [number, number, number] } }
+    Object.assign(content, { kind: 'folder', paletteColor: '#ffd0d0', maskState: 'disabled', effects })
+    for (const paired of [false, true]) {
+      const source = clipRenderingSource(clip)
+      const tree = buildClipLayerTree(clip, source, clip.timelines[0], DEFAULT_PROJECT_SETTINGS, paired)
+      const group = tree[0].children[0].children[0].children[0]
+      expect(group.display).toEqual({ kind: 'folder', paletteColor: '#ffd0d0', mask: 'disabled', effects })
+      expect(group.materialEffects).toEqual(paired ? undefined : effects)
+      expect(group.agPsdRef.mask).toBeUndefined()
+    }
+  })
   it('preserves repeated artwork names and stacking order without treating internal folders as cels', () => {
     const { clip } = fixture()
     const psd = clipRenderingSource(clip)

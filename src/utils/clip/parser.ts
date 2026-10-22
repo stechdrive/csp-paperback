@@ -5,6 +5,7 @@ import { readActionMixer } from './binc'
 import { readCelFrames } from './timeline'
 import { readAttribute } from './raster'
 import { createMaterialDecoder, readMaterialEffects } from './material'
+import { readLayerKind, readPaletteColor } from './layer-metadata'
 import { num, str, errorMessage, type ClipRow as Row } from './records'
 import type { ClipDiagnostic, ClipDocument, ClipLayer, ClipTimeline } from './types'
 
@@ -77,7 +78,8 @@ export async function openClipSession(bytes: Uint8Array, SQL: SqlJsStatic): Prom
         const composite = num(row, 'LayerComposite')
         if (!blends[composite]) diagnostics.push({ scope: 'raster', part: 'blend', layerId: key, message: `「${str(row.LayerName)}」の合成モード ${composite} は未対応です（通常で表示）` })
         result.push({ id: key, name: str(row.LayerName), isFolder: !!(num(row, 'LayerFolder') & 1),
-          kind: num(row, 'LayerType') & 512 ? 'camera' : num(row, 'LayerFolder') & 1 ? 'folder' : row.FilterLayerInfo ? 'adjustment' : num(row, 'Manager3D') || num(row, 'Manager3DOd') ? '3d' : row.TextLayerString != null || row.TextLayerStringArray != null ? 'text' : row.ResizableImageInfo ? 'image-material' : num(row, 'VectorNormalStrokeIndex') || vectorLayerIds.has(next) ? 'vector' : num(row, 'LayerType') & 1 ? 'raster' : 'other',
+          kind: readLayerKind(row, vectorLayerIds.has(next)), paletteColor: readPaletteColor(row),
+          maskState: num(row, 'LayerType') & 2 ? num(row, 'LayerVisibility') & 2 ? 'enabled' : 'disabled' : undefined,
           nativeBlendMode: composite,
           isAnimationFolder: !!num(row, 'AnimationFolder'), expanded: !(num(row, 'LayerFolder') & 16),
           hidden: !(num(row, 'LayerVisibility') & 1), opacity: Math.max(0, Math.min(1, num(row, 'LayerOpacity', 256) / 256)),

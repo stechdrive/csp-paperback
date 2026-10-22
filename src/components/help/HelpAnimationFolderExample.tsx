@@ -8,15 +8,17 @@ export function HelpAnimationFolderExample() {
   const [marks, setMarks] = useState<ReadonlySet<string>>(() => new Set())
   const layers: readonly HelpLayer[] = [{
     id: 'effect', name: 'エフェクト', kind: animation ? 'animation' : 'folder',
-    note: animation ? '指定中：左の種類アイコンも🎬に変わります。' : '未指定：右端の🎬を押してみてください。',
+    note: animation ? '指定中：アニメーションフォルダの記号に変わります。' : '右端の補助操作からアニメーションフォルダに指定できます。',
     children: ['1', '2'].map(name => ({
       id: `effect${name}`, name, kind: animation ? 'cell' : 'layer',
+      metadata: { kind: 'raster' },
       note: marks.has(`effect${name}`) ? '★で個別書き出し' : animation ? 'セルとして出力' : undefined,
     })),
   }]
-  return <HelpLayerTree label="右端の🎬で指定・解除する例" layers={layers} exampleId="manual-animation"
-    caption="行を選ぶかポインターを合わせると、右端に操作ボタンが表示されます。ここでの操作は説明用の例だけに反映されます。"
+  return <HelpLayerTree label="アニメーションフォルダを指定・解除する例" layers={layers} exampleId="manual-animation"
+    caption="狭い幅では右端の「…」から操作します。ここでの操作は説明用の例だけに反映されます。"
     renderControls={layer => ({
+      individualActive: marks.has(layer.id),
       animation: layer.id === 'effect' && <LayerAnimationButton active={animation} onClick={event => {
         event.stopPropagation()
         setAnimation(active => !active)

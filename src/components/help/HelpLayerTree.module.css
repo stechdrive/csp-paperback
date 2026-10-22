@@ -5,7 +5,7 @@
   border-radius: 6px;
   background: var(--color-surface-1);
   overflow: hidden;
-  container-type: inline-size;
+  container: layer-tree / inline-size;
 }
 
 .caption {

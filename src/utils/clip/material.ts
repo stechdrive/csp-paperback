@@ -5,6 +5,7 @@ import { num, str, errorMessage, type ClipRow } from './records'
 import type { ClipDiagnostic, ClipLayer, ClipPixels } from './types'
 import type { MaterialEffects, MaterialQuad } from '../../types/rendering'
 import { readGradient } from './gradient'
+import { isPaper } from './layer-metadata'
 import { readAdjustment } from './adjustment'
 import { readVectorStrokes, renderVectors, type BrushPattern, type VectorBrushes } from './vector'
 import { layerRenderingDiagnostics } from './rendering-status'
@@ -31,8 +32,6 @@ export function readMaterialEffects(row: ClipRow, report?: (message: string) => 
   }
   return Object.keys(effects).length ? effects : undefined
 }
-
-function isPaper(row: ClipRow): boolean { return (num(row, 'LayerType') & ~2) === 1584 }
 
 function effectRecord(bytes: Uint8Array, name: string): Reader | undefined {
   const needle = [0, 0, 0, name.length, ...Array.from(name).flatMap(c => [0, c.charCodeAt(0)])]

@@ -1,5 +1,6 @@
 import { expect, test, type Locator } from './fixtures'
 import { manyOutputs } from './helpers/many-outputs'
+import { clickLayerAction } from './helpers/layer-action'
 
 test('独立したタブから各社テンプレート向けの設定と共有方法を確認できる', async ({ page }) => {
   const pageErrors: string[] = []
@@ -73,7 +74,7 @@ test('本体と同じレイヤー表示で例を開閉し、読み込み中の�
   const snapshot = () => source.locator('[data-layer-id]').evaluateAll(rows => rows.map(row => ({
     id: row.getAttribute('data-layer-id'), name: row.querySelector('[data-layer-name]')?.textContent,
     visible: row.querySelector('[data-layer-column="visibility"]')?.getAttribute('aria-pressed'),
-    expanded: row.querySelector('button[aria-expanded]')?.getAttribute('aria-expanded'),
+    expanded: row.querySelector('[data-layer-column="name"] button[aria-expanded]')?.getAttribute('aria-expanded'),
     selected: row.className.includes('_rowSelected_'),
   })))
   const before = await snapshot()
@@ -106,19 +107,20 @@ async function operationAppearance(rows: Locator) {
     result.push(await row.evaluate(el => {
       const identity = el.querySelector('[data-layer-column="name"]')!.getBoundingClientRect()
       const name = el.querySelector('[data-layer-name]')!
-      const edge = el.getBoundingClientRect().right
+      const buttons = [...el.querySelectorAll<HTMLElement>('[data-layer-column="animation"] button, [data-layer-column="individual"] button')]
+      for (const button of buttons) {
+        const rect = button.getBoundingClientRect()
+        if (rect.width && rect.left < identity.right) throw new Error('Action overlaps the layer name')
+      }
       return {
         name: name.textContent, color: getComputedStyle(name).color,
         icon: el.querySelector('[data-layer-icon]')!.outerHTML,
-        buttons: [...el.querySelectorAll<HTMLElement>('[data-layer-column="animation"] button, [data-layer-column="individual"] button')].map(button => ({
+        buttons: buttons.map(button => ({
           label: button.getAttribute('aria-label'), pressed: button.getAttribute('aria-pressed'), className: button.className,
-          right: Math.round(edge - button.getBoundingClientRect().right),
-          afterName: button.getBoundingClientRect().left >= identity.right,
         })),
       }
     }))
   }
-  expect(result.every(row => row.buttons.every(button => button.afterName))).toBe(true)
   return result.sort((a, b) => a.name!.localeCompare(b.name!))
 }
 
@@ -134,8 +136,8 @@ test('手動指定の例が実際の素材ツリーと同じ右端の操作・�
   await folder.locator('[data-layer-name]').click()
   const actual = []
   for (const state of ['ordinary', 'starred', 'animation', 'restored']) {
-    if (state === 'starred') await folder.locator('[data-layer-column="individual"] button').click()
-    if (state === 'animation' || state === 'restored') await folder.locator('[data-layer-column="animation"] button').click()
+    if (state === 'starred') await clickLayerAction(page, folder, 'individual')
+    if (state === 'animation' || state === 'restored') await clickLayerAction(page, folder, 'animation')
     actual.push(await operationAppearance(source.locator('[data-layer-id]')))
     await source.screenshot({ path: info.outputPath(`actual-${state}.png`) })
   }
@@ -145,8 +147,8 @@ test('手動指定の例が実際の素材ツリーと同じ右端の操作・�
   const example = dialog.locator('[data-help-example="manual-animation"]')
   const exampleFolder = example.locator('[data-help-layer="effect"]')
   for (const [index, state] of ['ordinary', 'starred', 'animation', 'restored'].entries()) {
-    if (state === 'starred') await exampleFolder.locator('[data-layer-column="individual"] button').click()
-    if (state === 'animation' || state === 'restored') await exampleFolder.locator('[data-layer-column="animation"] button').press('Enter')
+    if (state === 'starred') await clickLayerAction(page, exampleFolder, 'individual')
+    if (state === 'animation' || state === 'restored') await clickLayerAction(page, exampleFolder, 'animation', true)
     expect(await operationAppearance(example.locator('[data-layer-kind]'))).toEqual(actual[index])
     await example.screenshot({ path: info.outputPath(`help-${state}.png`) })
   }
@@ -212,13 +214,14 @@ for (const { width, theme } of [
         if (tab.source === '機能ガイド') {
           const example = dialog.locator('[data-help-example="manual-animation"]')
           const button = example.locator('[data-layer-column="animation"] button')
-          await button.click()
+          const folder = example.locator('[data-help-layer="effect"]')
+          await clickLayerAction(page, folder, 'animation')
           await expect(button).toHaveAttribute('aria-pressed', 'true')
           await expect(example.locator('[data-help-layer="effect"] [data-layer-icon]')).toHaveAttribute('data-layer-icon', 'animation')
           await expect(example.locator('[data-help-layer="effect"] [data-layer-column="individual"] button')).toHaveCount(0)
           await operationAppearance(example.locator('[data-layer-kind]'))
           await example.screenshot({ path: info.outputPath(`manual-animation-active-${width}-${theme}.png`) })
-          await button.click()
+          await clickLayerAction(page, folder, 'animation')
           await expect(button).toHaveAttribute('aria-pressed', 'false')
         }
 

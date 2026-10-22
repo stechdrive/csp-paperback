@@ -1,9 +1,18 @@
-import type { ComponentPropsWithRef, MouseEventHandler, ReactNode } from 'react'
+import type { ComponentPropsWithRef, CSSProperties, MouseEventHandler, ReactNode } from 'react'
+import type { LayerDisplayMetadata } from '../types/layer-display'
 import { Tooltip } from './Tooltip'
+import { LayerIcon } from './LayerIcon'
+import { layerKindLabels } from '../utils/layer-display'
+import { LayerIndicators } from './LayerIndicators'
+import { LayerActionsMenu } from './LayerActionsMenu'
 import styles from './LayerTree.module.css'
 
 export type LayerItemKind = 'layer' | 'folder' | 'animation' | 'cell'
-export interface LayerTreeRowControls { warning?: ReactNode; animation?: ReactNode; individual?: ReactNode }
+export interface LayerTreeRowControls {
+  warning?: ReactNode; animation?: ReactNode; individual?: ReactNode
+  rename?: () => void
+  individualActive?: boolean
+}
 
 export function LayerVisibilityIcon() {
   return (
@@ -40,23 +49,21 @@ export function LayerExpandIcon({ expanded = false, transient = false }: { expan
   </svg>
 }
 
-function LayerTypeIcon({ kind, autoProcess }: { kind: LayerItemKind; autoProcess: boolean }) {
-  return <span className={`${styles.typeIcon} ${kind === 'cell' ? styles.typeIconCell : ''} ${autoProcess ? styles.typeIconAutoProcess : ''}`}
-    aria-hidden="true" data-layer-icon={kind}>
-    {kind === 'animation' ? '🎬' : kind === 'cell' ? '🎞' : kind === 'folder' ? '📁' : (
-      <svg className={styles.docIcon} viewBox="0 0 16 16" fill="none">
-        <path d="M4 2 H10 L13 5 V13 A1 1 0 0 1 12 14 H4 A1 1 0 0 1 3 13 V3 A1 1 0 0 1 4 2 Z"
-          stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
-        <path d="M10 2 V5 H13" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
-      </svg>
-    )}
-  </span>
+function LayerTypeIcon({ kind, autoProcess, metadata }: { kind: LayerItemKind; autoProcess: boolean; metadata?: LayerDisplayMetadata }) {
+  const contentKind = metadata?.kind ?? (kind === 'layer' ? 'raster' : 'folder')
+  const label = kind === 'animation' ? 'アニメーションフォルダ'
+    : kind === 'cell' ? `セル（${layerKindLabels[contentKind]}）` : layerKindLabels[contentKind]
+  return <Tooltip content={label}><span className={`${styles.typeIcon} ${kind === 'cell' ? styles.typeIconCell : ''} ${autoProcess ? styles.typeIconAutoProcess : ''}`}
+    role="img" aria-label={label} data-layer-icon={kind} data-layer-content-kind={contentKind}>
+    <LayerIcon kind={kind === 'animation' ? 'animation' : contentKind} />
+  </span></Tooltip>
 }
 
 interface LayerTreeRowProps extends Omit<ComponentPropsWithRef<'div'>, 'children' | 'hidden'> {
   name: string
   depth: number
   kind: LayerItemKind
+  metadata?: LayerDisplayMetadata
   autoProcess?: boolean
   autoMarked?: boolean
   dimmed?: boolean
@@ -75,7 +82,7 @@ interface LayerTreeRowProps extends Omit<ComponentPropsWithRef<'div'>, 'children
 
 /** Shared presentation only. Editing, drag/drop and example state belong to callers. */
 export function LayerTreeRow({
-  name, depth, kind, autoProcess = false, autoMarked = false, dimmed = false,
+  name, depth, kind, metadata, autoProcess = false, autoMarked = false, dimmed = false,
   selected = false, activeCell = false, dropTarget = false, example = false,
   expanded, transientExpanded = false, onExpand, visibility, renderName, status, controls,
   className = '', ...rowProps
@@ -90,8 +97,12 @@ export function LayerTreeRow({
     controls ? '' : styles.rowCompact, example ? styles.rowExample : '', className,
   ].filter(Boolean).join(' ')} data-layer-kind={kind}>
     {visibility}
+    <Tooltip content={metadata?.paletteColor ? `パレットカラー ${metadata.paletteColor}` : undefined}>
+      <span className={styles.paletteColor} data-layer-column="palette" data-palette-color={metadata?.paletteColor}
+        style={{ backgroundColor: metadata?.paletteColor }} />
+    </Tooltip>
     <div className={styles.identity} data-layer-column="name">
-      <div className={styles.indent} style={{ width: depth * 12 }} />
+      <div className={styles.indent} style={{ '--layer-depth': depth } as CSSProperties} />
       {onExpand ? <Tooltip content={transientExpanded
         ? 'Shift+スクロール巡回で自動展開中\nクリックで閉じると元の閉じた状態に戻ります。次の巡回では必要な経路を再び開きます' : ''}>
         <button type="button" className={styles.expandBtn} onClick={onExpand}
@@ -99,14 +110,19 @@ export function LayerTreeRow({
           <LayerExpandIcon expanded={expanded} transient={transientExpanded} />
         </button>
       </Tooltip> : <div className={styles.expandPlaceholder} />}
-      <LayerTypeIcon kind={kind} autoProcess={autoProcess} />
+      <LayerTypeIcon kind={kind} autoProcess={autoProcess} metadata={metadata} />
       {renderName ? renderName(nameClass) : <span className={nameClass} data-layer-name>{name}</span>}
     </div>
+    <LayerIndicators metadata={metadata} />
     <div className={styles.statusColumns}>{status}</div>
     {controls && <>
       <span className={styles.controlSlot} data-layer-column="warning">{controls.warning}</span>
-      <span className={styles.controlSlot} data-layer-column="animation">{controls.animation}</span>
-      <span className={styles.controlSlot} data-layer-column="individual">{controls.individual}</span>
+      <span className={`${styles.controlSlot} ${styles.wideControl}`} data-layer-column="animation">{controls.animation}</span>
+      <span className={`${styles.controlSlot} ${styles.wideControl}`} data-layer-column="individual">{controls.individual}</span>
+      <span className={styles.actionsSlot} data-layer-column="actions">
+        <LayerActionsMenu name={name} active={controls.individualActive} animation={controls.animation}
+          individual={controls.individual} rename={controls.rename} />
+      </span>
     </>}
   </div>
 }

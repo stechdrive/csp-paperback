@@ -1,6 +1,7 @@
 import type { BlendMode } from 'ag-psd'
 import type { TimelineData } from '../../types/timeline'
 import type { MaterialAdjustment, MaterialEffects, MaterialQuad, TextObject } from '../../types/rendering'
+import type { LayerContentKind } from '../../types/layer-display'
 
 /** Data-only representation, transferred from the CLIP worker. Children are top first. */
 export interface ClipPixels {
@@ -27,7 +28,10 @@ export interface ClipLayer {
   pixels?: ClipPixels
   fragments?: ClipPixels[]
   mask?: ClipPixels
-  kind?: 'raster' | 'folder' | 'camera' | 'text' | 'image-material' | 'vector' | '3d' | 'adjustment' | 'other'
+  kind?: LayerContentKind
+  paletteColor?: string
+  /** Available before lazy pixel/mask decoding. */
+  maskState?: 'enabled' | 'disabled'
   nativeBlendMode?: number
   materialSource?: 'render' | 'timeline-original' | 'image-original' | 'object-cache' | 'text' | 'fill' | 'gradient' | 'adjustment' | 'vector'
   vectorRendering?: 'approximate' | 'unavailable'

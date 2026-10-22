@@ -117,6 +117,10 @@ export function buildClipLayerTree(clip: ClipDocument, source: Psd, timeline: Cl
       if (n.name !== r.originalName || n.isFolder !== r.isFolder) throw mismatch()
       r.id = `clip:${n.id}`
       r.parentId = parentId
+      r.display = {
+        kind: n.kind ?? (n.isFolder ? 'folder' : 'other'), paletteColor: n.paletteColor, effects: n.effects,
+        mask: n.maskState ?? (n.mask ? n.mask.disabled ? 'disabled' : 'enabled' : undefined),
+      }
       r.materialMissing = clip.diagnostics.some(d => d.layerId === n.id && d.outcome === 'missing-content')
       if (paired && !n.isFolder && hasDeferredMaterial(r.agPsdRef)) {
         const ref = r.agPsdRef
