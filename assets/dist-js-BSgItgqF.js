@@ -1,1 +1,0 @@
-import{r as e}from"./index-C5Vpmgp0.js";async function t(t,n){await e(`plugin:opener|open_url`,{url:t,with:n})}export{t as openUrl};
