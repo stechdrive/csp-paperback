@@ -1,5 +1,7 @@
 import { SampleTemplateDownloadButton } from '../SampleTemplateDownloadButton'
 import { UpdateCheckPanel } from '../UpdateCheckPanel'
+import { HelpLayerTree } from './HelpLayerTree'
+import { sampleLayers } from './layerExamples'
 import styles from '../HelpDialog.module.css'
 
 function Section({
@@ -33,85 +35,6 @@ function OutputExample({
       <div className={styles.outputExampleFilename}>{filename}</div>
       <div className={styles.outputExampleFormula}>{formula}</div>
       <div className={styles.outputExampleNote}>{note}</div>
-    </div>
-  )
-}
-
-type SampleLayerKind = 'normal' | 'animation' | 'process' | 'single' | 'hidden'
-
-const sampleLayerRows: Array<{
-  depth: 0 | 1 | 2 | 3 | 4
-  kind: SampleLayerKind
-  name: string
-  note: string
-}> = [
-  { depth: 0, kind: 'normal', name: 'memo', note: '目ON・通常レイヤー：各画像へ重なる' },
-  { depth: 0, kind: 'normal', name: 'Frame', note: '目ON・通常フォルダ：各画像へ重なる' },
-  { depth: 0, kind: 'normal', name: '_撮影指示', note: '整理用フォルダ' },
-  { depth: 1, kind: 'single', name: '_PAN', note: '個別書き出し' },
-  { depth: 1, kind: 'single', name: '_SL', note: '個別書き出し' },
-  { depth: 0, kind: 'normal', name: 'LO', note: '整理用フォルダ' },
-  { depth: 1, kind: 'process', name: '演出', note: '工程フォルダ：_e' },
-  { depth: 2, kind: 'animation', name: 'A', note: 'タイムライントラックA' },
-  { depth: 3, kind: 'normal', name: '1', note: '演出修正' },
-  { depth: 1, kind: 'normal', name: '作画', note: '本体の作画フォルダ' },
-  { depth: 2, kind: 'animation', name: 'B', note: 'タイムライントラックB' },
-  { depth: 3, kind: 'normal', name: '1', note: 'セルフォルダ' },
-  { depth: 4, kind: 'process', name: '_s', note: '作監修正：本体から分離' },
-  { depth: 4, kind: 'normal', name: '線画1', note: 'B1本体へ入る' },
-  { depth: 4, kind: 'normal', name: '影', note: 'B1本体へ入る' },
-  { depth: 2, kind: 'animation', name: 'A', note: 'タイムライントラックA' },
-  { depth: 3, kind: 'normal', name: '1', note: 'A1本体' },
-  { depth: 0, kind: 'normal', name: '_原図', note: '整理用フォルダ' },
-  { depth: 1, kind: 'single', name: '_BOOK1', note: '個別書き出し' },
-  { depth: 1, kind: 'single', name: '_BG', note: '個別書き出し' },
-  { depth: 0, kind: 'hidden', name: '_pool', note: '目OFF：どの画像にも入らない' },
-  { depth: 0, kind: 'hidden', name: '用紙', note: '目OFF：どの画像にも入らない' },
-]
-
-const sampleLayerKindLabels: Record<SampleLayerKind, string> = {
-  normal: '通常',
-  animation: 'アニメ',
-  process: '工程',
-  single: '個別',
-  hidden: '非表示',
-}
-
-const sampleLayerDepthClasses = [
-  styles.sampleLayerDepth0,
-  styles.sampleLayerDepth1,
-  styles.sampleLayerDepth2,
-  styles.sampleLayerDepth3,
-  styles.sampleLayerDepth4,
-]
-
-function SampleLayerStructure() {
-  return (
-    <div
-      className={styles.sampleLayerStructure}
-      data-help-example="sample-csp-layer-tree"
-      aria-label="この説明で使うCSPのレイヤー構成"
-    >
-      <div className={styles.sampleLayerHeader}>
-        <strong>この説明で使うCSPのレイヤー構成</strong>
-        <span>上が前面、下が背面です</span>
-      </div>
-      <div className={styles.sampleLayerRows}>
-        {sampleLayerRows.map((row, index) => (
-          <div
-            className={`${styles.sampleLayerRow} ${sampleLayerDepthClasses[row.depth]}`}
-            key={`${row.depth}-${row.name}-${index}`}
-          >
-            <span
-              className={`${styles.sampleLayerKind} ${styles[`sampleLayerKind${row.kind}`]}`}
-            >
-              {sampleLayerKindLabels[row.kind]}
-            </span>
-            <code>{row.name}</code>
-            <span className={styles.sampleLayerNote}>{row.note}</span>
-          </div>
-        ))}
-      </div>
     </div>
   )
 }
@@ -241,7 +164,7 @@ export function AboutGuide() {
           出力名はセル名、アニメーションフォルダ名を付ける、区切りあり、フォルダ分けOFFです。
         </p>
 
-        <SampleLayerStructure />
+        <HelpLayerTree label="この説明で使うCSPのレイヤー構成" layers={sampleLayers} exampleId="sample-csp-layer-tree" />
 
         <h3 className={styles.subsectionTitle}>このレイヤー構成から生成される画像</h3>
         <p className={styles.paragraph}>

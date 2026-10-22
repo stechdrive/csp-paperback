@@ -1,5 +1,7 @@
 import { HelpFigure } from './HelpFigure'
 import { HELP_HIGHLIGHTS } from './helpHighlights'
+import { HelpLayerTree } from './HelpLayerTree'
+import { defaultDirectionLayers, studioDirectionLayers } from './layerExamples'
 import styles from '../HelpDialog.module.css'
 
 export function StudioTemplateGuide() {
@@ -77,18 +79,8 @@ export function StudioTemplateGuide() {
       </p>
 
       <div className={styles.compareGrid}>
-        <div className={styles.compareCard}>
-          <h3>アプリのデフォルト</h3>
-          <pre>{`撮影指示/
-  _PAN/
-  _SL/`}</pre>
-        </div>
-        <div className={styles.compareCard}>
-          <h3>スタジオのテンプレート例</h3>
-          <pre>{`CAMERA/
-  _PAN/  → _PAN.jpg
-  _SL/   → _SL.jpg`}</pre>
-        </div>
+        <HelpLayerTree label="アプリのデフォルト" layers={defaultDirectionLayers} exampleId="default-directions" />
+        <HelpLayerTree label="スタジオのテンプレート例" layers={studioDirectionLayers} exampleId="studio-directions" />
       </div>
 
       <div className={styles.callout}>

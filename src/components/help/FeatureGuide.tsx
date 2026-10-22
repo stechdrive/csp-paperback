@@ -2,6 +2,9 @@ import { HelpFigure } from './HelpFigure'
 import { HELP_HIGHLIGHTS } from './helpHighlights'
 import { ja } from '../../i18n/ja'
 import { OutputSettingsGuide } from './OutputSettingsGuide'
+import { LayerExpandIcon, LayerVisibilityIcon } from '../LayerTreeRow'
+import { HelpLayerTree } from './HelpLayerTree'
+import { individualLayers, clipAnimationLayers, manualAnimationLayers, trackProcessLayers, celProcessLayers } from './layerExamples'
 import styles from '../HelpDialog.module.css'
 
 function Section({
@@ -243,7 +246,7 @@ export function FeatureGuide() {
 
         <div className={styles.iconList}>
           <div>
-            <span>👁</span>
+            <span><LayerVisibilityIcon /></span>
             <p>
               <strong>レイヤーの表示／非表示（目のアイコン）</strong>：
               表示状態はプレビューと書き出しに反映されます。左端の列をクリックすると1件、縦にドラッグすると複数行を切り替えられます。
@@ -264,7 +267,7 @@ export function FeatureGuide() {
             </p>
           </div>
           <div>
-            <span>›</span>
+            <span><LayerExpandIcon /></span>
             <p>
               <strong>展開</strong>：
               Altを押しながらクリックすると、子フォルダもまとめて展開／折りたたみします。
@@ -295,25 +298,7 @@ export function FeatureGuide() {
           書き出すかどうかは「出力対象」の素材名で切り替えます。
         </div>
 
-        <div className={styles.compareGrid}>
-          <div className={styles.compareCard}>
-            <h3>素材のレイヤー構成</h3>
-            <pre>{`_原図/
-  _BG/
-  _BOOK1/
-
-_撮影指示/
-  _PAN/
-  _SL/`}</pre>
-          </div>
-          <div className={styles.compareCard}>
-            <h3>生成される静止画</h3>
-            <pre>{`_BG.jpg
-_BOOK1.jpg
-_PAN.jpg
-_SL.jpg`}</pre>
-          </div>
-        </div>
+        <HelpLayerTree label="個別書き出しのレイヤー構成と出力" layers={individualLayers} exampleId="individual-layers" />
 
         <div className={styles.tableWrap}>
           <table className={styles.table}>
@@ -374,20 +359,13 @@ _SL.jpg`}</pre>
         </div>
 
         <div className={styles.compareGrid}>
-          <div className={styles.compareCard}>
-            <h3>CLIPから認識される例</h3>
-            <pre>{`CLIPのアニメーションフォルダ
-A/
-  1/  → A1.jpg
-  2/  → A2.jpg`}</pre>
-            <p>アニメーションフォルダAのタイムラインと、直下のセル1・2を対応付けます。</p>
+          <div>
+            <HelpLayerTree label="CLIPから認識される例" layers={clipAnimationLayers} exampleId="clip-animation" />
+            <p className={styles.paragraph}>アニメーションフォルダAのタイムラインと、直下のセル1・2を対応付けます。</p>
           </div>
-          <div className={styles.compareCard}>
-            <h3>🎬で追加する例</h3>
-            <pre>{`エフェクト/
-  1/  → エフェクト1.jpg
-  2/  → エフェクト2.jpg`}</pre>
-            <p>エフェクトフォルダへ🎬を付けると、直下の1・2をセルとして出力します。</p>
+          <div>
+            <HelpLayerTree label="🎬で追加する例" layers={manualAnimationLayers} exampleId="manual-animation" />
+            <p className={styles.paragraph}>エフェクトフォルダへ🎬を付けると、直下の1・2をセルとして出力します。</p>
           </div>
         </div>
 
@@ -403,28 +381,16 @@ A/
         </p>
 
         <div className={styles.compareGrid}>
-          <div className={styles.compareCard}>
-            <h3>トラック分離型</h3>
-            <pre>{`LO/
-  演出/
-    A/
-      1/ → A1_e.jpg
-  作画/
-    A/
-      1/ → A1.jpg`}</pre>
-            <p>
+          <div>
+            <HelpLayerTree label="トラック分離型" layers={trackProcessLayers} exampleId="track-process" />
+            <p className={styles.paragraph}>
               アニメーションフォルダAの親「演出」が登録名に一致すると、
               その中のセルへ<code>_e</code>が付きます。
             </p>
           </div>
-          <div className={styles.compareCard}>
-            <h3>セル内蔵型</h3>
-            <pre>{`B/
-  1/
-    _s/
-      作監修正 → B1_s.jpg
-    線画・影 → B1.jpg`}</pre>
-            <p>
+          <div>
+            <HelpLayerTree label="セル内蔵型" layers={celProcessLayers} exampleId="cel-process" />
+            <p className={styles.paragraph}>
               セル内の<code>_s</code>だけを本体から分離し、同じセル番号の
               <code>B1_s.jpg</code>として出力します。
             </p>

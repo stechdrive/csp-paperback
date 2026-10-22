@@ -1,5 +1,4 @@
 import { memo, useCallback, useRef, useState } from 'react'
-import type { ReactNode } from 'react'
 import { useAppStore } from '../store'
 import type { CspLayer, VirtualSet } from '../types'
 import {
@@ -17,7 +16,8 @@ import { isAutoMarkedContainerOutputSuppressed } from '../utils/auto-marked-cont
 import { Tooltip } from './Tooltip'
 import { LayerOutputName } from './LayerOutputName'
 import { LayerDiagnosticWarning } from './DiagnosticWarning'
-import styles from './LayerTreeNode.module.css'
+import { LayerTreeRow, LayerVisibility } from './LayerTreeRow'
+import styles from './LayerTree.module.css'
 import type { HistoryOptions } from '../store/history-slice'
 import { selectLayerVirtualInsertions, selectOutputRowStatuses } from '../store/selectors'
 import { visibilityDrag } from '../utils/visibility-gesture'
@@ -44,57 +44,6 @@ interface LayerTreeNodeProps {
   isCell?: boolean
   animParentId?: string
   cellIndex?: number
-}
-
-function DocumentIcon() {
-  return (
-    <svg
-      className={styles.docIcon}
-      viewBox="0 0 16 16"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
-    >
-      <path
-        d="M4 2 H10 L13 5 V13 A1 1 0 0 1 12 14 H4 A1 1 0 0 1 3 13 V3 A1 1 0 0 1 4 2 Z"
-        stroke="currentColor"
-        strokeWidth="1.2"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M10 2 V5 H13"
-        stroke="currentColor"
-        strokeWidth="1.2"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
-}
-
-function VisibilityIcon() {
-  return (
-    <svg
-      className={styles.visibilityIcon}
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
-    >
-      <path
-        d="M2.75 12C4.8 8.5 8.16 6.5 12 6.5C15.84 6.5 19.2 8.5 21.25 12C19.2 15.5 15.84 17.5 12 17.5C8.16 17.5 4.8 15.5 2.75 12Z"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <circle
-        cx="12"
-        cy="12"
-        r="2.75"
-        fill="currentColor"
-      />
-    </svg>
-  )
 }
 
 function getDropPlacementFromPointer(clientY: number, rect: DOMRect, layer: CspLayer): DropPlacement {
@@ -260,7 +209,6 @@ export const LayerTreeNode = memo(function LayerTreeNodeView({
   const isUiHidden = visibilityOverrides.has(layer.id)
     ? visibilityOverrides.get(layer.id)!
     : (layer.hidden || layer.uiHidden)
-  const isHidden = isUiHidden
   const isExpanded = expandedFolders.has(layer.id)
   const isTransientExpanded = !!transientExpandedFolders?.has(layer.id)
   const isAutoMarkedContainerSuppressed = isAutoMarkedContainerOutputSuppressed(layer)
@@ -384,25 +332,6 @@ export const LayerTreeNode = memo(function LayerTreeNodeView({
 
   const indentWidth = layer.depth * 12
 
-  let typeIcon: ReactNode = <DocumentIcon />
-  if (isAnimFolder) typeIcon = '🎬'
-  else if (isCell) typeIcon = '🎞'
-  else if (layer.isFolder) typeIcon = '📁'
-
-  let nameClass = styles.name
-  if (isAutoProcessAnimFolder) nameClass = `${styles.name} ${styles.nameAnimAutoProcess}`
-  else if (isAnimFolder) nameClass = `${styles.name} ${styles.nameAnim}`
-  else if (isOutputAutoMarked) nameClass = `${styles.name} ${styles.nameAutoMark}`
-  else if (isCell) nameClass = `${styles.name} ${styles.nameCell}`
-
-  const rowClass = [
-    styles.row,
-    isSelected ? styles.rowSelected : '',
-    isCellActive ? styles.rowCellActive : '',
-    isHidden ? styles.rowHidden : '',
-    dropPlacement === 'inside' ? styles.rowDropTarget : '',
-  ].filter(Boolean).join(' ')
-
   const childIndentWidth = layer.children[0]?.depth != null
     ? layer.children[0].depth * 12
     : indentWidth + 12
@@ -430,9 +359,22 @@ export const LayerTreeNode = memo(function LayerTreeNodeView({
         />
       )}
 
-      <div
+      <LayerTreeRow
         ref={setRowRef}
-        className={rowClass}
+        name={layer.originalName}
+        depth={layer.depth}
+        kind={isAnimFolder ? 'animation' : isCell ? 'cell' : layer.isFolder ? 'folder' : 'layer'}
+        autoProcess={isAutoProcessAnimFolder}
+        autoMarked={isOutputAutoMarked}
+        dimmed={isUiHidden}
+        selected={isSelected}
+        activeCell={isCellActive}
+        dropTarget={dropPlacement === 'inside'}
+        expanded={isExpanded}
+        transientExpanded={isTransientExpanded}
+        onExpand={layer.isFolder ? handleExpandClick : undefined}
+        renderName={nameClass => <LayerOutputName layer={layer} className={nameClass} editing={editingNameId === layer.id}
+          onEdit={onEditName} onFinish={onFinishName} />}
         data-layer-id={layer.id}
         onClick={handleRowClick}
         draggable={editingNameId === layer.id ? false : draggable}
@@ -442,12 +384,8 @@ export const LayerTreeNode = memo(function LayerTreeNodeView({
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-      >
-        <Tooltip content={visibilityLabel}>
-          <button
-            type="button"
-            data-layer-column="visibility"
-            className={`${styles.visibilityBtn} ${isUiHidden ? styles.visibilityBtnHidden : styles.visibilityBtnVisible}`}
+        visibility={<Tooltip content={visibilityLabel}>
+          <LayerVisibility hidden={isUiHidden}
             onMouseDown={handleVisibilityMouseDown}
             onMouseEnter={handleVisibilityMouseEnter}
             onClick={event => {
@@ -457,47 +395,9 @@ export const LayerTreeNode = memo(function LayerTreeNodeView({
               visibilityMouseHandled.current = false
             }}
             onKeyDown={() => { visibilityMouseHandled.current = false }}
-            aria-label={visibilityLabel}
-            aria-pressed={!isUiHidden}
-          >
-            {!isUiHidden && <VisibilityIcon />}
-          </button>
-        </Tooltip>
-
-        <div className={styles.identity} data-layer-column="name">
-          <div className={styles.indent} style={{ width: indentWidth }} />
-          {layer.isFolder ? (
-            <Tooltip content={isTransientExpanded
-              ? 'Shift+スクロール巡回で自動展開中\nクリックで閉じると元の閉じた状態に戻ります。次の巡回では必要な経路を再び開きます'
-              : ''
-            }>
-              <button className={styles.expandBtn} onClick={handleExpandClick}
-                aria-label={`${layer.originalName}を${isExpanded ? '折りたたむ' : '展開する'}`} aria-expanded={isExpanded}>
-                <svg
-                  className={[
-                    styles.expandChevron,
-                    isExpanded ? styles.expandChevronOpen : '',
-                    isTransientExpanded ? styles.expandChevronTransient : '',
-                  ].filter(Boolean).join(' ')}
-                  viewBox="0 0 10 10"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path d="M3 2 L7 5 L3 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
-            </Tooltip>
-          ) : (
-            <div className={styles.expandPlaceholder} />
-          )}
-
-          <span className={`${styles.typeIcon} ${isCell ? styles.typeIconCell : ''} ${isAutoProcessAnimFolder ? styles.typeIconAutoProcess : ''}`}>{typeIcon}</span>
-
-          <LayerOutputName layer={layer} className={nameClass} editing={editingNameId === layer.id}
-            onEdit={onEditName} onFinish={onFinishName} />
-        </div>
-
-        <div className={styles.statusColumns}>
+          />
+        </Tooltip>}
+        status={<>
             {!!outputStatus?.excluded && <Tooltip content={`出力対象の設定で ${outputStatus.excluded} / ${outputStatus.total} 件をOFFにしています。レイヤーの表示状態は変わりません。`}>
               <span className={styles.outputStatus} data-layer-column="output-state" data-output-state={outputStatus.excluded === outputStatus.total ? 'off' : 'partial'}>
                 {outputStatus.excluded === outputStatus.total ? '出力OFF' : '一部OFF'}
@@ -507,13 +407,10 @@ export const LayerTreeNode = memo(function LayerTreeNodeView({
               <span className={styles.outputStatus} data-layer-column="exclusion" data-output-state="name-excluded">除外指定</span>
             </Tooltip>}
           <Tooltip content="元のレイヤーは非表示ですが、選択した出力の仮想セル内で使用しています。"><span className={styles.outputStatus} data-layer-virtual-use hidden>仮想セル</span></Tooltip>
-        </div>
-
-        <span className={styles.controlSlot} data-layer-column="warning">
-          <LayerDiagnosticWarning layer={layer} />
-        </span>
-        <span className={styles.controlSlot} data-layer-column="animation">
-          {canToggleManualAnimFolder && (
+        </>}
+        controls={{
+          warning: <LayerDiagnosticWarning layer={layer} />,
+          animation: canToggleManualAnimFolder && (
             <Tooltip content={animLabel}>
               <button
                 type="button"
@@ -525,11 +422,8 @@ export const LayerTreeNode = memo(function LayerTreeNodeView({
                 🎬
               </button>
             </Tooltip>
-          )}
-        </span>
-
-        <span className={styles.controlSlot} data-layer-column="individual">
-          {!isOutputAutoMarked && !layer.isAnimationFolder && (
+          ),
+          individual: !isOutputAutoMarked && !layer.isAnimationFolder && (
             <Tooltip content={isMarked ? markLabel : `${markLabel}\nタイムライン登録なしでも出力される`}>
               <button
                 type="button"
@@ -541,9 +435,9 @@ export const LayerTreeNode = memo(function LayerTreeNodeView({
                 ★
               </button>
             </Tooltip>
-          )}
-        </span>
-      </div>
+          ),
+        }}
+      />
 
       {/* フォルダ配下に入る挿入ライン。行強調と短いラインで同階層挿入と区別する。 */}
       {dropPlacement === 'inside' && (

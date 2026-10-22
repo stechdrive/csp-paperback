@@ -14,6 +14,23 @@
   min-height: 24px;
 }
 
+.rowCompact {
+  grid-template-columns: var(--control-size) minmax(0, 1fr) max-content;
+}
+
+.rowExample {
+  cursor: default;
+}
+
+.rowExample .name {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.row.rowExample:hover {
+  background-color: transparent;
+}
+
 /* Only the identity is indented. Controls stay aligned; absent labels take no space. */
 .identity {
   display: flex;
@@ -172,7 +189,7 @@
   opacity: 0;
 }
 
-.visibilityBtn:hover {
+.visibilityBtn:not(.visibilityReadOnly):hover {
   color: var(--color-text-primary);
   border-color: rgba(var(--color-info-rgb), 0.52);
   box-shadow:
@@ -180,21 +197,26 @@
     0 0 0 1px rgba(var(--color-info-rgb), 0.14);
 }
 
-.visibilityBtn:hover::before {
+.visibilityBtn:not(.visibilityReadOnly):hover::before {
   opacity: 0.56;
 }
 
-.visibilityBtnHidden:hover::before {
+.visibilityBtnHidden:not(.visibilityReadOnly):hover::before {
   opacity: 0;
 }
 
-.visibilityBtn:active {
+.visibilityBtn:not(.visibilityReadOnly):active {
   transform: translateY(0.5px);
 }
 
 .visibilityBtn:focus-visible {
   outline: 2px solid rgba(var(--color-info-rgb), 0.3);
   outline-offset: 1px;
+}
+
+.visibilityReadOnly {
+  cursor: default;
+  box-sizing: border-box;
 }
 
 .visibilityIcon {
