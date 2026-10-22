@@ -9,9 +9,15 @@ function isDirectOutputUnit(layer: CspLayer): boolean {
   return layer.isAnimationFolder || layer.autoMarked || layer.singleMark
 }
 
+// Inspect structure, not pixels or visibility: a transparent/hidden artwork
+// layer still represents an intentional output. Descend through empty folders.
+function hasArtworkLayer(layer: CspLayer): boolean {
+  return !layer.isFolder || layer.children.some(hasArtworkLayer)
+}
+
 /**
- * `_` 自動マークされた親フォルダのうち、直下に出力単位しか持たないものは
- * 統合画像ではなく整理用コンテナとして扱う。
+ * 自動単独出力フォルダのうち、配下が空またはフォルダだけのものと、
+ * 直下に出力単位しか持たない整理用コンテナは統合画像を作らない。
  *
  * autoMarked 自体は合成コンテキスト除外などにも使うため消さず、
  * 出力対象・プレビュー対象からだけ外す。
@@ -19,6 +25,7 @@ function isDirectOutputUnit(layer: CspLayer): boolean {
 export function isAutoMarkedContainerOutputSuppressed(layer: CspLayer, includeHidden = false): boolean {
   if (!layer.isFolder) return false
   if (!layer.autoMarked || layer.singleMark || layer.isAnimationFolder) return false
+  if (!hasArtworkLayer(layer)) return true
   if (!includeHidden && !isVisible(layer)) return false
 
   const visibleChildren = includeHidden ? layer.children : layer.children.filter(isVisible)

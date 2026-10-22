@@ -135,7 +135,7 @@ describe('selectLayerById', () => {
 
 describe('selectMarkedLayerIds', () => {
   it('_プレフィックスフォルダのIDを返す', () => {
-    const psd = makePsd({ children: [makeFolder('_撮影指示', [])] })
+    const psd = makePsd({ children: [makeFolder('_撮影指示', [makeLayer()])] })
     const tree = buildLayerTree(psd)
     useAppStore.setState({ layerTree: tree })
     const ids = selectMarkedLayerIds(useAppStore.getState())
