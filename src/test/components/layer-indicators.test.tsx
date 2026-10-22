@@ -1,7 +1,8 @@
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { LayerTreeRow, LayerVisibility } from '../../components/LayerTreeRow'
-import { LayerAnimationButton, LayerIndividualButton } from '../../components/LayerOutputButtons'
+import { LayerActionsProvider } from '../../components/LayerActionsMenu'
+import { createLayerActions } from '../../utils/layer-row-state'
 
 afterEach(cleanup)
 describe('layer identification and conditional controls', () => {
@@ -14,7 +15,7 @@ describe('layer identification and conditional controls', () => {
     expect(screen.getByRole('button', { name: 'マスク無効' })).toHaveAttribute('data-layer-mask', 'disabled')
     expect(container.querySelector('[data-palette-color]')).toHaveStyle({ backgroundColor: '#ff8000' })
     rerender(<LayerTreeRow {...base} metadata={{ kind: 'raster' }} />)
-    expect(container.querySelector('[data-layer-column="indicators"]')).toBeEmptyDOMElement()
+    expect(container.querySelector('[data-layer-column="indicators"]')).toBeNull()
     expect(container.querySelector('[data-layer-mask]')).toBeNull()
     expect(container.querySelector('[data-palette-color]')).toBeNull()
   })
@@ -26,28 +27,27 @@ describe('layer identification and conditional controls', () => {
 
   it('invokes existing actions through the compact menu and closes it even when actions stop bubbling', () => {
     const animation = vi.fn(), individual = vi.fn(), rename = vi.fn()
-    render(<LayerTreeRow name="エフェクト" depth={0} kind="folder" visibility={<span />} controls={{ rename,
-      animation: <LayerAnimationButton active={false} onClick={event => { event.stopPropagation(); animation() }} />,
-      individual: <LayerIndividualButton active={false} onClick={event => { event.stopPropagation(); individual() }} />,
-    }} />)
-    fireEvent.click(screen.getByRole('button', { name: 'エフェクトの補助操作' }))
-    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'このフォルダを手動でアニメーションフォルダとして扱う' }))
+    render(<LayerActionsProvider><LayerTreeRow name="エフェクト" depth={0} kind="folder" visibility={<span />} controls={{
+      actions: createLayerActions({ rename, toggleAnimation: animation, toggleIndividual: individual, isAnimation: false, canAssignAnimation: true }),
+    }} /></LayerActionsProvider>)
+    fireEvent.contextMenu(screen.getByText('エフェクト'))
+    fireEvent.click(within(screen.getByRole('menu')).getByRole('menuitemcheckbox', { name: 'このフォルダを手動でアニメーションフォルダとして扱う' }))
     expect(animation).toHaveBeenCalledOnce()
-    expect(screen.queryByRole('dialog')).toBeNull()
-    fireEvent.click(screen.getByRole('button', { name: 'エフェクトの補助操作' }))
-    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: '出力名を編集' }))
+    expect(screen.queryByRole('menu')).toBeNull()
+    fireEvent.contextMenu(screen.getByText('エフェクト'))
+    fireEvent.click(within(screen.getByRole('menu')).getByRole('menuitem', { name: '出力名を編集' }))
     expect(rename).toHaveBeenCalledOnce()
     expect(individual).not.toHaveBeenCalled()
   })
 
   it('ignores a queued scroll at the opening position but closes when its anchor moves', () => {
-    render(<LayerTreeRow name="背景" depth={0} kind="folder" visibility={<span />} controls={{ rename: vi.fn() }} />)
-    const trigger = screen.getByRole('button', { name: '背景の補助操作' })
-    fireEvent.click(trigger)
+    render(<LayerActionsProvider><LayerTreeRow name="背景" depth={0} kind="folder" visibility={<span />} controls={{ actions: [{ id: 'rename', label: '出力名を編集', run: vi.fn() }] }} /></LayerActionsProvider>)
+    const trigger = screen.getByText('背景').closest('[data-layer-kind]')!
+    fireEvent.contextMenu(trigger)
     fireEvent.scroll(document)
-    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(screen.getByRole('menu')).toBeInTheDocument()
     vi.spyOn(trigger, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 20, 19, 22))
     fireEvent.scroll(document)
-    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(screen.queryByRole('menu')).toBeNull()
   })
 })

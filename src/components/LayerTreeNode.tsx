@@ -12,15 +12,15 @@ import {
   resolveVirtualSetInsertionTarget,
   type VirtualSetInsertionPosition,
 } from '../utils/virtual-set-insertion'
-import { isAutoMarkedContainerOutputSuppressed } from '../utils/auto-marked-container'
+import { canEnableManualAnimFolder } from '../utils/manual-animation-folder'
+import { createLayerActions, resolveLayerRowState } from '../utils/layer-row-state'
 import { Tooltip } from './Tooltip'
 import { LayerOutputName } from './LayerOutputName'
 import { LayerDiagnosticWarning } from './DiagnosticWarning'
 import { LayerTreeRow, LayerVisibility } from './LayerTreeRow'
-import { LayerAnimationButton, LayerIndividualButton } from './LayerOutputButtons'
 import styles from './LayerTree.module.css'
 import type { HistoryOptions } from '../store/history-slice'
-import { selectLayerVirtualInsertions, selectOutputAliasTargets, selectOutputRowStatuses } from '../store/selectors'
+import { selectLayerVirtualInsertions, selectOutputAliasTargets, selectOutputRowStatuses, selectLayerTreeWithVisibility } from '../store/selectors'
 import { visibilityDrag } from '../utils/visibility-gesture'
 
 type DropPlacement = VirtualSetInsertionPosition | 'inside'
@@ -43,6 +43,7 @@ interface LayerTreeNodeProps {
   transientExpandedFolders?: Set<string>
   visibilityOverrides: Map<string, boolean>
   isCell?: boolean
+  insideAnimation?: boolean
   animParentId?: string
   cellIndex?: number
 }
@@ -186,6 +187,7 @@ export const LayerTreeNode = memo(function LayerTreeNodeView({
   transientExpandedFolders,
   visibilityOverrides,
   isCell = false,
+  insideAnimation = false,
   animParentId,
   cellIndex,
 }: LayerTreeNodeProps) {
@@ -194,7 +196,7 @@ export const LayerTreeNode = memo(function LayerTreeNodeView({
   const canRename = useAppStore(s => selectOutputAliasTargets(s).has(layer.id))
   const hasSingleMark = useAppStore(s => s.singleMarks.has(layer.id))
   const isManualAnimFolder = useAppStore(s => s.manualAnimFolderIds.has(layer.id))
-  const hasAnimDescendant = useAppStore(s => layer.isFolder && !isCell && hasEffectiveAnimDescendant(layer, s.manualAnimFolderIds))
+  const canAssignAnimation = useAppStore(s => layer.isFolder && canEnableManualAnimFolder(selectLayerTreeWithVisibility(s), layer.id, s.manualAnimFolderIds))
   const isCellActive = useAppStore(s => isCell && animParentId != null && s.focusedAnimFolderId === animParentId &&
     (s.selectedCells.get(animParentId) ?? 0) === cellIndex)
   const { above: vsAbove, below: vsBelow } = useAppStore(s => selectLayerVirtualInsertions(s, layer.id))
@@ -213,16 +215,9 @@ export const LayerTreeNode = memo(function LayerTreeNodeView({
     : (layer.hidden || layer.uiHidden)
   const isExpanded = expandedFolders.has(layer.id)
   const isTransientExpanded = !!transientExpandedFolders?.has(layer.id)
-  const isAutoMarkedContainerSuppressed = isAutoMarkedContainerOutputSuppressed(layer)
-  const isOutputAutoMarked = layer.autoMarked && !isAutoMarkedContainerSuppressed
-  const isMarked = isOutputAutoMarked || hasSingleMark
-  const isXdtsAnimFolder = layer.animationFolder?.detectedBy === 'xdts' || layer.animationFolder?.detectedBy === 'clip'
+  const { role: outputRole, autoIndividual: isOutputAutoMarked } = resolveLayerRowState(layer, hasSingleMark, insideAnimation)
   const isAutoProcessAnimFolder = layer.animationFolder?.detectedBy === 'autoProcess'
   const isAnimFolder = layer.isAnimationFolder || (layer.isFolder && isManualAnimFolder)
-  const canToggleManualAnimFolder = layer.isFolder &&
-    !isCell &&
-    !isXdtsAnimFolder &&
-    (isManualAnimFolder || !hasAnimDescendant)
   const visibilityLabel = isUiHidden ? 'レイヤーを表示する' : 'レイヤーを非表示にする'
 
   const handleRowClick = useCallback((e: React.MouseEvent) => {
@@ -260,16 +255,6 @@ export const LayerTreeNode = memo(function LayerTreeNodeView({
       onSetExpanded(layer.id, nextExpanded)
     }
   }, [layer.id, isExpanded, onSetExpanded, onSetExpandedRecursive])
-
-  const handleMarkClick = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation()
-    onToggleMark(layer.id)
-  }, [layer.id, onToggleMark])
-
-  const handleAnimClick = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation()
-    onToggleAnimFolder(layer.id)
-  }, [layer.id, onToggleAnimFolder])
 
   const updateVirtualSetInsertion = useCallback((virtualSetId: string, placement: DropPlacement) => {
     const tree = useAppStore.getState().layerTree
@@ -365,6 +350,7 @@ export const LayerTreeNode = memo(function LayerTreeNodeView({
         kind={isAnimFolder ? 'animation' : isCell ? 'cell' : layer.isFolder ? 'folder' : 'layer'}
         autoProcess={isAutoProcessAnimFolder}
         autoMarked={isOutputAutoMarked}
+        outputRole={outputRole}
         dimmed={isUiHidden}
         selected={isSelected}
         activeCell={isCellActive}
@@ -408,15 +394,12 @@ export const LayerTreeNode = memo(function LayerTreeNodeView({
           <Tooltip content="元のレイヤーは非表示ですが、選択した出力の仮想セル内で使用しています。"><span className={styles.outputStatus} data-layer-virtual-use hidden>仮想セル</span></Tooltip>
         </>}
         controls={{
-          rename: canRename && onEditName ? () => onEditName(layer.id) : undefined,
-          individualActive: isMarked,
+          select: () => onSelect(layer.id),
+          actions: createLayerActions({ role: outputRole, isAnimation: isAnimFolder, canAssignAnimation,
+            insideAnimation, manualIndividual: hasSingleMark,
+            rename: canRename && onEditName ? () => onEditName(layer.id) : undefined,
+            toggleIndividual: () => onToggleMark(layer.id), toggleAnimation: () => onToggleAnimFolder(layer.id) }),
           warning: <LayerDiagnosticWarning layer={layer} />,
-          animation: canToggleManualAnimFolder && (
-            <LayerAnimationButton active={isManualAnimFolder} onClick={handleAnimClick} />
-          ),
-          individual: !isOutputAutoMarked && !layer.isAnimationFolder && (
-            <LayerIndividualButton active={isMarked} onClick={handleMarkClick} />
-          ),
         }}
       />
 
@@ -450,6 +433,7 @@ export const LayerTreeNode = memo(function LayerTreeNodeView({
               transientExpandedFolders={transientExpandedFolders}
               visibilityOverrides={visibilityOverrides}
               isCell={isAnimFolder}
+              insideAnimation={insideAnimation || isAnimFolder}
               animParentId={isAnimFolder ? layer.id : undefined}
               cellIndex={isAnimFolder ? index : undefined}
             />
@@ -480,11 +464,3 @@ export const LayerTreeNode = memo(function LayerTreeNodeView({
     </div>
   )
 })
-
-function hasEffectiveAnimDescendant(layer: CspLayer, manualAnimFolderIds: Set<string>): boolean {
-  for (const child of layer.children) {
-    if (child.isAnimationFolder || manualAnimFolderIds.has(child.id)) return true
-    if (hasEffectiveAnimDescendant(child, manualAnimFolderIds)) return true
-  }
-  return false
-}

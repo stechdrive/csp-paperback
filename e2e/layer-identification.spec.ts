@@ -1,6 +1,7 @@
 import { expect, test, type Page } from './fixtures'
 import { clipDisplayFixture } from './helpers/clip-display-fixture'
 import { clickLayerAction } from './helpers/layer-action'
+import { manyOutputs } from './helpers/many-outputs'
 
 const tree = (page: Page) => page.getByTestId('layer-tree')
 const row = (page: Page, name: string) => tree(page).locator('[data-layer-id]').filter({ has: page.getByText(name, { exact: true }) })
@@ -46,37 +47,68 @@ test('297pxのツリーで境界とマスクを個別表示し、ない行では
     expect((await tree(page).boundingBox())!.width).toBeLessThan(300)
     measurements.push(await bg.evaluate(el => {
       const rect = (selector: string) => el.querySelector(selector)!.getBoundingClientRect()
-      return { name: rect('[data-layer-column="name"]').width, indicators: rect('[data-layer-column="indicators"]').width,
-        operations: rect('[data-layer-column="actions"]').x, height: el.getBoundingClientRect().height }
+      return { name: el.querySelector('[data-layer-name]')!.parentElement!.getBoundingClientRect().width, indicators: rect('[data-layer-column="indicators"]').width,
+        height: el.getBoundingClientRect().height }
     }))
     const plain = row(page, 'memo')
-    expect((await plain.locator('[data-layer-column="indicators"]').boundingBox())!.width).toBe(0)
+    await expect(plain.locator('[data-layer-column="indicators"]')).toHaveCount(0)
     await bg.scrollIntoViewIfNeeded()
     await tree(page).screenshot({ path: info.outputPath(`mask-${mask}.png`) })
   }
   expect(measurements.map(item => item.height)).toEqual([22, 22, 22])
-  expect(measurements[1].name).toBe(measurements[0].name - 17)
-  expect(measurements[1].indicators).toBe(measurements[0].indicators + 17)
+  expect(measurements[1].name).toBe(measurements[0].name - 16)
+  expect(measurements[1].indicators).toBe(measurements[0].indicators + 16)
   expect(measurements[2]).toEqual(measurements[1])
 })
 
-test('狭い幅の補助操作で手動指定・Undo・出力名編集を利用できる', async ({ page }) => {
+test('右クリックとキーボードで手動指定・Undo・出力名編集を利用できる', async ({ page }) => {
   await page.goto('./')
   await page.getByRole('button', { name: 'サンプルデータで試す', exact: true }).click()
   const folder = row(page, '_撮影指示')
   await clickLayerAction(page, folder, 'animation', true)
-  await expect(page.getByRole('dialog', { name: /の補助操作$/ })).toHaveCount(0)
-  await expect(folder.locator('[data-layer-icon]')).toHaveAttribute('data-layer-icon', 'animation')
+  await expect(page.getByRole('menu', { name: /の操作$/ })).toHaveCount(0)
+  await expect(folder.locator('[data-layer-icon]')).toHaveAttribute('data-layer-icon', 'folder')
+  await expect(folder.locator('[data-layer-output-role]')).toHaveAttribute('data-layer-output-role', 'animation')
   await tree(page).focus()
   await page.keyboard.press('Control+z')
   await expect(folder.locator('[data-layer-icon]')).toHaveAttribute('data-layer-icon', 'folder')
   const bg = row(page, '_BG')
   const bgId = await bg.getAttribute('data-layer-id')
-  await bg.getByRole('button', { name: '_BGの補助操作' }).click()
-  await page.getByRole('dialog', { name: '_BGの補助操作' }).getByRole('button', { name: '出力名を編集' }).click()
+  await bg.click({ button: 'right' })
+  await page.getByRole('menu', { name: '_BGの操作' }).getByRole('menuitem', { name: '出力名を編集' }).click()
   const input = bg.getByRole('textbox', { name: '_BGの出力名' })
   await expect(input).toBeFocused()
   await input.fill('背景完成')
   await input.press('Enter')
   await expect(tree(page).locator(`[data-layer-id="${bgId}"] [data-layer-name]`)).toHaveText('背景完成')
+})
+
+test.describe('タッチの行メニュー', () => {
+  test.use({ hasTouch: true, viewport: { width: 1440, height: 1000 } })
+  test('長押しで指定でき、指を動かす操作では開かない', async ({ page }) => {
+    await page.goto('./')
+    await page.locator('input[type=file][multiple]').setInputFiles(manyOutputs(2, 'エフェクト')[0])
+    const folder = row(page, 'エフェクト')
+    const box = (await folder.locator('[data-layer-name]').boundingBox())!
+    const point = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+    const cdp = await page.context().newCDPSession(page)
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [point] })
+    const menu = page.getByRole('menu', { name: 'エフェクトの操作' })
+    await expect(menu).toBeVisible()
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+    await expect(menu).toBeVisible()
+    const bounds = (await menu.boundingBox())!
+    expect(bounds.x + bounds.width).toBeLessThanOrEqual(1440)
+    expect(bounds.y + bounds.height).toBeLessThanOrEqual(1000)
+    await menu.getByRole('menuitemcheckbox', { name: /別画像として/ }).tap()
+    await expect(folder.locator('[data-layer-output-role]')).toHaveAttribute('data-layer-output-role', 'individual')
+    const next = (await folder.locator('[data-layer-name]').boundingBox())!
+    const start = { x: next.x + 10, y: next.y + next.height / 2 }
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [start] })
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: start.x, y: start.y + 10 }] })
+    await page.waitForTimeout(650)
+    await expect(menu).toHaveCount(0)
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+    await cdp.detach()
+  })
 })

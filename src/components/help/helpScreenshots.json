@@ -15,7 +15,7 @@
   "loaded-overview.png": {
     "width": 1440,
     "height": 1000,
-    "sha256": "1917d222c326b8dffa759387703f873f11172ed337f1a9ebac2d2bc683e477a1",
+    "sha256": "805be28d1c7fddfd318c085c82ea4911e8e8d849c2cc7cf7ebcd909f1e756a95",
     "regions": {
       "virtualCels": {
         "x": 0,
@@ -46,7 +46,7 @@
   "whole-preview.png": {
     "width": 1440,
     "height": 1000,
-    "sha256": "dff369058dc27b4a94c964b2fe883f773b126d7f0a92f8e79e7bbd416bc92633",
+    "sha256": "bb67ac7c477fb45e20aa27972d3d3f5907d31f8f6e06febd22336a06c9e53783",
     "regions": {
       "navigator": {
         "x": 16.94,
@@ -72,7 +72,7 @@
   "output-menu.png": {
     "width": 184,
     "height": 142,
-    "sha256": "8ddcdfb9e7a7a2cd1372cf55265d6cfccfe657135af30c6668593f0151dfe84d",
+    "sha256": "5b165d7a5982985c769358e354d82a34ba1c019a3ac9b856db127ce26ad72b9e",
     "regions": {
       "outputMenu": {
         "x": 8.7,

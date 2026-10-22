@@ -5,17 +5,13 @@
 .row {
   --control-size: 19px;
   display: grid;
-  grid-template-columns: 20px minmax(0, 1fr) max-content max-content repeat(3, var(--control-size));
+  grid-template-columns: 20px minmax(0, 1fr) max-content max-content;
   align-items: center;
   column-gap: 1px;
   padding: 0 3px;
   border-radius: 3px;
   cursor: pointer;
   min-height: 22px;
-}
-
-.rowCompact {
-  grid-template-columns: 20px minmax(0, 1fr) max-content max-content;
 }
 
 .rowExample {
@@ -150,30 +146,18 @@
 .typeIcon { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 17px; height: 18px; margin-inline-end: 1px; color: var(--color-text-secondary); }
 .typeIconCell { color: var(--color-success); }
 .typeIconAutoProcess { color: var(--color-orange); }
-.indicators { display: flex; gap: 3px; align-items: center; height: 20px; }
-.indicator, .effectCount { display: inline-flex; align-items: center; justify-content: center; height: 20px; border: 0; padding: 0; background: none; color: var(--color-text-secondary); cursor: pointer; }
+.indicators { display: flex; flex-shrink: 0; gap: 2px; align-items: center; height: 20px; }
+.indicator { display: inline-flex; align-items: center; justify-content: center; height: 20px; border: 0; padding: 0; background: none; color: var(--color-text-secondary); cursor: pointer; }
 .indicator { width: 14px; flex-shrink: 0; }
 .indicator svg { width: 14px; height: 14px; }
-.effectCount { display: none; font-size: 10px; }
-.indicator:focus-visible, .effectCount:focus-visible, .actionsButton:focus-visible { outline: 1px solid var(--color-accent); outline-offset: 1px; }
-.actionsSlot, .actionLabel { display: none; }
-.actionsButton { display: flex; align-items: center; justify-content: center; width: 19px; height: 22px; border: 0; padding: 0; background: none; color: var(--color-text-secondary); cursor: pointer; }
-.actionsButton svg { width: 14px; height: 14px; }
-.actionsActive { color: var(--color-warning); }
+.indicator:focus-visible { outline: 1px solid var(--color-accent); outline-offset: 1px; }
 .actionsPopup { position: fixed; z-index: 10000; display: flex; flex-direction: column; width: 270px; max-height: calc(100dvh - 16px); overflow: auto; padding: 5px; box-sizing: border-box; background: var(--color-surface-1); color: var(--color-text-primary); border: 1px solid var(--color-border-strong); border-radius: 4px; box-shadow: 0 4px 18px #0004; }
 .actionsPopup button { display: flex; align-items: center; gap: 7px; width: 100%; height: auto; min-height: 34px; margin: 0; padding: 6px; opacity: 1; border: 0; border-radius: 3px; background: transparent; color: inherit; text-align: left; font-size: 12px; cursor: pointer; }
-.actionsPopup button[aria-pressed='true'] { color: var(--color-accent); }
+.actionsPopup button[aria-checked='true'] { color: var(--color-accent); }
 .actionsPopup button svg { flex-shrink: 0; }
 .actionsPopup button:hover, .actionsPopup button:focus-visible { background: var(--color-border-subtle); }
-.actionsPopup .actionLabel { display: inline; }
 
-@container layer-tree (max-width: 399px) {
-  .row { grid-template-columns: 20px minmax(0, 1fr) max-content max-content 17px 19px; }
-  .row.rowCompact { grid-template-columns: 20px minmax(0, 1fr) max-content max-content; }
-  .indent { width: calc(var(--layer-depth) * 8px); }
-  .wideControl, .extraEffect { display: none; }
-  .actionsSlot, .effectCount { display: flex; }
-}
+@container layer-tree (max-width: 399px) { .indent { width: calc(var(--layer-depth) * 8px); } }
 
 .name {
   font-size: 12px;
@@ -226,67 +210,6 @@
   outline: 1px solid var(--color-accent);
   border-color: var(--color-accent);
 }
-
-.animBtn {
-  width: var(--control-size);
-  height: var(--control-size);
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.7rem;
-  background: none;
-  border: 1px solid transparent;
-  border-radius: 3px;
-  cursor: pointer;
-  padding: 0;
-  color: var(--color-text-secondary);
-  opacity: 0;
-  transition: opacity 0.1s;
-}
-
-.row:hover .animBtn,
-.row:focus-within .animBtn,
-.rowSelected .animBtn {
-  opacity: 1;
-}
-
-.animBtnActive {
-  color: var(--color-cyan);
-  border-color: var(--color-cyan);
-  opacity: 1 !important;
-}
-
-.markBtn {
-  width: var(--control-size);
-  height: var(--control-size);
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.7rem;
-  background: none;
-  border: 1px solid transparent;
-  border-radius: 3px;
-  cursor: pointer;
-  padding: 0;
-  color: var(--color-text-secondary);
-  opacity: 0;
-  transition: opacity 0.1s;
-}
-
-.row:hover .markBtn,
-.row:focus-within .markBtn,
-.rowSelected .markBtn {
-  opacity: 1;
-}
-
-.markBtnActive {
-  color: var(--color-warning);
-  border-color: var(--color-warning);
-  opacity: 1 !important;
-}
-
 
 .children {
   /* インデントはrow側のindentスペーサーで管理 */
@@ -419,7 +342,7 @@
 @media (pointer: coarse) and (max-width: 1024px) {
   .row {
     --control-size: 28px;
-    grid-template-columns: 28px minmax(0, 1fr) max-content max-content repeat(3, 28px);
+    grid-template-columns: 28px minmax(0, 1fr) max-content max-content;
     min-height: 2.25rem;
     column-gap: 0.2rem;
     padding: 0 0.5rem;
@@ -442,20 +365,6 @@
   .visibilityIcon {
     width: 1rem;
     height: 1rem;
-  }
-
-  .animBtn {
-    width: 1.75rem;
-    height: 1.75rem;
-    font-size: 0.85rem;
-    opacity: 1;
-  }
-
-  .markBtn {
-    width: 1.75rem;
-    height: 1.75rem;
-    font-size: 0.85rem;
-    opacity: 1;
   }
 
   .blendSelect {
@@ -503,12 +412,14 @@
 .outputStatus[data-layer-virtual-use] { color: var(--color-accent); }
 
 @media (pointer: coarse) and (max-width: 1024px) {
-  .row.rowCompact { grid-template-columns: 28px minmax(0, 1fr) max-content max-content; }
   .indicator { width: 24px; height: 28px; }
   .indicators { height: 28px; }
-  .actionsButton { width: 28px; height: 36px; }
-  @container layer-tree (max-width: 399px) {
-    .row { grid-template-columns: 28px minmax(0, 1fr) max-content max-content 28px 28px; }
-    .row.rowCompact { grid-template-columns: 28px minmax(0, 1fr) max-content max-content; }
-  }
 }
+.outputBadge { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 16px; height: 20px; }
+.outputBadge svg { width: 14px; height: 14px; }
+.outputBadgeIndividual { color: var(--color-warning); }
+.outputBadgeAnimation { color: var(--color-cyan); }
+.controlSlot:empty, .statusColumns:empty { display: none; }
+.actionsPopup { max-width: calc(100vw - 16px); }
+.actionsPopup button:disabled { cursor: default; color: var(--color-text-secondary); }
+.actionsPopup button:disabled:hover { background: transparent; }

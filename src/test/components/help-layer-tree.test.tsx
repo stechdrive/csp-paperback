@@ -9,7 +9,7 @@ import { resetTestStore } from '../helpers/store-reset'
 afterEach(() => { cleanup(); resetTestStore() })
 
 describe('HelpLayerTree', () => {
-  it('右端で手動指定・解除し、種類と子の表示を切り替えても作品や履歴を変更しない', () => {
+  it('メニューで手動指定・解除し、種類と出力指定を分けても作品や履歴を変更しない', () => {
     resetTestStore({
       manualAnimFolderIds: new Set(['document-folder']),
       singleMarks: new Map([['document-layer', { layerId: 'document-layer', origin: 'manual' }]]),
@@ -19,22 +19,21 @@ describe('HelpLayerTree', () => {
     const example = screen.getByRole('figure', { name: 'アニメーションフォルダを指定・解除する例' })
     const folder = example.querySelector('[data-help-layer="effect"]')!
     const child = example.querySelector('[data-help-layer="effect1"]')!
-    const animation = () => within(folder as HTMLElement).getByRole('button', { name: /アニメーションフォルダ/ })
-    const star = () => folder.querySelector('[data-layer-column="individual"] button')!
+    const action = (name: RegExp) => { fireEvent.contextMenu(folder.querySelector('[data-layer-kind]')!); fireEvent.click(screen.getByRole('menuitemcheckbox', { name })) }
+    const role = () => folder.querySelector('[data-layer-output-role]')
     expect(folder.querySelector('[data-layer-icon]')).toHaveAttribute('data-layer-icon', 'folder')
-    expect(animation().closest('[data-layer-column]')).toHaveAttribute('data-layer-column', 'animation')
-    fireEvent.click(star())
-    expect(star()).toHaveAttribute('aria-pressed', 'true')
-    fireEvent.click(animation())
-    expect(animation()).toHaveAttribute('aria-pressed', 'true')
-    expect(folder.querySelector('[data-layer-icon]')).toHaveAttribute('data-layer-icon', 'animation')
+    expect(role()).toBeNull()
+    action(/別画像として/)
+    expect(role()).toHaveAttribute('data-layer-output-role', 'individual')
+    action(/手動でアニメーションフォルダ/)
+    expect(role()).toHaveAttribute('data-layer-output-role', 'animation')
+    expect(folder.querySelector('[data-layer-icon]')).toHaveAttribute('data-layer-icon', 'folder')
     expect(child.querySelector('[data-layer-icon]')).toHaveAttribute('data-layer-icon', 'cell')
-    expect(star()).toBeNull()
-    fireEvent.click(animation())
-    expect(animation()).toHaveAttribute('aria-pressed', 'false')
+    expect(folder.querySelectorAll('[data-layer-output-role]')).toHaveLength(1)
+    action(/指定を解除/)
     expect(folder.querySelector('[data-layer-icon]')).toHaveAttribute('data-layer-icon', 'folder')
     expect(child.querySelector('[data-layer-icon]')).toHaveAttribute('data-layer-icon', 'layer')
-    expect(star()).toHaveAttribute('aria-pressed', 'true')
+    expect(role()).toHaveAttribute('data-layer-output-role', 'individual')
     expect(useAppStore.getState()).toBe(before)
   })
 

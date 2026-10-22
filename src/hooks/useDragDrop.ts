@@ -49,6 +49,9 @@ const internalDropTargets = new Map<HTMLElement, InternalDropTarget>()
 let activeInternalDropTarget: HTMLElement | null = null
 let cancelInternalDrag: (() => void) | undefined
 
+/** Opening a row menu ends a pending desktop drag without dropping anything. */
+export function cancelPendingPointerDrag(): void { cancelInternalDrag?.() }
+
 export function isInternalPointerDragEnabled(): boolean {
   return isDesktopRuntime()
 }

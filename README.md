@@ -22,6 +22,8 @@ Paperbackでは、アニメーションしない素材をセルとして登録�
 
 個別に書き出す素材は、`_BG` のように先頭に `_` を付けたフォルダや、「個別に書き出すフォルダ名」に登録した名前で指定できます。読み込み後にアプリ上で個別に指定することもできます。
 
+素材の行を右クリック（タッチでは長押し）すると、個別書き出しやアニメーションフォルダの手動指定ができます。行を選択してShift+F10でも開けます。名前の前には元の種類、マスク、効果、出力指定を必要な分だけ並べ、個別書き出しは★で示します。自動指定のフォルダが空、または配下がフォルダだけなら出力しません。非表示・透明でも描画レイヤーがあれば対象に残り、空フォルダも手動指定なら出力できます。
+
 作業中は非表示にしている撮影指示などのフォルダも、読み込み時に表示する設定を使えば、そのまま書き出せます。書き出しのたびにクリスタで表示し直す必要はありません。
 
 ### 修正用のトラックを増やさず、作画と修正を別画像にする
@@ -136,6 +138,8 @@ Paperback lets you choose which materials to composite onto each image and which
 | Compositing instructions | Export each set of instructions as a separate image |
 
 Designate separate outputs with folder names starting with `_`, such as `_BG`, or register the names in the individual-output folder list. You can also select materials for separate output after loading the file.
+
+Right-click a material row, long-press on touch, or select it and press Shift+F10 to choose individual output or designate an animation folder. The native layer type, mask, effects, and output role appear before its name only when applicable; a star indicates individual output. Automatically detected folders containing no artwork layers anywhere below them are omitted from output. Hidden or transparent artwork still counts, and an explicit individual mark can include an empty folder.
 
 An import setting makes these target folders visible on load, so compositing instructions kept hidden while drawing can still be exported. You do not need to show them again in CSP before each export.
 

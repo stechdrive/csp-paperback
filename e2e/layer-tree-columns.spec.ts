@@ -1,5 +1,6 @@
 import { expect, test, type Page } from './fixtures'
 import { clipVectorFixture } from './helpers/clip-vector-fixture'
+import { clickLayerAction } from './helpers/layer-action'
 
 const tree = (page: Page) => page.getByTestId('layer-tree')
 const files = (page: Page) => page.getByRole('listbox', { name: '出力ファイル' })
@@ -9,7 +10,7 @@ async function columns(page: Page) {
     Object.fromEntries([...row.querySelectorAll<HTMLElement>('[data-layer-column]')].map(cell => {
       const rect = cell.getBoundingClientRect()
       return [cell.dataset.layerColumn!, { x: rect.x, width: rect.width }] as const
-    }).filter(([name]) => ['visibility', 'warning', 'animation', 'individual'].includes(String(name)))),
+    }).filter(([name]) => name === 'visibility')),
   ))
 }
 
@@ -19,7 +20,7 @@ async function expectAligned(page: Page) {
   const positions = await columns(page)
   expect(positions.length).toBeGreaterThan(5)
   for (const row of positions) {
-    expect(Object.keys(row)).toHaveLength(4)
+    expect(Object.keys(row)).toHaveLength(1)
     for (const [name, rect] of Object.entries(row)) {
       expect(rect.x, name).toBeCloseTo(positions[0][name].x, 1)
       expect(rect.width, name).toBeCloseTo(positions[0][name].width, 1)
@@ -43,7 +44,7 @@ async function resizeSource(page: Page, width: number) {
   expect(output.x + output.width).toBeLessThan(layers.x)
 }
 
-test('必要なラベルだけに幅を使い、操作列は階層や状態にかかわらず固定する', async ({ page }, testInfo) => {
+test('必要なラベルだけに幅を使い、目の列は階層や状態にかかわらず固定する', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 1920, height: 1000 })
   await page.goto('./')
   await page.getByRole('button', { name: 'サンプルデータで試す', exact: true }).click()
@@ -72,17 +73,16 @@ test('必要なラベルだけに幅を使い、操作列は階層や状態に�
 
   const before = await expectAligned(page)
   const folder = tree(page).locator('[data-layer-id]').filter({ has: page.getByText('_撮影指示', { exact: true }) })
-  await folder.getByRole('button', { name: 'このフォルダを手動でアニメーションフォルダとして扱う' }).click()
-  await expect(folder.getByRole('button', { name: '手動アニメーションフォルダ指定を解除する' })).toHaveAttribute('aria-pressed', 'true')
-  await expect(folder.locator('[data-layer-column="individual"] button')).toHaveCount(0)
+  await clickLayerAction(page, folder, 'animation')
+  await expect(folder.locator('[data-layer-output-role]')).toHaveAttribute('data-layer-output-role', 'animation')
   expect(await expectAligned(page)).toEqual(before)
   await tree(page).focus()
   await page.keyboard.press('Control+z')
   const memo = tree(page).locator('[data-layer-id]').filter({ has: page.getByText('memo', { exact: true }) })
   const emptyLabels = memo.locator('[class*="_statusColumns_"]')
-  expect((await emptyLabels.boundingBox())!.width).toBe(0)
-  await memo.getByRole('button', { name: 'この素材を別画像として書き出す', exact: true }).click()
-  await expect(memo.getByRole('button', { name: 'この素材の個別書き出しを解除する' })).toHaveAttribute('aria-pressed', 'true')
+  await expect(emptyLabels).toBeHidden()
+  await clickLayerAction(page, memo, 'individual')
+  await expect(memo.locator('[data-layer-output-role]')).toHaveAttribute('data-layer-output-role', 'individual')
   expect(await expectAligned(page)).toEqual(before)
   const identity = memo.locator('[data-layer-column="name"]')
   expect((await identity.boundingBox())!.width).toBeGreaterThan((await tree(page).boundingBox())!.width - 110)

@@ -105,18 +105,16 @@ async function operationAppearance(rows: Locator) {
   for (const row of await rows.all()) {
     await row.hover()
     result.push(await row.evaluate(el => {
-      const identity = el.querySelector('[data-layer-column="name"]')!.getBoundingClientRect()
       const name = el.querySelector('[data-layer-name]')!
-      const buttons = [...el.querySelectorAll<HTMLElement>('[data-layer-column="animation"] button, [data-layer-column="individual"] button')]
-      for (const button of buttons) {
-        const rect = button.getBoundingClientRect()
-        if (rect.width && rect.left < identity.right) throw new Error('Action overlaps the layer name')
+      const badges = [...el.querySelectorAll<HTMLElement>('[data-layer-output-role]')]
+      for (const badge of badges) {
+        if (badge.getBoundingClientRect().right > name.getBoundingClientRect().left) throw new Error('Badge overlaps the layer name')
       }
       return {
         name: name.textContent, color: getComputedStyle(name).color,
         icon: el.querySelector('[data-layer-icon]')!.outerHTML,
-        buttons: buttons.map(button => ({
-          label: button.getAttribute('aria-label'), pressed: button.getAttribute('aria-pressed'), className: button.className,
+        badges: badges.map(badge => ({
+          label: badge.getAttribute('aria-label'), role: badge.dataset.layerOutputRole, className: badge.className,
         })),
       }
     }))
@@ -124,7 +122,7 @@ async function operationAppearance(rows: Locator) {
   return result.sort((a, b) => a.name!.localeCompare(b.name!))
 }
 
-test('手動指定の例が実際の素材ツリーと同じ右端の操作・種類表示になり、作品へ影響しない', async ({ page }, info) => {
+test('手動指定の例が実際の素材ツリーと同じ種類・出力指定表示になり、作品へ影響しない', async ({ page }, info) => {
   await page.setViewportSize({ width: 1440, height: 1000 })
   await page.goto('./')
   // PSD only: the folder starts as an ordinary folder, without XDTS recognition.
@@ -213,16 +211,14 @@ for (const { width, theme } of [
 
         if (tab.source === '機能ガイド') {
           const example = dialog.locator('[data-help-example="manual-animation"]')
-          const button = example.locator('[data-layer-column="animation"] button')
           const folder = example.locator('[data-help-layer="effect"]')
           await clickLayerAction(page, folder, 'animation')
-          await expect(button).toHaveAttribute('aria-pressed', 'true')
-          await expect(example.locator('[data-help-layer="effect"] [data-layer-icon]')).toHaveAttribute('data-layer-icon', 'animation')
-          await expect(example.locator('[data-help-layer="effect"] [data-layer-column="individual"] button')).toHaveCount(0)
+          await expect(folder.locator('[data-layer-output-role]')).toHaveAttribute('data-layer-output-role', 'animation')
+          await expect(folder.locator('[data-layer-icon]')).toHaveAttribute('data-layer-icon', 'folder')
           await operationAppearance(example.locator('[data-layer-kind]'))
           await example.screenshot({ path: info.outputPath(`manual-animation-active-${width}-${theme}.png`) })
           await clickLayerAction(page, folder, 'animation')
-          await expect(button).toHaveAttribute('aria-pressed', 'false')
+          await expect(folder.locator('[data-layer-output-role]')).toHaveCount(0)
         }
 
         for (const image of await dialog.locator('img[src*="/help/"]').all()) {

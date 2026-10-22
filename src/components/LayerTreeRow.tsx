@@ -1,17 +1,18 @@
-import type { ComponentPropsWithRef, CSSProperties, MouseEventHandler, ReactNode } from 'react'
+import { useImperativeHandle, useRef, type ComponentPropsWithRef, type CSSProperties, type MouseEventHandler, type ReactNode } from 'react'
 import type { LayerDisplayMetadata } from '../types/layer-display'
 import { Tooltip } from './Tooltip'
 import { LayerIcon } from './LayerIcon'
 import { layerKindLabels } from '../utils/layer-display'
 import { LayerIndicators } from './LayerIndicators'
-import { LayerActionsMenu } from './LayerActionsMenu'
+import { useLayerActions } from '../hooks/useLayerActions'
+import { layerRoleLabel, type LayerOutputRole, type LayerAction } from '../utils/layer-row-state'
 import styles from './LayerTree.module.css'
 
 export type LayerItemKind = 'layer' | 'folder' | 'animation' | 'cell'
 export interface LayerTreeRowControls {
-  warning?: ReactNode; animation?: ReactNode; individual?: ReactNode
-  rename?: () => void
-  individualActive?: boolean
+  warning?: ReactNode
+  actions: LayerAction[]
+  select?: () => void
 }
 
 export function LayerVisibilityIcon() {
@@ -49,11 +50,11 @@ export function LayerExpandIcon({ expanded = false, transient = false }: { expan
   </svg>
 }
 
-function LayerTypeIcon({ kind, autoProcess, metadata }: { kind: LayerItemKind; autoProcess: boolean; metadata?: LayerDisplayMetadata }) {
+function LayerTypeIcon({ kind, metadata }: { kind: LayerItemKind; metadata?: LayerDisplayMetadata }) {
   const contentKind = metadata?.kind ?? (kind === 'layer' ? 'raster' : 'folder')
   const label = kind === 'animation' ? 'アニメーションフォルダ'
     : kind === 'cell' ? `セル（${layerKindLabels[contentKind]}）` : layerKindLabels[contentKind]
-  return <Tooltip content={label}><span className={`${styles.typeIcon} ${kind === 'cell' ? styles.typeIconCell : ''} ${autoProcess ? styles.typeIconAutoProcess : ''}`}
+  return <Tooltip content={label}><span className={`${styles.typeIcon} ${kind === 'cell' ? styles.typeIconCell : ''}`}
     role="img" aria-label={label} data-layer-icon={kind} data-layer-content-kind={contentKind}>
     <LayerIcon kind={kind === 'animation' ? 'animation' : contentKind} />
   </span></Tooltip>
@@ -74,6 +75,7 @@ interface LayerTreeRowProps extends Omit<ComponentPropsWithRef<'div'>, 'children
   metadata?: LayerDisplayMetadata
   autoProcess?: boolean
   autoMarked?: boolean
+  outputRole?: LayerOutputRole
   dimmed?: boolean
   selected?: boolean
   activeCell?: boolean
@@ -90,20 +92,25 @@ interface LayerTreeRowProps extends Omit<ComponentPropsWithRef<'div'>, 'children
 
 /** Shared presentation only. Editing, drag/drop and example state belong to callers. */
 export function LayerTreeRow({
-  name, depth, kind, metadata, autoProcess = false, autoMarked = false, dimmed = false,
+  ref, name, depth, kind, metadata, autoProcess = false, autoMarked = false, outputRole, dimmed = false,
   selected = false, activeCell = false, dropTarget = false, example = false,
   expanded, transientExpanded = false, onExpand, visibility, renderName, status, controls,
   className = '', ...rowProps
 }: LayerTreeRowProps) {
+  const row = useRef<HTMLDivElement>(null)
+  useImperativeHandle(ref, () => row.current!, [])
+  const menu = useLayerActions(name, controls?.actions, row, controls?.select)
   const paletteColor = metadata?.paletteColor
   const nameClass = [styles.name,
     autoProcess ? styles.nameAnimAutoProcess : kind === 'animation' ? styles.nameAnim
       : autoMarked ? styles.nameAutoMark : kind === 'cell' ? styles.nameCell : '',
   ].filter(Boolean).join(' ')
-  return <div {...rowProps} className={[
+  return <div {...rowProps} {...menu} ref={row}
+    onPointerDown={event => { menu.onPointerDown(event); rowProps.onPointerDown?.(event) }}
+    className={[
     styles.row, selected ? styles.rowSelected : '', activeCell ? styles.rowCellActive : '',
     dimmed ? styles.rowHidden : '', dropTarget ? styles.rowDropTarget : '',
-    controls ? '' : styles.rowCompact, example ? styles.rowExample : '', className,
+    example ? styles.rowExample : '', className,
   ].filter(Boolean).join(' ')} data-layer-kind={kind}>
     <span className={styles.visibilityCell} data-palette-color={paletteColor} style={{
       backgroundColor: paletteColor,
@@ -118,19 +125,19 @@ export function LayerTreeRow({
           <LayerExpandIcon expanded={expanded} transient={transientExpanded} />
         </button>
       </Tooltip> : <div className={styles.expandPlaceholder} />}
-      <LayerTypeIcon kind={kind} autoProcess={autoProcess} metadata={metadata} />
+      <LayerTypeIcon kind={kind === 'animation' && outputRole?.kind === 'animation' ? 'folder' : kind}
+        metadata={metadata} />
+      <LayerIndicators metadata={metadata} />
+      {outputRole && <Tooltip content={layerRoleLabel(outputRole)}><span role="img" aria-label={layerRoleLabel(outputRole)}
+        className={`${styles.outputBadge} ${outputRole.kind === 'individual' ? styles.outputBadgeIndividual : autoProcess ? styles.typeIconAutoProcess : styles.outputBadgeAnimation}`}
+        data-layer-output-role={outputRole.kind} data-output-origin={outputRole.origin}>
+        <LayerIcon kind={outputRole.kind === 'individual' ? 'star' : 'animation'} />
+      </span></Tooltip>}
       {renderName ? renderName(nameClass) : <span className={nameClass} data-layer-name>{name}</span>}
     </div>
-    <LayerIndicators metadata={metadata} />
     <div className={styles.statusColumns}>{status}</div>
-    {controls && <>
+    {controls?.warning &&
       <span className={styles.controlSlot} data-layer-column="warning">{controls.warning}</span>
-      <span className={`${styles.controlSlot} ${styles.wideControl}`} data-layer-column="animation">{controls.animation}</span>
-      <span className={`${styles.controlSlot} ${styles.wideControl}`} data-layer-column="individual">{controls.individual}</span>
-      <span className={styles.actionsSlot} data-layer-column="actions">
-        <LayerActionsMenu name={name} active={controls.individualActive} animation={controls.animation}
-          individual={controls.individual} rename={controls.rename} />
-      </span>
-    </>}
+    }
   </div>
 }

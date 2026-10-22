@@ -14,21 +14,18 @@ export function LayerIndicators({ metadata }: { metadata?: LayerDisplayMetadata 
   if (fx?.watercolor) effects.push({ kind: 'water', label: '境界効果（水彩境界）' })
   if (fx?.tone) effects.push({ kind: 'tone', label: 'トーン' })
   const mask = metadata?.mask
+  if (!mask && !effects.length) return null
   return <span className={styles.indicators} data-layer-column="indicators">
-    {effects.map((effect, index) => <Tooltip key={effect.kind} content={effect.label} toggleOnClick>
-      <button type="button" className={`${styles.indicator} ${index >= 2 ? styles.extraEffect : ''}`} style={effect.style}
-        aria-label={effect.label} data-layer-effect={effect.kind} onPointerDown={event => event.stopPropagation()}
-        onClick={event => event.stopPropagation()}><LayerIcon kind={effect.kind} /></button>
-    </Tooltip>)}
-    {effects.length > 2 && <Tooltip content={effects.slice(2).map(effect => effect.label).join('\n')} toggleOnClick>
-      <button type="button" className={styles.effectCount} aria-label={`その他の効果 ${effects.length - 2}件`}
-        onPointerDown={event => event.stopPropagation()} onClick={event => event.stopPropagation()}>+{effects.length - 2}</button>
-    </Tooltip>}
     {mask && <Tooltip content={mask === 'disabled' ? 'マスク無効' : 'マスク有効'} toggleOnClick>
       <button type="button" className={styles.indicator} aria-label={mask === 'disabled' ? 'マスク無効' : 'マスク有効'}
         data-layer-mask={mask} onPointerDown={event => event.stopPropagation()} onClick={event => event.stopPropagation()}>
         <LayerIcon kind={mask === 'disabled' ? 'maskoff' : 'mask'} />
       </button>
     </Tooltip>}
+    {effects.map(effect => <Tooltip key={effect.kind} content={effect.label} toggleOnClick>
+      <button type="button" className={styles.indicator} style={effect.style}
+        aria-label={effect.label} data-layer-effect={effect.kind} onPointerDown={event => event.stopPropagation()}
+        onClick={event => event.stopPropagation()}><LayerIcon kind={effect.kind} /></button>
+    </Tooltip>)}
   </span>
 }

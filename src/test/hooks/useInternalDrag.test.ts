@@ -1,7 +1,7 @@
 import { act, cleanup, renderHook } from '@testing-library/react'
 import type { PointerEvent as ReactPointerEvent } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { getActiveDragPayload, useDragSource, useInternalDropTarget } from '../../hooks/useDragDrop'
+import { cancelPendingPointerDrag, getActiveDragPayload, useDragSource, useInternalDropTarget } from '../../hooks/useDragDrop'
 
 vi.mock('../../platform/runtime', () => ({ isDesktopRuntime: () => true }))
 beforeEach(() => {
@@ -26,6 +26,22 @@ function source() {
 }
 
 describe('desktop pointer drag event isolation', () => {
+  it('opening a context menu cancels a pending press before it can turn into a drop', () => {
+    const { row, result } = source()
+    const onDrop = vi.fn(), target = document.createElement('div')
+    document.body.append(target)
+    Object.defineProperty(document, 'elementFromPoint', { configurable: true, value: () => target })
+    const drop = renderHook(() => useInternalDropTarget({ canDrop: () => true, onDrop }))
+    act(() => {
+      drop.result.current.dropRef(target)
+      result.current.onPointerDown(down(row))
+      cancelPendingPointerDrag()
+      pointer('pointermove'); pointer('pointerup')
+    })
+    expect(onDrop).not.toHaveBeenCalled()
+    expect(getActiveDragPayload()).toBeNull()
+    expect(document.body).not.toHaveClass('is-csp-dragging')
+  })
   it('does not start a row drag from an eye or another interactive descendant', () => {
     const { row, button, result } = source()
     act(() => { result.current.onPointerDown(down(row, button)); pointer('pointermove') })

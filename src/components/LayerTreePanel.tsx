@@ -5,6 +5,7 @@ import { selectLayerTreeWithVisibility, selectLayerById, selectOutputNavigation,
 import { useOutputNavigation } from '../hooks/useOutputNavigation'
 import { useDragAutoScroll } from '../hooks/useDragDrop'
 import { LayerTreeNode } from './LayerTreeNode'
+import { LayerActionsProvider } from './LayerActionsMenu'
 import { cancelLayerVisibilityDrag } from '../utils/visibility-gesture'
 import { BlendOpacityBar } from './BlendOpacityBar'
 import { OutputFileList } from './OutputFileList'
@@ -18,11 +19,12 @@ import { findLayerPath, mergeExpandedFolders } from '../utils/layerNavigation'
 import styles from './LayerTreePanel.module.css'
 
 // An abandoned edit must not retain the previous document's source images.
-const editDocumentKeys = new WeakMap<object, symbol>()
-function editDocumentKey(source: object | null): symbol | null {
+const editDocumentKeys = new WeakMap<object, number>()
+let nextDocumentKey = 0
+function editDocumentKey(source: object | null): number | null {
   if (!source) return null
   let key = editDocumentKeys.get(source)
-  if (!key) { key = Symbol(); editDocumentKeys.set(source, key) }
+  if (!key) { key = ++nextDocumentKey; editDocumentKeys.set(source, key) }
   return key
 }
 
@@ -54,7 +56,7 @@ export function LayerTreePanel({ active = true, onPreviewOutput }: { active?: bo
   const documentKey = useAppStore(s => editDocumentKey(s.rawPsd))
   const aliasTargets = useAppStore(selectOutputAliasTargets)
   const selectedAlias = useAppStore(s => selectedLayerId ? s.outputAliases.get(selectedLayerId) : undefined)
-  const [editingName, setEditingName] = useState<{ id: string; document: symbol | null } | null>(null)
+  const [editingName, setEditingName] = useState<{ id: string; document: number | null } | null>(null)
   const editingNameId = editingName?.document === documentKey && aliasTargets.has(editingName.id) ? editingName.id : null
   const handleEditName = useCallback((id: string) => {
     const state = useAppStore.getState()
@@ -132,7 +134,7 @@ export function LayerTreePanel({ active = true, onPreviewOutput }: { active?: bo
   }, [selectedLayerId, pushHistory])
 
   return (
-    <div className={styles.panel}>
+    <LayerActionsProvider key={documentKey ?? 'empty'}><div className={styles.panel}>
       <div ref={relationshipRef} className={styles.relationship}>
       <div className={styles.outputs}>
         <OutputFileList active={active} onPreview={onPreviewOutput} onShowTree={() => {
@@ -173,9 +175,17 @@ export function LayerTreePanel({ active = true, onPreviewOutput }: { active?: bo
         className={styles.tree}
         ref={treeRef}
         data-testid="layer-tree"
+        data-layer-tree-focus
         tabIndex={0}
         aria-label="素材レイヤー"
         onKeyDown={event => {
+          if (event.target === event.currentTarget && !event.nativeEvent.isComposing && selectedLayerId &&
+            (event.key === 'ContextMenu' || event.shiftKey && event.key === 'F10')) {
+            event.preventDefault()
+            const row = event.currentTarget.querySelector<HTMLElement>(`[data-layer-id="${CSS.escape(selectedLayerId)}"]`)
+            const rect = row?.getBoundingClientRect()
+            if (rect) row?.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: rect.left + 20, clientY: rect.bottom }))
+          }
           if (event.key === 'F2' && event.target === event.currentTarget && !event.nativeEvent.isComposing && selectedLayerId) {
             event.preventDefault(); handleEditName(selectedLayerId)
           }
@@ -218,6 +228,6 @@ export function LayerTreePanel({ active = true, onPreviewOutput }: { active?: bo
       </div>
 
       <QuickLook />
-    </div>
+    </div></LayerActionsProvider>
   )
 }
