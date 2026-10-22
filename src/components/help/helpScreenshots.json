@@ -15,7 +15,7 @@
   "loaded-overview.png": {
     "width": 1440,
     "height": 1000,
-    "sha256": "8a02b4ae3047f6b173d5252325bc4b61e02c4f6c0aec6e7a105e084c5f6c1d83",
+    "sha256": "1917d222c326b8dffa759387703f873f11172ed337f1a9ebac2d2bc683e477a1",
     "regions": {
       "virtualCels": {
         "x": 0,
@@ -46,7 +46,7 @@
   "whole-preview.png": {
     "width": 1440,
     "height": 1000,
-    "sha256": "1e92eb2e0576842b6fdb21bf296c024ab69e7a7961736d67a5ed6198c26498ee",
+    "sha256": "dff369058dc27b4a94c964b2fe883f773b126d7f0a92f8e79e7bbd416bc92633",
     "regions": {
       "navigator": {
         "x": 16.94,
