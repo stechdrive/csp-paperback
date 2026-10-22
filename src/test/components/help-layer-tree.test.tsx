@@ -1,6 +1,7 @@
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 import { HelpLayerTree } from '../../components/help/HelpLayerTree'
+import { HelpAnimationFolderExample } from '../../components/help/HelpAnimationFolderExample'
 import { celProcessLayers, sampleLayers } from '../../components/help/layerExamples'
 import { useAppStore } from '../../store'
 import { resetTestStore } from '../helpers/store-reset'
@@ -8,6 +9,35 @@ import { resetTestStore } from '../helpers/store-reset'
 afterEach(() => { cleanup(); resetTestStore() })
 
 describe('HelpLayerTree', () => {
+  it('右端で手動指定・解除し、種類と子の表示を切り替えても作品や履歴を変更しない', () => {
+    resetTestStore({
+      manualAnimFolderIds: new Set(['document-folder']),
+      singleMarks: new Map([['document-layer', { layerId: 'document-layer', origin: 'manual' }]]),
+    })
+    const before = useAppStore.getState()
+    render(<HelpAnimationFolderExample />)
+    const example = screen.getByRole('figure', { name: '右端の🎬で指定・解除する例' })
+    const folder = example.querySelector('[data-help-layer="effect"]')!
+    const child = example.querySelector('[data-help-layer="effect1"]')!
+    const animation = () => within(folder as HTMLElement).getByRole('button', { name: /アニメーションフォルダ/ })
+    const star = () => folder.querySelector('[data-layer-column="individual"] button')!
+    expect(folder.querySelector('[data-layer-icon]')).toHaveAttribute('data-layer-icon', 'folder')
+    expect(animation().closest('[data-layer-column]')).toHaveAttribute('data-layer-column', 'animation')
+    fireEvent.click(star())
+    expect(star()).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.click(animation())
+    expect(animation()).toHaveAttribute('aria-pressed', 'true')
+    expect(folder.querySelector('[data-layer-icon]')).toHaveAttribute('data-layer-icon', 'animation')
+    expect(child.querySelector('[data-layer-icon]')).toHaveAttribute('data-layer-icon', 'cell')
+    expect(star()).toBeNull()
+    fireEvent.click(animation())
+    expect(animation()).toHaveAttribute('aria-pressed', 'false')
+    expect(folder.querySelector('[data-layer-icon]')).toHaveAttribute('data-layer-icon', 'folder')
+    expect(child.querySelector('[data-layer-icon]')).toHaveAttribute('data-layer-icon', 'layer')
+    expect(star()).toHaveAttribute('aria-pressed', 'true')
+    expect(useAppStore.getState()).toBe(before)
+  })
+
   it('サンプルの開閉だけを操作でき、作品の表示・名前・選択・Undo状態を変更しない', () => {
     resetTestStore({
       selectedLayerId: 'memo', expandedFolders: new Set(['lo']),

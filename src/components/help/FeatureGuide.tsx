@@ -4,7 +4,8 @@ import { ja } from '../../i18n/ja'
 import { OutputSettingsGuide } from './OutputSettingsGuide'
 import { LayerExpandIcon, LayerVisibilityIcon } from '../LayerTreeRow'
 import { HelpLayerTree } from './HelpLayerTree'
-import { individualLayers, clipAnimationLayers, manualAnimationLayers, trackProcessLayers, celProcessLayers } from './layerExamples'
+import { HelpAnimationFolderExample } from './HelpAnimationFolderExample'
+import { individualLayers, clipAnimationLayers, trackProcessLayers, celProcessLayers } from './layerExamples'
 import styles from '../HelpDialog.module.css'
 
 function Section({
@@ -255,14 +256,14 @@ export function FeatureGuide() {
           <div>
             <span>★</span>
             <p>
-              <strong>個別書き出し</strong>：
+              <strong>個別書き出し（行の右端の★）</strong>：
               そのレイヤーやフォルダを独立した静止画として出力し、セル画像や他の個別書き出しには混ぜません。
             </p>
           </div>
           <div>
             <span>🎬</span>
             <p>
-              <strong>アニメーションフォルダの補助指定</strong>：
+              <strong>アニメーションフォルダの補助指定（行の右端の🎬）</strong>：
               フォルダ直下の子をセルとして扱い、1枚ずつ出力します。
             </p>
           </div>
@@ -317,7 +318,7 @@ export function FeatureGuide() {
                 <td>「撮影指示」「原図」など登録名と完全一致したフォルダが個別書き出しになる</td>
               </tr>
               <tr>
-                <td>右ペインで★を付ける</td>
+                <td>素材レイヤーの行の右端で★を押す</td>
                 <td>読み込んだカットだけ追加で別画像にする</td>
                 <td>★を付けたレイヤーまたはフォルダが、その名前の静止画として出力される</td>
               </tr>
@@ -347,7 +348,14 @@ export function FeatureGuide() {
       <Section id="animation-folders" title="8. アニメーションフォルダを指定する">
         <p className={styles.paragraph}>
           CLIPに保存されたアニメーションフォルダを直接認識し、
-          直下のセルを1枚ずつ出力します。通常フォルダをセル群として扱いたい場合は、右ペインの🎬で追加指定します。
+          直下のセルを1枚ずつ出力します。通常フォルダをセル群として扱いたい場合は、
+          素材レイヤーの行の右端にある🎬ボタン（★の左隣）で追加指定します。
+        </p>
+
+        <p className={styles.paragraph}>
+          指定すると右端の🎬に色付きの枠が付き、名前の左側も📁から🎬へ、直下の子は🎞へ変わります。
+          指定中はそのフォルダの★ボタンが隠れます。右端の🎬をもう一度押すと解除できます。
+          左側のアイコンはレイヤーの種類を示す表示です。
         </p>
 
         <div className={styles.priorityFlow}>
@@ -361,11 +369,11 @@ export function FeatureGuide() {
         <div className={styles.compareGrid}>
           <div>
             <HelpLayerTree label="CLIPから認識される例" layers={clipAnimationLayers} exampleId="clip-animation" />
-            <p className={styles.paragraph}>アニメーションフォルダAのタイムラインと、直下のセル1・2を対応付けます。</p>
+            <p className={styles.paragraph}>CLIPから認識されたフォルダは、最初から左側が🎬です。右端の手動指定ボタンは表示されません。アニメーションフォルダAのタイムラインと、直下のセル1・2を対応付けます。</p>
           </div>
           <div>
-            <HelpLayerTree label="🎬で追加する例" layers={manualAnimationLayers} exampleId="manual-animation" />
-            <p className={styles.paragraph}>エフェクトフォルダへ🎬を付けると、直下の1・2をセルとして出力します。</p>
+            <HelpAnimationFolderExample />
+            <p className={styles.paragraph}>エフェクトフォルダを指定すると、直下の1・2をセルとして出力します。フォルダ全体を1枚にする★の個別書き出しとは使い分けます。</p>
           </div>
         </div>
 

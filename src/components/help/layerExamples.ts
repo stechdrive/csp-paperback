@@ -62,13 +62,6 @@ export const clipAnimationLayers: readonly HelpLayer[] = [
   ] },
 ]
 
-export const manualAnimationLayers: readonly HelpLayer[] = [
-  { id: 'effect', name: 'エフェクト', kind: 'animation', note: '🎬で手動指定した状態', children: [
-    { id: 'effect1', name: '1', kind: 'cell', output: 'エフェクト1.jpg' },
-    { id: 'effect2', name: '2', kind: 'cell', output: 'エフェクト2.jpg' },
-  ] },
-]
-
 export const defaultDirectionLayers: readonly HelpLayer[] = [
   { id: 'directions', name: '撮影指示', kind: 'folder', note: '整理用フォルダ', children: directionLayers },
 ]

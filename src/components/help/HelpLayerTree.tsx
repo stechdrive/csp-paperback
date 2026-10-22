@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { LayerTreeRow, LayerVisibility, type LayerItemKind } from '../LayerTreeRow'
+import { LayerTreeRow, LayerVisibility, type LayerItemKind, type LayerTreeRowControls } from '../LayerTreeRow'
 import styles from './HelpLayerTree.module.css'
 
 export interface HelpLayer {
@@ -14,13 +14,15 @@ export interface HelpLayer {
 }
 
 /** Small, explicit examples: no document store, parser or artwork is loaded here. */
-export function HelpLayerTree({ label, layers, exampleId, caption }: {
+export function HelpLayerTree({ label, layers, exampleId, caption, renderControls }: {
   label: string
   layers: readonly HelpLayer[]
   exampleId?: string
   caption?: string
+  renderControls?: (layer: HelpLayer) => LayerTreeRowControls
 }) {
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(() => new Set())
+  const [selectedId, setSelectedId] = useState(() => renderControls ? layers[0]?.id : undefined)
   const toggle = (id: string) => setCollapsed(previous => {
     const next = new Set(previous)
     if (next.has(id)) next.delete(id)
@@ -33,10 +35,13 @@ export function HelpLayerTree({ label, layers, exampleId, caption }: {
         const expanded = !collapsed.has(layer.id)
         const hidden = parentHidden || !!layer.hidden
         return <li key={layer.id}>
-          <div className={`${styles.entry} ${layer.output ? styles.entryOutput : ''}`} data-help-layer={layer.id}>
+          <div className={`${styles.entry} ${layer.output ? styles.entryOutput : ''} ${renderControls ? styles.entryInteractive : ''}`} data-help-layer={layer.id}>
             <LayerTreeRow name={layer.name} depth={depth} kind={layer.kind} autoMarked={layer.autoMarked}
-              dimmed={hidden} expanded={expanded} example
-              onExpand={layer.children?.length ? () => toggle(layer.id) : undefined}
+              dimmed={hidden} expanded={expanded} example={!renderControls}
+              selected={!!renderControls && selectedId === layer.id}
+              onClick={renderControls ? () => setSelectedId(layer.id) : undefined}
+              controls={renderControls?.(layer)}
+              onExpand={layer.children?.length ? event => { event.stopPropagation(); toggle(layer.id) } : undefined}
               visibility={<LayerVisibility hidden={hidden} readOnly />} />
             {(layer.note || layer.output) && <div className={styles.annotation}>
               {layer.note && <span>{layer.note}</span>}

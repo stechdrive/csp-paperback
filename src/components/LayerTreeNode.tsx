@@ -17,6 +17,7 @@ import { Tooltip } from './Tooltip'
 import { LayerOutputName } from './LayerOutputName'
 import { LayerDiagnosticWarning } from './DiagnosticWarning'
 import { LayerTreeRow, LayerVisibility } from './LayerTreeRow'
+import { LayerAnimationButton, LayerIndividualButton } from './LayerOutputButtons'
 import styles from './LayerTree.module.css'
 import type { HistoryOptions } from '../store/history-slice'
 import { selectLayerVirtualInsertions, selectOutputRowStatuses } from '../store/selectors'
@@ -222,10 +223,6 @@ export const LayerTreeNode = memo(function LayerTreeNodeView({
     !isXdtsAnimFolder &&
     (isManualAnimFolder || !hasAnimDescendant)
   const visibilityLabel = isUiHidden ? 'レイヤーを表示する' : 'レイヤーを非表示にする'
-  const animLabel = isManualAnimFolder
-    ? '手動アニメーションフォルダ指定を解除する'
-    : 'このフォルダを手動でアニメーションフォルダとして扱う'
-  const markLabel = isMarked ? 'この素材の個別書き出しを解除する' : 'この素材を別画像として書き出す'
 
   const handleRowClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
@@ -411,30 +408,10 @@ export const LayerTreeNode = memo(function LayerTreeNodeView({
         controls={{
           warning: <LayerDiagnosticWarning layer={layer} />,
           animation: canToggleManualAnimFolder && (
-            <Tooltip content={animLabel}>
-              <button
-                type="button"
-                aria-label={animLabel}
-                aria-pressed={isManualAnimFolder}
-                className={`${styles.animBtn} ${isManualAnimFolder ? styles.animBtnActive : ''}`}
-                onClick={handleAnimClick}
-              >
-                🎬
-              </button>
-            </Tooltip>
+            <LayerAnimationButton active={isManualAnimFolder} onClick={handleAnimClick} />
           ),
           individual: !isOutputAutoMarked && !layer.isAnimationFolder && (
-            <Tooltip content={isMarked ? markLabel : `${markLabel}\nタイムライン登録なしでも出力される`}>
-              <button
-                type="button"
-                aria-label={markLabel}
-                aria-pressed={isMarked}
-                className={`${styles.markBtn} ${isMarked ? styles.markBtnActive : ''}`}
-                onClick={handleMarkClick}
-              >
-                ★
-              </button>
-            </Tooltip>
+            <LayerIndividualButton active={isMarked} onClick={handleMarkClick} />
           ),
         }}
       />

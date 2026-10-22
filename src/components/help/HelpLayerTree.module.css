@@ -45,6 +45,14 @@
   background: rgba(var(--color-accent-rgb), 0.05);
 }
 
+.entryInteractive {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.entryInteractive .annotation {
+  padding-left: 1.75rem;
+}
+
 .annotation {
   display: flex;
   flex-wrap: wrap;

@@ -3,6 +3,7 @@ import { Tooltip } from './Tooltip'
 import styles from './LayerTree.module.css'
 
 export type LayerItemKind = 'layer' | 'folder' | 'animation' | 'cell'
+export interface LayerTreeRowControls { warning?: ReactNode; animation?: ReactNode; individual?: ReactNode }
 
 export function LayerVisibilityIcon() {
   return (
@@ -69,7 +70,7 @@ interface LayerTreeRowProps extends Omit<ComponentPropsWithRef<'div'>, 'children
   visibility: ReactNode
   renderName?: (className: string) => ReactNode
   status?: ReactNode
-  controls?: { warning?: ReactNode; animation?: ReactNode; individual?: ReactNode }
+  controls?: LayerTreeRowControls
 }
 
 /** Shared presentation only. Editing, drag/drop and example state belong to callers. */

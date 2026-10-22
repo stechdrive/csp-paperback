@@ -1,4 +1,5 @@
-import { expect, test } from './fixtures'
+import { expect, test, type Locator } from './fixtures'
+import { manyOutputs } from './helpers/many-outputs'
 
 test('独立したタブから各社テンプレート向けの設定と共有方法を確認できる', async ({ page }) => {
   const pageErrors: string[] = []
@@ -98,6 +99,65 @@ test('本体と同じレイヤー表示で例を開閉し、読み込み中の�
   expect(await snapshot()).toEqual(before)
 })
 
+async function operationAppearance(rows: Locator) {
+  const result = []
+  for (const row of await rows.all()) {
+    await row.hover()
+    result.push(await row.evaluate(el => {
+      const identity = el.querySelector('[data-layer-column="name"]')!.getBoundingClientRect()
+      const name = el.querySelector('[data-layer-name]')!
+      const edge = el.getBoundingClientRect().right
+      return {
+        name: name.textContent, color: getComputedStyle(name).color,
+        icon: el.querySelector('[data-layer-icon]')!.outerHTML,
+        buttons: [...el.querySelectorAll<HTMLElement>('[data-layer-column="animation"] button, [data-layer-column="individual"] button')].map(button => ({
+          label: button.getAttribute('aria-label'), pressed: button.getAttribute('aria-pressed'), className: button.className,
+          right: Math.round(edge - button.getBoundingClientRect().right),
+          afterName: button.getBoundingClientRect().left >= identity.right,
+        })),
+      }
+    }))
+  }
+  expect(result.every(row => row.buttons.every(button => button.afterName))).toBe(true)
+  return result.sort((a, b) => a.name!.localeCompare(b.name!))
+}
+
+test('手動指定の例が実際の素材ツリーと同じ右端の操作・種類表示になり、作品へ影響しない', async ({ page }, info) => {
+  await page.setViewportSize({ width: 1440, height: 1000 })
+  await page.goto('./')
+  // PSD only: the folder starts as an ordinary folder, without XDTS recognition.
+  await page.locator('input[type=file][multiple]').setInputFiles(manyOutputs(2, 'エフェクト')[0])
+  const source = page.getByTestId('layer-tree')
+  const folder = source.locator('[data-layer-id]').filter({ has: page.getByText('エフェクト', { exact: true }) })
+  await expect(folder).toBeVisible()
+  await folder.getByRole('button', { name: 'エフェクトを展開する' }).click()
+  await folder.locator('[data-layer-name]').click()
+  const actual = []
+  for (const state of ['ordinary', 'starred', 'animation', 'restored']) {
+    if (state === 'starred') await folder.locator('[data-layer-column="individual"] button').click()
+    if (state === 'animation' || state === 'restored') await folder.locator('[data-layer-column="animation"] button').click()
+    actual.push(await operationAppearance(source.locator('[data-layer-id]')))
+    await source.screenshot({ path: info.outputPath(`actual-${state}.png`) })
+  }
+  await page.getByRole('button', { name: 'ヘルプ', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: 'CSP Paperback ヘルプ' })
+  await dialog.getByRole('tab', { name: /機能ガイド/ }).click()
+  const example = dialog.locator('[data-help-example="manual-animation"]')
+  const exampleFolder = example.locator('[data-help-layer="effect"]')
+  for (const [index, state] of ['ordinary', 'starred', 'animation', 'restored'].entries()) {
+    if (state === 'starred') await exampleFolder.locator('[data-layer-column="individual"] button').click()
+    if (state === 'animation' || state === 'restored') await exampleFolder.locator('[data-layer-column="animation"] button').press('Enter')
+    expect(await operationAppearance(example.locator('[data-layer-kind]'))).toEqual(actual[index])
+    await example.screenshot({ path: info.outputPath(`help-${state}.png`) })
+  }
+  await dialog.getByRole('button', { name: 'ヘルプを閉じる' }).click()
+  expect(await operationAppearance(source.locator('[data-layer-id]'))).toEqual(actual.at(-1))
+  // Help actions must not add entries to the document's undo history.
+  await source.focus()
+  await source.press('Control+z')
+  expect(await operationAppearance(source.locator('[data-layer-id]'))).toEqual(actual[2])
+})
+
 for (const { width, theme } of [
   { width: 1440, theme: 'midnight' }, { width: 700, theme: 'graphite' }, { width: 390, theme: 'paper' },
 ]) {
@@ -147,6 +207,19 @@ for (const { width, theme } of [
         for (const example of await examples.all()) {
           await example.scrollIntoViewIfNeeded()
           await example.screenshot({ path: info.outputPath(`${await example.getAttribute('data-help-example')}-${width}-${theme}.png`) })
+        }
+
+        if (tab.source === '機能ガイド') {
+          const example = dialog.locator('[data-help-example="manual-animation"]')
+          const button = example.locator('[data-layer-column="animation"] button')
+          await button.click()
+          await expect(button).toHaveAttribute('aria-pressed', 'true')
+          await expect(example.locator('[data-help-layer="effect"] [data-layer-icon]')).toHaveAttribute('data-layer-icon', 'animation')
+          await expect(example.locator('[data-help-layer="effect"] [data-layer-column="individual"] button')).toHaveCount(0)
+          await operationAppearance(example.locator('[data-layer-kind]'))
+          await example.screenshot({ path: info.outputPath(`manual-animation-active-${width}-${theme}.png`) })
+          await button.click()
+          await expect(button).toHaveAttribute('aria-pressed', 'false')
         }
 
         for (const image of await dialog.locator('img[src*="/help/"]').all()) {
