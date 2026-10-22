@@ -59,6 +59,14 @@ function LayerTypeIcon({ kind, autoProcess, metadata }: { kind: LayerItemKind; a
   </span></Tooltip>
 }
 
+function paletteIconColor(color: string): string {
+  const [r, g, b] = [1, 3, 5].map(index => {
+    const channel = parseInt(color.slice(index, index + 2), 16) / 255
+    return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4
+  })
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.179 ? '#000' : '#fff'
+}
+
 interface LayerTreeRowProps extends Omit<ComponentPropsWithRef<'div'>, 'children' | 'hidden'> {
   name: string
   depth: number
@@ -87,6 +95,7 @@ export function LayerTreeRow({
   expanded, transientExpanded = false, onExpand, visibility, renderName, status, controls,
   className = '', ...rowProps
 }: LayerTreeRowProps) {
+  const paletteColor = metadata?.paletteColor
   const nameClass = [styles.name,
     autoProcess ? styles.nameAnimAutoProcess : kind === 'animation' ? styles.nameAnim
       : autoMarked ? styles.nameAutoMark : kind === 'cell' ? styles.nameCell : '',
@@ -96,11 +105,10 @@ export function LayerTreeRow({
     dimmed ? styles.rowHidden : '', dropTarget ? styles.rowDropTarget : '',
     controls ? '' : styles.rowCompact, example ? styles.rowExample : '', className,
   ].filter(Boolean).join(' ')} data-layer-kind={kind}>
-    {visibility}
-    <Tooltip content={metadata?.paletteColor ? `パレットカラー ${metadata.paletteColor}` : undefined}>
-      <span className={styles.paletteColor} data-layer-column="palette" data-palette-color={metadata?.paletteColor}
-        style={{ backgroundColor: metadata?.paletteColor }} />
-    </Tooltip>
+    <span className={styles.visibilityCell} data-palette-color={paletteColor} style={{
+      backgroundColor: paletteColor,
+      '--layer-palette-foreground': paletteColor ? paletteIconColor(paletteColor) : undefined,
+    } as CSSProperties}>{visibility}</span>
     <div className={styles.identity} data-layer-column="name">
       <div className={styles.indent} style={{ '--layer-depth': depth } as CSSProperties} />
       {onExpand ? <Tooltip content={transientExpanded

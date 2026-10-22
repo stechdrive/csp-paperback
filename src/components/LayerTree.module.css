@@ -5,7 +5,7 @@
 .row {
   --control-size: 19px;
   display: grid;
-  grid-template-columns: 20px 7px minmax(0, 1fr) max-content max-content repeat(3, var(--control-size));
+  grid-template-columns: 20px minmax(0, 1fr) max-content max-content repeat(3, var(--control-size));
   align-items: center;
   column-gap: 1px;
   padding: 0 3px;
@@ -15,7 +15,7 @@
 }
 
 .rowCompact {
-  grid-template-columns: 20px 7px minmax(0, 1fr) max-content max-content;
+  grid-template-columns: 20px minmax(0, 1fr) max-content max-content;
 }
 
 .rowExample {
@@ -125,6 +125,8 @@
   flex-shrink: 0;
 }
 
+.visibilityCell { display: flex; align-self: stretch; }
+.visibilityCell[data-palette-color] { box-shadow: inset 0 0 0 1px #0002; }
 .visibilityBtn {
   width: 20px;
   min-height: 22px;
@@ -138,17 +140,16 @@
   color: var(--color-text-secondary);
   cursor: pointer;
 }
-.visibilityBtnVisible { color: var(--color-text-secondary); }
-.visibilityBtnHidden { color: var(--color-text-muted); }
+.visibilityBtnVisible { color: var(--layer-palette-foreground, var(--color-text-secondary)); }
+.visibilityBtnHidden { color: var(--layer-palette-foreground, var(--color-text-muted)); }
 .visibilityBtn:not(.visibilityReadOnly):hover { background: var(--color-border-subtle); }
-.visibilityBtn:focus-visible { outline: 2px solid var(--color-accent); outline-offset: -2px; }
+.visibilityCell[data-palette-color] .visibilityBtn:not(.visibilityReadOnly):hover { background: color-mix(in srgb, currentColor 12%, transparent); }
+.visibilityBtn:focus-visible { outline: 2px solid var(--layer-palette-foreground, var(--color-accent)); outline-offset: -2px; }
 .visibilityReadOnly { cursor: default; }
 .visibilityIcon { width: 14px; height: 14px; }
 .typeIcon { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 17px; height: 18px; margin-inline-end: 1px; color: var(--color-text-secondary); }
 .typeIconCell { color: var(--color-success); }
 .typeIconAutoProcess { color: var(--color-orange); }
-.paletteColor { width: 7px; height: 18px; border-radius: 1px; }
-.paletteColor[data-palette-color] { box-shadow: inset 0 0 0 1px #0002; }
 .indicators { display: flex; gap: 3px; align-items: center; height: 20px; }
 .indicator, .effectCount { display: inline-flex; align-items: center; justify-content: center; height: 20px; border: 0; padding: 0; background: none; color: var(--color-text-secondary); cursor: pointer; }
 .indicator { width: 14px; flex-shrink: 0; }
@@ -167,8 +168,8 @@
 .actionsPopup .actionLabel { display: inline; }
 
 @container layer-tree (max-width: 399px) {
-  .row { grid-template-columns: 20px 7px minmax(0, 1fr) max-content max-content 17px 19px; }
-  .row.rowCompact { grid-template-columns: 20px 7px minmax(0, 1fr) max-content max-content; }
+  .row { grid-template-columns: 20px minmax(0, 1fr) max-content max-content 17px 19px; }
+  .row.rowCompact { grid-template-columns: 20px minmax(0, 1fr) max-content max-content; }
   .indent { width: calc(var(--layer-depth) * 8px); }
   .wideControl, .extraEffect { display: none; }
   .actionsSlot, .effectCount { display: flex; }
@@ -418,7 +419,7 @@
 @media (pointer: coarse) and (max-width: 1024px) {
   .row {
     --control-size: 28px;
-    grid-template-columns: 28px 7px minmax(0, 1fr) max-content max-content repeat(3, 28px);
+    grid-template-columns: 28px minmax(0, 1fr) max-content max-content repeat(3, 28px);
     min-height: 2.25rem;
     column-gap: 0.2rem;
     padding: 0 0.5rem;
@@ -502,12 +503,12 @@
 .outputStatus[data-layer-virtual-use] { color: var(--color-accent); }
 
 @media (pointer: coarse) and (max-width: 1024px) {
-  .row.rowCompact { grid-template-columns: 28px 7px minmax(0, 1fr) max-content max-content; }
+  .row.rowCompact { grid-template-columns: 28px minmax(0, 1fr) max-content max-content; }
   .indicator { width: 24px; height: 28px; }
   .indicators { height: 28px; }
   .actionsButton { width: 28px; height: 36px; }
   @container layer-tree (max-width: 399px) {
-    .row { grid-template-columns: 28px 7px minmax(0, 1fr) max-content max-content 28px 28px; }
-    .row.rowCompact { grid-template-columns: 28px 7px minmax(0, 1fr) max-content max-content; }
+    .row { grid-template-columns: 28px minmax(0, 1fr) max-content max-content 28px 28px; }
+    .row.rowCompact { grid-template-columns: 28px minmax(0, 1fr) max-content max-content; }
   }
 }

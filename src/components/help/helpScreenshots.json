@@ -15,7 +15,7 @@
   "loaded-overview.png": {
     "width": 1440,
     "height": 1000,
-    "sha256": "b6fcdb73c7180cf066e3504946a7e2ff229e2bbccfc32f7a134622696eb82fd7",
+    "sha256": "8a02b4ae3047f6b173d5252325bc4b61e02c4f6c0aec6e7a105e084c5f6c1d83",
     "regions": {
       "virtualCels": {
         "x": 0,
@@ -46,7 +46,7 @@
   "whole-preview.png": {
     "width": 1440,
     "height": 1000,
-    "sha256": "8ed8e12f7d3f7be7cbad3136338ca405e883574c143afcf0a554a4697b8629e4",
+    "sha256": "1e92eb2e0576842b6fdb21bf296c024ab69e7a7961736d67a5ed6198c26498ee",
     "regions": {
       "navigator": {
         "x": 16.94,
@@ -85,7 +85,7 @@
   "settings-dialog.png": {
     "width": 912,
     "height": 882,
-    "sha256": "116e1cb6e6414aa7fe3d2450492786d732e49e043a464a53aca6ca2e93897f79",
+    "sha256": "db1f0a33f113ed2d9e14b6eb9a3898e99dc603390fd358a21d68dbbab8712efc",
     "regions": {
       "settingsDialog": {
         "x": 1.75,
