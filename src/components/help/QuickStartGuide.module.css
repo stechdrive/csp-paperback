@@ -36,25 +36,6 @@
   line-height: 1.6;
 }
 
-.psdInstructions {
-  font-size: 0.76rem;
-  line-height: 1.6;
-}
-
-.psdInstructions strong {
-  color: var(--color-text-primary);
-}
-
-.psdInstructions p {
-  margin: 0.35rem 0 0;
-}
-
-.dropPrompt .psdInstructions {
-  margin-top: 0.9rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid rgba(var(--color-accent-rgb), 0.2);
-}
-
 .folderRules {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));

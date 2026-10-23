@@ -21,9 +21,11 @@ it.each(['saved', 'not-saved', 'unknown'] as const)('uses actual image recovery 
   const [vector] = layerRenderingDiagnostics(layer({ kind: 'vector', vectorRendering: 'approximate' }), compatibility)
   expect(vector.outcome).toBe('approximate')
   expect(vector.message.includes('［保存する］')).toBe(compatibility !== 'saved')
+  expect(vector.message.includes('保存済みのCLIPで互換情報の保存を後からONにした場合')).toBe(compatibility !== 'saved')
   const [missing] = layerRenderingDiagnostics(layer({ kind: '3d', unsupported3D: true }), compatibility)
   expect(missing.outcome).toBe('missing-content')
   expect(missing.message).toContain('透明な画像')
+  expect(missing.message.includes('保存済みのCLIPで互換情報の保存を後からONにした場合')).toBe(compatibility !== 'saved')
 })
 
 it('retains folder effects and unresolved PSD images while removing only replaced leaf notices', () => {

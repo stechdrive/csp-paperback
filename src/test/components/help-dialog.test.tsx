@@ -32,6 +32,10 @@ describe('HelpDialog information architecture', () => {
     expect(document.querySelector('[data-help-highlight="出力メニュー"]')).toBeInTheDocument()
 
     const text = screen.getByRole('dialog').textContent ?? ''
+    expect(text).toContain('初回から互換情報付きで保存しているCLIPは、通常の［保存］（Ctrl+S）を続けられます')
+    expect(text).toContain('保存済みのCLIPで互換情報の保存を後からONにした場合、通常の［保存］（Ctrl+S）だけでは反映されません')
+    expect(text).toContain('［ファイル］→［別名で保存］でCLIPを保存')
+    expect(text).toContain('その保存画面で元のCLIPを選んで上書き')
     expect(text).not.toContain('表示される状態')
     expect(text).toContain('自動で「兼用カット」をON')
     expect(text).toContain('保存時に選ばれていたタイムライン')
@@ -76,6 +80,8 @@ describe('HelpDialog information architecture', () => {
     expect(within(toc).queryByRole('button', { name: /困ったとき/ })).not.toBeInTheDocument()
 
     const text = screen.getByRole('article').textContent ?? ''
+    expect(text).toContain('初回から互換情報付きで保存しているCLIPは、通常の［保存］（Ctrl+S）を続けられます')
+    expect(text).toContain('保存済みのCLIPで互換情報の保存を後からONにした場合、通常の［保存］（Ctrl+S）だけでは反映されません')
     expect(text).toContain('アニメーションフォルダ・セル・タイムラインを直接読み取り')
     expect(text).not.toContain('XDTS')
     expect(text).toContain('設定JSON（任意）')

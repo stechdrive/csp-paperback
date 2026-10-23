@@ -75,7 +75,7 @@ describe('vector warnings follow material contributions', () => {
     expect(diagnostics).toHaveLength(1)
     expect(diagnostics[0].message).toContain('［バージョン互換情報の保存］を［保存する］')
     expect(diagnostics[0].message).toContain('［ファイル］→［別名で保存］でCLIPを保存')
-    expect(diagnostics[0].message).toContain('保存画面で元のCLIPファイルを選び、上書きを確認')
+    expect(diagnostics[0].message).toContain('その保存画面で元のCLIPを選んで上書き')
     const d = clip([model]), unpaired = buildClipLayerTree(d, clipRenderingSource(d), undefined, DEFAULT_PROJECT_SETTINGS, false)
     const missing = flattenToCanvas(unpaired, 8, 4, 'transparent')
     expect(hasUnsupported3D(missing)).toBe(true)

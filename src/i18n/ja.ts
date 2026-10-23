@@ -1,3 +1,12 @@
+const clipCompatibility = {
+  afterEnabling: '保存済みのCLIPで互換情報の保存を後からONにした場合、通常の［保存］（Ctrl+S）だけでは反映されません。',
+  initialSave: '初回から互換情報付きで保存しているCLIPは、通常の［保存］（Ctrl+S）を続けられます。',
+  setting: 'クリスタの［環境設定］→［ファイル］で［バージョン互換情報の保存］を［保存する］に設定してください。',
+  saveAs: '一度、［ファイル］→［別名で保存］でCLIPを保存してください。',
+  overwrite: '同じファイル名を使う場合は、その保存画面で元のCLIPを選んで上書きできます。',
+  reload: '保存後、PaperbackでCLIPを読み込み直してください。',
+} as const
+
 export const ja = {
   toolbar: {
     openPsd: 'CLIP / PSD を開く',
@@ -13,7 +22,9 @@ export const ja = {
     psdMenu: '［ファイル］→［複製を保存］→［.psd(Photoshopドキュメント)...］',
     psdVisibility: 'CLIPとPSDは、レイヤーの表示状態を合わせて保存してください。',
     psdOptional: '通常レイヤーの描画をPSDから補う場合は、同じ保存状態のCLIPから「複製を保存」で作成したPSDを追加できます。フォルダの効果はPSDにも含まれない場合があります。',
-    clipCompatibilityResave: 'クリスタの［環境設定］→［ファイル］で［バージョン互換情報の保存］を［保存する］に設定し、［ファイル］→［別名で保存］でCLIPを保存してください。同じファイル名で保存する場合は、保存画面で元のCLIPファイルを選び、上書きを確認して保存してください。保存後、PaperbackでCLIPを読み込み直してください。通常の［保存］では互換情報は追加されません。',
+    clipCompatibility,
+    clipCompatibilityResave: clipCompatibility.afterEnabling + clipCompatibility.setting
+      + clipCompatibility.saveAs + clipCompatibility.overwrite + clipCompatibility.reload,
   },
   export: {
     title: '出力設定',

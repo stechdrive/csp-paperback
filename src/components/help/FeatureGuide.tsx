@@ -1,6 +1,7 @@
 import { HelpFigure } from './HelpFigure'
 import { HELP_HIGHLIGHTS } from './helpHighlights'
 import { ja } from '../../i18n/ja'
+import { ClipCompatibilityInstructions } from './ClipCompatibilityInstructions'
 import { OutputSettingsGuide } from './OutputSettingsGuide'
 import { LayerExpandIcon, LayerVisibilityIcon } from '../LayerTreeRow'
 import { LayerIcon } from '../LayerIcon'
@@ -135,11 +136,11 @@ export function FeatureGuide() {
               </tr>
               <tr>
                 <td>3Dレイヤー</td>
-                <td>CLIP内の保存画像を使います。画像を取得できない場合は透明な画像として扱い、書き出しを続けます。{ja.input.clipCompatibilityResave}</td>
+                <td>CLIP内の保存画像を使います。画像を取得できない場合は透明な画像として扱い、書き出しを続けます。</td>
               </tr>
               <tr>
                 <td>ベクター</td>
-                <td>保存された描画画像を優先します。画像がない場合は独自処理で近似描画し、互換情報付きでの再保存を案内します。</td>
+                <td>保存された描画画像を優先します。画像がない場合は独自処理で近似描画し、「再現状況」で案内します。</td>
               </tr>
               <tr>
                 <td>水彩境界</td>
@@ -152,6 +153,7 @@ export function FeatureGuide() {
             </tbody>
           </table>
         </div>
+        <div className={styles.callout}><ClipCompatibilityInstructions /></div>
         <p className={styles.paragraph}>
           一部の素材を再現できない場合も、対応できる範囲で書き出しを続けます。
           再現に関する補足があるときは、上部バーの「再現状況」から一覧を開けます。

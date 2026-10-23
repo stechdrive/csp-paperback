@@ -1,0 +1,18 @@
+.instructions {
+  font-size: 0.76rem;
+  line-height: 1.6;
+}
+
+.instructions strong {
+  color: var(--color-text-primary);
+}
+
+.instructions p {
+  margin: 0.35rem 0 0;
+}
+
+.compact {
+  margin-top: 0.9rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(var(--color-accent-rgb), 0.2);
+}

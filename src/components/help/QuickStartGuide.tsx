@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { isDesktopRuntime } from '../../platform/runtime'
 import { DESKTOP_RELEASES_URL } from '../../platform/external-links'
 import { ja } from '../../i18n/ja'
+import { ClipCompatibilityInstructions } from './ClipCompatibilityInstructions'
 import { HelpFigure } from './HelpFigure'
 import { HELP_HIGHLIGHTS } from './helpHighlights'
 import styles from './QuickStartGuide.module.css'
@@ -35,15 +36,6 @@ function Step({
   )
 }
 
-function RenderingInstructions() {
-  return (
-    <div className={styles.psdInstructions}>
-      <strong>ベクターレイヤー・3Dレイヤーの描画をクリスタに合わせるには</strong>
-      <p>{ja.input.clipCompatibilityResave}</p>
-    </div>
-  )
-}
-
 export function QuickStartGuide({
   variant,
   timelineOnlyLoaded = false,
@@ -64,12 +56,12 @@ export function QuickStartGuide({
               ? '読み込み済みのタイムシートに対応するPSDを読み込んでください。'
               : '「ファイルを開く」からも選べます。'}
           </p>
-          {!timelineOnlyLoaded && <RenderingInstructions />}
+          {!timelineOnlyLoaded && <ClipCompatibilityInstructions compact />}
         </div>
       )}
 
       {full ? (
-        <div className={styles.callout}><RenderingInstructions /></div>
+        <div className={styles.callout}><ClipCompatibilityInstructions /></div>
       ) : (
         <>
           <div className={styles.folderRules}>
