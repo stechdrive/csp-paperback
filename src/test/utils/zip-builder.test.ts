@@ -49,7 +49,9 @@ describe('buildZipStream', () => {
     const paths = ['../../etc/passwd.jpg', '/root/file.jpg', 'A<B>/C|D.jpg', 'CON/file.jpg', 'C:\\temp\\evil.jpg']
     const entries = paths.map(path => makeEntry(path, path))
     expect(await namesIn(buildZipStream(entries, { ...baseConfig, format: 'jpg', structure })))
-      .toEqual(['A_B_/C_D.jpg', 'C__temp_evil.jpg', '_/_/etc/passwd.jpg', '_CON/file.jpg', 'root/file.jpg'].sort())
+      .toEqual((structure === 'hierarchy'
+        ? ['A_B_/C_D.jpg', 'C__temp_evil.jpg', '_/_/etc/passwd.jpg', '_CON/file.jpg', 'root/file.jpg']
+        : ['A_B__C_D.jpg', 'C__temp_evil.jpg', '_.._etc_passwd.jpg', 'CON_file.jpg', '_root_file.jpg']).sort())
   })
 
   it('ストリーム消費時に各エントリの進捗を一度ずつ通知する', async () => {

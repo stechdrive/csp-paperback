@@ -2,6 +2,17 @@ import { describe, it, expect } from 'vitest'
 import { sanitizePathSegment, sanitizeZipPath } from '../../utils/path-sanitize'
 
 describe('sanitizePathSegment', () => {
+  it('上付き数字を含むWindows予約名と壊れたUTF-16を処理する', () => {
+    for (const name of ['COM¹', 'COM²', 'COM³', 'LPT¹', 'LPT²', 'LPT³']) {
+      expect(sanitizePathSegment(`${name}.png`)).toBe(`_${name}.png`)
+    }
+    expect(sanitizePathSegment('a\uD800b\uDC00.png')).toBe('a_b_.png')
+    expect(sanitizePathSegment('😀.png')).toBe('😀.png')
+  })
+
+  it('切り詰めた結果の末尾にも空白やドットを残さない', () => {
+    for (const last of [' ', '.']) expect(sanitizePathSegment('a'.repeat(254) + last + 'b'.repeat(40))).toBe('a'.repeat(254))
+  })
   it('通常のファイル名はそのまま返す', () => {
     expect(sanitizePathSegment('A_0001.jpg')).toBe('A_0001.jpg')
     expect(sanitizePathSegment('仮想セルテスト.png')).toBe('仮想セルテスト.png')

@@ -12,6 +12,7 @@ export function ExportStatus() {
     // Portalled menus and global shortcuts obey the same lock as inert.
     const block = (event: Event) => {
       if (!isExportInProgress()) return
+      if (event.target instanceof Element && event.target.closest('[data-export-conflict]')) return
       if (event.target instanceof Node && panel.current?.contains(event.target)) return
       event.preventDefault(); event.stopImmediatePropagation()
     }
@@ -36,7 +37,7 @@ export function ExportStatus() {
     <div className={styles.heading}>
       <span className={styles.indicator} aria-hidden="true">{job.phase === 'done' ? '✓' : job.phase === 'error' ? '!' : '↗'}</span>
       <strong role={job.phase === 'error' ? 'alert' : 'status'}>{title}</strong>
-      <span className={styles.source}>{job.sourceName} · {job.destination === 'zip' ? 'ZIP' : 'フォルダ'}</span>
+      <span className={styles.source}>{job.sourceName} · {job.destination === 'zip' ? 'ZIP' : job.destination === 'directory-flat' ? '直接書き出し' : 'フォルダ'}</span>
       <span className={styles.count}>{job.done} / {job.total}枚</span>
       {!job.isExporting && <button type="button" onClick={dismissExportStatus} aria-label="書き出し状況を閉じる">×</button>}
     </div>

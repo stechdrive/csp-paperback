@@ -8,7 +8,7 @@ import type {
   ProcessSuffixPosition,
   SequenceDigitMode,
 } from '../types'
-import { appendFileNameSuffix } from './path-sanitize'
+import { appendFileNameSuffix, outputNameKey } from './path-sanitize'
 
 export const MIN_SEQUENCE_DIGITS = 1
 export const MAX_SEQUENCE_DIGITS = 4
@@ -25,17 +25,17 @@ export function resolveNameCollisions(names: string[]): string[] {
   const result: string[] = []
 
   for (const name of names) {
-    const key = name.toLowerCase()
+    const key = outputNameKey(name)
     let candidate = name
     let nextIndex = nextIndexes.get(key) ?? 1
 
-    while (used.has(candidate.toLowerCase())) {
+    while (used.has(outputNameKey(candidate))) {
       nextIndex += 1
       candidate = appendFileNameSuffix(name, `_${nextIndex}`)
     }
 
     nextIndexes.set(key, nextIndex)
-    used.add(candidate.toLowerCase())
+    used.add(outputNameKey(candidate))
     result.push(candidate)
   }
 

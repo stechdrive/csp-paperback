@@ -42,6 +42,27 @@ beforeEach(() => {
 const documentCanvas = () => globalThis.document.createElement('canvas')
 
 describe('batch export with the real loader and project store', () => {
+  it('直接保存の設定を全カットに使い、保存済み階層設定は維持する', async () => {
+    useAppStore.getState().setDirectoryExportMode('direct-flat')
+    useAppStore.getState().setStructure('hierarchy', 'saved')
+    await runQuickExportBatch(['C:/a.clip', 'C:/b.clip'], vi.fn())
+    const calls = vi.mocked(saveEntriesToDirectoryPath).mock.calls
+    expect(calls).toHaveLength(2)
+    expect(calls.every(([, config, , , , , , options]) => config.structure === 'flat' && options?.mode === 'direct-flat')).toBe(true)
+    expect(calls[0][7]?.session).toBe(calls[1][7]?.session)
+    expect(useAppStore.getState().directoryExportMode).toBe('direct-flat')
+    expect(useAppStore.getState().savedOutputConfig.structure).toBe('hierarchy')
+  })
+
+  it('キャンセルでは残りのカットを読み込まず、作品状態を解放する', async () => {
+    vi.mocked(saveEntriesToDirectoryPath).mockRejectedValueOnce(new DOMException('cancelled', 'AbortError'))
+    const result = await runQuickExportBatch(['C:/a.clip', 'C:/b.clip'], vi.fn())
+    expect(result).toMatchObject({ cancelled: true, successCount: 0, failureCount: 0 })
+    expect(result.jobs).toHaveLength(1)
+    expect(result.jobs[0].status).toBe('cancelled')
+    expect(readClipFile).toHaveBeenCalledOnce()
+    expect(useAppStore.getState().clipDocument).toBeNull()
+  })
   it('exports mixed paired/unpaired projects serially and releases their state', async () => {
     let finish!: () => void
     const gate = new Promise<void>(resolve => { finish = resolve })

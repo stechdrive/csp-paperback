@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 use tauri::{LogicalSize, Manager, Size};
 use tauri_plugin_fs::FsExt;
+mod export_file;
 
 fn launch_file_args() -> Vec<String> {
     std::env::args_os()
@@ -59,7 +60,8 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             get_launch_args,
-            allow_launch_file_paths
+            allow_launch_file_paths,
+            export_file::write_export_file
         ])
         .setup(|app| {
             if has_quick_export_args() {

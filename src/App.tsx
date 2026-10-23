@@ -7,6 +7,7 @@ import { Toolbar } from './components/Toolbar'
 import { MainLayout } from './components/MainLayout'
 import { QuickExportDialog } from './components/QuickExportDialog'
 import { ExportStatus } from './components/ExportStatus'
+import { ExportConflictDialog } from './components/ExportConflictDialog'
 import { useExportJob } from './store/export-job'
 import { useAppStore } from './store'
 import { getQuickExportLaunchPaths } from './platform/launch'
@@ -117,6 +118,7 @@ export default function App() {
   return (
     <LocaleProvider>
       <AppInner />
+      <ExportConflictDialog />
     </LocaleProvider>
   )
 }

@@ -33,6 +33,7 @@ export type AppStore =
   HistorySlice
 
 type PersistedSettings = {
+  directoryExportMode?: unknown
   projectSettings?: Partial<typeof DEFAULT_PROJECT_SETTINGS>
   savedOutputConfig?: typeof DEFAULT_OUTPUT_CONFIG
   quickExportConfig?: typeof DEFAULT_OUTPUT_CONFIG
@@ -77,6 +78,7 @@ export const useAppStore = create<AppStore>()(
       // merge normalizes legacy names; a migration also writes them back to storage.
       migrate: persisted => persisted as PersistedSettings,
       partialize: (state): PersistedSettings => ({
+        directoryExportMode: state.directoryExportMode,
         projectSettings: state.projectSettings,
         savedOutputConfig: state.savedOutputConfig,
         mobileUiScale: state.mobileUiScale,
@@ -89,6 +91,7 @@ export const useAppStore = create<AppStore>()(
         const persistedOutputConfig = p?.savedOutputConfig ?? p?.quickExportConfig
         return {
           ...current,
+          directoryExportMode: p?.directoryExportMode === 'direct-flat' ? 'direct-flat' : 'subfolder',
           projectSettings: validateProjectSettings(persistedProjectSettings),
           savedOutputConfig: validateOutputConfig(persistedOutputConfig),
           mobileUiScale: clampMobileUiScale(typeof p?.mobileUiScale === 'number' && Number.isFinite(p.mobileUiScale) ? p.mobileUiScale : DEFAULT_MOBILE_UI_SCALE),

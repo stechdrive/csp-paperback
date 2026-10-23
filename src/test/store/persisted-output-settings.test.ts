@@ -9,6 +9,25 @@ beforeEach(resetTestStore)
 afterEach(resetTestStore)
 
 describe('persisted output settings', () => {
+  it('保存方法を再起動・新規文書・Undoでも維持し、上書き許可を保存しない', async () => {
+    useAppStore.getState().setDirectoryExportMode('direct-flat')
+    expect(useAppStore.getState().canUndo).toBe(false)
+    useAppStore.getState().setFormat('png')
+    useAppStore.getState().undo()
+    expect(useAppStore.getState().directoryExportMode).toBe('direct-flat')
+    const saved = localStorage.getItem(STORAGE_KEY)!
+    resetTestStore()
+    localStorage.setItem(STORAGE_KEY, saved)
+    await useAppStore.persist.rehydrate()
+    useAppStore.getState().resetProject()
+    expect(useAppStore.getState().directoryExportMode).toBe('direct-flat')
+    expect(saved).not.toContain('overwrite')
+    for (const value of [undefined, 'unknown', false]) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 2, state: { directoryExportMode: value } }))
+      await useAppStore.persist.rehydrate()
+      expect(useAppStore.getState().directoryExportMode).toBe('subfolder')
+    }
+  })
   it('recovers malformed persisted fields while preserving valid settings', async () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 2, state: {
       projectSettings: { autoMarkFolderNames: [42], processTable: [null], cellNamingMode: 'sequence', bodyGroupName: 42 },

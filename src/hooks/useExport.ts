@@ -6,6 +6,8 @@ import { buildZipStream, saveZipStream, makeZipFileName } from '../utils/zip-bui
 import { saveEntriesToDirectory, supportsDirectoryExport } from '../utils/directory-builder'
 import { planExportEntriesFromState } from '../utils/export-entries'
 import { outputRenderQueue } from '../utils/output-render-queue'
+import { DirectoryExportSession } from '../utils/directory-export-session'
+import { confirmExportConflict } from '../store/export-conflict'
 
 export interface UseExportResult {
   isExporting: boolean
@@ -31,7 +33,8 @@ export function useExport(observeProgress = true): UseExportResult {
     const resumePreviews = outputRenderQueue.pause()
     let stream: ReadableStream<Uint8Array> | undefined
     try {
-      const entries = planExportEntriesFromState(state, state.outputConfig, selectedIds ? new Set(selectedIds) : undefined)
+      const config = destination === 'directory-flat' ? { ...state.outputConfig, structure: 'flat' as const } : state.outputConfig
+      const entries = planExportEntriesFromState(state, config, selectedIds ? new Set(selectedIds) : undefined)
       if (!entries.length) throw new Error('選択した項目に書き出せる画像がありません')
       useExportJob.setState({ total: entries.length })
       const onProgress: ExportProgressCallback = (done, total, detail) => {
@@ -42,9 +45,10 @@ export function useExport(observeProgress = true): UseExportResult {
       }
       const directory = state.clipSourceDirectory ?? state.psdSourceDirectory ?? state.xdtsSourceDirectory ?? undefined
       // Preserve user activation for the native picker; pixels are rendered on consumption.
-      if (destination === 'directory') {
+      if (destination !== 'zip') {
         if (!supportsDirectoryExport()) throw new Error('このブラウザではフォルダ書き出しに対応していません')
-        await saveEntriesToDirectory(entries, state.outputConfig, sourceName, state.docDpiX, state.docDpiY, onProgress, directory)
+        await saveEntriesToDirectory(entries, config, sourceName, state.docDpiX, state.docDpiY, onProgress, directory,
+          { mode: destination === 'directory-flat' ? 'direct-flat' : 'subfolder', session: new DirectoryExportSession(confirmExportConflict) })
       } else {
         stream = buildZipStream(entries, state.outputConfig, state.docDpiX, state.docDpiY, onProgress)
         await saveZipStream(stream, makeZipFileName(sourceName), directory)

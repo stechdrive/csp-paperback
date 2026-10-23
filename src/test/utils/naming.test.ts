@@ -15,6 +15,9 @@ import {
 } from '../../utils/naming'
 
 describe('resolveNameCollisions', () => {
+  it('Unicodeの正規化が異なる同名も連番にする', () => {
+    expect(resolveNameCollisions(['が.png', 'か\u3099.png'])).toEqual(['が.png', 'か\u3099_2.png'])
+  })
   it('衝突なしはそのまま返す', () => {
     const names = ['A.jpg', 'B.jpg', 'C.jpg']
     expect(resolveNameCollisions(names)).toEqual(['A.jpg', 'B.jpg', 'C.jpg'])

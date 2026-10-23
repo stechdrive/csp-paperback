@@ -31,6 +31,16 @@ export function OutputSettingsGuide() {
         設定は画面に重なって表示されるため、開閉してもプレビューやレイヤーの配置は変わりません。
         工程フォルダの定義やテーマなどは、パネル内の「詳細設定…」から変更できます。
       </p>
+      <p className={styles.paragraph}>
+        詳細設定の「クイック書き出しの保存方法」で、EXEやショートカットへのドロップ時に「フォルダを作る」か「直接書き出す」かを記憶します。
+        この端末の設定として再起動後も保持します。通常画面からの保存方法は、その都度「出力」メニューで選べます。
+      </p>
+      <HelpFigure
+        src="quick-export-settings.png"
+        alt="詳細設定の先頭にあるクイック書き出しの保存方法"
+        caption="直接書き出すと、CLIPと同じフォルダに画像を並べます。同名画像があるときは、書き出し前に確認します。"
+        highlights={[HELP_HIGHLIGHTS.quickExportSettings]}
+      />
 
       <h3 className={styles.subsectionTitle}>画像形式と保存先の構成</h3>
       <div className={styles.tableWrap}>

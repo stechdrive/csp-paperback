@@ -81,6 +81,8 @@ A                       アニメーションフォルダ
 
 JPEG／PNG画像を、ZIPまたはフォルダへ保存できます。PNGは透明背景にも対応しています。
 
+フォルダ出力は「フォルダを作って書き出し」と「選択フォルダに直接書き出し」を選べます。直接書き出しでは、フォルダ分けの設定に関係なく選択先の直下へ画像をまとめます。同名画像がある場合は、保存前に上書きするか別名で保存するかを確認します。上書きは今回出す同名画像だけを更新し、ほかのファイルや今回出さない古い画像は残します。別名保存では、新しい出力フォルダまたは画像名に番号を付けます。
+
 プレビュー上端の「キャンバス」はタイムラインに沿ったセルの重なりを、「書き出し画像」は設定を反映した各画像を表示します。「書き出し画像」の右隣のアイコンでタイル／１点表示を切り替えます。１点表示では画像下のファイル名を押すと、長い名前やフォルダ階層を確認できます。
 
 今回書き出さない画像は、出力一覧の左端やタイルのファイル名横にある出力除外アイコンでOFFにできます。通常はグレーの用紙アイコン、除外中は斜線付きの赤い用紙アイコンで表示されます。選択中の画像のアイコンを押すと選択した出力をまとめて切り替え、押したままなぞると通過した画像を同じ状態にそろえます。除外中のアイコンを押せば出力に戻り、なぞり操作も1回のUndoで戻せます。各ペイン右上の≡メニューからも除外・復帰できます。名前・工程サフィックス・見た目を変更してもOFFを保ち、元のレイヤー表示や書き出し設定は変えません。
@@ -117,7 +119,7 @@ CLIPとPSDは、レイヤーの表示状態を合わせて保存してくださ�
 
 PSDを併用するカットは、同じフォルダにある同名のCLIPとPSDを一緒に指定します。例えば `c001.clip`、`c001.psd`、`c002.clip` を渡すと、c001はPSD併用、c002はCLIP単独で処理します。
 
-各CLIPの隣に出力フォルダを作り、カットごとに順番に書き出します。既存の出力フォルダは上書きせず、末尾に番号を付けます。途中で失敗したカットがあっても残りを続け、結果を一覧で確認できます。
+詳細設定の「クイック書き出しの保存方法」で、各CLIPの隣にフォルダを作るか、CLIPと同じフォルダ直下へ直接まとめるかを記憶できます。初期設定は「フォルダを作る」です。同名画像がある場合は上書きを確認し、「残りのカットにも適用」で今回の実行中だけ回答を共用できます。同じ実行中のカット同士は連番で区別し、互いに上書きしません。途中で失敗したカットがあっても残りを続けますが、ユーザーがキャンセルした場合は残りの処理を止めます。完了済みの画像は残り、結果を一覧で確認できます。
 
 ### 作品データは外部へ送信しません
 
@@ -204,6 +206,8 @@ Virtual cels combine loaded cels, layouts, and other materials into additional o
 
 Save JPEG or PNG images as a ZIP archive or to a folder. PNG supports transparent backgrounds.
 
+Folder export offers two actions: create an output folder, or write images directly into the selected folder. Direct export always flattens the layout without changing your saved folder-structure setting. When matching images already exist, choose overwrite, save under new names, or cancel before writing starts. Overwrite updates only the images in this export; unrelated files and old images omitted from the export remain. Saving under new names adds numbers to the output folder or individual filenames.
+
 Use the export exclusion icon at the left of each list row or beside a tile's filename to turn off an output. The paper icon stays visible in gray and turns red with a diagonal slash when excluded. Clicking an icon in the current selection changes all selected outputs; clicking an unselected image changes only that output. Drag across icons to apply the starting icon's new state to every image crossed. Click an excluded icon to restore output, or undo an entire sweep in one step. The pane menus also offer exclusion and restoration. Images remain visible for review and stay excluded when filenames, stage suffixes or appearance change. Opening a new document clears these choices.
 
 The list and tiles support Ctrl/Cmd-click to toggle selection and Shift-click for a range. On the board, Shift-drag adds a rectangle, Ctrl/Cmd-drag toggles it, and Ctrl/Cmd+Shift-drag removes it. Ordinary dragging pans the board.
@@ -232,7 +236,7 @@ Save your settings first, then drop multiple CLIP files onto the EXE or its shor
 
 Each PSD is paired with the CLIP in the same directory with the same filename stem. For example, dropping `c001.clip`, `c001.psd`, and `c002.clip` processes c001 with its PSD and c002 as a standalone CLIP.
 
-Cuts export one at a time into folders beside their CLIPs. Existing output folders are preserved by adding a number to the new folder's name. If one cut fails, the remaining cuts continue, and you can review the results in a list.
+Detailed settings remembers whether quick export creates folders beside the CLIPs (the default) or writes flat images directly beside them. Existing images trigger an overwrite confirmation, with an option to apply the answer to the remaining cuts in this run only. Different cuts in the same run receive distinct filenames and never overwrite each other. A failed cut does not stop the remaining cuts; cancelling does. Completed images remain saved, and the result list shows what finished.
 
 ### Your artwork stays on your device
 

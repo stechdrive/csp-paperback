@@ -124,6 +124,8 @@ try {
   await page.getByRole('button', { name: '書き出し設定', exact: true }).click()
   await page.getByRole('button', { name: '詳細設定…', exact: true }).click()
   const settings = page.locator('[class*="_dialog_"]').filter({ has: page.getByText('書き出し詳細設定', { exact: true }) })
+  const quickExportSettings = await bounds(settings.locator('[aria-labelledby="quick-export-save-heading"]'))
+  await capture('quick-export-settings.png', { quickExportSettings }, cropTo(quickExportSettings))
   // Keep the naming field and the entire process table visible in the same capture.
   await settings.locator('[class*="_body_"]').evaluate(body => {
     const section = body.querySelector('[aria-labelledby="body-group-heading"]')

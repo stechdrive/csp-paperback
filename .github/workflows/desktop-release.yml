@@ -100,6 +100,9 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
+      - name: Test native export file replacement
+        run: cargo test --locked --manifest-path src-tauri/Cargo.toml --lib
+
       - name: Build and upload Tauri release assets
         uses: tauri-apps/tauri-action@action-v1.0.0
         env:

@@ -70,22 +70,35 @@
     }
   },
   "output-menu.png": {
-    "width": 184,
-    "height": 142,
-    "sha256": "238b0e7180826f36d7219575de34b71f8e522fd9f57fdcf0d1782c09dc07f548",
+    "width": 219,
+    "height": 180,
+    "sha256": "1538c8d7db54d8334318f77e40b4301357d8c83f8597b7f98d910e810eafbc08",
     "regions": {
       "outputMenu": {
-        "x": 8.7,
-        "y": 3.87,
-        "width": 86.96,
-        "height": 84.51
+        "x": 7.58,
+        "y": 3.06,
+        "width": 88.77,
+        "height": 87.78
+      }
+    }
+  },
+  "quick-export-settings.png": {
+    "width": 862,
+    "height": 174,
+    "sha256": "a4aeb0bf07c3db7b8a47e765230e37dcffcce23511880ad4f54ea63080abb4fc",
+    "regions": {
+      "quickExportSettings": {
+        "x": 1.86,
+        "y": 9.2,
+        "width": 96.29,
+        "height": 81.06
       }
     }
   },
   "settings-dialog.png": {
     "width": 912,
     "height": 882,
-    "sha256": "b4fe6af8ee92afb2e4d85d5dba734137b9afff4f2f81ca74fbe4349b7e9fc2ea",
+    "sha256": "9cd60926cd0d1e5601f4a32c5d647d07b596dc272991be42e43e3d6c66a77577",
     "regions": {
       "settingsDialog": {
         "x": 1.75,

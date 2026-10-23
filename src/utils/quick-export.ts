@@ -5,6 +5,9 @@ import { planExportEntriesFromState } from './export-entries'
 import { trackExportDiagnostics } from './export-diagnostics'
 import { saveEntriesToDirectoryPath } from './directory-builder'
 import { resolveQuickExportFilePair, resolveQuickExportJobs, type QuickExportFilePair } from './quick-export-plan'
+import { DirectoryExportSession, type ConfirmExportConflict } from './directory-export-session'
+import { confirmExportConflict } from '../store/export-conflict'
+import type { DirectoryExportMode } from '../types/output'
 export { resolveQuickExportFilePair, resolveQuickExportJobs } from './quick-export-plan'
 
 export interface QuickExportProgress {
@@ -20,10 +23,11 @@ export interface QuickExportResult {
 
 export type QuickExportJobResult = { sourcePath: string; warnings: string[] } & (
   | ({ status: 'done' } & QuickExportResult)
-  | { status: 'error'; error: string }
+  | { status: 'error' | 'cancelled'; error: string }
 )
 
 export interface QuickExportBatchResult {
+  cancelled: boolean
   jobs: QuickExportJobResult[]
   successCount: number
   failureCount: number
@@ -37,16 +41,18 @@ export interface QuickExportBatchProgress extends QuickExportProgress {
 export async function runQuickExport(
   paths: string[],
   onProgress: (progress: QuickExportProgress) => void,
+  confirm: ConfirmExportConflict = confirmExportConflict,
 ): Promise<QuickExportResult> {
   const pair = resolveQuickExportFilePair(paths)
   if (!pair) {
     throw new Error('クイック書き出し用のCLIPまたはPSD＋XDTSが見つかりませんでした')
   }
   await allowTauriLaunchFilePaths()
-  return exportPair(pair, onProgress)
+  return exportPair(pair, onProgress, useAppStore.getState().directoryExportMode ?? 'subfolder', new DirectoryExportSession(confirm))
 }
 
-async function exportPair(pair: QuickExportFilePair, onProgress: (progress: QuickExportProgress) => void): Promise<QuickExportResult> {
+async function exportPair(pair: QuickExportFilePair, onProgress: (progress: QuickExportProgress) => void,
+  mode: DirectoryExportMode, session: DirectoryExportSession): Promise<QuickExportResult> {
   onProgress({ progress: 0.05, message: 'ファイルを確認しています' })
 
   const { dirname } = await import('@tauri-apps/api/path')
@@ -60,7 +66,7 @@ async function exportPair(pair: QuickExportFilePair, onProgress: (progress: Quic
   if (!sourceName || loadedState.docWidth === 0) throw new Error('素材ファイルが読み込まれていません')
 
   onProgress({ progress: 0.38, message: '出力一覧を準備しています' })
-  const outputConfig = loadedState.savedOutputConfig
+  const outputConfig = mode === 'direct-flat' ? { ...loadedState.savedOutputConfig, structure: 'flat' as const } : loadedState.savedOutputConfig
   const planned = planExportEntriesFromState(loadedState, outputConfig)
   if (planned.length === 0) {
     throw new Error('出力対象がありません')
@@ -83,6 +89,7 @@ async function exportPair(pair: QuickExportFilePair, onProgress: (progress: Quic
           : `書き出し中 ${done}/${total}`,
       })
     },
+    { mode, session },
   )
 
   onProgress({ progress: 1, message: '完了しました' })
@@ -98,11 +105,15 @@ async function exportPair(pair: QuickExportFilePair, onProgress: (progress: Quic
 export async function runQuickExportBatch(
   paths: string[],
   onProgress: (progress: QuickExportBatchProgress) => void,
+  confirm: ConfirmExportConflict = confirmExportConflict,
 ): Promise<QuickExportBatchResult> {
   const jobs = resolveQuickExportJobs(paths)
   if (!jobs.length) throw new Error('クイック書き出し用のCLIPまたはPSD＋XDTSが見つかりませんでした')
   const projectSettings = structuredClone(useAppStore.getState().projectSettings)
   const savedOutputConfig = structuredClone(useAppStore.getState().savedOutputConfig)
+  const mode = useAppStore.getState().directoryExportMode ?? 'subfolder'
+  const session = new DirectoryExportSession(confirm, jobs.length > 1)
+  let cancelled = false
   const results: QuickExportJobResult[] = []
   const reset = () => {
     useAppStore.getState().resetProject()
@@ -125,22 +136,25 @@ export async function runQuickExportBatch(
       report({ progress: 0, message: '準備しています' })
       try {
         if (!job.pair) throw new Error(job.error)
-        const result = await exportPair(job.pair, report)
+        const result = await exportPair(job.pair, report, mode, session)
         results.push({ sourcePath: job.sourcePath, status: 'done', ...result })
       } catch (error) {
-        results.push({ sourcePath: job.sourcePath, status: 'error',
+        cancelled = error instanceof DOMException && error.name === 'AbortError'
+        results.push({ sourcePath: job.sourcePath, status: cancelled ? 'cancelled' : 'error',
           error: error instanceof Error ? error.message : String(error),
           warnings: [...new Set(useAppStore.getState().clipDiagnostics.map(d => d.message))],
         })
       } finally {
         reset()
       }
-      report({ progress: 1, message: results.at(-1)!.status === 'done' ? '完了しました' : '失敗しました' })
+      report({ progress: 1, message: cancelled ? 'キャンセルしました' : results.at(-1)!.status === 'done' ? '完了しました' : '失敗しました' })
+      if (cancelled) break
     }
   } finally {
     reset()
   }
   return {
+    cancelled,
     jobs: results,
     successCount: results.filter(r => r.status === 'done').length,
     failureCount: results.filter(r => r.status === 'error').length,

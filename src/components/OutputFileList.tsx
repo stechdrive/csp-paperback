@@ -205,7 +205,10 @@ export function OutputFileList({ active = true, onShowTree, onPreview }: { activ
       <OutputGateActions onDone={() => { setMenu(null); list.current?.focus() }} />
       <span>{exportIds.size}件を書き出し</span>
       <button role="menuitem" disabled={isExporting || !exportIds.size} onClick={() => { setMenu(null); list.current?.focus(); void startExport('zip', exportIds) }}>選択項目をZIPに書き出し</button>
-      {supportsDirectoryExport() && <button role="menuitem" disabled={isExporting || !exportIds.size} onClick={() => { setMenu(null); list.current?.focus(); void startExport('directory', exportIds) }}>選択項目をフォルダに書き出し</button>}
+      {supportsDirectoryExport() && <>
+        <button role="menuitem" disabled={isExporting || !exportIds.size} onClick={() => { setMenu(null); list.current?.focus(); void startExport('directory', exportIds) }}>フォルダを作って選択項目を書き出し</button>
+        <button role="menuitem" disabled={isExporting || !exportIds.size} onClick={() => { setMenu(null); list.current?.focus(); void startExport('directory-flat', exportIds) }}>選択フォルダに選択項目を直接書き出し</button>
+      </>}
     </div>, document.body)}
   </>
 }

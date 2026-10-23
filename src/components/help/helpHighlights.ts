@@ -11,6 +11,7 @@ export const HELP_HIGHLIGHTS = {
   exportSettings: { label: '書き出し設定', ...screenshots['export-settings.png'].regions.exportSettings },
   output: { label: '書き出し画像', ...screenshots['loaded-overview.png'].regions.output },
   outputMenu: { label: '出力メニュー', ...screenshots['output-menu.png'].regions.outputMenu },
+  quickExportSettings: { label: 'クイック書き出しの保存方法', ...screenshots['quick-export-settings.png'].regions.quickExportSettings },
   settingsDialog: { label: '詳細設定', ...screenshots['settings-dialog.png'].regions.settingsDialog },
   processSettings: { label: '工程設定', ...screenshots['settings-dialog.png'].regions.processSettings },
 } satisfies Record<string, HelpHighlight>

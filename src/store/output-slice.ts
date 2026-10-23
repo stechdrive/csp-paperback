@@ -9,10 +9,13 @@ import type {
 import { DEFAULT_OUTPUT_CONFIG } from '../types'
 import type { AppStore } from './index'
 import { individualOutputKey } from '../utils/output-target'
+import type { DirectoryExportMode } from '../types/output'
 
 export type OutputConfigTarget = 'current' | 'saved'
 
 export interface OutputSlice {
+  directoryExportMode: DirectoryExportMode
+  setDirectoryExportMode: (mode: DirectoryExportMode) => void
   outputConfig: OutputConfig
   savedOutputConfig: OutputConfig
   setFormat: (format: OutputFormat, target?: OutputConfigTarget) => void
@@ -49,6 +52,8 @@ export const createOutputSlice: StateCreator<AppStore, [], [], OutputSlice> = (s
   }
 
   return {
+    directoryExportMode: 'subfolder',
+    setDirectoryExportMode: directoryExportMode => set({ directoryExportMode }),
     outputConfig: DEFAULT_OUTPUT_CONFIG,
     savedOutputConfig: DEFAULT_OUTPUT_CONFIG,
 

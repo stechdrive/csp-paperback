@@ -22,6 +22,7 @@ const WINDOWS_RESERVED_NAMES = new Set([
   'CON', 'PRN', 'AUX', 'NUL',
   'COM0', 'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6', 'COM7', 'COM8', 'COM9',
   'LPT0', 'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5', 'LPT6', 'LPT7', 'LPT8', 'LPT9',
+  'COM¹', 'COM²', 'COM³', 'LPT¹', 'LPT²', 'LPT³',
 ])
 
 /**
@@ -43,7 +44,7 @@ export function sanitizePathSegment(segment: string): string {
   if (!segment) return '_'
 
   // 1. パス区切りを潰す
-  let s = segment.replace(/[/\\]/g, '_')
+  let s = segment.replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '_').replace(/[/\\]/g, '_')
 
   // 2. Windows 禁則文字
   s = s.replace(/[<>:"|?*]/g, '_')
@@ -71,7 +72,7 @@ export function sanitizePathSegment(segment: string): string {
   // 8. UTF-8 で 255 byte を超える場合は truncate
   s = truncateUtf8(s, 255)
 
-  return s
+  return s.replace(/[\s.]+$/, '') || '_'
 }
 
 /**
@@ -93,6 +94,11 @@ export function sanitizeOutputPath(path: string): string {
 }
 
 export const sanitizeZipPath = sanitizeOutputPath
+
+/** Compare portable names without changing the user's spelling. */
+export function outputNameKey(name: string): string {
+  return name.normalize('NFC').toLowerCase()
+}
 
 /** Folder names have no extension; reserve room for their disambiguation suffix. */
 export function appendPathSegmentSuffix(name: string, suffix: string): string {

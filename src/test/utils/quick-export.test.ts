@@ -93,7 +93,7 @@ describe('runQuickExport', () => {
     await expect(runQuickExport(['C:/cut/cut.clip'], vi.fn())).resolves.toEqual({ outputDirectory: 'C:/cut/cut', entryCount: 1, warnings: [] })
     expect(readClipFile).toHaveBeenCalledWith(expect.any(ArrayBuffer), true, true)
     expect(state.loadClip).toHaveBeenCalledWith(source, 'cut.clip', 'C:/cut', undefined)
-    expect(mockedSaveEntries).toHaveBeenCalledWith(expect.any(Array), DEFAULT_OUTPUT_CONFIG, 'cut.clip', 'C:/cut', 72, 72, expect.any(Function))
+    expect(mockedSaveEntries).toHaveBeenCalledWith(expect.any(Array), DEFAULT_OUTPUT_CONFIG, 'cut.clip', 'C:/cut', 72, 72, expect.any(Function), expect.objectContaining({ mode: 'subfolder' }))
   })
   it('保存済み設定でPSD/XDTSを読み込み、同じ設定を合成と保存へ渡す', async () => {
     const resetProject = vi.fn()
@@ -162,6 +162,7 @@ describe('runQuickExport', () => {
       144,
       144,
       expect.any(Function),
+      expect.objectContaining({ mode: 'subfolder' }),
     )
     expect(progress.at(-1)).toEqual({ progress: 1, message: '完了しました' })
     expect(result).toEqual({

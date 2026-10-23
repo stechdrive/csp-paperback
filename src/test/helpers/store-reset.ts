@@ -35,6 +35,7 @@ export function resetTestStore(overrides: Partial<AppStore> = {}): void {
     projectSettings: cloneDefaultProjectSettings(),
     outputConfig: cloneDefaultOutputConfig(),
     savedOutputConfig: cloneDefaultOutputConfig(),
+    directoryExportMode: 'subfolder',
     mobileUiScale: DEFAULT_MOBILE_UI_SCALE,
     activeTheme: DEFAULT_APP_THEME,
     ...overrides,

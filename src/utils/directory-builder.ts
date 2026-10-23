@@ -1,260 +1,91 @@
-import type { OutputConfig, ExportEntry, ExportProgressCallback } from '../types/output'
+import type { OutputConfig, ExportEntry, ExportProgressCallback, DirectoryExportMode } from '../types/output'
 import { createAbortError, isDesktopRuntime } from '../platform/runtime'
+import { browserExportDirectory, nativeExportDirectory, DestinationExistsError, type ExportDirectory } from '../platform/export-directory'
 import { makeExportBaseName, prepareOutputEntries, streamOutputEntries } from './output-builder'
+import { DirectoryExportSession } from './directory-export-session'
+import { directoryNode, exportRoot, materializeDirectory, planDirectoryFiles, unusedFileName } from './directory-export-plan'
+import { outputNameKey } from './path-sanitize'
 
-type ShowDirectoryPicker = (options?: {
-  id?: string
-  mode?: 'read' | 'readwrite'
-}) => Promise<FileSystemDirectoryHandle>
-
+type ShowDirectoryPicker = (options?: { id?: string; mode?: 'read' | 'readwrite' }) => Promise<FileSystemDirectoryHandle>
 function getDirectoryPicker(): ShowDirectoryPicker | undefined {
-  if (typeof window === 'undefined') return undefined
-  return (window as unknown as { showDirectoryPicker?: ShowDirectoryPicker }).showDirectoryPicker
+  return typeof window === 'undefined' ? undefined : (window as unknown as { showDirectoryPicker?: ShowDirectoryPicker }).showDirectoryPicker
 }
-
 export function supportsDirectoryExport(): boolean {
   return isDesktopRuntime() || typeof getDirectoryPicker() === 'function'
 }
+export interface DirectoryExportOptions { mode?: DirectoryExportMode; session?: DirectoryExportSession }
 
-export async function saveEntriesToDirectory(
-  entries: ExportEntry[],
-  config: OutputConfig,
-  psdFileName: string,
-  dpiX = 0,
-  dpiY = 0,
-  onProgress?: ExportProgressCallback,
-  defaultDirectory?: string,
-): Promise<string> {
+export async function saveEntriesToDirectory(entries: ExportEntry[], config: OutputConfig, sourceName: string,
+  dpiX = 0, dpiY = 0, onProgress?: ExportProgressCallback, defaultDirectory?: string, options: DirectoryExportOptions = {}): Promise<string> {
+  let parent: ExportDirectory
   if (isDesktopRuntime()) {
-    return saveEntriesToTauriDirectory(entries, config, psdFileName, dpiX, dpiY, onProgress, defaultDirectory)
+    const { open } = await import('@tauri-apps/plugin-dialog')
+    const selected = await open({ title: '書き出し先フォルダを選択', directory: true, multiple: false,
+      recursive: true, defaultPath: defaultDirectory })
+    if (selected === null) throw createAbortError()
+    parent = nativeExportDirectory(selected)
+  } else {
+    const picker = getDirectoryPicker()
+    if (!picker) throw new Error('このブラウザではフォルダ書き出しに対応していません')
+    parent = browserExportDirectory(await picker({ id: 'csp-paperback-export', mode: 'readwrite' }))
   }
+  return saveToDirectory(parent, entries, config, sourceName, dpiX, dpiY, onProgress, options)
+}
 
-  const directoryPicker = getDirectoryPicker()
-  if (!directoryPicker) {
-    throw new Error('このブラウザではフォルダ書き出しに対応していません')
-  }
+export async function saveEntriesToDirectoryPath(entries: ExportEntry[], config: OutputConfig, sourceName: string,
+  parentDirectory: string, dpiX = 0, dpiY = 0, onProgress?: ExportProgressCallback, options: DirectoryExportOptions = {}): Promise<string> {
+  if (!isDesktopRuntime()) throw new Error('クイック書き出しはデスクトップ版でのみ利用できます')
+  return saveToDirectory(nativeExportDirectory(parentDirectory), entries, config, sourceName, dpiX, dpiY, onProgress, options)
+}
 
-  const targetDirectory = await directoryPicker({
-    id: 'csp-paperback-export',
-    mode: 'readwrite',
+export async function saveToDirectory(parent: ExportDirectory, entries: ExportEntry[], config: OutputConfig, sourceName: string,
+  dpiX = 0, dpiY = 0, onProgress?: ExportProgressCallback, options: DirectoryExportOptions = {}): Promise<string> {
+  const mode = options.mode ?? 'subfolder', session = options.session ?? new DirectoryExportSession()
+  const effectiveConfig = mode === 'direct-flat' ? { ...config, structure: 'flat' as const } : config
+  const prepared = prepareOutputEntries(entries, effectiveConfig).map(entry => {
+    if (mode !== 'direct-flat') return entry
+    // Prepared names retain complete-plan collision numbering for subset exports.
+    const fileName = entry.names.flatName
+    return { ...entry, fileName, segments: [fileName], relativePath: fileName }
   })
-  const exportRoot = await createUniqueChildDirectory(
-    targetDirectory,
-    makeExportBaseName(psdFileName),
-  )
-  const preparedEntries = prepareOutputEntries(entries, config)
-  const directoryCache = new Map<string, FileSystemDirectoryHandle>()
-
-  for await (const entry of streamOutputEntries(
-    preparedEntries,
-    entries,
-    config,
-    dpiX,
-    dpiY,
-    onProgress,
-  )) {
-    const parentDirectory = await ensureDirectoryPath(
-      exportRoot,
-      entry.segments.slice(0, -1),
-      directoryCache,
-    )
-    const fileHandle = await parentDirectory.getFileHandle(entry.fileName, { create: true })
-    const writable = await fileHandle.createWritable()
-    await writable.write(entry.input)
-    await writable.close()
-  }
-
-  return exportRoot.name
-}
-
-export async function saveEntriesToDirectoryPath(
-  entries: ExportEntry[],
-  config: OutputConfig,
-  psdFileName: string,
-  parentDirectory: string,
-  dpiX = 0,
-  dpiY = 0,
-  onProgress?: ExportProgressCallback,
-): Promise<string> {
-  if (!isDesktopRuntime()) {
-    throw new Error('クイック書き出しはデスクトップ版でのみ利用できます')
-  }
-
-  const exportRoot = await createUniqueChildDirectoryPath(parentDirectory, makeExportBaseName(psdFileName))
-  await writeEntriesToTauriDirectory(
-    entries,
-    config,
-    exportRoot.path,
-    dpiX,
-    dpiY,
-    onProgress,
-  )
-
-  return exportRoot.path
-}
-
-async function saveEntriesToTauriDirectory(
-  entries: ExportEntry[],
-  config: OutputConfig,
-  psdFileName: string,
-  dpiX = 0,
-  dpiY = 0,
-  onProgress?: ExportProgressCallback,
-  defaultDirectory?: string,
-): Promise<string> {
-  const { open } = await import('@tauri-apps/plugin-dialog')
-  const defaultPath = await makeTauriDirectoryDialogDefaultPath(defaultDirectory, psdFileName)
-
-  const selected = await open({
-    title: '書き出し先フォルダを選択',
-    directory: true,
-    multiple: false,
-    recursive: true,
-    defaultPath,
-  })
-  if (selected === null) throw createAbortError()
-
-  const exportRoot = await createUniqueChildDirectoryPath(selected, makeExportBaseName(psdFileName))
-  await writeEntriesToTauriDirectory(entries, config, exportRoot.path, dpiX, dpiY, onProgress)
-
-  return exportRoot.name
-}
-
-async function writeEntriesToTauriDirectory(
-  entries: ExportEntry[],
-  config: OutputConfig,
-  exportRootPath: string,
-  dpiX = 0,
-  dpiY = 0,
-  onProgress?: ExportProgressCallback,
-): Promise<void> {
-  const { writeFile } = await import('@tauri-apps/plugin-fs')
-  const { join } = await import('@tauri-apps/api/path')
-  const preparedEntries = prepareOutputEntries(entries, config)
-  const directoryCache = new Map<string, string>()
-
-  for await (const entry of streamOutputEntries(
-    preparedEntries,
-    entries,
-    config,
-    dpiX,
-    dpiY,
-    onProgress,
-  )) {
-    const parentDirectory = await ensureDirectoryPathByString(
-      exportRootPath,
-      entry.segments.slice(0, -1),
-      directoryCache,
-    )
-    const filePath = await join(parentDirectory, entry.fileName)
-    await writeFile(filePath, new Uint8Array(await entry.input.arrayBuffer()))
-  }
-}
-
-async function makeTauriDirectoryDialogDefaultPath(
-  defaultDirectory: string | undefined,
-  psdFileName: string,
-): Promise<string | undefined> {
-  if (!defaultDirectory) return undefined
-
-  const { join } = await import('@tauri-apps/api/path')
-  return join(defaultDirectory, makeExportBaseName(psdFileName))
-}
-
-async function createUniqueChildDirectoryPath(
-  parent: string,
-  baseName: string,
-): Promise<{ name: string; path: string }> {
-  const { exists, mkdir } = await import('@tauri-apps/plugin-fs')
-  const { join } = await import('@tauri-apps/api/path')
-
-  for (let index = 0; index < 1000; index++) {
-    const candidate = index === 0 ? baseName : `${baseName}_${index + 1}`
-    const candidatePath = await join(parent, candidate)
-    if (await exists(candidatePath)) continue
-
-    try {
-      await mkdir(candidatePath)
-      return { name: candidate, path: candidatePath }
-    } catch {
-      if (await exists(candidatePath)) continue
-      throw new Error(`保存先フォルダを作成できませんでした: ${candidate}`)
-    }
-  }
-
-  throw new Error('保存先フォルダ名の競合が多すぎるため書き出しを中止しました')
-}
-
-async function ensureDirectoryPathByString(
-  root: string,
-  segments: string[],
-  cache: Map<string, string>,
-): Promise<string> {
-  const { exists, mkdir } = await import('@tauri-apps/plugin-fs')
-  const { join } = await import('@tauri-apps/api/path')
-  let current = root
-  let path = ''
-
-  for (const segment of segments) {
-    path = path ? `${path}/${segment}` : segment
-    const cached = cache.get(path)
-    if (cached) {
-      current = cached
-      continue
-    }
-
-    current = await join(current, segment)
-    if (!await exists(current)) {
-      await mkdir(current)
-    }
-    cache.set(path, current)
-  }
-
-  return current
-}
-
-async function createUniqueChildDirectory(
-  parent: FileSystemDirectoryHandle,
-  baseName: string,
-): Promise<FileSystemDirectoryHandle> {
-  for (let index = 0; index < 1000; index++) {
-    const candidate = index === 0 ? baseName : `${baseName}_${index + 1}`
-    try {
-      await parent.getDirectoryHandle(candidate)
-      continue
-    } catch (error) {
-      if (
-        error instanceof DOMException &&
-        (error.name === 'NotFoundError' || error.name === 'TypeMismatchError')
-      ) {
-        return parent.getDirectoryHandle(candidate, { create: true })
+  let root = mode === 'direct-flat' ? directoryNode(parent) : await exportRoot(parent, makeExportBaseName(sourceName), session)
+  let previous = session.files.get(outputNameKey(root.id)) ?? new Set<string>()
+  let plan = await planDirectoryFiles(root, prepared, previous)
+  const overwriteCount = plan.filter(file => file.overwrite).length
+  if (overwriteCount) {
+    const answer = await session.decide({ directory: root.displayPath, mode, overwriteCount, newCount: plan.length - overwriteCount })
+    if (answer.action === 'cancel') throw createAbortError()
+    if (answer.action === 'rename') {
+      if (mode === 'subfolder') {
+        root = await exportRoot(parent, makeExportBaseName(sourceName), session, true)
+        previous = session.files.get(outputNameKey(root.id)) ?? new Set<string>()
+      } else {
+        root = directoryNode(parent)
       }
-      throw error
+      plan = await planDirectoryFiles(root, prepared, previous, true)
     }
   }
-
-  throw new Error('保存先フォルダ名の競合が多すぎるため書き出しを中止しました')
-}
-
-async function ensureDirectoryPath(
-  root: FileSystemDirectoryHandle,
-  segments: string[],
-  cache: Map<string, FileSystemDirectoryHandle>,
-): Promise<FileSystemDirectoryHandle> {
-  let current = root
-  let path = ''
-
-  for (const segment of segments) {
-    path = path ? `${path}/${segment}` : segment
-    const cached = cache.get(path)
-    if (cached) {
-      current = cached
-      continue
+  const reserved = new Set([...previous, ...plan.map(file => outputNameKey(file.prepared.relativePath))])
+  session.files.set(outputNameKey(root.id), reserved)
+  session.roots.add(outputNameKey(root.id))
+  await materializeDirectory(root)
+  const filesByPath = new Map(plan.map((file, index) => [file.prepared.relativePath, { file, index }]))
+  for await (const entry of streamOutputEntries(plan.map(file => file.prepared), entries, effectiveConfig, dpiX, dpiY, onProgress)) {
+    const { file, index } = filesByPath.get(entry.relativePath)!
+    const directory = await materializeDirectory(file.parent)
+    let name = entry.fileName
+    for (let attempt = 0; ; attempt++) {
+      try {
+        await directory.write(name, entry.input, file.overwrite)
+        break
+      } catch (error) {
+        if (!(error instanceof DestinationExistsError) || file.overwrite || attempt >= 100) throw error
+        name = await unusedFileName(directory, entry.fileName, reserved, file.parent.segments)
+        const relativePath = [...file.parent.segments, name].join('/')
+        reserved.add(outputNameKey(relativePath))
+        onProgress?.(index, plan.length, { phase: 'writing', path: relativePath })
+      }
     }
-
-    current = await current.getDirectoryHandle(segment, { create: true })
-    cache.set(path, current)
   }
-
-  return current
+  return (await materializeDirectory(root)).displayPath
 }

@@ -52,7 +52,8 @@ export function QuickExportDialog({ paths }: QuickExportDialogProps) {
         setJobs(quickResult.jobs)
         setStatus('done')
         setProgress(1)
-        setMessage(quickResult.failureCount ? '書き出しが終了しました。失敗した作品を確認してください' : '書き出しが完了しました')
+        setMessage(quickResult.cancelled ? '書き出しをキャンセルしました。完了済みの画像は保存されています'
+          : quickResult.failureCount ? '書き出しが終了しました。失敗した作品を確認してください' : '書き出しが完了しました')
       } catch (error) {
         setStatus('error')
         setMessage(error instanceof Error ? error.message : 'クイック書き出しに失敗しました')
@@ -82,7 +83,7 @@ export function QuickExportDialog({ paths }: QuickExportDialogProps) {
           {jobs.length === 0 && status === 'running' && <p>作品ごとに読み込み、順番に書き出します。</p>}
           {jobs.map((job, index) => <div key={index} className={styles.detail} data-testid="quick-export-result">
             <strong className={job.status === 'error' ? styles.error : undefined}>
-              {job.status === 'done' ? '成功' : '失敗'}：{job.sourcePath.split(/[\\/]/).at(-1)}
+              {job.status === 'done' ? '成功' : job.status === 'cancelled' ? 'キャンセル' : '失敗'}：{job.sourcePath.split(/[\\/]/).at(-1)}
             </strong>
             <div>入力: {job.sourcePath}</div>
             {job.status === 'done'

@@ -6,7 +6,7 @@ import { makeAnimationFolder, makeLayer, makePsd } from '../helpers/psd-factory'
 import { buildLayerTree } from '../../engine/tree-builder'
 import * as exportEntries from '../../utils/export-entries'
 import { runQuickExportBatch } from '../../utils/quick-export'
-import { writeFile } from '@tauri-apps/plugin-fs'
+import { invoke as writeFile } from '@tauri-apps/api/core'
 import { loadProjectFiles } from '../../utils/project-loader'
 import { canvasToBlob } from '../../utils/image-export'
 
@@ -14,7 +14,8 @@ vi.mock('../../platform/runtime', () => ({ isDesktopRuntime: () => true }))
 vi.mock('../../platform/files', () => ({ allowTauriLaunchFilePaths: vi.fn(), loadableFilesFromPaths: vi.fn(async () => []) }))
 vi.mock('../../utils/project-loader', () => ({ loadProjectFiles: vi.fn() }))
 vi.mock('@tauri-apps/api/path', () => ({ dirname: async () => 'C:/test', join: async (...parts: string[]) => parts.join('/') }))
-vi.mock('@tauri-apps/plugin-fs', () => ({ exists: async () => false, mkdir: vi.fn(), writeFile: vi.fn(async () => {}) }))
+vi.mock('@tauri-apps/plugin-fs', () => ({ readDir: async () => [], mkdir: vi.fn() }))
+vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn(async () => {}) }))
 vi.mock('../../utils/image-export', async importOriginal => ({
   ...await importOriginal<typeof import('../../utils/image-export')>(),
   canvasToBlob: vi.fn(async () => new NodeBlob(['encoded'])),
@@ -51,7 +52,7 @@ describe('quick export uses the real lazy plan and directory writer', () => {
     finish()
     expect(await pending).toMatchObject({ successCount: 1, failureCount: 0, entryCount: 40 })
     expect(writeFile).toHaveBeenCalledTimes(40)
-    expect(new Set(vi.mocked(writeFile).mock.calls.map(call => call[0])).size).toBe(40)
+    expect(new Set(vi.mocked(writeFile).mock.calls.map(call => new Headers(call[2]?.headers).get('path'))).size).toBe(40)
     expect(canvases.every(c => c.width * c.height === 1)).toBe(true)
     expect(progress.some(m => m.includes('合成中 1/40'))).toBe(true)
     expect(progress.some(m => m.includes('画像変換中 1/40'))).toBe(true)

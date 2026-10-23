@@ -1,6 +1,7 @@
 import { expect, test, type Locator } from './fixtures'
 import { manyOutputs } from './helpers/many-outputs'
 import { clickLayerAction } from './helpers/layer-action'
+import screenshots from '../src/components/help/helpScreenshots.json' with { type: 'json' }
 
 test('独立したタブから各社テンプレート向けの設定と共有方法を確認できる', async ({ page }) => {
   const pageErrors: string[] = []
@@ -244,7 +245,7 @@ for (const { width, theme } of [
           }
         }
       }
-      expect(capturedImages.size).toBe(6)
+      expect([...capturedImages].map(src => src.split('/').at(-1)!.split('?')[0]).sort()).toEqual(Object.keys(screenshots).sort())
     })
   })
 }

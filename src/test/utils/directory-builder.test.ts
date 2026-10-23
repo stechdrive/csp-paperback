@@ -45,6 +45,10 @@ function createDirectoryHandle(state: MemoryDirectoryState): FileSystemDirectory
   return {
     kind: 'directory',
     name: state.name,
+    async *values() {
+      for (const name of state.directories.keys()) yield { name, kind: 'directory' }
+      for (const name of state.files.keys()) yield { name, kind: 'file' }
+    },
     async getDirectoryHandle(name: string, options?: { create?: boolean }) {
       if (state.files.has(name)) {
         throw new DOMException('A file with the same name exists', 'TypeMismatchError')
@@ -143,8 +147,8 @@ describe('saveEntriesToDirectory', () => {
       (done, total) => progressCalls.push([done, total]),
     )
 
-    expect(folderName).toBe('cut001_2')
-    const exportRoot = parent.directories.get('cut001_2')
+    expect(folderName).toBe('exports/cut001')
+    const exportRoot = parent.directories.get('cut001')
     expect(exportRoot?.directories.get('A')?.files.has('A_0001.png')).toBe(true)
     expect(exportRoot?.directories.get('B')?.files.has('B_0001.png')).toBe(true)
     expect(progressCalls).toEqual([[1, 2], [2, 2]])

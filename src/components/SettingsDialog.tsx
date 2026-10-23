@@ -55,6 +55,8 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
   const outputConfig = useAppStore(s => s.outputConfig)
   const layerTree = useAppStore(selectLayerTreeWithVisibility)
   const activeTheme = useAppStore(s => s.activeTheme)
+  const directoryExportMode = useAppStore(s => s.directoryExportMode)
+  const setDirectoryExportMode = useAppStore(s => s.setDirectoryExportMode)
   const updateProcessTable = useAppStore(s => s.updateProcessTable)
   const setBodyGroupName = useAppStore(s => s.setBodyGroupName)
   const updateAutoMarkFolderNames = useAppStore(s => s.updateAutoMarkFolderNames)
@@ -270,6 +272,12 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
         </div>
 
         <div className={styles.body}>
+          <section className={styles.section} aria-labelledby="quick-export-save-heading">
+            <div className={styles.sectionTitle} id="quick-export-save-heading">クイック書き出しの保存方法</div>
+            <label><input type="radio" name="directory-export-mode" checked={directoryExportMode === 'subfolder'} onChange={() => setDirectoryExportMode('subfolder')} /> フォルダを作る</label>
+            <label><input type="radio" name="directory-export-mode" checked={directoryExportMode === 'direct-flat'} onChange={() => setDirectoryExportMode('direct-flat')} /> 直接書き出す</label>
+            <div className={styles.hint}>EXEやショートカットへCLIPをドロップしたときの保存方法を記憶します。直接書き出す場合は、階層を保持せずCLIPと同じフォルダへ画像をまとめます。同名画像がある場合は上書きを確認します。</div>
+          </section>
           <div className={styles.section}>
             <div className={styles.sectionTitle}>{t.settings.theme}</div>
             <div className={styles.hint}>{t.settings.themeHint}</div>

@@ -68,6 +68,19 @@ beforeEach(() => {
 afterEach(cleanup)
 
 describe('useExport', () => {
+  it('直接出力は全件の名前計画をフラットにし、現在の階層設定を書き換えない', async () => {
+    const state = makeLoadedState()
+    state.outputConfig.structure = 'hierarchy'
+    mockedGetState.mockReturnValue(state as never)
+    mockedBuildEntries.mockReturnValue([makeEntry()])
+    mockedSaveDirectory.mockResolvedValue('exports')
+    const { result } = renderHook(() => useExport())
+    const selected = new Set(['selected'])
+    await act(async () => { await result.current.startExport('directory-flat', selected) })
+    expect(mockedBuildEntries).toHaveBeenCalledWith(state, expect.objectContaining({ structure: 'flat' }), selected)
+    expect(mockedSaveDirectory.mock.calls[0][7]).toMatchObject({ mode: 'direct-flat' })
+    expect(state.outputConfig.structure).toBe('hierarchy')
+  })
   it('shares a synchronous job lock across toolbar and subset export and snapshots the selection', async () => {
     const state = makeLoadedState()
     mockedGetState.mockReturnValue(state as never)
@@ -137,6 +150,7 @@ describe('useExport', () => {
       144,
       expect.any(Function),
       String.raw`C:\work\cut001`,
+      expect.objectContaining({ mode: 'subfolder' }),
     )
     expect(mockedSaveZipStream).not.toHaveBeenCalled()
     expect(result.current.progress).toBe(1)

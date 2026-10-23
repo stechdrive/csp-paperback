@@ -23,7 +23,7 @@ export function prepareOutputEntries(
   const normalizedEntries = entries.map(e => ({
     ...e,
     path: sanitizeOutputPath(replaceExtension(e.path, config.format)),
-    flatName: sanitizeOutputPath(replaceExtension(e.flatName, config.format)),
+    flatName: sanitizePathSegment(replaceExtension(e.flatName, config.format)),
   }))
   const resolved = resolveEntryNames(normalizedEntries)
 

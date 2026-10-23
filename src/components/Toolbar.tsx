@@ -201,6 +201,7 @@ export function Toolbar({ onFiles, isLoading, error, notification, canUndo, canR
               {canExportToDirectory && openPopover === 'export' && <div className={`${styles.popover} ${styles.exportMenu}`} role="menu">
                 <button className={styles.menuItem} onClick={() => void handleExportSelect('zip')} disabled={isExporting || !enabledOutputCount} role="menuitem">{t.export.destinationZip}</button>
                 <button className={styles.menuItem} onClick={() => void handleExportSelect('directory')} disabled={isExporting || !enabledOutputCount} role="menuitem">{t.export.destinationDirectory}</button>
+                <button className={styles.menuItem} onClick={() => void handleExportSelect('directory-flat')} disabled={isExporting || !enabledOutputCount} role="menuitem">選択フォルダに直接書き出し</button>
               </div>}
             </div>
           </Tooltip>

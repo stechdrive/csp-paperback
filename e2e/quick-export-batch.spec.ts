@@ -30,6 +30,7 @@ test('EXE launch flow exports a mixed batch, shows individual errors/warnings, a
         if (command.startsWith('plugin:window|')) { if (command.endsWith('|close')) proof.closed = true; return }
         if (command === 'plugin:path|dirname') return params.path!.slice(0, params.path!.lastIndexOf('/'))
         if (command === 'plugin:path|join') return params.paths!.join('/')
+        if (command === 'plugin:fs|read_dir') return proof.dirs.filter(path => path.slice(0, path.lastIndexOf('/')) === params.path).map(path => ({ name: path.split('/').at(-1), isDirectory: true, isFile: false, isSymlink: false }))
         if (command === 'plugin:fs|exists') return proof.dirs.includes(params.path!)
         if (command === 'plugin:fs|mkdir') { proof.dirs.push(params.path!); return }
         if (command === 'plugin:fs|stat') return { size: sizes[params.path!.split('/').at(-1)!], mtime: null, atime: null, birthtime: null }
@@ -37,7 +38,7 @@ test('EXE launch flow exports a mixed batch, shows individual errors/warnings, a
           proof.reads.push(params.path!)
           return (await fetch(`/__batch-fixture/${encodeURIComponent(params.path!.split('/').at(-1)!)}`)).arrayBuffer()
         }
-        if (command === 'plugin:fs|write_file') {
+        if (command === 'write_export_file') {
           const bytes = args as Uint8Array
           proof.writes.push({ path: decodeURIComponent(options!.headers!.path!), size: bytes.length, signature: [...bytes.slice(0, 3)] })
           return
@@ -53,7 +54,7 @@ test('EXE launch flow exports a mixed batch, shows individual errors/warnings, a
   await expect(page.getByRole('dialog').getByRole('status')).toContainText('成功 3件／失敗 2件／再現状況の案内 1件', { timeout: 60000 })
   const results = page.getByTestId('quick-export-result')
   await expect(results).toHaveCount(5)
-  await expect(results.filter({ hasText: '成功：paired.clip' })).toContainText('出力先: C:/cuts/paired_2')
+  await expect(results.filter({ hasText: '成功：paired.clip' })).toContainText('出力先: C:/cuts/paired')
   await expect(results.filter({ hasText: '失敗：mismatch.clip' })).toContainText('一致しません')
   await expect(results.filter({ hasText: '失敗：orphan.psd' })).toContainText('同じフォルダ・同名のCLIP')
   const warning = results.filter({ hasText: '成功：warning.clip' })
@@ -63,7 +64,7 @@ test('EXE launch flow exports a mixed batch, shows individual errors/warnings, a
   const proof = await page.evaluate(() => (window as unknown as { __batchProof: { writes: { path: string; size: number; signature: number[] }[]; reads: string[] } }).__batchProof)
   expect(proof.writes.length).toBeGreaterThan(0)
   expect(proof.writes.every(write => write.size > 100 && write.signature.join(',') === '255,216,255')).toBe(true)
-  expect(proof.writes.every(write => /\/(paired_2|solo|warning)\//.test(write.path))).toBe(true)
+  expect(proof.writes.every(write => /\/(paired|solo|warning)\//.test(write.path))).toBe(true)
   expect(proof.reads.some(path => path.endsWith('orphan.psd'))).toBe(false)
   expect(proof.reads.filter(path => path.endsWith('.clip'))).toHaveLength(4)
   for (const viewport of [{ width: 640, height: 520 }, { width: 480, height: 360 }]) {
