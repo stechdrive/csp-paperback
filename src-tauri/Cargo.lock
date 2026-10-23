@@ -586,7 +586,7 @@ dependencies = [
 
 [[package]]
 name = "csp-paperback"
-version = "1.38.304"
+version = "1.38.305"
 dependencies = [
  "percent-encoding",
  "tauri",

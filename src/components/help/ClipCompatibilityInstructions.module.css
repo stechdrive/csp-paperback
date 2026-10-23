@@ -11,6 +11,11 @@
   margin: 0.35rem 0 0;
 }
 
+.instructions p strong {
+  display: inline;
+  margin: 0;
+}
+
 .compact {
   margin-top: 0.9rem;
   padding-top: 0.75rem;
