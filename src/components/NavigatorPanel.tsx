@@ -14,7 +14,7 @@ export function NavigatorCanvas({ enabled = true }: { enabled?: boolean }) {
   const error = usePreview(canvasRef, enabled)
   return <div className={styles.navigatorImage}>
     <div ref={containerRef} className={styles.navigatorViewport} style={containerStyle} tabIndex={0}>
-      <canvas ref={canvasRef} className={styles.navigatorCanvas} style={contentStyle} aria-label="全体プレビューの画像" />
+      <canvas ref={canvasRef} className={styles.navigatorCanvas} style={contentStyle} aria-label="キャンバスの画像" />
     </div>
     <PreviewZoomControls {...zoomPan} />
     {error && <p role="alert">{error}</p>}

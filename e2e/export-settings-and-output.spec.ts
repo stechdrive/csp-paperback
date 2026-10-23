@@ -20,13 +20,13 @@ test.beforeEach(async ({ page }) => {
   })
 })
 
-for (const name of ['ヘルプ', '設定']) {
+for (const name of ['ヘルプ', '書き出し設定']) {
   test(`アプリメニューからTabで${name}を開いてもメニューがダイアログに残らない`, async ({ page }) => {
     await page.goto('./')
     await page.getByRole('button', { name: 'メニュー', exact: true }).click()
     const menu = page.locator('#toolbar-app-menu')
-    await menu.getByRole('button', { name: '設定', exact: true }).focus()
-    const action = page.locator('[class*="_utilityButtons_"]').getByRole('button', { name, exact: true })
+    await menu.getByRole('button', { name: '? ヘルプ', exact: true }).focus()
+    const action = name === 'ヘルプ' ? page.locator('[class*="_utilityButtons_"]').getByRole('button', { name, exact: true }) : page.getByRole('button', { name, exact: true })
     for (let step = 0; step < 15 && !await action.evaluate(element => document.activeElement === element); step++) {
       await page.keyboard.press('Tab')
     }
@@ -39,6 +39,7 @@ for (const name of ['ヘルプ', '設定']) {
       await dialog.getByRole('button', { name: 'ヘルプを閉じる' }).click()
       await expect(dialog).toHaveCount(0)
     } else {
+      await page.getByRole('button', { name: '詳細設定…', exact: true }).click()
       const dialog = page.locator('[class*="_dialog_"]').filter({ has: page.getByText('書き出し詳細設定', { exact: true }) })
       await expect(dialog).toBeVisible()
       await dialog.locator('[class*="_header_"]').getByRole('button', { name: '✕', exact: true }).click()
@@ -55,7 +56,8 @@ test('保存設定を再読込とサンプル読込へ引き継ぎ、実ZIPを�
   })
 
   await page.goto('./')
-  const startupSettings = page.getByTestId('startup-export-settings')
+  await page.getByRole('button', { name: '書き出し設定', exact: true }).click()
+  const startupSettings = page.getByTestId('export-settings')
   await expect(startupSettings).toBeVisible()
   await expect(page.getByRole('link', {
     name: 'デスクトップ版をダウンロード',
@@ -67,13 +69,15 @@ test('保存設定を再読込とサンプル読込へ引き継ぎ、実ZIPを�
   await expect(startupSettings.getByLabel('出力例: A/A_1_e.png')).toBeVisible()
 
   await page.reload()
-  const reloadedSettings = page.getByTestId('startup-export-settings')
+  await page.getByRole('button', { name: '書き出し設定', exact: true }).click()
+  const reloadedSettings = page.getByTestId('export-settings')
   await expect(reloadedSettings.getByLabel('出力例: A/A_1_e.png')).toBeVisible()
   await expect(reloadedSettings.getByRole('switch', { name: 'フォルダ分け', exact: true }))
     .toHaveAttribute('aria-checked', 'true')
 
+  if (await page.getByRole('dialog', { name: '書き出し設定', exact: true }).isVisible()) await page.getByRole('button', { name: '書き出し設定を閉じる', exact: true }).click()
   await page.getByRole('button', { name: 'サンプルデータで試す', exact: true }).click()
-  await page.getByRole('button', { name: '出力プレビュー', exact: true }).click()
+  await page.getByRole('button', { name: '書き出し画像', exact: true }).click()
   await expectSampleLoaded(page)
   await expect(page.getByText('CLIPから読み込み', { exact: true })).toHaveCount(0)
   await page.getByRole('button', { name: '書き出し設定', exact: true }).click()
@@ -102,12 +106,14 @@ test.describe('タッチ端末', () => {
   test('狭幅でも起動画面と読み込み後の設定UIが横にはみ出さない', async ({ page }) => {
     await page.goto('./')
 
-    await expect(page.getByTestId('startup-export-settings')).toBeVisible()
+    await page.getByRole('button', { name: '書き出し設定', exact: true }).click()
+    await expect(page.getByTestId('export-settings')).toBeVisible()
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth))
       .toBe(true)
 
+    if (await page.getByRole('dialog', { name: '書き出し設定', exact: true }).isVisible()) await page.getByRole('button', { name: '書き出し設定を閉じる', exact: true }).click()
     await page.getByRole('button', { name: 'サンプルデータで試す', exact: true }).click()
-    await page.getByRole('button', { name: '出力プレビュー', exact: true }).click()
+    await page.getByRole('button', { name: '書き出し画像', exact: true }).click()
     const drawerToggle = page.getByRole('button', { name: '書き出し設定', exact: true })
     await expect(drawerToggle).toBeVisible()
     await expect(drawerToggle).toHaveAttribute('aria-expanded', 'false')
@@ -125,6 +131,7 @@ test.describe('タッチ端末', () => {
 test('設定と出力名の対応を示し、修正ラベルの切り替えでプレビューの高さを変えない', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 1440, height: 1000 })
   await page.goto('./')
+  await page.getByRole('button', { name: '書き出し設定', exact: true }).click()
   const settings = page.getByTestId('export-settings')
   await expect(settings).toBeVisible()
   await page.evaluate(() => document.fonts.ready)
@@ -158,6 +165,8 @@ test('設定と出力名の対応を示し、修正ラベルの切り替えで�
   await expect(settings.getByRole('button', { name: '_ あり', exact: true })).toBeFocused()
   await expect(settings.locator('[data-name-part="separator"]')).toHaveAttribute('data-highlighted', 'true')
   await page.keyboard.press('Escape')
+  await expect(settings).toHaveCount(0)
+  await page.getByRole('button', { name: '書き出し設定', exact: true }).click()
   await expect(settings.locator('[data-highlighted="true"]')).toHaveCount(0)
   expect((await settings.boundingBox())!.height).toBe(initialHeight)
   const sample = settings.getByTestId('revision-label-sample')
@@ -169,8 +178,9 @@ test('設定と出力名の対応を示し、修正ラベルの切り替えで�
   await expect(sample).toHaveCSS('border-left-width', '5px')
   await expect(sample).toHaveCSS('border-top-color', 'rgb(252, 249, 207)')
   await settings.screenshot({ path: testInfo.outputPath('export-settings.png') })
+  if (await page.getByRole('dialog', { name: '書き出し設定', exact: true }).isVisible()) await page.getByRole('button', { name: '書き出し設定を閉じる', exact: true }).click()
   await page.getByRole('button', { name: 'サンプルデータで試す', exact: true }).click()
-  await page.getByRole('button', { name: '出力プレビュー', exact: true }).click()
+  await page.getByRole('button', { name: '書き出し画像', exact: true }).click()
   const output = page.locator('[class*="_outputSection_"]')
   await expect(output).toBeVisible()
   const before = await output.boundingBox()
@@ -190,10 +200,11 @@ test('工程名の編集と個別書き出しの設定を通常幅と狭幅で�
   await page.setViewportSize({ width: 1440, height: 1000 })
   await page.goto('./')
   await page.evaluate(() => document.fonts.ready)
-  const startupSettingsRegion = await page.getByTestId('startup-export-settings').boundingBox()
+  const startupSettingsRegion = await page.getByRole('button', { name: '書き出し設定', exact: true }).boundingBox()
   await page.screenshot({ path: testInfo.outputPath('help-startup-guide.png') })
+  if (await page.getByRole('dialog', { name: '書き出し設定', exact: true }).isVisible()) await page.getByRole('button', { name: '書き出し設定を閉じる', exact: true }).click()
   await page.getByRole('button', { name: 'サンプルデータで試す', exact: true }).click()
-  await page.getByRole('button', { name: '出力プレビュー', exact: true }).click()
+  await page.getByRole('button', { name: '書き出し画像', exact: true }).click()
   await expectSampleLoaded(page)
   await page.evaluate(() => document.fonts.ready)
   await page.getByRole('button', { name: '書き出し設定', exact: true }).click()
@@ -204,7 +215,8 @@ test('工程名の編集と個別書き出しの設定を通常幅と狭幅で�
   await page.screenshot({ path: testInfo.outputPath('help-export-settings.png') })
   const exportSettingsRegion = await outputSettings.boundingBox()
   await page.keyboard.press('Escape')
-  await page.getByRole('button', { name: '設定', exact: true }).click()
+  await page.getByRole('button', { name: '書き出し設定', exact: true }).click()
+  await page.getByRole('button', { name: '詳細設定…', exact: true }).click()
   const dialog = page.locator('[class*="_dialog_"]').filter({ has: page.getByText('書き出し詳細設定', { exact: true }) })
   const processSection = dialog.getByTestId('process-table-grid').locator('..')
   await expect(dialog.getByLabel('グループ名 1', { exact: true })).toBeVisible()
@@ -240,6 +252,7 @@ for (const viewport of [{ width: 1440, height: 1000 }, { width: 1000, height: 70
     page.on('console', message => { if (message.type() === 'error') errors.push(message.text()) })
     await page.setViewportSize(viewport)
     await page.goto('./')
+    await page.getByRole('button', { name: '書き出し設定', exact: true }).click()
     const settings = page.getByTestId('export-settings')
     const sample = settings.getByTestId('name-sample-row')
     const targets = [
@@ -259,8 +272,9 @@ for (const viewport of [{ width: 1440, height: 1000 }, { width: 1000, height: 70
     ]
     for (const phase of ['startup', 'loaded']) {
       if (phase === 'loaded') {
+        if (await page.getByRole('dialog', { name: '書き出し設定', exact: true }).isVisible()) await page.getByRole('button', { name: '書き出し設定を閉じる', exact: true }).click()
         await page.getByRole('button', { name: 'サンプルデータで試す', exact: true }).click()
-        await page.getByRole('button', { name: '出力プレビュー', exact: true }).click()
+        await page.getByRole('button', { name: '書き出し画像', exact: true }).click()
         await expectSampleLoaded(page)
         const drawer = page.getByRole('button', { name: '書き出し設定', exact: true })
         await drawer.click()

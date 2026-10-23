@@ -8,7 +8,8 @@ const popup = (page: Page) => page.getByRole('dialog', { name: '画面外の合�
 async function loadSample(page: Page) {
   await page.goto('./')
   await page.getByRole('button', { name: 'サンプルデータで試す', exact: true }).click()
-  await page.getByRole('button', { name: '出力プレビュー', exact: true }).click()
+  await page.getByRole('button', { name: '書き出し画像', exact: true }).click()
+  await page.getByRole('button', { name: '１点表示', exact: true }).click()
   await expect(page.getByTestId('preview-file-name')).toHaveText('仮想セルテスト.jpg')
 }
 

@@ -16,14 +16,14 @@ import {
   percentToScale,
   scaleToPercent,
 } from '../utils/mobile-ui-scale'
-import { SettingsDialog } from './SettingsDialog'
+import { ExportSettingsPopover } from './ExportSettingsPopover'
 import { HelpDialog } from './HelpDialog'
 import { UpdateCheckDialog } from './UpdateCheckPanel'
 import { Tooltip } from './Tooltip'
 import { ClipDiagnosticsControl } from './ClipPreviewControls'
 import styles from './Toolbar.module.css'
 
-type IconName = 'menu' | 'open' | 'undo' | 'redo' | 'output' | 'navigator' | 'virtual' | 'help' | 'settings' | 'export' | 'info'
+type IconName = 'menu' | 'open' | 'undo' | 'redo' | 'output' | 'navigator' | 'virtual' | 'help' | 'export' | 'info'
 
 function Icon({ name }: { name: IconName }) {
   const paths: Record<IconName, string> = {
@@ -35,7 +35,6 @@ function Icon({ name }: { name: IconName }) {
     navigator: 'M3 3h6M3 3v6m18-6h-6m6 0v6M3 21h6m-6 0v-6m18 6h-6m6 0v-6M8 8h8v8H8Z',
     virtual: 'm12 3 9 5-9 5-9-5 9-5Zm-9 9 9 5 9-5M3 16l9 5 9-5',
     help: 'M9.1 9a3 3 0 1 1 5.8 1c-.7 1.2-2.9 1.5-2.9 3.5M12 17h.01M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z',
-    settings: 'M4 7h16M4 17h16M8 4v6m8 4v6',
     export: 'M12 3v12m-4-4 4 4 4-4M4 15v6h16v-6',
     info: 'M12 11v6M12 7h.01M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z',
   }
@@ -92,7 +91,6 @@ export function Toolbar({ onFiles, isLoading, error, notification, canUndo, canR
   const appMenuRef = useRef<HTMLDivElement>(null)
   const exportMenuRef = useRef<HTMLDivElement>(null)
   const statusRef = useRef<HTMLDivElement>(null)
-  const [showSettings, setShowSettings] = useState(false)
   const [showHelp, setShowHelp] = useState(false)
   const [showUpdateCheck, setShowUpdateCheck] = useState(false)
   const [openPopover, setOpenPopover] = useState<'app' | 'export' | 'status' | null>(null)
@@ -152,7 +150,6 @@ export function Toolbar({ onFiles, isLoading, error, notification, canUndo, canR
               <button className={styles.menuItem} onClick={() => menuAction(onRedo)} disabled={!canRedo}><Icon name="redo" />やり直し <kbd>Ctrl+Shift+Z</kbd></button>
               <div className={styles.menuSeparator} />
               <button className={styles.menuItem} onClick={() => menuAction(() => setShowHelp(true))}>? ヘルプ</button>
-              <button className={styles.menuItem} onClick={() => menuAction(() => setShowSettings(true))}><Icon name="settings" />{t.toolbar.settings}</button>
               {desktopRuntime && <button className={styles.menuItem} onClick={() => menuAction(() => setShowUpdateCheck(true))}>{t.toolbar.updateCheck}</button>}
               {isMobile && <MobileUiScaleControl />}
               {files.length > 0 && <div className={styles.menuFiles}>{files.map((file, index) => <div key={index}>{file}</div>)}</div>}
@@ -191,23 +188,25 @@ export function Toolbar({ onFiles, isLoading, error, notification, canUndo, canR
 
         <div className={styles.utilityButtons}>
           <Tooltip content="使い方ヘルプを表示"><button data-tooltip="使い方ヘルプを表示" className={`${styles.btn} ${styles.iconBtn}`} onClick={() => menuAction(() => setShowHelp(true))} aria-label="ヘルプ"><Icon name="help" /></button></Tooltip>
-          <Tooltip content="書き出し詳細設定・工程フォルダリストの編集" placement="bottom"><button className={`${styles.btn} ${styles.iconBtn}`} onClick={() => menuAction(() => setShowSettings(true))} aria-label={t.toolbar.settings}><Icon name="settings" /></button></Tooltip>
         </div>
 
-        <Tooltip content={canExportToDirectory ? desktopRuntime ? t.export.triggerHintChoiceDesktop : t.export.triggerHintChoiceBrowser : t.export.triggerHintZip} placement="bottom" disabled={openPopover === 'export'}>
-          <div className={styles.menuWrap} ref={exportMenuRef}>
-            <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={() => canExportToDirectory ? setOpenPopover(openPopover === 'export' ? null : 'export') : void handleExportSelect('zip')} disabled={(!psdFileName && !clipFileName) || !enabledOutputCount || isExporting || isLoading} aria-label={isExporting ? t.export.exporting : t.toolbar.export} aria-haspopup={canExportToDirectory ? 'menu' : undefined} aria-expanded={canExportToDirectory ? openPopover === 'export' : undefined}>
-              <Icon name="export" /><span>{t.toolbar.export}</span>{canExportToDirectory && <span className={styles.exportCaret}>▾</span>}
-            </button>
-            {canExportToDirectory && openPopover === 'export' && <div className={`${styles.popover} ${styles.exportMenu}`} role="menu">
-              <button className={styles.menuItem} onClick={() => void handleExportSelect('zip')} disabled={isExporting || !enabledOutputCount} role="menuitem">{t.export.destinationZip}</button>
-              <button className={styles.menuItem} onClick={() => void handleExportSelect('directory')} disabled={isExporting || !enabledOutputCount} role="menuitem">{t.export.destinationDirectory}</button>
-            </div>}
-          </div>
-        </Tooltip>
+        <div className={styles.exportActions}>
+          <ExportSettingsPopover buttonClassName={styles.btn} />
+
+          <Tooltip content={canExportToDirectory ? desktopRuntime ? t.export.triggerHintChoiceDesktop : t.export.triggerHintChoiceBrowser : t.export.triggerHintZip} placement="bottom" disabled={openPopover === 'export'}>
+            <div className={styles.menuWrap} ref={exportMenuRef}>
+              <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={() => canExportToDirectory ? setOpenPopover(openPopover === 'export' ? null : 'export') : void handleExportSelect('zip')} disabled={(!psdFileName && !clipFileName) || !enabledOutputCount || isExporting || isLoading} aria-label={isExporting ? t.export.exporting : t.toolbar.export} aria-haspopup={canExportToDirectory ? 'menu' : undefined} aria-expanded={canExportToDirectory ? openPopover === 'export' : undefined}>
+                <Icon name="export" /><span>{t.toolbar.export}</span>{canExportToDirectory && <span className={styles.exportCaret}>▾</span>}
+              </button>
+              {canExportToDirectory && openPopover === 'export' && <div className={`${styles.popover} ${styles.exportMenu}`} role="menu">
+                <button className={styles.menuItem} onClick={() => void handleExportSelect('zip')} disabled={isExporting || !enabledOutputCount} role="menuitem">{t.export.destinationZip}</button>
+                <button className={styles.menuItem} onClick={() => void handleExportSelect('directory')} disabled={isExporting || !enabledOutputCount} role="menuitem">{t.export.destinationDirectory}</button>
+              </div>}
+            </div>
+          </Tooltip>
+        </div>
       </div>
 
-      {showSettings && <SettingsDialog onClose={() => setShowSettings(false)} />}
       {showHelp && <HelpDialog onClose={() => setShowHelp(false)} />}
       {showUpdateCheck && <UpdateCheckDialog onClose={() => setShowUpdateCheck(false)} />}
     </>

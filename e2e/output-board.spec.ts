@@ -111,7 +111,7 @@ for (const deviceScaleFactor of [1, 2]) test.describe(`pixel zoom at device scal
     await expect(surface).toHaveAttribute('data-image-width', '64')
     await page.setViewportSize({ width: 1200, height: 800 })
     await expect(surface).toHaveAttribute('data-image-width', '64')
-    await page.getByRole('button', { name: '全体プレビュー', exact: true }).click()
+    await page.getByRole('button', { name: 'キャンバス', exact: true }).click()
     const nav = page.getByTestId('navigator-view')
     await nav.getByRole('button', { name: '100%', exact: true }).click()
     await expect(nav.getByLabel('表示倍率', { exact: true })).toHaveText('100%')

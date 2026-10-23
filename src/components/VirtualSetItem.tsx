@@ -486,7 +486,7 @@ export function VirtualSetItem({ virtualSet, onPreviewOutput }: VirtualSetItemPr
             ✕
           </button>
         </Tooltip>
-        <Tooltip content="出力プレビューに表示"><button data-tooltip="出力プレビューに表示" className={styles.collapseBtn} aria-label="仮想セルをプレビュー"
+        <Tooltip content="書き出し画像に表示"><button data-tooltip="書き出し画像に表示" className={styles.collapseBtn} aria-label="仮想セルをプレビュー"
           onClick={event => { event.stopPropagation(); useAppStore.getState().selectOutputFile(virtualOutputId(virtualSet.id)); onPreviewOutput?.() }}>◧</button></Tooltip>
       </div>
 

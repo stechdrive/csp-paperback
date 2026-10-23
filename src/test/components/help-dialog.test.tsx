@@ -24,12 +24,12 @@ describe('HelpDialog information architecture', () => {
       '書き出し設定を決める',
       '書き出す状態でCLIPを保存する',
       'CLIPを読み込む',
-      '出力プレビューを確認する',
+      '書き出し画像を確認する',
       '「出力」から保存方法を選ぶ',
     ]
     for (const title of route) expect(screen.getByText(title)).toBeInTheDocument()
     expect(document.querySelector('[data-help-highlight="書き出し設定"]')).toBeInTheDocument()
-    expect(document.querySelector('[data-help-highlight="出力プレビュー"]')).toBeInTheDocument()
+    expect(document.querySelector('[data-help-highlight="書き出し画像"]')).toBeInTheDocument()
     expect(document.querySelector('[data-help-highlight="出力メニュー"]')).toBeInTheDocument()
 
     const text = screen.getByRole('dialog').textContent ?? ''
@@ -89,7 +89,7 @@ describe('HelpDialog information architecture', () => {
     expect(text).not.toContain('保存済み設定')
     expect(text).not.toContain('メンバー')
     expect(text).not.toContain('困ったとき')
-    expect(document.querySelector('[data-help-highlight="全体プレビュー"]')).toBeInTheDocument()
+    expect(document.querySelector('[data-help-highlight="キャンバス"]')).toBeInTheDocument()
     expect(text).toContain('タイル表示')
     expect(text).toContain('書き出し中は画面下部に進捗')
   })

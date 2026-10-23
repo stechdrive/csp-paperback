@@ -1,0 +1,28 @@
+.content {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-shrink: 0;
+  padding: .35rem .6rem;
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.details {
+  min-height: 32px;
+  padding: .25rem .6rem;
+  color: var(--color-text-primary);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-strong);
+  border-radius: 4px;
+  font: inherit;
+  font-size: .78rem;
+  cursor: pointer;
+}
+
+.details:hover { background: var(--color-border-subtle); }
+.details:focus-visible { outline: 2px solid var(--color-info); outline-offset: 2px; }

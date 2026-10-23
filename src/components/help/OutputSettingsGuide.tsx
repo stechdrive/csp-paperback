@@ -21,15 +21,15 @@ export function OutputSettingsGuide() {
     <>
       <HelpFigure
         src="export-settings.png"
-        alt="中央下部のボタンから開いた書き出し設定パネル"
-        caption="赤枠の書き出し設定を変更すると、出力例と出力プレビューへ反映されます。"
+        alt="アプリ上部のボタンから開いた書き出し設定パネル"
+        caption="赤枠の書き出し設定を変更すると、出力例と書き出し画像へ反映されます。"
         highlights={[HELP_HIGHLIGHTS.exportSettings]}
       />
 
       <p className={styles.paragraph}>
-        素材を読み込んだあとは、中央下部の「書き出し設定」で設定パネルを開きます。
+        読み込み前も読み込み後も、アプリ上部の「書き出し設定」で設定パネルを開きます。
         設定は画面に重なって表示されるため、開閉してもプレビューやレイヤーの配置は変わりません。
-        閉じている間も、下部の1行で現在の設定を確認できます。
+        工程フォルダの定義やテーマなどは、パネル内の「詳細設定…」から変更できます。
       </p>
 
       <h3 className={styles.subsectionTitle}>画像形式と保存先の構成</h3>

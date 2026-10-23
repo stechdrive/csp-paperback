@@ -7,6 +7,7 @@ import { useOutputNavigation } from '../hooks/useOutputNavigation'
 import type { OutputPreviewEntry } from '../hooks/useOutputPreview'
 import { OutputPreviewImage } from './OutputPreviewImage'
 import { PreviewZoomControls } from './PreviewZoomControls'
+import { OutputPreviewFiles } from './OutputPreviewFiles'
 import { isTouchCompatibilityClick, switchOutputViewByTouch } from '../utils/output-view'
 import styles from './OutputPreview.module.css'
 
@@ -127,45 +128,48 @@ export function OutputPreview({ entries, zoomPan }: OutputPreviewProps) {
   const hasNoEntries = !isEmpty && entries.length === 0
 
   return (
-    <div className={styles.outputWrapper}>
-      <div
-        ref={containerRef as React.RefCallback<HTMLDivElement>}
-        className={styles.zoomPanOuter}
-        style={entries.length > 0 ? containerStyle : undefined}
-        onDoubleClick={() => { if (!isTouchCompatibilityClick()) useAppStore.getState().setOutputViewMode('tiles') }}
-        tabIndex={0}
-        aria-label="１点表示の画像"
-        onKeyDown={event => { if (event.key === 'Enter' && event.target === event.currentTarget) useAppStore.getState().setOutputViewMode('tiles') }}
-        onTouchStart={event => { touchStart.current = event.touches.length === 1 ? { x: event.touches[0].clientX, y: event.touches[0].clientY, time: performance.now() } : null }}
-        onTouchMove={event => {
-          const start = touchStart.current
-          if (event.touches.length !== 1 || (start && Math.hypot(event.touches[0].clientX - start.x, event.touches[0].clientY - start.y) > 8)) touchStart.current = null
-        }}
-        onTouchEnd={() => {
-          const now = performance.now()
-          if (touchStart.current && now - touchStart.current.time < 250) {
-            if (now - lastTap.current < 350) switchOutputViewByTouch('tiles')
-            lastTap.current = now
-          }
-          touchStart.current = null
-        }}
-      >
-        {isEmpty && (
-          <div className={styles.empty}>
-            表示する出力がありません
-          </div>
-        )}
-        {hasNoEntries && (
-          <div className={styles.empty}>
-            {activeLabel && <><strong>{activeLabel}</strong><br /></>}
-            {error ?? (file ? '合成中…' : '現在の表示・書き出し設定では出力されません。レイヤーの表示状態・工程チェック、または素材の削除を確認してください。')}
-          </div>
-        )}
-        {entries.length > 0 && file && <OutputPreviewImage entry={entries[0]} file={file} transparent={transparent}
-          camera={zoomPan.camera} pixelRatio={zoomPan.pixelRatio} />}
+    <div className={styles.singleView}>
+      <div className={styles.outputWrapper}>
+        <div
+          ref={containerRef as React.RefCallback<HTMLDivElement>}
+          className={styles.zoomPanOuter}
+          style={entries.length > 0 ? containerStyle : undefined}
+          onDoubleClick={() => { if (!isTouchCompatibilityClick()) useAppStore.getState().setOutputViewMode('tiles') }}
+          tabIndex={0}
+          aria-label="１点表示の画像"
+          onKeyDown={event => { if (event.key === 'Enter' && event.target === event.currentTarget) useAppStore.getState().setOutputViewMode('tiles') }}
+          onTouchStart={event => { touchStart.current = event.touches.length === 1 ? { x: event.touches[0].clientX, y: event.touches[0].clientY, time: performance.now() } : null }}
+          onTouchMove={event => {
+            const start = touchStart.current
+            if (event.touches.length !== 1 || (start && Math.hypot(event.touches[0].clientX - start.x, event.touches[0].clientY - start.y) > 8)) touchStart.current = null
+          }}
+          onTouchEnd={() => {
+            const now = performance.now()
+            if (touchStart.current && now - touchStart.current.time < 250) {
+              if (now - lastTap.current < 350) switchOutputViewByTouch('tiles')
+              lastTap.current = now
+            }
+            touchStart.current = null
+          }}
+        >
+          {isEmpty && (
+            <div className={styles.empty}>
+              表示する出力がありません
+            </div>
+          )}
+          {hasNoEntries && (
+            <div className={styles.empty}>
+              {activeLabel && <><strong>{activeLabel}</strong><br /></>}
+              {error ?? (file ? '合成中…' : '現在の表示・書き出し設定では出力されません。レイヤーの表示状態・工程チェック、または素材の削除を確認してください。')}
+            </div>
+          )}
+          {entries.length > 0 && file && <OutputPreviewImage entry={entries[0]} file={file} transparent={transparent}
+            camera={zoomPan.camera} pixelRatio={zoomPan.pixelRatio} />}
+        </div>
+        {entries.length > 0 && <PreviewZoomControls {...zoomPan} />}
+        <LayerSeekBar />
       </div>
-      {entries.length > 0 && <PreviewZoomControls {...zoomPan} />}
-      <LayerSeekBar />
+      {entries.length > 0 && <OutputPreviewFiles entries={entries} structure={outputConfig.structure} />}
     </div>
   )
 }

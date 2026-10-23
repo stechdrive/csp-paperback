@@ -45,7 +45,7 @@ for (const device of [
         name: 'c001.clip', mimeType: 'application/octet-stream', buffer: await clipPreviewFixture(),
       })
       await expectLoadedFile(page, 'c001.clip')
-      await page.getByRole('button', { name: '全体プレビュー', exact: true }).click()
+      await page.getByRole('button', { name: 'キャンバス', exact: true }).click()
       await page.getByRole('button', { name: '書き出し設定', exact: true }).click()
       const sharedCut = page.getByRole('switch', { name: '兼用カット', exact: true })
       await expect(sharedCut).toBeChecked()
@@ -95,18 +95,19 @@ for (const device of [
       await popup.getByRole('button', { name: '再現状況を閉じる' }).click()
       await expect(trigger).toBeFocused()
       await trigger.click()
-      if (device.width < 500) {
+      // On touch layouts the toolbar popover can cover the preview-mode buttons.
+      if (device.touch) {
         const whole = page.getByTestId('navigator-view')
         await whole.tap({ position: { x: 10, y: (await whole.boundingBox())!.height - 60 } })
         await expect(popup).toHaveCount(0)
       }
-      const heading = page.getByRole('button', { name: '出力プレビュー', exact: true })
+      const heading = page.getByRole('button', { name: '書き出し画像', exact: true })
       if (device.touch) await heading.tap()
       else await heading.click()
       await expect(popup).toHaveCount(0)
 
       // The selector uses the parsed CLIP timelines, including their distinct durations.
-      await page.getByRole('button', { name: '全体プレビュー', exact: true }).click()
+      await page.getByRole('button', { name: 'キャンバス', exact: true }).click()
       const timelineBounds = await previewBounds(page)
       expect(timelineBounds.navigator!.height).toBeGreaterThan(50)
       // The navigator is also mounted in the hidden mobile layer panel.
@@ -123,7 +124,7 @@ for (const device of [
       await expect(seekLabel).toHaveText('0秒1コマ')
       await seekTrack.click({ position: { x: seekBounds.width - 1, y: seekBounds.height / 2 } })
       await expect(seekLabel).toHaveText('0秒12コマ')
-      // Compare the same populated frame; an empty frame has no output filename chips.
+      // Compare the same populated frame after switching timelines.
       await seekTrack.click({ position: { x: 1, y: seekBounds.height / 2 } })
       await expect(seekLabel).toHaveText('0秒1コマ')
       expect(await previewBounds(page)).toEqual(timelineBounds)

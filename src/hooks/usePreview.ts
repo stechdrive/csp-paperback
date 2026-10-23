@@ -69,7 +69,7 @@ export function usePreview(canvasRef: React.RefObject<HTMLCanvasElement | null>,
     } catch (error) {
       if (current !== generation.current) return
       canvas.width = 1; canvas.height = 1
-      setError(error instanceof Error ? error.message : '全体プレビューを描画できませんでした')
+      setError(error instanceof Error ? error.message : 'キャンバスを描画できませんでした')
     }
   }, [canvasRef, layerTree, docWidth, docHeight, selectedCells, enabled])
 

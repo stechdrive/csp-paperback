@@ -78,7 +78,7 @@ try {
   }
 
   await page.goto(`http://127.0.0.1:${port}/csp-paperback/`)
-  await capture('startup-guide.png', { startupSettings: await bounds(page.getByTestId('startup-export-settings')) })
+  await capture('startup-guide.png', { startupSettings: await bounds(page.getByRole('button', { name: '書き出し設定', exact: true })) })
   await page.getByRole('button', { name: 'サンプルデータで試す', exact: true }).click()
   await expect(page.getByTestId('tiled-preview')).toHaveAttribute('aria-busy', 'false', { timeout: 30000 })
   await expect(page.getByRole('listbox', { name: '出力ファイル' })).toHaveAttribute('aria-busy', 'false')
@@ -98,11 +98,11 @@ try {
     output: await bounds(page.getByTestId('output-view')),
   })
 
-  await page.getByRole('button', { name: '全体プレビュー', exact: true }).click()
+  await page.getByRole('button', { name: 'キャンバス', exact: true }).click()
   await expect.poll(() => page.getByTestId('navigator-view').locator('canvas').first()
     .evaluate(canvas => canvas.width)).toBeGreaterThan(1)
   await capture('whole-preview.png', { navigator: await bounds(page.getByTestId('navigator-view')) })
-  await page.getByRole('button', { name: '出力プレビュー', exact: true }).click()
+  await page.getByRole('button', { name: '書き出し画像', exact: true }).click()
 
   await page.getByRole('button', { name: '書き出し設定', exact: true }).click()
   const exportSettings = await bounds(page.getByRole('dialog', { name: '書き出し設定', exact: true }))
@@ -121,7 +121,8 @@ try {
   await capture('output-menu.png', { outputMenu }, cropTo(outputMenu))
   await page.keyboard.press('Escape')
 
-  await page.getByRole('button', { name: '設定', exact: true }).click()
+  await page.getByRole('button', { name: '書き出し設定', exact: true }).click()
+  await page.getByRole('button', { name: '詳細設定…', exact: true }).click()
   const settings = page.locator('[class*="_dialog_"]').filter({ has: page.getByText('書き出し詳細設定', { exact: true }) })
   const settingsDialog = await bounds(settings)
   await capture('settings-dialog.png', {

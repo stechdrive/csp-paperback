@@ -1,3 +1,11 @@
+.singleView {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+
 /* ズーム/パンの外側コンテナ：outputSection を埋め尽くす */
 .zoomPanOuter {
   flex: 1;

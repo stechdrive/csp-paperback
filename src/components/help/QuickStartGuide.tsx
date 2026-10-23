@@ -94,8 +94,8 @@ export function QuickStartGuide({
           figure={full ? (
             <HelpFigure
               src="startup-guide.png"
-              alt="起動直後の中央ペイン上部にある書き出し設定"
-              caption="赤枠が中央ペイン上部の書き出し設定です。ここで選んだ内容は次回起動とデスクトップ版の自動書き出しにも引き継がれます。"
+              alt="起動直後のアプリ上部にある書き出し設定ボタン"
+              caption="赤枠の「書き出し設定」を開いて設定します。選んだ内容は次回起動とデスクトップ版の自動書き出しにも引き継がれます。"
               highlights={[HELP_HIGHLIGHTS.startupSettings]}
             />
           ) : undefined}
@@ -117,19 +117,19 @@ export function QuickStartGuide({
 
         <Step
           number={4}
-          title="出力プレビューを確認する"
+          title="書き出し画像を確認する"
           figure={full ? (
             <HelpFigure
               src="loaded-overview.png"
-              alt="サンプルを読み込んだCSP Paperbackの出力プレビュー画面"
-              caption="読込後の画面。赤枠の出力プレビューで、出力名と合成結果を確認できます。"
+              alt="サンプルを読み込んだCSP Paperbackの書き出し画像画面"
+              caption="読込後の画面。赤枠の書き出し画像で、出力名と合成結果を確認できます。"
               highlights={[HELP_HIGHLIGHTS.output]}
             />
           ) : undefined}
         >
           右の出力一覧で画像を選び、中央の画像とファイル名を確認します。隣の素材ツリーには、合成に使う要素が示されます。
           通常のセル出力だけなら、仮想セルを開いたり、個別書き出しやアニメーションフォルダの手動指定を操作したりする必要はありません。
-          読み込み後の設定変更は、中央下部の「書き出し設定」から行えます。
+          読み込み後の設定変更は、アプリ上部の「書き出し設定」から行えます。
         </Step>
 
         <Step

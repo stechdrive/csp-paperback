@@ -47,38 +47,14 @@
   background: var(--color-surface-1);
 }
 
-.iconButton {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.75rem;
-  height: 1.75rem;
-  flex-shrink: 0;
-  padding: 0;
-  border: 1px solid transparent;
-  border-radius: 3px;
-  color: var(--color-text-secondary);
-  background: transparent;
-  cursor: pointer;
-}
-
-.iconButton:hover {
-  background: var(--color-border-subtle);
-  color: var(--color-text-primary);
-}
-
-.iconButton:focus-visible, .settingsToggle:focus-visible {
-  outline: 2px solid var(--color-info);
-  outline-offset: -2px;
-}
-
 .fileNames {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: .3rem;
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   min-width: 0;
-  height: 100%;
+  padding: 2px .5rem 4px;
 }
 
 .fileNameButton {
@@ -127,64 +103,7 @@
   flex-direction: column;
 }
 
-.settingsFooter {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: .5rem;
-  height: max(2rem, 30px);
-  padding: 0 .5rem;
-  background: var(--color-surface-1);
-  border-top: 1px solid var(--color-border-subtle);
-}
-
-.settingsToggle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: .25rem;
-  margin-left: auto;
-  white-space: nowrap;
-  flex-shrink: 0;
-  font-size: .72rem;
-  line-height: 1;
-  height: 1.5rem;
-  min-height: 24px;
-  padding: 0 .4rem;
-  background: var(--color-surface-2);
-  color: var(--color-text-primary);
-  border: 1px solid var(--color-border-strong);
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.settingsPopup {
-  position: fixed;
-  z-index: 170;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  background: var(--color-surface-1);
-  border: 1px solid var(--color-border-strong);
-  border-radius: 6px;
-  box-shadow: 0 8px 30px #0006;
-}
-
-.settingsHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: .35rem .6rem;
-  flex-shrink: 0;
-  font-size: .8rem;
-  border-bottom: 1px solid var(--color-border-subtle);
-}
-
-.settingsContent {
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
+.outputWarning { position: absolute; top: 8px; left: 8px; }
 
 .emptyWrapper {
   flex: 1;
@@ -196,30 +115,6 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 1.5rem 1rem;
-}
-
-.startupSettings {
-  flex: 0 1 auto;
-  min-height: 0;
-  max-height: min(52%, 20rem);
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  background: var(--color-surface-1);
-  border-bottom: 1px solid var(--color-border-strong);
-}
-
-.startupSettingsHeader {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  padding: .55rem .75rem .4rem;
-  background: var(--color-surface-1);
-}
-
-.startupSettingsTitle {
-  color: var(--color-text-primary);
-  font-size: .78rem;
-  font-weight: 700;
 }
 
 .empty {
@@ -364,8 +259,7 @@
     height: 1.25rem;
   }
   .seekTrack::before { inset: -12px 0; }
-  .settingsFooter { height: 2.5rem; }
-  .settingsToggle, .fileNameButton { height: 2rem; }
+  .fileNameButton { height: 2rem; }
 }
 
 .previewToolbar {
@@ -381,7 +275,9 @@
   border-radius: 4px;
   background: transparent;
   color: var(--color-text-muted);
-  padding: .2rem .85rem;
+  padding: .2rem .5rem;
+  min-height: 28px;
+  white-space: nowrap;
   font: inherit;
   font-size: .75rem;
   cursor: pointer;
@@ -391,6 +287,8 @@
   color: var(--color-text-primary);
 }
 .previewToolbar button:focus-visible { outline: 2px solid var(--color-accent); }
+.previewToolbar .viewModeButton { display: inline-flex; align-items: center; justify-content: center; width: 28px; flex-shrink: 0; padding: 4px; }
+.viewModeButton svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.5; }
 .outputMenuTarget { display: flex; margin-left: auto; }
 .outputMenuTarget button { display: flex; align-items: center; justify-content: center; padding: 0; width: 26px; height: 26px; }
 .toolbarDivider { height: 16px; width: 1px; background: var(--color-border-subtle); margin: 0 4px; }

@@ -16,7 +16,7 @@ async function load(page: Page, count: number, folder = 'A') {
   await page.locator('input[type=file][multiple]').setInputFiles(manyOutputs(count, folder))
   await expect(page.getByText(`${count}件`, { exact: true })).toBeVisible()
   await page.getByRole('button', { name: '出力ファイル名を検索', exact: true }).click()
-  await page.getByRole('button', { name: '出力プレビュー', exact: true }).click()
+  await page.getByRole('button', { name: '書き出し画像', exact: true }).click()
 }
 
 async function expectActiveVisible(page: Page) {

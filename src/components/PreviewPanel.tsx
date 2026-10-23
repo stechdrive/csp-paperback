@@ -8,12 +8,11 @@ import { useOutputPreview } from '../hooks/useOutputPreview'
 import { useZoomPan } from '../hooks/useZoomPan'
 import { showOutputView } from '../utils/output-view'
 import { OutputPreview } from './OutputPreview'
-import { ExportSettings } from './ExportSettings'
-import { ExportSettingsPopover } from './ExportSettingsPopover'
 import { NavigatorCanvas } from './NavigatorPanel'
 import { TimelineSeekBar } from './TimelineSeekBar'
 import { ClipTimelineSelect } from './ClipPreviewControls'
-import { OutputPreviewFiles } from './OutputPreviewFiles'
+import { DiagnosticWarning } from './DiagnosticWarning'
+import { Tooltip } from './Tooltip'
 import { useSampleLoader } from '../hooks/useSampleLoader'
 import { QuickStartGuide } from './help/QuickStartGuide'
 import { DESKTOP_RELEASES_URL } from '../platform/external-links'
@@ -33,13 +32,6 @@ function SampleLoadButton() {
   </div>
 }
 
-function StartupExportSettings() {
-  return <section className={styles.startupSettings} aria-labelledby="startup-settings-title" data-testid="startup-export-settings">
-    <div className={styles.startupSettingsHeader}><div id="startup-settings-title" className={styles.startupSettingsTitle}>書き出し設定</div></div>
-    <ExportSettings configTarget="saved" />
-  </section>
-}
-
 export function PreviewPanel({ mode = 'output', onModeChange, active = true }: { mode?: PreviewMode; onModeChange?: (mode: PreviewMode) => void; active?: boolean }) {
   const clipFileName = useAppStore(s => s.clipFileName)
   const docWidth = useAppStore(s => s.docWidth)
@@ -48,17 +40,13 @@ export function PreviewPanel({ mode = 'output', onModeChange, active = true }: {
   const timelineData = useAppStore(s => s.timelineData)
   const xdtsFileName = useAppStore(s => s.xdtsFileName)
   const focusedAnimFolderId = useAppStore(s => s.focusedAnimFolderId)
-  const structure = useAppStore(s => s.outputConfig.structure)
   const tiled = useAppStore(s => s.outputViewMode === 'tiles')
   const entries = useOutputPreview(active && mode === 'output' && !tiled)
   const files = useVisibleOutputs()
   const activeId = useAppStore(s => s.activeOutputId)
   const selected = useMemo(() => files.filter(file => file.outputId === activeId), [files, activeId])
   const checks = useRenderedOutputs(selected, 'check', active && mode === 'output' && tiled)
-  const footerEntries = tiled ? selected.map((file, index) => ({
-    flatName: file.names.flatName, path: file.names.path, outputId: file.outputId,
-    diagnostics: checks[index]?.image?.diagnostics,
-  })) : entries
+  const selectedCheck = checks[0]
   const boardView = useRef<BoardView | null>(null)
   const [outputMenuTarget, setOutputMenuTarget] = useState<HTMLDivElement | null>(null)
   const setView = (view: 'tiles' | 'single') => {
@@ -67,7 +55,6 @@ export function PreviewPanel({ mode = 'output', onModeChange, active = true }: {
   const outputZoomPan = useZoomPan({ width: docWidth, height: docHeight }, document)
   if (docWidth === 0) {
     return <div className={styles.panel}>
-      <StartupExportSettings />
       <div className={styles.emptyWrapper} data-testid="startup-guide-scroll"><div className={styles.empty}>
         {xdtsFileName && <div className={styles.xdtsBanner}><span>✓</span><span>タイムシート（{xdtsFileName}）読み込み済み</span></div>}
         <QuickStartGuide variant="startup" timelineOnlyLoaded={!!xdtsFileName} sampleAction={<SampleLoadButton />} />
@@ -76,11 +63,13 @@ export function PreviewPanel({ mode = 'output', onModeChange, active = true }: {
   }
   return <div className={styles.panel} data-testid="main-preview" data-preview-mode={mode}>
     <div className={styles.previewToolbar} role="group" aria-label="メインプレビューの表示">
-      <button type="button" aria-label="全体プレビュー" aria-pressed={mode === 'navigator'} onClick={() => onModeChange?.('navigator')}>全体</button>
-      <button type="button" aria-label="出力プレビュー" aria-pressed={mode === 'output'} onClick={() => onModeChange?.('output')}>出力</button>
-      <span className={styles.toolbarDivider} />
-      <button type="button" aria-label="タイル表示" aria-pressed={mode === 'output' && tiled} onClick={() => setView('tiles')}>▦ タイル</button>
-      <button type="button" aria-label="１点表示" aria-pressed={mode === 'output' && !tiled} onClick={() => setView('single')}>▣ １点</button>
+      <Tooltip content="現在のフレームのセルの重なりと、レイヤーの表示状態を確認" placement="bottom"><button type="button" aria-pressed={mode === 'navigator'} onClick={() => onModeChange?.('navigator')}>キャンバス</button></Tooltip>
+      <Tooltip content="書き出し設定を反映した、各画像の仕上がりを確認" placement="bottom"><button type="button" aria-pressed={mode === 'output'} onClick={() => onModeChange?.('output')}>書き出し画像</button></Tooltip>
+      {mode === 'output' && <>
+        <span className={styles.toolbarDivider} />
+        <Tooltip content="タイル表示" placement="bottom"><button type="button" className={styles.viewModeButton} aria-label="タイル表示" aria-pressed={tiled} onClick={() => setView('tiles')}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h7v7H3Zm11 0h7v7h-7ZM3 14h7v7H3Zm11 0h7v7h-7Z" /></svg></button></Tooltip>
+        <Tooltip content="１点表示" placement="bottom"><button type="button" className={styles.viewModeButton} aria-label="１点表示" aria-pressed={!tiled} onClick={() => setView('single')}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h18v18H3Z" /></svg></button></Tooltip>
+      </>}
       <div className={styles.outputMenuTarget} ref={setOutputMenuTarget} />
     </div>
     {!timelineData && !clipFileName && <div className={styles.noXdtsBanner}>対応するCLIPを追加すると、アニメーションフォルダとタイムラインを読み込めます。</div>}
@@ -88,6 +77,9 @@ export function PreviewPanel({ mode = 'output', onModeChange, active = true }: {
       <div className={styles.outputSection}>
         {tiled ? active && mode === 'output' && <TiledOutputPreview view={boardView} menuTarget={outputMenuTarget} /> :
           <OutputPreview entries={entries} focusedAnimFolderId={focusedAnimFolderId} zoomPan={outputZoomPan} />}
+        {tiled && mode === 'output' && (selectedCheck?.error || !!selectedCheck?.image?.diagnostics?.length) && <div className={styles.outputWarning} data-testid="preview-warning">
+          <DiagnosticWarning issues={selectedCheck.image?.diagnostics} error={selectedCheck.error} />
+        </div>}
       </div>
     </div>
     <div className={styles.view} hidden={mode !== 'navigator'} data-testid="navigator-view">
@@ -95,8 +87,5 @@ export function PreviewPanel({ mode = 'output', onModeChange, active = true }: {
       <NavigatorCanvas enabled={active && mode === 'navigator'} />
       <TimelineSeekBar />
     </div>
-    <ExportSettingsPopover>
-      {mode === 'output' && footerEntries.length > 0 && <OutputPreviewFiles entries={footerEntries} structure={structure} />}
-    </ExportSettingsPopover>
   </div>
 }

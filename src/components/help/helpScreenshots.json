@@ -2,20 +2,20 @@
   "startup-guide.png": {
     "width": 1440,
     "height": 1000,
-    "sha256": "6890a9449eca8bfc463f0b6a2421155db46dbe2c1468212fd2140e25e4c4f393",
+    "sha256": "6f6dcdf44367a9729a3531adc9f503ec6b17915dbbf50690c9f8bea2a0df34d3",
     "regions": {
       "startupSettings": {
-        "x": 0,
-        "y": 4.4,
-        "width": 63.61,
-        "height": 25.04
+        "x": 86.31,
+        "y": 0.55,
+        "width": 7.54,
+        "height": 3.2
       }
     }
   },
   "loaded-overview.png": {
     "width": 1440,
     "height": 1000,
-    "sha256": "805be28d1c7fddfd318c085c82ea4911e8e8d849c2cc7cf7ebcd909f1e756a95",
+    "sha256": "5895d8c2a959beca741a116288d3fffbefb51de7992f152cf51899b154c94089",
     "regions": {
       "virtualCels": {
         "x": 0,
@@ -37,42 +37,42 @@
       },
       "output": {
         "x": 16.94,
-        "y": 7.9,
+        "y": 8.1,
         "width": 46.67,
-        "height": 88.9
+        "height": 91.9
       }
     }
   },
   "whole-preview.png": {
     "width": 1440,
     "height": 1000,
-    "sha256": "bb67ac7c477fb45e20aa27972d3d3f5907d31f8f6e06febd22336a06c9e53783",
+    "sha256": "1191922a224587778c069c71a44a473b73ee4ccd24b6744168b23e08746a3987",
     "regions": {
       "navigator": {
         "x": 16.94,
-        "y": 7.74,
+        "y": 8.1,
         "width": 46.67,
-        "height": 89.06
+        "height": 91.9
       }
     }
   },
   "export-settings.png": {
-    "width": 732,
-    "height": 269,
-    "sha256": "481e46b5eaa4a19b81157be19d1625aa5b14bc49e1ca510f1c5abee228fa2900",
+    "width": 733,
+    "height": 313,
+    "sha256": "fd448d238c28376f6f82c89938c1868fb0f2efddbb81ad64b06e92b01fd99bd5",
     "regions": {
       "exportSettings": {
-        "x": 2.19,
-        "y": 6.28,
-        "width": 95.63,
-        "height": 87.58
+        "x": 2.25,
+        "y": 5.27,
+        "width": 95.5,
+        "height": 89.39
       }
     }
   },
   "output-menu.png": {
     "width": 184,
     "height": 142,
-    "sha256": "5b165d7a5982985c769358e354d82a34ba1c019a3ac9b856db127ce26ad72b9e",
+    "sha256": "238b0e7180826f36d7219575de34b71f8e522fd9f57fdcf0d1782c09dc07f548",
     "regions": {
       "outputMenu": {
         "x": 8.7,
@@ -85,7 +85,7 @@
   "settings-dialog.png": {
     "width": 912,
     "height": 882,
-    "sha256": "db1f0a33f113ed2d9e14b6eb9a3898e99dc603390fd358a21d68dbbab8712efc",
+    "sha256": "93b2d517778fa932747a2c5d82fbba7064a2911265f2aa4052b284ebbd4a58fb",
     "regions": {
       "settingsDialog": {
         "x": 1.75,

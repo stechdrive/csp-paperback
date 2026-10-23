@@ -61,11 +61,14 @@
 }
 
 .historyButtons,
-.utilityButtons {
+.utilityButtons,
+.exportActions {
   display: flex;
   gap: 2px;
   flex-shrink: 0;
 }
+
+.exportActions { align-items: center; gap: 4px; margin-left: auto; }
 
 .historyButtons {
   margin-right: 4px;
@@ -351,7 +354,7 @@
 
 @media (max-width: 420px) {
   .openButton { display: none; }
-  .toolbar { gap: 3px; }
+  .toolbar { gap: 3px; height: auto; min-height: 44px; flex-wrap: wrap; }
   .statusArea { margin: 0; }
   .viewButton { padding: 0 6px; }
 }

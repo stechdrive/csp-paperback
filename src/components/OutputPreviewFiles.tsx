@@ -6,6 +6,7 @@ import type { OutputPreviewEntry } from '../hooks/useOutputPreview'
 import { RenderWarning } from './RenderWarning'
 import { DiagnosticWarning } from './DiagnosticWarning'
 import styles from './PreviewPanel.module.css'
+import popupStyles from './Popover.module.css'
 
 function positionFor(button: HTMLButtonElement) {
   const rect = button.getBoundingClientRect()
@@ -18,7 +19,7 @@ function positionFor(button: HTMLButtonElement) {
   }
 }
 
-/** Keep names outside the canvas layout, including multi-output cells and long paths. */
+/** A compact caption for the single-image view, with access to the full path. */
 export function OutputPreviewFiles({ entries, structure }: { entries: Omit<OutputPreviewEntry, 'canvas'>[]; structure: 'flat' | 'hierarchy' }) {
   const id = useId()
   const trigger = useRef<HTMLButtonElement>(null)
@@ -46,7 +47,7 @@ export function OutputPreviewFiles({ entries, structure }: { entries: Omit<Outpu
   const vector = entries.some(entry => entry.vectorWarning)
   const unsupported3D = entries.some(entry => entry.unsupported3D)
   return <div className={styles.fileNames} data-testid="preview-files">
-    <Tooltip content={names.join('\n')}><button data-tooltip={names.join('\n')} ref={trigger} type="button" className={styles.fileNameButton}
+    <Tooltip content={names.join('\n')} disabled={open}><button data-tooltip={names.join('\n')} ref={trigger} type="button" className={styles.fileNameButton}
       aria-label={`プレビュー中のファイル名（${entries.length}件）`} aria-expanded={open} aria-haspopup="dialog" aria-controls={open ? id : undefined}
       onClick={() => setPosition(open || !trigger.current ? null : positionFor(trigger.current))}>
       <span className={styles.fileNameText} data-testid="preview-file-name">{names[0]}</span>
@@ -54,10 +55,10 @@ export function OutputPreviewFiles({ entries, structure }: { entries: Omit<Outpu
     </button></Tooltip>
     {entries.some(entry => entry.diagnostics) ? <DiagnosticWarning issues={entries.flatMap(entry => entry.diagnostics ?? [])} />
       : (vector || unsupported3D) && <RenderWarning vector={vector} unsupported3D={unsupported3D} sourceIds={entries.flatMap(entry => [...(entry.sources?.all ?? [])])} />}
-    {position && createPortal(<div ref={popup} id={id} role="dialog" aria-label="プレビュー中のファイル名" className={styles.settingsPopup} style={position}>
-      <div className={styles.settingsHeader}>
+    {position && createPortal(<div ref={popup} id={id} role="dialog" aria-label="プレビュー中のファイル名" className={popupStyles.popup} style={position}>
+      <div className={popupStyles.header}>
         <strong>プレビュー中のファイル · {entries.length}件</strong>
-        <button ref={close} type="button" className={styles.iconButton} aria-label="ファイル名を閉じる" onClick={() => { setPosition(null); trigger.current?.focus() }}>✕</button>
+        <button ref={close} type="button" className={popupStyles.close} aria-label="ファイル名を閉じる" onClick={() => { setPosition(null); trigger.current?.focus() }}>✕</button>
       </div>
       <ol className={styles.previewFileList}>
         {entries.map((entry, index) => <li key={index}>

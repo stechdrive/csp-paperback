@@ -15,7 +15,8 @@ test.beforeEach(async ({ page }) => {
   })
   await page.goto('./')
   await page.getByRole('button', { name: 'サンプルデータで試す', exact: true }).click()
-  await page.getByRole('button', { name: '出力プレビュー', exact: true }).click()
+  await page.getByRole('button', { name: '書き出し画像', exact: true }).click()
+  await page.getByRole('button', { name: '１点表示', exact: true }).click()
   await expect(preview(page)).toHaveText('仮想セルテスト.jpg')
 })
 
