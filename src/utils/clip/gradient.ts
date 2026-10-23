@@ -34,7 +34,7 @@ export function readGradientKind(bytes: Uint8Array): 'fill' | 'gradient' | undef
 export function readGradient(bytes: Uint8Array, width: number, height: number, offsetX: number, offsetY: number, report: (message: string) => void): ClipPixels {
   const r = new Reader(bytes)
   r.take(8)
-  let stops: Stop[] | undefined, geometry: number[] | undefined, flat: number[] | undefined
+  let stops: Stop[] | undefined, geometry: number[] | undefined, flat: number[] | undefined, colorData: Uint8Array | undefined
   let approximate = false
   while (r.position < bytes.length) {
     const name = r.wideName()
@@ -43,21 +43,27 @@ export function readGradient(bytes: Uint8Array, width: number, height: number, o
     } else {
       const part = new Reader(r.take(r.u32()))
       if (name === 'GradationData') {
-        part.take(8)
-        const count = part.u32(); part.u32()
-        check(count > 0 && count <= 1024, 'グラデーションの色数が範囲外です')
-        stops = Array.from({ length: count }, () => {
-          const rgba = Array.from({ length: 4 }, () => part.u32() >>> 24)
-          const currentColor = part.u32(), position = part.u32() / 32768, curves = part.u32()
-          check(curves <= 1024, 'グラデーションの曲線が多すぎます')
-          part.take(curves * 16)
-          approximate ||= curves > 0 || currentColor !== 0
-          return { position, rgba }
-        }).sort((a, b) => a.position - b.position)
+        colorData = part.bytes
       } else if (name === 'GradationSettingAdd0001' && part.u32()) {
         flat = [...Array.from({ length: 3 }, () => part.u32() >>> 24), 255]
       }
     }
+  }
+  // Flat fills can retain an unused gradient in a different format. Only their
+  // flat color contributes to the image; do not decode the inactive stop list.
+  if (!flat && colorData) {
+    const part = new Reader(colorData)
+    part.take(8)
+    const count = part.u32(); part.u32()
+    check(count > 0 && count <= 1024, 'グラデーションの色数が範囲外です')
+    stops = Array.from({ length: count }, () => {
+      const rgba = Array.from({ length: 4 }, () => part.u32() >>> 24)
+      const currentColor = part.u32(), position = part.u32() / 32768, curves = part.u32()
+      check(curves <= 1024, 'グラデーションの曲線が多すぎます')
+      part.take(curves * 16)
+      approximate ||= curves > 0 || currentColor !== 0
+      return { position, rgba }
+    }).sort((a, b) => a.position - b.position)
   }
   check(flat || (stops?.length && geometry), 'グラデーションの色・配置情報がありません')
   check(width * height <= 64 * 1024 * 1024, '画像1枚のサイズが上限を超えました')

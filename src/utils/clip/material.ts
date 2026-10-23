@@ -5,7 +5,7 @@ import { num, str, errorMessage, type ClipRow } from './records'
 import type { ClipDiagnostic, ClipLayer, ClipPixels } from './types'
 import type { MaterialEffects, MaterialQuad } from '../../types/rendering'
 import { readGradient } from './gradient'
-import { isPaper } from './layer-metadata'
+import { hasLayerMask, isPaper } from './layer-metadata'
 import { readAdjustment } from './adjustment'
 import { readVectorStrokes, renderVectors, type BrushPattern, type VectorBrushes } from './vector'
 import { layerRenderingDiagnostics } from './rendering-status'
@@ -159,6 +159,7 @@ export function createMaterialDecoder(t: MaterialTables, width: number, height: 
   }
   return async (layer: ClipLayer, row: ClipRow) => {
     const failures: string[] = []
+    const useOriginal = !!num(row, 'TimeLineLayerKeyFrameEnabled') || num(row, 'TimeLineOriginalMipmap') > 0 || num(row, 'TimeLineOriginalMaskMipmap') > 0
     const report = (message: string, part: ClipDiagnostic['part'] = 'material', outcome: ClipDiagnostic['outcome'] = 'approximate') =>
       diagnostics.push({ scope: 'raster', part, outcome, layerId: layer.id, message: `「${layer.name}」: ${message}` })
     const failed = (error: unknown) => {
@@ -174,20 +175,31 @@ export function createMaterialDecoder(t: MaterialTables, width: number, height: 
         layer.adjustment = readAdjustment(row.FilterLayerInfo)
         layer.materialSource = 'adjustment'
       } catch (e) { report(errorMessage(e), 'material', 'missing-content') }
+    } else if (!layer.isFolder && isPaper(row) && num(row, 'DrawColorEnable')) {
+      // Paper's Offscreen InitColor can be black even when its actual fill is white.
+      if (decodedBytes + width * height * 4 > 384 * 1024 * 1024) throw new ImageResourceError('用紙素材の展開に必要なメモリが上限を超えました')
+      const rgba = new Uint8ClampedArray(width * height * 4)
+      const color = [...['Red', 'Green', 'Blue'].map(c => num(row, `DrawColorMain${c}`) >>> 24), 255]
+      decodedBytes += rgba.length
+      for (let i = 0; i < rgba.length; i += 4) rgba.set(color, i)
+      layer.pixels = { width, height, left: 0, top: 0, rgba }; layer.materialSource = 'fill'
     } else if (!layer.isFolder) {
       // Original animation material takes precedence over a render of the current shooting frame.
       const candidates = [
         ['TimeLineOriginalMipmap', 'timeline-original'], ['LayerRenderMipmap', 'render'], ['ResizableOriginalMipmap', 'image-original'],
       ] as const
       for (const [field, source] of candidates) {
+        // A missing original must never silently introduce a shooting transform.
+        if (source === 'render' && useOriginal) continue
         try {
           const decoded = await pixels(materialOffscreen(t, row, field), false, source === 'image-original')
           if (!decoded) continue
           if (source === 'render' && layer.kind === 'image-material' && !decoded.rgba.some((value, i) => i % 4 === 3 && value > 0)) continue
-          decoded.left += num(row, 'LayerOffsetX') + (source === 'render' ? num(row, 'LayerRenderOffscrOffsetX') : 0)
-          decoded.top += num(row, 'LayerOffsetY') + (source === 'render' ? num(row, 'LayerRenderOffscrOffsetY') : 0)
+          const offset = source === 'render' ? 'LayerRenderOffscrOffset' : source === 'timeline-original' ? 'TimeLineRenderOriginalOffset' : ''
+          decoded.left += num(row, 'LayerOffsetX') + (offset ? num(row, offset + 'X') : 0)
+          decoded.top += num(row, 'LayerOffsetY') + (offset ? num(row, offset + 'Y') : 0)
           if (source === 'image-original' && row.ResizableImageInfo instanceof Uint8Array) {
-            try { layer.placement = readMaterialQuad(row.ResizableImageInfo) }
+            try { layer.placement = readMaterialQuad(row.ResizableImageInfo).map((v, i) => v + num(row, i % 2 ? 'LayerOffsetY' : 'LayerOffsetX')) as MaterialQuad }
             catch (e) { report(`${errorMessage(e)}。元画像の位置で描画します`, 'placement') }
           }
           layer.pixels = decoded; layer.materialSource = source
@@ -230,6 +242,7 @@ export function createMaterialDecoder(t: MaterialTables, width: number, height: 
           for (const text of texts) {
             const matching = caches.filter(off => {
               if (!(off.Attribute instanceof Uint8Array)) return false
+              if (text.cacheId) return !!text.cache && num(off, 'MainId') === text.cacheId
               try {
                 const a = readAttribute(off.Attribute)
                 return a.width === text.width && a.height >= text.height
@@ -241,7 +254,7 @@ export function createMaterialDecoder(t: MaterialTables, width: number, height: 
             try { image = unique ? await pixels(off) : undefined } catch (error) {
               rethrowImageResourceError(error) // Other cache failures fall back to text metadata.
             }
-            if (image) { image.left += text.left; image.top += text.top; fragments.push(image) }
+            if (image) { image.left += text.cache?.left ?? text.left; image.top += text.cache?.top ?? text.top; fragments.push(image) }
             else unresolved.push(text)
           }
           if (fragments.length === 1) layer.pixels = fragments[0]
@@ -258,29 +271,24 @@ export function createMaterialDecoder(t: MaterialTables, width: number, height: 
           layer.materialSource = 'gradient'
         } catch (e) { failed(e) }
       }
-      if (!layer.pixels && !layer.fragments?.length && !layer.text?.length && isPaper(row) && num(row, 'DrawColorEnable')) {
-        if (decodedBytes + width * height * 4 > 384 * 1024 * 1024) throw new ImageResourceError('用紙素材の展開に必要なメモリが上限を超えました')
-        const rgba = new Uint8ClampedArray(width * height * 4)
-        const rgb = ['Red', 'Green', 'Blue'].map(c => num(row, `DrawColorMain${c}`) >>> 24)
-        decodedBytes += rgba.length
-        for (let i = 0; i < rgba.length; i += 4) rgba.set([...rgb, 255], i)
-        layer.pixels = { width, height, left: 0, top: 0, rgba }; layer.materialSource = 'fill'
-      }
       if (!layer.pixels && !layer.fragments?.length && !layer.text?.length) {
         if (layer.kind === '3d') {
           layer.unsupported3D = true
         }
-        if (failures.length || (layer.kind !== 'vector' && layer.kind !== '3d' && !(num(row, 'LayerType') & 1))) {
+        if (failures.length || (layer.kind !== 'vector' && layer.kind !== '3d' && (useOriginal || !(num(row, 'LayerType') & 1)))) {
           report(failures.join(' / ') || '素材画像を復元できません。このレイヤーの描画は出力に含まれません', 'material', 'missing-content')
         }
       }
     }
-    if (num(row, 'LayerType') & 2) {
+    if (hasLayerMask(row)) {
       try {
-        const mask = await pixels(materialOffscreen(t, row, 'LayerLayerMaskMipmap'), true)
+        const original = num(row, 'TimeLineOriginalMaskMipmap') > 0
+        check(original || !useOriginal, '元素材のマスク画像がありません')
+        const mask = await pixels(materialOffscreen(t, row, original ? 'TimeLineOriginalMaskMipmap' : 'LayerLayerMaskMipmap'), true)
         check(mask, 'マスク画像を復元できません')
-        mask.left += num(row, 'LayerOffsetX') + num(row, 'LayerMaskOffsetX') + num(row, 'LayerMaskOffscrOffsetX')
-        mask.top += num(row, 'LayerOffsetY') + num(row, 'LayerMaskOffsetY') + num(row, 'LayerMaskOffscrOffsetY')
+        const offset = original ? 'TimeLineMaskOriginalOffset' : 'LayerMaskOffscrOffset'
+        mask.left += num(row, 'LayerOffsetX') + num(row, 'LayerMaskOffsetX') + num(row, offset + 'X')
+        mask.top += num(row, 'LayerOffsetY') + num(row, 'LayerMaskOffsetY') + num(row, offset + 'Y')
         mask.disabled = !(num(row, 'LayerVisibility') & 2); layer.mask = mask
       } catch (e) {
         rethrowImageResourceError(e)

@@ -4,7 +4,7 @@ import initSqlJs, { type SqlJsStatic } from 'sql.js'
 import { readPsd } from 'ag-psd'
 import { openClipSession } from '../../utils/clip/parser'
 import { readContainer } from '../../utils/clip/binary'
-import { readLayerKind, readPaletteColor } from '../../utils/clip/layer-metadata'
+import { hasLayerMask, readLayerKind, readPaletteColor } from '../../utils/clip/layer-metadata'
 import { readGradientKind } from '../../utils/clip/gradient'
 import { buildClipLayerTree } from '../../engine/clip-tree'
 import { DEFAULT_PROJECT_SETTINGS, type CspLayer } from '../../types'
@@ -68,5 +68,16 @@ describe('CLIP layer identification before pixel decoding', () => {
     expect(readPaletteColor({ ...fields, LayerPaletteGreen: -1 })).toBeUndefined()
     expect(readPaletteColor({ ...fields, LayerPaletteBlue: null })).toBeUndefined()
     expect(readPaletteColor({ DrawColorEnable: 1, DrawColorMainBlue: 0xffffffff })).toBeUndefined()
+  })
+
+  it('recognizes original raster and mask references after keyframing clears the type bits', () => {
+    expect(readLayerKind({ LayerType: 0, TimeLineOriginalMipmap: 7 })).toBe('raster')
+    expect(readLayerKind({ LayerFolder: 1, TimeLineOriginalMipmap: 7 })).toBe('folder')
+    expect(readLayerKind({ TextLayerString: 'X', TimeLineOriginalMipmap: 7 })).toBe('text')
+    expect(readLayerKind({ Manager3D: 1, TimeLineOriginalMipmap: 7 })).toBe('3d')
+    expect(hasLayerMask({ LayerType: 0, TimeLineOriginalMaskMipmap: 8, LayerVisibility: 1 })).toBe(true)
+    expect(hasLayerMask({ LayerType: 2 })).toBe(true)
+    expect(hasLayerMask({ LayerType: 0, LayerLayerMaskMipmap: 8, TimeLineLayerKeyFrameEnabled: 1 })).toBe(true)
+    expect(hasLayerMask({ LayerType: 0, TimeLineOriginalMaskMipmap: 0 })).toBe(false)
   })
 })

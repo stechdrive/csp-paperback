@@ -3,6 +3,11 @@ import { check, Reader } from './binary'
 import { num, str, type ClipRow } from './records'
 import type { TextObject } from '../../types/rendering'
 
+interface ClipTextObject extends TextObject {
+  cacheId?: number
+  cache?: { left: number; top: number }
+}
+
 function array(row: ClipRow, key: string): Uint8Array[] {
   const result: Uint8Array[] = []
   const first = row[key]
@@ -29,7 +34,7 @@ export function readTextAttributes(bytes: Uint8Array): Map<number, Uint8Array> {
   return fields
 }
 
-export function readTextObjects(row: ClipRow, dpi: number, report: (message: string) => void = () => {}): TextObject[] {
+export function readTextObjects(row: ClipRow, dpi: number, report: (message: string) => void = () => {}): ClipTextObject[] {
   const strings = array(row, 'TextLayerString'), attributes = array(row, 'TextLayerAttributes')
   return strings.map((string, index) => {
     check(str(string).length <= 100000, '文字列が長すぎます')
@@ -41,17 +46,32 @@ export function readTextObjects(row: ClipRow, dpi: number, report: (message: str
   }).filter(o => o.text.length > 0)
 }
 
-function textObject(string: Uint8Array, fields: Map<number, Uint8Array>, row: ClipRow, dpi: number): TextObject {
+function textObject(string: Uint8Array, fields: Map<number, Uint8Array>, row: ClipRow, dpi: number): ClipTextObject {
   const reader = (tag: number) => fields.has(tag) ? new Reader(fields.get(tag)!, true) : undefined
   const box = reader(42), size = reader(32), color = reader(34), align = reader(12)
   const left = box?.number('i32') ?? 0, top = box?.number('i32') ?? 0
   const right = box?.number('i32') ?? left, bottom = box?.number('i32') ?? top
   const fontSize = Math.max(1, Math.min(4096, (size ? size.u32() / 100 : 12) * (dpi || 72) / 72))
-  const object: TextObject = {
+  const object: ClipTextObject = {
     text: str(string), left: left + num(row, 'LayerOffsetX'), top: top + num(row, 'LayerOffsetY'),
     width: box ? Math.max(0, right - left + 1) : 0, height: box ? Math.max(0, bottom - top + 1) : 0,
     font: str(fields.get(31)) || 'sans-serif', size: fontSize,
     color: color ? [color.u32() >>> 24, color.u32() >>> 24, color.u32() >>> 24] : [0, 0, 0], align: 'left', runs: [],
+  }
+  const cacheId = reader(50)?.u32()
+  if (cacheId) {
+    object.cacheId = cacheId
+    const quad = reader(64), offset = reader(72)
+    if (box && quad && offset) {
+      // The cache already contains static rotation/stretch. Its local origin is
+      // tag 72; align the opposite corners of tag 64 with the text box centre.
+      // Keep 1/100px integers until rounding, including for negative positions.
+      const q = Array.from({ length: 8 }, () => quad.number('i32'))
+      object.cache = {
+        left: Math.ceil(((left + right) * 100 - q[0] - q[4]) / 200) - offset.number('i32') + num(row, 'LayerOffsetX'),
+        top: Math.ceil(((top + bottom) * 100 - q[1] - q[5]) / 200) - offset.number('i32') + num(row, 'LayerOffsetY'),
+      }
+    } else if (box && !quad && !offset) object.cache = { left: object.left, top: object.top }
   }
   if (align && align.u32() > 0) {
     align.take(12)
