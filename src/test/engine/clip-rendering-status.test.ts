@@ -51,7 +51,7 @@ it.each(['saved', 'not-saved', 'unknown'] as const)('only reports effects that n
     const [tone] = layerRenderingDiagnostics(layer({ effects: { tone: true }, isFolder }), compatibility)
     expect(tone).toMatchObject({ part: 'effect', outcome: 'missing-effect' })
     expect(tone.message).toContain('トーンには未対応')
-    expect(tone.message).not.toContain('保存し直')
+    expect(tone.message).not.toContain('バージョン互換情報')
   }
   expect(layerRenderingDiagnostics(layer({ effects, isFolder: true }), compatibility, true)[0].outcome).toBe('missing-effect')
   expect(layerRenderingDiagnostics(layer({ effects: { tone: true } }), compatibility, true, true)).toEqual([])

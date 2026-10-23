@@ -60,6 +60,8 @@ describe('PreviewPanel startup layout', () => {
     expect(guide.textContent).toContain('CLIPファイルをここにドロップ')
     expect(guide.textContent).toContain('ベクターレイヤー・3Dレイヤーの描画をクリスタに合わせるには')
     expect(guide.textContent).toContain('［バージョン互換情報の保存］を［保存する］')
+    expect(guide.textContent).toContain('［ファイル］→［別名で保存］でCLIPを保存')
+    expect(guide.textContent).toContain('保存画面で元のCLIPファイルを選び、上書きを確認')
     expect(guide.textContent).not.toContain('複製を保存')
     expect(within(guide).queryByText('最初の1回はここだけ')).not.toBeInTheDocument()
     expect(within(guide).queryByText('起動時に見えている設定')).not.toBeInTheDocument()
