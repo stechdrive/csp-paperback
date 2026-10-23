@@ -85,7 +85,7 @@
   "settings-dialog.png": {
     "width": 912,
     "height": 882,
-    "sha256": "93b2d517778fa932747a2c5d82fbba7064a2911265f2aa4052b284ebbd4a58fb",
+    "sha256": "b4fe6af8ee92afb2e4d85d5dba734137b9afff4f2f81ca74fbe4349b7e9fc2ea",
     "regions": {
       "settingsDialog": {
         "x": 1.75,
@@ -95,9 +95,9 @@
       },
       "processSettings": {
         "x": 4.5,
-        "y": 33.45,
+        "y": 22.89,
         "width": 91.01,
-        "height": 31.63
+        "height": 39.77
       }
     }
   }

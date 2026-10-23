@@ -35,6 +35,39 @@ afterEach(() => {
 })
 
 describe('ExportSettings naming controls', () => {
+  it('グループ名だけを変更し、出力の分類・画像名・素材・除外を保持する', () => {
+    const tree = buildLayerTree(makePsd({ children: [
+      makeFolder('A', [makeFolder('1', [makeLayer({ name: '線画' }), makeFolder('_s', [makeLayer()])])]),
+      makeFolder('_BG', [makeLayer()]),
+    ] }))
+    useAppStore.setState({ layerTree: tree, manualAnimFolderIds: new Set([tree.find(layer => layer.originalName === 'A')!.id]),
+      singleMarks: new Map(), visibilityOverrides: new Map(), docWidth: 100, docHeight: 100 })
+    render(<ExportSettings />)
+    fireEvent.click(screen.getByRole('button', { name: '作画' }))
+    const before = useAppStore.getState()
+    const files = selectOutputFiles(before)
+    const navigation = selectOutputNavigation(before)
+    act(() => before.setBodyGroupName('原画'))
+    const after = useAppStore.getState()
+    const identity = (entries: typeof files) => entries.map(({ path, flatName, sourceLayerId, sourceCellId, processSuffixes }) =>
+      ({ path, flatName, sourceLayerId, sourceCellId, processSuffixes }))
+    expect(identity(selectOutputFiles(after))).toEqual(identity(files))
+    expect(selectOutputNavigation(after)).toEqual(navigation)
+    expect(after.outputConfig).toBe(before.outputConfig)
+    expect(after.layerTree).toBe(before.layerTree)
+    expect(after.visibilityOverrides).toBe(before.visibilityOverrides)
+    const body = screen.getByRole('button', { name: '原画' })
+    expect(body).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByRole('button', { name: '作監' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'BG 個別書き出し' })).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.click(body)
+    expect(selectOutputFiles(useAppStore.getState())).toHaveLength(files.length + 1)
+    act(() => useAppStore.getState().undo())
+    expect(body).toHaveAttribute('aria-pressed', 'false')
+    act(() => useAppStore.getState().undo())
+    expect(screen.getByRole('button', { name: '作画' })).toHaveAttribute('aria-pressed', 'false')
+  })
+
   it('起動画面では保存済み設定を表示し、その設定だけを変更する', () => {
     useAppStore.setState({
       outputConfig: { ...DEFAULT_OUTPUT_CONFIG, revisionBorderEnabled: true },

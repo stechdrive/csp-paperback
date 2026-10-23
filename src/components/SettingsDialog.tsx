@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useAppStore } from '../store'
 import { useLocale } from '../i18n/locale'
 import { selectLayerTreeWithVisibility, selectProcessTableErrors } from '../store/selectors'
 import {
   DEFAULT_PROJECT_SETTINGS,
+  normalizeBodyGroupName,
   resolveCellPrefixSeparator,
   resolveIncludeXdtsTrackPrefixInCellName,
   type ProcessFolderEntry,
@@ -24,6 +25,9 @@ import { normalizeProcessTable } from '../utils/process-table'
 import { ProcessColorPicker } from './ProcessColorPicker'
 import { Modal } from './Modal'
 import { processDisplayName } from '../utils/process-folder'
+import { HelpDialog } from './HelpDialog'
+import { Tooltip } from './Tooltip'
+import { useDismissableLayer } from '../hooks/useDismissableLayer'
 
 interface SettingsDialogProps {
   onClose: () => void
@@ -52,6 +56,7 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
   const layerTree = useAppStore(selectLayerTreeWithVisibility)
   const activeTheme = useAppStore(s => s.activeTheme)
   const updateProcessTable = useAppStore(s => s.updateProcessTable)
+  const setBodyGroupName = useAppStore(s => s.setBodyGroupName)
   const updateAutoMarkFolderNames = useAppStore(s => s.updateAutoMarkFolderNames)
   const updateArchivePatterns = useAppStore(s => s.updateArchivePatterns)
   const setShowIndividualFoldersOnLoad = useAppStore(s => s.setShowIndividualFoldersOnLoad)
@@ -60,6 +65,17 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
   const setActiveTheme = useAppStore(s => s.setActiveTheme)
   const { t } = useLocale()
   const [importError, setImportError] = useState<string | null>(null)
+  const [help, setHelp] = useState<'process' | 'templates' | null>(null)
+  const [bodyNameDraft, setBodyNameDraft] = useState<string | null>(null)
+  const bodyNameInput = useRef<HTMLInputElement>(null)
+  const bodyGroupName = normalizeBodyGroupName(projectSettings.bodyGroupName)
+  const commitBodyName = () => {
+    if (bodyNameDraft !== null) setBodyGroupName(bodyNameDraft)
+    setBodyNameDraft(null)
+  }
+  // The input consumes Escape before the modal's capture-phase dismissal handler.
+  useDismissableLayer({ open: bodyNameDraft !== null, content: bodyNameInput, closeOnBlur: false,
+    onDismiss: reason => { if (reason === 'escape') setBodyNameDraft(null) } })
 
   const [tableRows, setTableRows] = useState<ProcessFolderEntry[]>(
     normalizeProcessTable(projectSettings.processTable)
@@ -145,6 +161,7 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
   }
 
   const handleExport = async () => {
+    commitBodyName()
     const json = exportSettings()
     try {
       await saveTextFile('csp-paperback-settings.json', json, 'JSON', ['json'])
@@ -195,6 +212,7 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
     try {
       importSettings(await file.text())
       const s = useAppStore.getState().projectSettings
+      setBodyNameDraft(null)
       setTableRows(normalizeProcessTable(s.processTable))
       setAutoMarkRows(s.autoMarkFolderNames)
       setArchiveRows(s.archivePatterns)
@@ -224,6 +242,7 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
   }
 
   const handleClose = () => {
+    commitBodyName()
     const cleaned = tableRows.filter(r => r.suffix.trim() || r.folderNames.length > 0)
     if (cleaned.length !== tableRows.length) {
       setTableRows(cleaned)
@@ -243,7 +262,7 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
   }
 
   return (
-    <Modal className={styles.overlay} label="書き出し詳細設定" onClose={handleClose}>
+    <><Modal className={styles.overlay} label="書き出し詳細設定" onClose={handleClose}>
       <div className={styles.dialog}>
         <div className={styles.header}>
           <span className={styles.title}>{t.settings.title}</span>
@@ -279,15 +298,37 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
             </div>
           </div>
 
+          <section className={styles.section} aria-labelledby="body-group-heading">
+            <div id="body-group-heading" className={styles.sectionTitle}>工程に属さないセル画像</div>
+            <label className={styles.row}>
+              <span className={styles.label}>グループ名</span>
+              <input ref={bodyNameInput} className={`${styles.tableInput} ${styles.bodyNameInput}`}
+                aria-label="工程に属さないセル画像のグループ名" aria-describedby="body-group-hint"
+                maxLength={4096} value={bodyNameDraft ?? bodyGroupName}
+                onFocus={() => setBodyNameDraft(bodyGroupName)}
+                onChange={event => setBodyNameDraft(event.target.value)}
+                onBlur={commitBodyName}
+                onKeyDown={event => {
+                  if (event.nativeEvent.isComposing || event.keyCode === 229) return
+                  if (event.key === 'Enter') { event.preventDefault(); commitBodyName() }
+                }} />
+            </label>
+            <div id="body-group-hint" className={styles.hint}>「出力対象」に表示する名前です。</div>
+          </section>
+
           {/* 工程フォルダリスト */}
           <div className={styles.section}>
             <div className={styles.sectionTitle}>{t.settings.processTable}</div>
+            <div className={styles.hint}>
+              演出・作監などを、工程別の画像に分けるための設定です。
+              素材内のフォルダ名と、書き出す画像名に付ける文字を対応づけます。
+            </div>
             <div className={styles.processTableGrid} data-testid="process-table-grid">
               <div className={styles.tableHeader}>
-                <span>{t.settings.colDisplayName}</span>
-                <span>{t.settings.colSuffix}</span>
-                <span>{t.settings.colFolderNames}</span>
-                <span>{t.settings.colBorderColor}</span>
+                <ColumnHelp label={t.settings.colDisplayName} description="「出力対象」に表示する工程の名前です。フォルダの判定やファイル名には使いません。" />
+                <ColumnHelp label={t.settings.colSuffix} description="セル画像のファイル名に付ける文字です。例：_e → A1_e.jpg。区切りの _ も含めて入力します。" />
+                <ColumnHelp label={t.settings.colFolderNames} description="素材内でこの工程として扱うフォルダ名です。複数ある場合はカンマで区切ります。例：_e, 演出。" />
+                <ColumnHelp label={t.settings.colBorderColor} description="「修正ラベル」がONのときに使う色です。クリックすると変更できます。" />
                 <span>出力サンプル</span>
                 <span></span>
               </div>
@@ -350,6 +391,10 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
               </div>
             )}
             <button className={styles.addRowBtn} onClick={addRow}>{t.settings.addRow}</button>
+            <div className={styles.helpLinks}>
+              <button type="button" onClick={() => setHelp('process')}>工程の分け方を見る</button>
+              <button type="button" onClick={() => setHelp('templates')}>各社テンプレートの例を見る</button>
+            </div>
           </div>
 
           {/* 個別書き出しの名前指定と読み込み時の表示 */}
@@ -412,5 +457,16 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
         </div>
       </div>
     </Modal>
+      {help && <HelpDialog initialTab={help === 'process' ? 'features' : 'templates'}
+        initialSection={help === 'process' ? 'process' : undefined} onClose={() => setHelp(null)} />}
+    </>
   )
+}
+
+function ColumnHelp({ label, description }: { label: string; description: string }) {
+  return <span><Tooltip content={description} toggleOnClick>
+    <button type="button" className={styles.columnHelp} aria-label={`${label}の説明`}>
+      {label} <span aria-hidden="true">ⓘ</span>
+    </button>
+  </Tooltip></span>
 }

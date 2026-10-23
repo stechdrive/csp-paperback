@@ -5,7 +5,7 @@ import { HelpDialog } from '../../components/HelpDialog'
 afterEach(cleanup)
 
 describe('HelpDialog information architecture', () => {
-  it('クイックガイドを初期表示し、出力までの5ステップを案内する', () => {
+  it('クイックガイドを初期表示し、全素材の表示を求めず出力までの4ステップを案内する', () => {
     render(<HelpDialog onClose={vi.fn()} />)
 
     expect(screen.getByRole('tab', { name: /クイックガイド/ }))
@@ -22,8 +22,7 @@ describe('HelpDialog information architecture', () => {
 
     const route = [
       '書き出し設定を決める',
-      '書き出す状態でCLIPを保存する',
-      'CLIPを読み込む',
+      'CLIPを保存して読み込む',
       '書き出し画像を確認する',
       '「出力」から保存方法を選ぶ',
     ]
@@ -33,6 +32,9 @@ describe('HelpDialog information architecture', () => {
     expect(document.querySelector('[data-help-highlight="出力メニュー"]')).toBeInTheDocument()
 
     const text = screen.getByRole('dialog').textContent ?? ''
+    expect(text).not.toContain('表示される状態')
+    expect(text).toContain('自動で「兼用カット」をON')
+    expect(text).toContain('保存時に選ばれていたタイムライン')
     expect(text).not.toContain('XDTS')
     expect(text).toMatch(/複数のCLIPと必要なPSDをまとめて\s*EXEやショートカットへドロップ/)
     expect(text).toContain('同じフォルダ・同名のCLIPとPSD')

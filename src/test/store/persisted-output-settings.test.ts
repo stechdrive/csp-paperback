@@ -11,14 +11,14 @@ afterEach(resetTestStore)
 describe('persisted output settings', () => {
   it('recovers malformed persisted fields while preserving valid settings', async () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 2, state: {
-      projectSettings: { autoMarkFolderNames: [42], processTable: [null], cellNamingMode: 'sequence' },
+      projectSettings: { autoMarkFolderNames: [42], processTable: [null], cellNamingMode: 'sequence', bodyGroupName: 42 },
       savedOutputConfig: { format: 'png', excludedProcessSuffixes: [42], jpgQuality: 'bad', individualOutputOverrides: { SL: 'false' } },
       mobileUiScale: 'bad',
     } }))
     await useAppStore.persist.rehydrate()
     const state = useAppStore.getState()
     expect(state.projectSettings).toMatchObject({ autoMarkFolderNames: DEFAULT_PROJECT_SETTINGS.autoMarkFolderNames,
-      processTable: DEFAULT_PROJECT_SETTINGS.processTable, cellNamingMode: 'sequence' })
+      processTable: DEFAULT_PROJECT_SETTINGS.processTable, cellNamingMode: 'sequence', bodyGroupName: '作画' })
     expect(state.savedOutputConfig).toMatchObject({ format: 'png', excludedProcessSuffixes: [], jpgQuality: 0.92, individualOutputOverrides: {} })
     expect(Number.isFinite(state.mobileUiScale)).toBe(true)
   })
@@ -49,6 +49,7 @@ describe('persisted output settings', () => {
     await useAppStore.persist.rehydrate()
 
     const table = useAppStore.getState().projectSettings.processTable
+    expect(useAppStore.getState().projectSettings.bodyGroupName).toBe('作画')
     expect(table.map(entry => entry.displayName)).toEqual(['演出', '監督', '作監', 'その他修正', '総作監', '作品専用'])
     expect(table.slice(0, 5).map(({ suffix, folderNames, revisionBorderColor }) => ({ suffix, folderNames, revisionBorderColor })))
       .toEqual(legacyTable)
@@ -62,6 +63,7 @@ describe('persisted output settings', () => {
   })
 
   it('本体と素材名の選択、および工程表示名・読み込み表示設定を保存して復元する', async () => {
+    useAppStore.getState().setBodyGroupName('原画')
     useAppStore.getState().setExcludeBody(true)
     useAppStore.getState().setIndividualOutputEnabled('SL', false)
     useAppStore.getState().setShowIndividualFoldersOnLoad(false)
@@ -72,7 +74,7 @@ describe('persisted output settings', () => {
     await useAppStore.persist.rehydrate()
     useAppStore.getState().resetProject()
     expect(useAppStore.getState().outputConfig).toMatchObject({ excludeBody: true, individualOutputOverrides: { sl: false } })
-    expect(useAppStore.getState().projectSettings).toMatchObject({ showIndividualFoldersOnLoad: false,
+    expect(useAppStore.getState().projectSettings).toMatchObject({ showIndividualFoldersOnLoad: false, bodyGroupName: '原画',
       processTable: [{ displayName: '演出チェック', suffix: '_e', folderNames: ['演出', '_e'] }] })
   })
 

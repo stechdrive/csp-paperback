@@ -70,6 +70,12 @@ export function StudioTemplateGuide() {
         サフィックスは入力した文字をそのまま使います。
       </div>
 
+      <p className={styles.paragraph}>
+        工程に属さないセル画像は、「出力対象」では初期設定で「作画」と表示します。
+        この表示名は、詳細設定の「工程に属さないセル画像」にある「グループ名」で変更できます。
+        表示名を変えてもフォルダの判定やファイル名は変わりません。BG・撮影指示などの個別書き出しは別のグループです。
+      </p>
+
       <h3 className={styles.subsectionTitle}>
         2. 静止画素材をまとめる親フォルダの名称を登録する
       </h3>
@@ -104,7 +110,7 @@ export function StudioTemplateGuide() {
       </div>
 
       <div className={styles.callout}>
-        JSONには、出力名、連番、工程フォルダリスト、個別に書き出すフォルダ名、
+        JSONには、出力名、連番、工程に属さないセル画像のグループ名、工程フォルダリスト、個別に書き出すフォルダ名、
         名前による指定の除外リストが保存されます。
       </div>
     </section>

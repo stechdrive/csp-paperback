@@ -104,19 +104,15 @@ export function QuickStartGuide({
           迷ったら初期設定のままで構いません。
         </Step>
 
-        <Step number={2} title="書き出す状態でCLIPを保存する">
-          クリスタで、書き出したい素材が表示される状態にしてCLIPを保存します。
-        </Step>
-
-        <Step number={3} title={timelineOnlyLoaded ? 'PSDを読み込む' : 'CLIPを読み込む'}>
+        <Step number={2} title={timelineOnlyLoaded ? 'PSDを読み込む' : 'CLIPを保存して読み込む'}>
           {timelineOnlyLoaded
             ? 'タイムシートは読み込み済みです。対応するPSDを画面へドロップしてください。'
-            : 'CLIPを画面へドロップします。「ファイルを開く」から選択しても構いません。'}
+            : 'クリスタでCLIPを保存し、Paperbackへドロップします。「ファイルを開く」からも選べます。'}
           アニメーションフォルダとタイムラインを読み取り、対応する素材を描画します。
         </Step>
 
         <Step
-          number={4}
+          number={3}
           title="書き出し画像を確認する"
           figure={full ? (
             <HelpFigure
@@ -133,7 +129,7 @@ export function QuickStartGuide({
         </Step>
 
         <Step
-          number={5}
+          number={4}
           title="「出力」から保存方法を選ぶ"
           figure={full ? (
             <HelpFigure
@@ -161,7 +157,8 @@ export function QuickStartGuide({
               PSDのないCLIPは単独で処理します。各CLIPと同じ場所へ、作品ごとのフォルダを作って順番に出力します。
               構造不一致などで失敗した作品はスキップし、結果一覧に成功・失敗・再現上の注意を表示します。
               CLIPとPSDは同じ保存状態の組を用意してください。画像内容そのものの一致は検証しません。
-              複数タイムラインがある場合は、保存時に選択されていたものを使用します。
+              複数のタイムラインがあるCLIPは、自動で「兼用カット」をONにして書き出します。
+              番号付けなどの基準には、保存時に選ばれていたタイムラインを使います。
               個別書き出しやアニメーションフォルダの手動指定をカットごとに調整したい場合は、通常画面から書き出してください。
             </p>
             {!desktop && (

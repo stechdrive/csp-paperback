@@ -1,4 +1,4 @@
-import { DEFAULT_OUTPUT_CONFIG, DEFAULT_PROJECT_SETTINGS, resolveCellPrefixSeparator,
+import { DEFAULT_OUTPUT_CONFIG, DEFAULT_PROJECT_SETTINGS, normalizeBodyGroupName, resolveCellPrefixSeparator,
   type OutputConfig, type ProcessFolderEntry, type ProjectSettings } from '../types'
 import { normalizeProcessTable } from './process-table'
 
@@ -36,6 +36,7 @@ export function validateProjectSettings(value: unknown, strict = false): Project
   }
   const separator = resolveCellPrefixSeparator(separators)
   return {
+    bodyGroupName: normalizeBodyGroupName(field('bodyGroupName', string, defaults.bodyGroupName)),
     processTable: normalizeProcessTable(field('processTable', processTable, defaults.processTable).map(entry => ({
       suffix: entry.suffix, folderNames: entry.folderNames, displayName: entry.displayName, revisionBorderColor: entry.revisionBorderColor,
     }))),

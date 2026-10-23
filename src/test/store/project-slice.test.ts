@@ -26,6 +26,7 @@ describe('project-slice - auto mark folder names', () => {
     { autoMarkFolderNames: [42] }, { archivePatterns: [null] },
     { processTable: [{ suffix: '_x', folderNames: [42] }] },
     { sharedCutMode: 'false' }, { cellNamingMode: 'invalid' }, { autoMarkFolderNames: ['x'.repeat(4097)] },
+    { bodyGroupName: 42 }, { bodyGroupName: 'x'.repeat(4097) },
     null, [],
   ])('rejects invalid settings atomically, preserving persisted settings and Undo (%j)', invalid => {
     const before = useAppStore.getState(), saved = localStorage.getItem('csp-paperback:settings')
@@ -33,6 +34,19 @@ describe('project-slice - auto mark folder names', () => {
     expect(useAppStore.getState().projectSettings).toBe(before.projectSettings)
     expect(useAppStore.getState()._past).toBe(before._past)
     expect(localStorage.getItem('csp-paperback:settings')).toBe(saved)
+  })
+
+  it('工程に属さないセル画像の名前を旧JSONでは補完し、新JSONで共有・正規化する', () => {
+    useAppStore.getState().setBodyGroupName('別名')
+    useAppStore.getState().importSettings('{}')
+    expect(useAppStore.getState().projectSettings.bodyGroupName).toBe('作画')
+    useAppStore.getState().importSettings('{"bodyGroupName":"  原画  "}')
+    expect(useAppStore.getState().projectSettings.bodyGroupName).toBe('原画')
+    const json = useAppStore.getState().exportSettings()
+    useAppStore.getState().importSettings('{"bodyGroupName":"   "}')
+    expect(useAppStore.getState().projectSettings.bodyGroupName).toBe('作画')
+    useAppStore.getState().importSettings(json)
+    expect(useAppStore.getState().projectSettings.bodyGroupName).toBe('原画')
   })
 
   it('表示名と読み込み設定のない旧JSONを互換で読み、新設定を共有できる', () => {

@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { SettingsDialog } from '../../components/SettingsDialog'
 import { useAppStore } from '../../store'
@@ -27,6 +27,60 @@ beforeEach(() => {
 afterEach(() => cleanup())
 
 describe('SettingsDialog process table grid', () => {
+  it('グループ名を確定時に一度だけ保存し、Undo/Redoと空欄の初期値復帰に対応する', () => {
+    render(<SettingsDialog onClose={vi.fn()} />)
+    const input = screen.getByLabelText('工程に属さないセル画像のグループ名')
+    fireEvent.focus(input)
+    fireEvent.change(input, { target: { value: '原' } })
+    fireEvent.change(input, { target: { value: ' 原画 ' } })
+    expect(useAppStore.getState().projectSettings.bodyGroupName).toBe('作画')
+    expect(useAppStore.getState()._past).toHaveLength(0)
+    fireEvent.keyDown(input, { key: 'Enter', isComposing: true })
+    expect(useAppStore.getState()._past).toHaveLength(0)
+    fireEvent.keyDown(input, { key: 'Enter' })
+    fireEvent.blur(input)
+    expect(input).toHaveValue('原画')
+    expect(useAppStore.getState()._past).toHaveLength(1)
+    act(() => useAppStore.getState().undo())
+    expect(input).toHaveValue('作画')
+    act(() => useAppStore.getState().redo())
+    expect(input).toHaveValue('原画')
+    fireEvent.change(input, { target: { value: '  ' } })
+    fireEvent.blur(input)
+    expect(input).toHaveValue('作画')
+    expect(useAppStore.getState()._past).toHaveLength(2)
+  })
+
+  it('入力のEscapeだけを取り消し、ダイアログの完了時には未確定の名前を保存する', () => {
+    const close = vi.fn()
+    render(<SettingsDialog onClose={close} />)
+    const input = screen.getByLabelText('工程に属さないセル画像のグループ名')
+    fireEvent.focus(input)
+    fireEvent.change(input, { target: { value: '取消' } })
+    fireEvent.keyDown(input, { key: 'Escape' })
+    fireEvent.blur(input)
+    expect(input).toHaveValue('作画')
+    expect(close).not.toHaveBeenCalled()
+    expect(useAppStore.getState()._past).toHaveLength(0)
+    fireEvent.change(input, { target: { value: '動画' } })
+    fireEvent.click(screen.getByRole('button', { name: '完了' }))
+    expect(close).toHaveBeenCalledTimes(1)
+    expect(useAppStore.getState().projectSettings.bodyGroupName).toBe('動画')
+    expect(useAppStore.getState()._past).toHaveLength(1)
+  })
+
+  it('工程・テンプレートのヘルプから、入力内容を保った詳細設定へ戻る', () => {
+    render(<SettingsDialog onClose={vi.fn()} />)
+    fireEvent.change(screen.getByLabelText('グループ名 1'), { target: { value: '演出チェック' } })
+    for (const [link, tab] of [['工程の分け方を見る', /機能ガイド/], ['各社テンプレートの例を見る', /各社テンプレートへの対応/]] as const) {
+      fireEvent.click(screen.getByRole('button', { name: link }))
+      const help = screen.getByRole('dialog', { name: 'CSP Paperback ヘルプ' })
+      expect(within(help).getByRole('tab', { name: tab })).toHaveAttribute('aria-selected', 'true')
+      fireEvent.click(within(help).getByRole('button', { name: 'ヘルプを閉じる' }))
+      expect(screen.getByLabelText('グループ名 1')).toHaveValue('演出チェック')
+    }
+  })
+
   it('工程の表示名だけを編集して、設定JSONへ保存し、Undoできる', () => {
     render(<SettingsDialog onClose={vi.fn()} />)
     const original = useAppStore.getState().projectSettings.processTable[0]

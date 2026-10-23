@@ -11,6 +11,7 @@ export type {
 } from './project'
 export {
   DEFAULT_PROJECT_SETTINGS,
+  normalizeBodyGroupName,
   resolveCellPrefixSeparator,
   resolveIncludeXdtsTrackPrefixInCellName,
 } from './project'

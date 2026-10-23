@@ -25,6 +25,8 @@ export type AnimationSequenceSeparator = CellPrefixSeparator
 
 export interface ProjectSettings {
   processTable: ProcessFolderEntry[]
+  /** 工程に属さないセル画像の表示名。分類や出力名には使わない */
+  bodyGroupName?: string
   cellNamingMode: CellNamingMode
   /** auto: 出力全体の最大連番に合わせる（最低1桁） / fixed-4: 常に4桁 */
   sequenceDigitMode: SequenceDigitMode
@@ -45,6 +47,7 @@ export interface ProjectSettings {
 }
 
 export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
+  bodyGroupName: '作画',
   processTable: [
     { displayName: '演出', suffix: '_e', folderNames: ['_e', '演出'], revisionBorderColor: '#FBECE6' },
     { displayName: '監督', suffix: '_k',  folderNames: ['_k',  '監督'], revisionBorderColor: '#DCE4F1' },
@@ -61,6 +64,10 @@ export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
   showIndividualFoldersOnLoad: true,
   autoMarkFolderNames: ['撮影指示', '原図'],
   archivePatterns: ['_old', '_pool'],
+}
+
+export function normalizeBodyGroupName(name?: string): string {
+  return name?.trim() || '作画'
 }
 
 /** 新旧どちらの設定形式からも、セル部分直前の区切り設定を解決する。 */

@@ -9,6 +9,7 @@ import type {
 } from '../types'
 import {
   DEFAULT_PROJECT_SETTINGS,
+  normalizeBodyGroupName,
 } from '../types'
 import { buildDefaultVisibilityOverrides, retainManualVisibility } from '../utils/default-visibility'
 import { normalizeProcessTable } from '../utils/process-table'
@@ -18,6 +19,7 @@ import { MAX_SETTINGS_JSON_LENGTH, validateProjectSettings } from '../utils/sett
 export interface ProjectSlice {
   projectSettings: ProjectSettings
   updateProcessTable: (table: ProcessFolderEntry[]) => void
+  setBodyGroupName: (name: string) => void
   setCellNamingMode: (mode: CellNamingMode) => void
   setSequenceDigitMode: (mode: SequenceDigitMode) => void
   setCellPrefixSeparator: (separator: CellPrefixSeparator) => void
@@ -34,6 +36,13 @@ export interface ProjectSlice {
 
 export const createProjectSlice: StateCreator<AppStore, [], [], ProjectSlice> = (set, get) => ({
   projectSettings: DEFAULT_PROJECT_SETTINGS,
+
+  setBodyGroupName: (name) => {
+    const bodyGroupName = normalizeBodyGroupName(name)
+    if (bodyGroupName === normalizeBodyGroupName(get().projectSettings.bodyGroupName)) return
+    get().pushHistory()
+    set({ projectSettings: { ...get().projectSettings, bodyGroupName } })
+  },
 
   updateProcessTable: (table) => {
     get().pushHistory()

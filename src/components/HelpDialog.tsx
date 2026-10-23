@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useLayoutEffect, useRef, useState } from 'react'
 import { Modal } from './Modal'
 import { AboutGuide } from './help/AboutGuide'
 import { FeatureGuide } from './help/FeatureGuide'
@@ -9,6 +9,8 @@ import styles from './HelpDialog.module.css'
 
 interface HelpDialogProps {
   onClose: () => void
+  initialTab?: HelpTab
+  initialSection?: string
 }
 
 type HelpTab = 'quick' | 'features' | 'templates' | 'about'
@@ -31,11 +33,22 @@ function getSections(tab: HelpTab): readonly HelpSection[] {
   return []
 }
 
-export function HelpDialog({ onClose }: HelpDialogProps) {
-  const [activeTab, setActiveTab] = useState<HelpTab>('quick')
-  const [activeSection, setActiveSection] = useState('')
+function sectionTop(content: HTMLElement, section: HTMLElement): number {
+  return section.getBoundingClientRect().top - content.getBoundingClientRect().top + content.scrollTop
+}
+
+export function HelpDialog({ onClose, initialTab = 'quick', initialSection = '' }: HelpDialogProps) {
+  const [activeTab, setActiveTab] = useState<HelpTab>(initialTab)
+  const [activeSection, setActiveSection] = useState(initialSection)
   const contentRef = useRef<HTMLDivElement>(null)
   const sections = getSections(activeTab)
+
+  useLayoutEffect(() => {
+    const content = contentRef.current
+    const target = Array.from(content?.querySelectorAll<HTMLElement>('[data-help-section]') ?? [])
+      .find(section => section.dataset.helpSection === initialSection)
+    if (content && target) content.scrollTop = Math.max(0, sectionTop(content, target) - 20)
+  }, [initialSection])
 
   const selectTab = useCallback((tab: HelpTab) => {
     setActiveTab(tab)
@@ -49,7 +62,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
     if (!content || !target) return
 
     content.scrollTo({
-      top: Math.max(0, target.offsetTop - 20),
+      top: Math.max(0, sectionTop(content, target) - 20),
       behavior: 'smooth',
     })
     setActiveSection(id)
@@ -66,7 +79,7 @@ export function HelpDialog({ onClose }: HelpDialogProps) {
 
     let current = candidates[0]
     for (const candidate of candidates) {
-      if (candidate.offsetTop <= content.scrollTop + 72) current = candidate
+      if (sectionTop(content, candidate) <= content.scrollTop + 72) current = candidate
       else break
     }
     setActiveSection(current.dataset.helpSection ?? '')

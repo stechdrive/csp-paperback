@@ -1,5 +1,6 @@
 import type { RefObject } from 'react'
 import { useAppStore } from '../store'
+import { normalizeBodyGroupName } from '../types'
 import { selectOutputCandidates } from '../store/selectors'
 import type { OutputConfigTarget } from '../store/output-slice'
 import { processDisplayName } from '../utils/process-folder'
@@ -16,6 +17,7 @@ export function OutputTargetControls({ configTarget = 'current', avoidRef }: {
   const candidates = useAppStore(selectOutputCandidates)
   const loaded = useAppStore(s => s.layerTree.length > 0)
   const table = useAppStore(s => s.projectSettings.processTable)
+  const bodyGroupName = useAppStore(s => normalizeBodyGroupName(s.projectSettings.bodyGroupName))
   const config = useAppStore(s => configTarget === 'saved' ? s.savedOutputConfig : s.outputConfig)
   const setExcludeBody = useAppStore(s => s.setExcludeBody)
   const setProcess = useAppStore(s => s.setProcessOutputEnabled)
@@ -35,10 +37,11 @@ export function OutputTargetControls({ configTarget = 'current', avoidRef }: {
   const hasBody = !loaded || targets.some(target => target.body)
   return <div className={styles.targetControls}>
     <div className={styles.chipGroup} role="group" aria-label="出力対象">
-      {hasBody && <Tooltip content="修正工程に属さないセル画像をまとめて切り替えます。OFFにしても、同じセル内の修正画像は残ります。レイヤーの表示状態は変えません。" avoidRef={avoidRef}>
-        <button type="button" className={styles.chip} aria-pressed={!config.excludeBody}
+      {hasBody && <Tooltip content={`「${bodyGroupName}」: 工程に属さないセル画像をまとめて切り替えます。OFFにしても、同じセル内の修正画像は残ります。レイヤーの表示状態は変えません。`} avoidRef={avoidRef}>
+        <button type="button" className={styles.chip} aria-label={bodyGroupName} aria-pressed={!config.excludeBody}
           onClick={() => setExcludeBody(!config.excludeBody, configTarget)}>
-          <span className={styles.checkMark} aria-hidden="true">{!config.excludeBody ? '✓' : ''}</span>作画
+          <span className={styles.checkMark} aria-hidden="true">{!config.excludeBody ? '✓' : ''}</span>
+          <span className={styles.chipName}>{bodyGroupName}</span>
         </button>
       </Tooltip>}
       {processes.map(entry => {
