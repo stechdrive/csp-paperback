@@ -68,11 +68,17 @@ A                       アニメーションフォルダ
 
 セル内の描画レイヤーなどは、元の不透明度を使うほか、書き出し画像を見ながら必要な濃さに調整できます。元のCLIPファイルは書き換えないので、作業しやすい状態のまま残せます。
 
-### セルと原図を組み合わせた画像も追加する
+### セルと原図を組み合わせ、背景原図用PSDも作る
 
 「仮想セル」では、読み込んだセルや原図などを組み合わせて、追加の出力画像を作れます。例えば、背景原図にキャラクターのセルを重ねた確認用の画像を、個別の素材と一緒に書き出せます。
 素材は仮想セルの行の間やフォルダ内へ直接ドラッグして追加できます。仮想セル内で並べ替えや階層の移動をしても、元の素材ツリーは変わりません。
 仮想セル内だけの名前変更や新規フォルダ作成もできます。ツリー上部のフォルダ＋アイコンでフォルダを作り、ゴミ箱アイコンで選択した要素を外せます。複数選択にも対応し、フォルダの場合は中身もまとめて外れ、1回のUndoで戻せます。
+
+**背景原図用のPSDファイル作成**にも使えます。背景原図・BOOK・修正・参照用のセルなどを仮想セル内で整理し、各仮想セルのタイトル行右端にある≡メニューから「PSDとして書き出す」を選びます。フォルダ構造・並び順・名前・表示状態・合成モード・不透明度を保持したPSDを、仮想セルの名前で保存します。
+
+PSDには仮想セル側で組み上げたツリーを保存します。仮想セル全体を包むフォルダは追加せず、周囲の用紙やフレームは、仮想セルへ追加したものだけを含めます。PSD保存には挿入位置の指定は不要です。描画レイヤーは画像素材・テキスト・ベクターも含めてラスタライズ画像として保存します。
+
+CLIPのレイヤーカラー・境界線・通常の水彩境界は画像に焼き込みます。効果付きフォルダは、仮想セル内で追加・移動した素材も含め、表示中の子を合成した同名の画像レイヤーになります。変換したフォルダの子レイヤーや編集元の控えはPSDに残しません。それ以外のフォルダは階層を保ち、非表示レイヤーや空フォルダも残します。水彩境界の近似や未対応の効果は、書き出し結果で確認できます。元のCLIPやアプリ上の仮想セルツリーは変更しません。
 
 ### 使い方
 
@@ -203,9 +209,15 @@ Opacity adjusted for visibility while drawing does not need to be changed back i
 
 Drawing layers inside cels can retain their original opacity or be adjusted to the opacity you need while checking the output preview. The original CLIP file is not rewritten, so it stays in the state you prefer for drawing.
 
-### Add images that combine cels and layouts
+### Combine cels and layouts, or create a layered PSD for background layouts
 
 Virtual cels combine loaded cels, layouts, and other materials into additional output images. For example, export a reference image with a character cel over a background layout alongside the individual materials.
+
+You can also create a PSD for background-layout work. Arrange background layouts, BOOK layers, revisions, and reference cels in the virtual cel, then choose “PSDとして書き出す” (Export as PSD) from the ≡ menu at the right of that virtual cel's title. The PSD preserves the virtual tree's folders, stacking order, names, visibility, blend modes, and opacity.
+
+No extra enclosing folder is added. Only materials in the virtual tree are included; an insertion point in the source tree is unnecessary. Artwork, including image materials, text, and vectors, is saved as raster layers.
+
+Supported CLIP layer colors, outlines, and normal watercolor edges are baked into the pixels. A folder with these effects becomes one raster layer with the same name, composed from its current visible children, including materials added or moved in the virtual tree. Its child layers and backup copies are not included in the PSD. Other folders keep their hierarchy, hidden layers, and empty folders. The export result reports approximations and unsupported effects. The source CLIP/PSD and the virtual tree in the app remain unchanged.
 
 ### Getting started
 

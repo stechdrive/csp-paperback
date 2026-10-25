@@ -4,6 +4,9 @@ import { cleanup, renderHook, waitFor } from '@testing-library/react'
 import { readFileSync } from 'node:fs'
 import { gunzipSync } from 'node:zlib'
 import { createCanvas, loadImage } from '@napi-rs/canvas'
+import { readPsd } from 'ag-psd'
+import { createVirtualSetPsd } from '../../utils/virtual-set-psd'
+import { buildLayerTree } from '../../engine/tree-builder'
 import { readMaterialEffects, createMaterialDecoder } from '../../utils/clip/material'
 import type { ClipRow } from '../../utils/clip/records'
 import type { ClipDocument, ClipLayer, ClipPixels, ClipDiagnostic } from '../../utils/clip/types'
@@ -68,6 +71,15 @@ const documentFor = (layers: ClipLayer[]): ClipDocument => ({ width: 4, height: 
 const green: MaterialEffects = { layerColor: { main: [30, 200, 80], sub: [120, 100, 70] } }
 
 describe('native CSP layer-color references', () => {
+  it.each(fixtures)('$name retains the CSP appearance after virtual PSD export and layer recomposition', async f => {
+    const doc = restore(f), tree = treeFor(doc)
+    const vs: VirtualSet = { id: 'vs', name: '原図', insertionLayerId: null, insertionPosition: 'above',
+      members: tree.map(l => ({ layerId: l.id, opacity: null, blendMode: null })), visibilityOverrides: {}, expandToAnimationCells: false }
+    const result = await createVirtualSetPsd(tree, vs, { width: f.width, height: f.height })
+    const reopened = buildLayerTree(readPsd(result.buffer))
+    expectWithinOne(data(flattenToCanvas(reopened, f.width, f.height)), await nativeImage(f))
+  })
+
   it.each(fixtures)('$name matches the native saved preview, including masks and nested effects', async f => {
     const doc = restore(f)
     expectWithinOne(data(flattenToCanvas(treeFor(doc), doc.width, doc.height)), await nativeImage(f))

@@ -29,7 +29,7 @@ export function useExport(observeProgress = true): UseExportResult {
       return
     }
     useExportJob.setState({ isExporting: true, phase: 'waiting', progress: 0, done: 0, total: 0,
-      currentFile: '', sourceName, destination, error: null })
+      currentFile: '', sourceName, destination, error: null, warnings: [] })
     const resumePreviews = outputRenderQueue.pause()
     let stream: ReadableStream<Uint8Array> | undefined
     try {

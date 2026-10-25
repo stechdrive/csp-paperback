@@ -1,6 +1,8 @@
-import { initializeCanvas, writePsdBuffer } from 'ag-psd'
-import { createCanvas } from '@napi-rs/canvas'
+import { initializeCanvas, readPsd, writePsdBuffer } from 'ag-psd'
+import { readFile } from 'node:fs/promises'
+import { createCanvas, loadImage } from '@napi-rs/canvas'
 import { test, expect, type Locator, type Page } from './fixtures'
+import { clipDisplayFixture } from './helpers/clip-display-fixture'
 
 function fixture() {
   initializeCanvas((w, h) => createCanvas(w, h) as unknown as HTMLCanvasElement)
@@ -44,6 +46,129 @@ async function startDrag(page: Page, from: Locator, to: Locator, fraction: numbe
   await page.mouse.move(b.x + Math.min(90, b.width - 8), b.y + b.height * fraction, { steps: 12 })
   await page.mouse.move(b.x + Math.min(90, b.width - 8) + 1, b.y + b.height * fraction)
 }
+
+test('タイトル行のメニューから未配置の仮想セルを階層付きPSDとして保存する', async ({ page }, info) => {
+  await page.addInitScript(() => Object.defineProperty(window, 'showSaveFilePicker', { configurable: true, value: undefined }))
+  const { tree, source, row } = await setup(page)
+  const panel = page.getByTestId('virtual-panel')
+  await panel.getByRole('textbox', { name: '新規仮想セル', exact: true }).fill('背景原図/確認')
+  await row('フォルダ').click()
+  await panel.getByRole('combobox', { name: '合成モード' }).selectOption('multiply')
+  await panel.getByRole('button', { name: '不透明度 100%' }).click()
+  await panel.getByRole('spinbutton', { name: '不透明度', exact: true }).fill('50')
+  await panel.getByRole('spinbutton', { name: '不透明度', exact: true }).press('Enter')
+  await row('フォルダ').press('F2')
+  await tree.getByRole('textbox', { name: 'レイヤー名を編集' }).fill('背景素材')
+  await tree.getByRole('textbox', { name: 'レイヤー名を編集' }).press('Enter')
+  await panel.getByRole('button', { name: '新規レイヤーフォルダ', exact: true }).click()
+  await tree.getByRole('textbox', { name: 'レイヤー名を編集' }).fill('空の修正フォルダ')
+  await tree.getByRole('textbox', { name: 'レイヤー名を編集' }).press('Enter')
+  await row('先頭').getByRole('button', { name: 'レイヤーを非表示にする' }).click()
+  const menuButton = panel.getByRole('button', { name: '背景原図/確認のメニュー', exact: true })
+  await menuButton.click()
+  await expect(page.getByRole('menuitem', { name: 'PSDとして書き出す' })).toBeFocused()
+  await page.screenshot({ path: info.outputPath('psd-menu.png') })
+  const downloading = page.waitForEvent('download')
+  await page.getByRole('menuitem', { name: 'PSDとして書き出す' }).click()
+  const download = await downloading
+  expect(download.suggestedFilename()).toBe('背景原図_確認.psd')
+  const psd = readPsd(await readFile((await download.path())!), { useImageData: true })
+  expect(psd.width).toBe(24); expect(psd.height).toBe(24)
+  expect(psd.children!.map(l => l.name)).toEqual(['背景素材', '先頭'])
+  expect(psd.children![1].hidden).toBe(true)
+  expect(psd.children![1].imageData!.data[3]).toBe(255)
+  expect(psd.children![0].blendMode).toBe('multiply')
+  expect(psd.children![0].opacity).toBeCloseTo(128 / 255)
+  expect(psd.children![0].children!.map(l => l.name)).toEqual(['下の素材', '上の素材', '空の修正フォルダ'])
+  expect(psd.children![0].children![2].children).toEqual([])
+  expect([...psd.imageData!.data.slice(0, 4)]).toEqual([0, 0, 255, 128])
+  await expect(page.getByTestId('export-status')).toHaveAttribute('data-phase', 'done')
+  await expect(source('フォルダ')).toBeVisible()
+  await expect(source('先頭').getByRole('button', { name: 'レイヤーを非表示にする' })).toBeVisible()
+})
+
+test('PSDメニューをEscapeで閉じられ、保存キャンセル後も編集を続けられる', async ({ page }) => {
+  await page.addInitScript(() => Object.defineProperty(window, 'showSaveFilePicker', { configurable: true,
+    value: async () => { throw new DOMException('cancelled', 'AbortError') } }))
+  const { row } = await setup(page)
+  const menuButton = page.getByRole('button', { name: '新規仮想セルのメニュー', exact: true })
+  await menuButton.click()
+  await page.keyboard.press('Escape')
+  await expect(menuButton).toBeFocused()
+  await expect(page.getByRole('menuitem', { name: 'PSDとして書き出す' })).toHaveCount(0)
+  await menuButton.click()
+  await page.getByRole('menuitem', { name: 'PSDとして書き出す' }).click()
+  await expect(page.getByTestId('export-status')).toHaveAttribute('data-phase', 'cancelled')
+  await row('先頭').press('F2')
+  await expect(page.getByRole('textbox', { name: 'レイヤー名を編集' })).toBeVisible()
+})
+
+test('CLIPサンプルの素材を読み込み、仮想セルのツリーだけをPSDへ保存する', async ({ page }) => {
+  test.setTimeout(60000)
+  await page.addInitScript(() => Object.defineProperty(window, 'showSaveFilePicker', { configurable: true, value: undefined }))
+  await page.goto('./')
+  await page.getByRole('button', { name: 'サンプルデータで試す', exact: true }).click()
+  await expect(page.getByTestId('tiled-preview')).toHaveAttribute('aria-busy', 'false', { timeout: 30000 })
+  await page.getByRole('button', { name: '仮想セル', exact: true }).click()
+  await page.getByRole('button', { name: '仮想セルテストのメニュー', exact: true }).click()
+  const downloading = page.waitForEvent('download')
+  await page.getByRole('menuitem', { name: 'PSDとして書き出す' }).click()
+  const download = await downloading
+  const psd = readPsd(await readFile((await download.path())!), { skipLayerImageData: true, skipCompositeImageData: true })
+  expect(psd.children!.map(layer => layer.name).sort()).toEqual(['A', 'B', '_原図'])
+  expect(psd.children!.every(layer => !!layer.children?.length)).toBe(true)
+  await expect(page.getByTestId('export-status')).toHaveAttribute('data-phase', 'done')
+})
+
+test('CLIPの効果付きフォルダへ別素材を追加し、現在の子ツリーを画像レイヤーとしてPSDへ保存する', async ({ page }, info) => {
+  test.setTimeout(90000)
+  initializeCanvas((w, h) => createCanvas(w, h) as unknown as HTMLCanvasElement)
+  await page.setViewportSize({ width: 1440, height: 1000 })
+  await page.addInitScript(() => Object.defineProperty(window, 'showSaveFilePicker', { configurable: true, value: undefined }))
+  await page.goto('./')
+  await page.locator('input[type=file][multiple]').setInputFiles({ name: 'effects.clip', mimeType: 'application/octet-stream', buffer: await clipDisplayFixture('none') })
+  const source = (name: string) => page.getByTestId('layer-tree').locator('[data-layer-id]').filter({ has: page.getByText(name, { exact: true }) })
+  await expect(source('_BG')).toBeVisible()
+  await page.getByRole('button', { name: '仮想セル', exact: true }).click()
+  await page.getByRole('button', { name: '＋ 追加', exact: true }).click()
+  const tree = page.getByTestId('virtual-set-tree')
+  const row = (name: string) => tree.locator('[data-vs-layer-id]').filter({ has: page.getByText(name, { exact: true }) })
+  await source('_BG').dragTo(tree.locator('[data-vs-root-drop]'))
+  await source('memo').dragTo(row('_BG'))
+  await expect(row('memo')).toHaveAttribute('data-vs-depth', '1')
+  await row('_BG').click()
+  await page.getByRole('button', { name: '仮想セルの選択素材をクイックルック' }).click()
+  const preview = page.getByRole('dialog', { name: '素材のクイックルック' }).locator('canvas')
+  await expect.poll(() => preview.evaluate(c => (c as HTMLCanvasElement).width)).toBeGreaterThan(1)
+  const expectedImage = await loadImage(await preview.evaluate(c => (c as HTMLCanvasElement).toDataURL()))
+  const expectedCanvas = createCanvas(expectedImage.width, expectedImage.height), ctx = expectedCanvas.getContext('2d')
+  ctx.drawImage(expectedImage, 0, 0)
+  const expected = ctx.getImageData(0, 0, expectedCanvas.width, expectedCanvas.height).data
+  await page.getByRole('button', { name: 'クイックルックを閉じる' }).click()
+  await page.getByRole('button', { name: '新規仮想セルのメニュー', exact: true }).click()
+  const downloading = page.waitForEvent('download')
+  await page.getByRole('menuitem', { name: 'PSDとして書き出す' }).click()
+  const download = await downloading
+  const psd = readPsd(await readFile((await download.path())!), { useImageData: true })
+  expect(psd.children).toHaveLength(1)
+  expect(psd.children![0].name).toBe('_BG')
+  expect(psd.children![0].children).toBeUndefined()
+  let max = 0
+  const actual = psd.imageData!.data
+  expect(actual.length).toBe(expected.length)
+  for (let i = 0; i < actual.length; i += 4) {
+    max = Math.max(max, Math.abs(actual[i + 3] - expected[i + 3]))
+    for (const bg of [0, 255]) for (let c = 0; c < 3; c++) {
+      max = Math.max(max, Math.abs(Math.round(actual[i + c] * actual[i + 3] / 255 + bg * (1 - actual[i + 3] / 255))
+        - Math.round(expected[i + c] * expected[i + 3] / 255 + bg * (1 - expected[i + 3] / 255))))
+    }
+  }
+  expect(max).toBeLessThanOrEqual(1)
+  await expect(page.getByTestId('export-status')).toContainText('フォルダ効果を焼き込み')
+  await expect(row('memo')).toBeVisible()
+  await expect(source('memo')).toBeVisible()
+  await page.screenshot({ path: info.outputPath('rasterized-folder-psd.png') })
+})
 
 test('仮想セル内だけ名前を変更でき、キャンセル・日本語入力・Undoを扱える', async ({ page }) => {
   const { tree, source, row } = await setup(page)

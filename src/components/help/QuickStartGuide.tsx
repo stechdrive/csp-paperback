@@ -139,6 +139,16 @@ export function QuickStartGuide({
 
       {sampleAction && <div className={styles.actions}>{sampleAction}</div>}
 
+      {full && <section className={styles.secondary}>
+        <div className={styles.secondaryTitle}>背景原図用PSDを作る</div>
+        <p className={styles.secondaryText}>
+          上部の「仮想セル」を開き、背景原図・BOOK・参照用のセルなどを追加してツリーを整理します。
+          各仮想セルのタイトル行右端の≡メニューから「PSDとして書き出す」を選ぶと、階層・合成モード・不透明度を保持して保存できます。
+          対応する描画効果の付いたフォルダは、効果を焼き込んだ1枚の画像レイヤーに変換します。
+          PSD保存には挿入位置の指定は不要です。詳しい操作と引き継ぐ内容は、機能ガイドの「仮想セル」を参照してください。
+        </p>
+      </section>}
+
       {full && (
         <>
           <section className={styles.secondary} data-help-section="desktop-quick">

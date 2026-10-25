@@ -5,6 +5,7 @@ import { compositeGroup, applyLayerMask, createCanvas } from '../engine/composit
 import { collectAnimFolderAncestorIds } from '../engine/tree-builder'
 import { resolveSelectedAnimCell } from './anim-cell-selection'
 import type { BlendMode, CspLayer, FlatLayer } from '../types'
+import type { MaterialEffects } from '../types/rendering'
 import type { VirtualSetLayerOverride, VirtualSetMember } from '../types/marks'
 import { collectingMaterials, visitMaterial } from '../engine/material-dependencies'
 import { resolvedMaterialLayer } from '../engine/material-cache'
@@ -31,18 +32,19 @@ function applyVsVisibilityOverrides(
   overrides: Record<string, boolean>,
 ): CspLayer {
   const overrideVal = overrides[layer.id]
+  const hidden = overrideVal !== undefined ? !overrideVal : layer.hidden
   const uiHidden = overrideVal !== undefined ? !overrideVal : layer.uiHidden
 
   if (layer.children.length === 0) {
-    if (uiHidden === layer.uiHidden) return layer
-    return { ...layer, uiHidden }
+    if (hidden === layer.hidden && uiHidden === layer.uiHidden) return layer
+    return { ...layer, hidden, uiHidden }
   }
 
   const children = layer.children.map(c => applyVsVisibilityOverrides(c, overrides))
   const childrenChanged = children.some((c, i) => c !== layer.children[i])
 
-  if (uiHidden === layer.uiHidden && !childrenChanged) return layer
-  return { ...layer, uiHidden, children }
+  if (hidden === layer.hidden && uiHidden === layer.uiHidden && !childrenChanged) return layer
+  return { ...layer, hidden, uiHidden, children }
 }
 
 function buildCompositeOverrideMap(
@@ -73,6 +75,11 @@ function shouldIsolateFolderForComposite(
   return effectiveBlendMode !== 'pass through' || (hasOverride && effectiveOpacity !== 100)
 }
 
+/** Effects always see the current virtual children, before the folder's mask/opacity. */
+function compositeFolderContents(children: FlatLayer[], effects: MaterialEffects | undefined, width: number, height: number): HTMLCanvasElement {
+  return applyMaterialEffects(compositeGroup(children, width, height), 0, 0, effects, width, height)
+}
+
 /**
  * 仮想セル専用の合成設定を使ってフラット化する。
  * 通常の flattenTree と違い、override 済みフォルダは pass through でも一度グループ化し、
@@ -83,6 +90,7 @@ function flattenTreeWithCompositeOverrides(
   docWidth: number,
   docHeight: number,
   layerOverrides: Record<string, VirtualSetLayerOverride>,
+  allLayers = false,
 ): FlatLayer[] {
   const animAncestorIds = collectAnimFolderAncestorIds(rootChildren)
 
@@ -96,12 +104,12 @@ function flattenTreeWithCompositeOverrides(
     const effectiveBlendMode = (override?.blendMode ?? layer.blendMode) as BlendMode
     const effectiveOpacity = override?.opacity ?? layer.opacity
 
-    if (layer.isAnimationFolder) {
+    if (layer.isAnimationFolder && !allLayers) {
       const selection = resolveSelectedAnimCell(layer, undefined)
       if (!selection) return []
       const cellFlats = flattenLayer(selection.cell)
       if (cellFlats.length === 0) return []
-      const rawCanvas = applyMaterialEffects(compositeGroup(cellFlats, docWidth, docHeight), 0, 0, layer.materialEffects, docWidth, docHeight)
+      const rawCanvas = compositeFolderContents(cellFlats, layer.materialEffects, docWidth, docHeight)
       const maskData = layer.agPsdRef.mask
       const finalCanvas = (maskData?.canvas && !maskData.disabled)
         ? applyLayerMask(rawCanvas, 0, 0, maskData, docWidth, docHeight)
@@ -118,7 +126,7 @@ function flattenTreeWithCompositeOverrides(
       }]
     }
 
-    if (layer.isFolder && animAncestorIds.has(layer.id) && !hasOverride && !layer.materialEffects) {
+    if (layer.isFolder && !allLayers && animAncestorIds.has(layer.id) && !hasOverride && !layer.materialEffects) {
       const childFlats: FlatLayer[] = []
       for (const child of [...layer.children].reverse()) {
         childFlats.push(...flattenLayer(child))
@@ -133,19 +141,20 @@ function flattenTreeWithCompositeOverrides(
       }
       if (childFlats.length === 0) return []
 
-      if (!layer.materialEffects && !shouldIsolateFolderForComposite(effectiveBlendMode, effectiveOpacity, hasOverride)) {
+      const maskData = layer.agPsdRef.mask
+      const preservePsdGroup = allLayers && (effectiveOpacity !== 100 || (maskData?.canvas && !maskData.disabled))
+      if (!layer.materialEffects && !preservePsdGroup && !shouldIsolateFolderForComposite(effectiveBlendMode, effectiveOpacity, hasOverride)) {
         return includeContainer(childFlats, layer.id)
       }
 
-      const rawCanvas = applyMaterialEffects(compositeGroup(childFlats, docWidth, docHeight), 0, 0, layer.materialEffects, docWidth, docHeight)
-      const maskData = layer.agPsdRef.mask
+      const rawCanvas = compositeFolderContents(childFlats, layer.materialEffects, docWidth, docHeight)
       const finalCanvas = (maskData?.canvas && !maskData.disabled)
         ? applyLayerMask(rawCanvas, 0, 0, maskData, docWidth, docHeight)
         : rawCanvas
       return [{
         canvas: finalCanvas,
         blendMode: effectiveBlendMode,
-        opacity: animAncestorIds.has(layer.id) && !hasOverride ? 100 : effectiveOpacity,
+        opacity: !allLayers && animAncestorIds.has(layer.id) && !hasOverride ? 100 : effectiveOpacity,
         top: 0,
         left: 0,
         sourceId: layer.id,
@@ -155,10 +164,18 @@ function flattenTreeWithCompositeOverrides(
     }
 
     if (collectingMaterials()) return []
-    const sourceCanvas = layer.agPsdRef.canvas ?? (layer.vectorRendering || layer.unsupported3D || layer.materialMissing ? createCanvas(1, 1) : undefined)
+    const psdAdjustment = allLayers ? layer.agPsdRef.adjustment : undefined
+    const adjustment = layer.adjustment ?? (psdAdjustment?.type === 'invert' ? { kind: 'invert' as const }
+      : psdAdjustment?.type === 'threshold' ? { kind: 'threshold' as const, threshold: psdAdjustment.level ?? 128 } : undefined)
+    let sourceCanvas = layer.agPsdRef.canvas
+    if (!sourceCanvas && adjustment) {
+      sourceCanvas = createCanvas(docWidth, docHeight)
+      const ctx = sourceCanvas.getContext('2d')!; ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, docWidth, docHeight)
+    }
+    sourceCanvas ??= layer.vectorRendering || layer.unsupported3D || layer.materialMissing ? createCanvas(1, 1) : undefined
     if (!sourceCanvas) return []
     const canvas = applyMaterialEffects(sourceCanvas, layer.left, layer.top, layer.materialEffects, docWidth, docHeight)
-    const fullSize = !!layer.materialEffects
+    const fullSize = canvas !== sourceCanvas
 
     const maskData = layer.agPsdRef.mask
     const hasMask = !!(maskData?.canvas && !maskData.disabled)
@@ -175,7 +192,7 @@ function flattenTreeWithCompositeOverrides(
       sourceId: layer.id,
       clipping: layer.clipping,
       nativeBlendMode: nativeBlendOverride(layer.nativeBlendMode, override?.blendMode),
-      adjustment: layer.adjustment,
+      adjustment,
       vectorWarning: !!layer.vectorRendering,
       unsupported3D: layer.unsupported3D,
     }]
@@ -186,6 +203,17 @@ function flattenTreeWithCompositeOverrides(
     result.push(...flattenLayer(layer))
   }
   return result
+}
+
+/** PSD keeps all animation children and artwork opacity; the outer mask stays editable. */
+export function rasterizeVirtualFolder(
+  layer: CspLayer, width: number, height: number, members: VirtualSetMember[],
+  visibilityOverrides: Record<string, boolean>, layerOverrides: Record<string, VirtualSetLayerOverride>,
+): HTMLCanvasElement {
+  const current = applyVsVisibilityOverrides(layer, visibilityOverrides)
+  const children = flattenTreeWithCompositeOverrides(current.children, width, height,
+    buildCompositeOverrideMap(members, layerOverrides), true)
+  return compositeFolderContents(children, layer.materialEffects, width, height)
 }
 
 /**

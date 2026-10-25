@@ -5,6 +5,7 @@ import screenshots from './helpScreenshots.json'
 export const HELP_HIGHLIGHTS = {
   startupSettings: { label: '書き出し設定', ...screenshots['startup-guide.png'].regions.startupSettings },
   virtualCels: { label: '仮想セル', ...screenshots['loaded-overview.png'].regions.virtualCels },
+  psdExport: { label: 'PSDとして書き出す', ...screenshots['virtual-psd-menu.png'].regions.psdExport },
   preview: { label: 'プレビュー', ...screenshots['loaded-overview.png'].regions.preview },
   layers: { label: '出力一覧と素材ツリー', ...screenshots['loaded-overview.png'].regions.layers },
   navigator: { label: 'キャンバス', ...screenshots['whole-preview.png'].regions.navigator },

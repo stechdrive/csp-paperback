@@ -78,7 +78,7 @@ export function VirtualSetPanel({ onClose, onPreviewOutput }: { onClose?: () => 
           ‹
         </button></Tooltip>}
         <Tooltip
-          content={'背景原図と任意のキャラのセルを組み合わせ、レイアウト画像を作れます。\n挿入位置はレイヤーツリーへのドラッグで指定できます。'}
+          content={'背景原図と任意のキャラのセルを組み合わせ、レイアウト画像や背景原図用PSDを作れます。\nPSDは各仮想セルの≡メニューから書き出せます。画像出力の挿入位置はレイヤーツリーへのドラッグで指定できます。'}
           placement="bottom"
         >
           <span className={styles.title}>{t.virtualSet.title}</span>

@@ -15,7 +15,7 @@
   "loaded-overview.png": {
     "width": 1440,
     "height": 1000,
-    "sha256": "9aa7306bbf890e92ccd32c78c0991812f8728b3feb64e974d7c70470e7642ed3",
+    "sha256": "73d45dd8a465d14463a0c092658ded78a6b7e697066eb5729e9066c156520559",
     "regions": {
       "virtualCels": {
         "x": 0,
@@ -43,10 +43,23 @@
       }
     }
   },
+  "virtual-psd-menu.png": {
+    "width": 247,
+    "height": 274,
+    "sha256": "8c5cf84d92df3a32a11f2f33acc448119d4382deb8163427516f63cf3443f826",
+    "regions": {
+      "psdExport": {
+        "x": 4.05,
+        "y": 21.51,
+        "width": 85.83,
+        "height": 13.87
+      }
+    }
+  },
   "whole-preview.png": {
     "width": 1440,
     "height": 1000,
-    "sha256": "bb7b2a80ea946d808cc565b366d2286f8ce13386a81a933e84d27891fa7125cf",
+    "sha256": "03ab137420eaf6c97a6757fbf4d1e7e841d8d1ab79965b3c571d0472ef1bcc71",
     "regions": {
       "navigator": {
         "x": 16.94,

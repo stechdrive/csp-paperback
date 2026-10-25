@@ -9,6 +9,8 @@ import { VirtualSetTree } from './VirtualSetTree'
 import type { VirtualSet } from '../types'
 import styles from './VirtualSetItem.module.css'
 import { virtualOutputId } from '../utils/output-identity'
+import { PaneMenu } from './PaneMenu'
+import { useVirtualSetPsdExport } from '../hooks/useVirtualSetPsdExport'
 
 export function VirtualSetItem({ virtualSet, onPreviewOutput }: {
   virtualSet: VirtualSet
@@ -21,6 +23,7 @@ export function VirtualSetItem({ virtualSet, onPreviewOutput }: {
   const selectSet = useAppStore(s => s.setSelectedVirtualSet)
   const selectedLayerId = useAppStore(s => s.selectedLayerId)
   const { t } = useLocale()
+  const { isExporting, exportPsd } = useVirtualSetPsdExport()
   const [collapsed, setCollapsed] = useState(false)
   const nameEditStart = useRef(virtualSet.name), nameHistoryPushed = useRef(false)
   const nameInput = useRef<HTMLInputElement>(null), autoSelected = useRef<string | null>(null)
@@ -65,6 +68,9 @@ export function VirtualSetItem({ virtualSet, onPreviewOutput }: {
         onClick={event => { event.stopPropagation(); remove(virtualSet.id) }}>✕</button></Tooltip>
       <Tooltip content="書き出し画像に表示"><button className={styles.collapseBtn} aria-label="仮想セルをプレビュー"
         onClick={event => { event.stopPropagation(); useAppStore.getState().selectOutputFile(virtualOutputId(virtualSet.id)); onPreviewOutput?.() }}>◧</button></Tooltip>
+      <PaneMenu label={`${virtualSet.name}のメニュー`}>
+        <button role="menuitem" disabled={isExporting || !virtualSet.members.length} onClick={() => void exportPsd(virtualSet.id)}>PSDとして書き出す</button>
+      </PaneMenu>
     </div>
     {!collapsed && <>
       <div className={styles.section}>

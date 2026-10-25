@@ -98,6 +98,12 @@ try {
     output: await bounds(page.getByTestId('output-view')),
   })
 
+  await page.getByRole('button', { name: '仮想セルテストのメニュー', exact: true }).click()
+  const psdExport = await bounds(page.getByRole('menuitem', { name: 'PSDとして書き出す', exact: true }))
+  const virtualCard = await bounds(page.locator('[data-virtual-set-card]').first())
+  await capture('virtual-psd-menu.png', { psdExport }, cropTo(virtualCard))
+  await page.keyboard.press('Escape')
+
   await page.getByRole('button', { name: 'キャンバス', exact: true }).click()
   await expect.poll(() => page.getByTestId('navigator-view').locator('canvas').first()
     .evaluate(canvas => canvas.width)).toBeGreaterThan(1)

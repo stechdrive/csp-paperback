@@ -10,8 +10,9 @@ export interface ExportJob {
   total: number
   currentFile: string
   sourceName: string
-  destination: OutputDestination
+  destination: OutputDestination | 'psd'
   error: string | null
+  warnings?: string[]
 }
 export const useExportJob = create<ExportJob>(() => ({
   isExporting: false, phase: 'idle', progress: 0, done: 0, total: 0,
@@ -19,5 +20,5 @@ export const useExportJob = create<ExportJob>(() => ({
 }))
 export const isExportInProgress = () => useExportJob.getState().isExporting
 export const dismissExportStatus = () => {
-  if (!isExportInProgress()) useExportJob.setState({ phase: 'idle', error: null })
+  if (!isExportInProgress()) useExportJob.setState({ phase: 'idle', error: null, warnings: [] })
 }

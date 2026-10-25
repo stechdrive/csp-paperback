@@ -67,9 +67,13 @@ pub async fn write_export_file(
     if !path
         .extension()
         .and_then(|value| value.to_str())
-        .is_some_and(|ext| ext.eq_ignore_ascii_case("png") || ext.eq_ignore_ascii_case("jpg"))
+        .is_some_and(|ext| {
+            ["png", "jpg", "psd"]
+                .iter()
+                .any(|allowed| ext.eq_ignore_ascii_case(allowed))
+        })
     {
-        return Err("Only JPG and PNG exports are supported".into());
+        return Err("Only JPG, PNG and PSD exports are supported".into());
     }
     let parent = path
         .parent()
