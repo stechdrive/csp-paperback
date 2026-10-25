@@ -18,7 +18,7 @@ export function createOutputRenderKey(
   const scene = JSON.stringify([treeId, width, height, background,
     processTable.map(entry => [entry.suffix, entry.folderNames])])
   const virtualImages = new Map(virtualSets.map(vs => [virtualOutputId(vs.id), JSON.stringify([
-    vs.insertionLayerId, vs.insertionPosition, vs.members, vs.visibilityOverrides,
+    vs.insertionLayerId, vs.insertionPosition, vs.members, vs.tree, vs.visibilityOverrides,
     vs.layerOverrides ?? {}, vs.expandToAnimationCells,
   ])]))
   const colors = new Map(border ? processTable.map(entry => [entry.suffix, resolveProcessBorderColor(entry)]) : [])

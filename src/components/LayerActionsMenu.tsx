@@ -10,7 +10,7 @@ export function LayerActionsProvider({ children }: { children: ReactNode }) {
   const [menu, setMenu] = useState<LayerMenu | null>(null)
   const actionsContext = useMemo(() => ({ show: setMenu, close: (row: HTMLElement) => setMenu(current => current?.row === row ? null : current) }), [])
   const popup = useRef<HTMLDivElement>(null)
-  const restore = () => menu?.row.closest<HTMLElement>('[data-layer-tree-focus]')?.focus({ preventScroll: true })
+  const restore = () => (menu?.row.closest<HTMLElement>('[data-layer-tree-focus]') ?? menu?.row)?.focus({ preventScroll: true })
   useDismissableLayer({ open: !!menu, content: popup, trigger: { current: menu?.row ?? null }, closeOnTab: true,
     closeOnResize: true, closeOnScroll: true,
     initialFocus: () => popup.current?.querySelector<HTMLButtonElement>('button:not(:disabled)') ?? popup.current,

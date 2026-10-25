@@ -48,13 +48,14 @@ describe('desktop pointer drag event isolation', () => {
     expect(getActiveDragPayload()).toBeNull()
     expect(document.body).not.toHaveClass('is-csp-dragging')
   })
-  it.each(['pointercancel', 'blur', 'unmount'])('cleans up a drag on %s', cause => {
+  it.each(['pointercancel', 'blur', 'unmount', 'escape'])('cleans up a drag on %s', cause => {
     const { row, result, unmount } = source()
     act(() => { result.current.onPointerDown(down(row)); pointer('pointermove') })
     expect(getActiveDragPayload()).toEqual({ type: 'layer', layerId: 'ink' })
     act(() => {
       if (cause === 'unmount') unmount()
       else if (cause === 'blur') window.dispatchEvent(new Event('blur'))
+      else if (cause === 'escape') document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
       else pointer('pointercancel')
     })
     expect(getActiveDragPayload()).toBeNull()

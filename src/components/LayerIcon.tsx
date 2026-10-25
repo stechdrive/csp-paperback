@@ -1,7 +1,7 @@
 import type { ReactNode, SVGProps } from 'react'
 import type { LayerContentKind } from '../types/layer-display'
 
-export type LayerIconKind = LayerContentKind | 'animation' | 'color' | 'edge' | 'mask' | 'maskoff' | 'tone' | 'water' | 'star' | 'more'
+export type LayerIconKind = LayerContentKind | 'animation' | 'color' | 'edge' | 'mask' | 'maskoff' | 'tone' | 'water' | 'star' | 'more' | 'folder-add' | 'trash'
 
 const paths: Record<LayerIconKind, ReactNode> = {
   'raster': <><rect x=".5" y=".5" width="15" height="15" fill="#fff" stroke="#292b2c" strokeWidth="1" rx=".15"/><path d="M3 2.2h10v11.6H6L3 10.8Z" fill="#fff" stroke="#626568" strokeWidth="1" strokeLinejoin="round"/><path d="M3 10.7h3.1v3.1Z" fill="#626568" stroke="none"/></>,
@@ -15,6 +15,8 @@ const paths: Record<LayerIconKind, ReactNode> = {
   'adjustment': <><circle cx="8" cy="8" r="5.6"/><path d="M8 2.4a5.6 5.6 0 0 1 0 11.2Z" fill="currentColor" stroke="none"/></>,
   'camera': <><rect x="1.5" y="4" width="9" height="8" rx="1"/><path d="m10.5 6 4-2v8l-4-2Z"/></>,
   'folder': <><path d="M1.5 4h5l1.5 2h6.5v7H1.5Z" fill="currentColor" fillOpacity=".14"/><path d="M1.5 6.5h13l-1.5 6.5H1.5Z"/></>,
+  'folder-add': <><path d="M1.5 4h5l1.5 2h6.5v7H1.5Z"/><path d="M8 8v3.5M6.25 9.75h3.5"/></>,
+  'trash': <path d="M3 4.5h10M6 4.5v-2h4v2M4 4.5l.7 9h6.6l.7-9M6.5 7v4M9.5 7v4"/>,
   'animation': <><path d="M1.5 3.5h5L8 5h6.5v8H1.5Z"/><rect x="4" y="7" width="8" height="4"/><path d="M6 7v4m4-4v4"/></>,
   'other': <><rect x="2.5" y="2.5" width="11" height="11" rx="1"/><path d="m8 5 3 3-3 3-3-3Z"/></>,
   'color': <><rect x="2" y="2" width="8" height="8" fill="var(--lc,#3e8cec)" stroke="var(--lc,#3e8cec)"/><rect x="7" y="7" width="7" height="7" fill="var(--lc-sub,#eef4fa)" stroke="#89a1b5"/></>,

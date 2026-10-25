@@ -1,7 +1,7 @@
 import type { StateCreator } from 'zustand'
 import type { SingleMark, VirtualSet, ProjectSettings, OutputConfig, CspLayer, BlendMode } from '../types'
 import type { AppStore } from './index'
-import { collectMembersInTreeOrder } from '../utils/virtual-set-utils'
+import { resolveVirtualSetLayers } from '../utils/virtual-set-tree'
 import { findLayerById } from '../utils/layerNavigation'
 import { normalizePreviewSelection } from './selection-validity'
 
@@ -51,6 +51,7 @@ function snapshot(s: AppStore): UndoableState {
     virtualSets: s.virtualSets.map(vs => ({
       ...vs,
       members: vs.members.map(m => ({ ...m })),
+      ...(vs.tree ? { tree: structuredClone(vs.tree) } : {}),
       layerOverrides: Object.fromEntries(
         Object.entries(vs.layerOverrides ?? {}).map(([layerId, override]) => [
           layerId,
@@ -137,7 +138,7 @@ function restoreSnapshot(
     : null
   const memberSet = state.virtualSets.find(vs => vs.id === current.selectedVsMemberSetId)
   const selectedMemberExists = memberSet && current.selectedVsMemberId && findLayerById(
-    collectMembersInTreeOrder(current.layerTree, new Set(memberSet.members.map(member => member.layerId))),
+    resolveVirtualSetLayers(current.layerTree, memberSet),
     current.selectedVsMemberId,
   )
   const selectedVsMemberSetId = selectedMemberExists

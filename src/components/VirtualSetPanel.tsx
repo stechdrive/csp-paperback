@@ -1,20 +1,20 @@
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { useAppStore } from '../store'
 import { useLocale } from '../i18n/locale'
 import { VirtualSetItem } from './VirtualSetItem'
 import { cancelVirtualVisibilityDrag } from '../utils/visibility-gesture'
 import { BlendOpacityBar } from './BlendOpacityBar'
 import { Tooltip } from './Tooltip'
-import { selectLayerById } from '../store/selectors'
-import type { BlendMode, CspLayer } from '../types'
+import { findLayerById } from '../utils/layerNavigation'
+import { resolveVirtualSetLayers } from '../utils/virtual-set-tree'
+import { useDragAutoScroll } from '../hooks/useDragDrop'
+import { PaneIcon } from './PaneIcon'
+import type { BlendMode } from '../types'
 import styles from './VirtualSetPanel.module.css'
 
-function containsLayerId(layer: CspLayer, layerId: string): boolean {
-  if (layer.id === layerId) return true
-  return layer.children.some(child => containsLayerId(child, layerId))
-}
-
 export function VirtualSetPanel({ onClose, onPreviewOutput }: { onClose?: () => void; onPreviewOutput?: () => void }) {
+  const list = useRef<HTMLDivElement>(null)
+  const autoScroll = useDragAutoScroll(list, { canScroll: payload => payload.type === 'layer' || payload.type === 'cell' || payload.type === 'virtualSetMember' })
   const documentTree = useAppStore(s => s.layerTree)
   useEffect(() => cancelVirtualVisibilityDrag, [documentTree])
   const virtualSets = useAppStore(s => s.virtualSets)
@@ -32,13 +32,8 @@ export function VirtualSetPanel({ onClose, onPreviewOutput }: { onClose?: () => 
     const vs = virtualSets.find(v => v.id === selectedVsMemberSetId)
     if (!vs) return null
     const state = useAppStore.getState()
-    const layer = selectLayerById(state, selectedVsMemberId)
+    const layer = findLayerById(resolveVirtualSetLayers(state.layerTree, vs), selectedVsMemberId)
     if (!layer) return null
-    const isInVirtualSet = vs.members.some(member => {
-      const memberLayer = selectLayerById(state, member.layerId)
-      return memberLayer ? containsLayerId(memberLayer, selectedVsMemberId) : false
-    })
-    if (!isInVirtualSet) return null
     const member = vs.members.find(m => m.layerId === selectedVsMemberId) ?? null
     const override = vs.layerOverrides?.[selectedVsMemberId]
     return { vs, member, layer, override }
@@ -106,10 +101,10 @@ export function VirtualSetPanel({ onClose, onPreviewOutput }: { onClose?: () => 
         onOpacityChangeStart={handleOpacityChangeStart}
         onOpacityChange={handleOpacityChange}
         actions={<button disabled={!selectedVirtualLayer} aria-label="仮想セルの選択素材をクイックルック"
-          onClick={() => selectedVirtualLayer && useAppStore.getState().openQuickLook(selectedVirtualLayer.layer.id, selectedVirtualLayer.vs.id)}>⌕</button>}
+          onClick={() => selectedVirtualLayer && useAppStore.getState().openQuickLook(selectedVirtualLayer.layer.id, selectedVirtualLayer.vs.id)}><PaneIcon kind="quicklook" /></button>}
       />
 
-      <div className={styles.list}>
+      <div ref={list} className={styles.list} {...autoScroll}>
         {virtualSets.length === 0 ? (
           <div className={styles.empty}>
             {t.virtualSet.empty.split('\n').map((line, i) => (

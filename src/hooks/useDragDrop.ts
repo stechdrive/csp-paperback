@@ -97,6 +97,21 @@ function setDraggingBodyClass(enabled: boolean): void {
   document.body.classList.toggle(DRAGGING_BODY_CLASS, enabled)
 }
 
+function createDragPreview(payload: DragPayload, source: HTMLElement): HTMLDivElement {
+  const preview = document.createElement('div')
+  const name = source.querySelector('[data-layer-name]')?.textContent
+    ?? source.closest('[data-virtual-set-card]')?.querySelector('input')?.value ?? source.textContent ?? ''
+  const count = payload.type === 'virtualSetMember' ? payload.layerIds.length : 1
+  preview.textContent = count > 1 ? `${name.trim()} ほか ${count - 1} 件` : name.trim()
+  preview.setAttribute('aria-hidden', 'true'); preview.dataset.layerDragPreview = 'true'
+  Object.assign(preview.style, { position: 'fixed', top: '0', left: '0', zIndex: '10000', pointerEvents: 'none',
+    maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '4px 8px',
+    border: '1px solid var(--color-border-strong)', borderRadius: '3px', color: 'var(--color-text-primary)',
+    background: 'var(--color-surface-1)', boxShadow: '0 2px 6px #0004', opacity: '.9', fontSize: '12px' })
+  document.body.append(preview)
+  return preview
+}
+
 export function startInternalPointerDrag(payload: DragPayload, e: React.PointerEvent): (() => void) | undefined {
   if (!isInternalPointerDragEnabled()) return
   if (e.button !== 0) return
@@ -104,17 +119,21 @@ export function startInternalPointerDrag(payload: DragPayload, e: React.PointerE
   cancelInternalDrag?.()
 
   const pointerId = e.pointerId
+  const dragSource = e.currentTarget as HTMLElement
   const startX = e.clientX
   const startY = e.clientY
   let dragging = false
   let finished = false
+  let preview: HTMLDivElement | undefined
 
   const cleanup = () => {
     if (finished) return
     finished = true
+    preview?.remove()
     document.removeEventListener('pointermove', handlePointerMove, true)
     document.removeEventListener('pointerup', handlePointerUp, true)
     document.removeEventListener('pointercancel', handlePointerCancel, true)
+    document.removeEventListener('keydown', handleKeyDown, true)
     window.removeEventListener('blur', handleBlur)
     if (activeInternalDropTarget) {
       internalDropTargets.get(activeInternalDropTarget)?.onDragLeave?.()
@@ -132,6 +151,7 @@ export function startInternalPointerDrag(payload: DragPayload, e: React.PointerE
     dragging = true
     _activeDragPayload = payload
     setDraggingBodyClass(true)
+    preview = createDragPreview(payload, dragSource)
   }
 
   const handlePointerMove = (event: PointerEvent) => {
@@ -139,6 +159,7 @@ export function startInternalPointerDrag(payload: DragPayload, e: React.PointerE
     beginDragIfNeeded(event)
     if (!dragging) return
     event.preventDefault()
+    if (preview) preview.style.transform = `translate(${event.clientX + 12}px, ${event.clientY + 12}px)`
     dispatchInternalDragOver(payload, { clientX: event.clientX, clientY: event.clientY })
   }
 
@@ -163,10 +184,14 @@ export function startInternalPointerDrag(payload: DragPayload, e: React.PointerE
     cleanup()
   }
   const handleBlur = () => { if (finished) return; setDraggingBodyClass(false); cleanup() }
+  const handleKeyDown = (event: KeyboardEvent) => {
+    if (event.key === 'Escape') { event.preventDefault(); handleBlur(); if (dragging) suppressNextClick() }
+  }
 
   document.addEventListener('pointermove', handlePointerMove, true)
   document.addEventListener('pointerup', handlePointerUp, true)
   document.addEventListener('pointercancel', handlePointerCancel, true)
+  document.addEventListener('keydown', handleKeyDown, true)
   window.addEventListener('blur', handleBlur)
   cancelInternalDrag = handleBlur
   return handleBlur
@@ -379,7 +404,12 @@ export function useDragSource(payload: DragPayload): DragHandlers & { isDragging
     }
     _activeDragPayload = payload
     e.dataTransfer.setData(DRAG_DATA_KEY, JSON.stringify(payload))
-    e.dataTransfer.effectAllowed = 'copy'
+    e.dataTransfer.effectAllowed = payload.type === 'virtualSetMember' ? 'move' : 'copy'
+    if (e.dataTransfer.setDragImage) {
+      const preview = createDragPreview(payload, e.currentTarget as HTMLElement)
+      e.dataTransfer.setDragImage(preview, 12, 12)
+      window.setTimeout(() => preview.remove(), 0)
+    }
     setDraggingBodyClass(true)
     setIsDragging(true)
   }, [nativeDraggable, payload])

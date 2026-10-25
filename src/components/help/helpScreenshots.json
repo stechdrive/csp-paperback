@@ -2,7 +2,7 @@
   "startup-guide.png": {
     "width": 1440,
     "height": 1000,
-    "sha256": "6f6dcdf44367a9729a3531adc9f503ec6b17915dbbf50690c9f8bea2a0df34d3",
+    "sha256": "08f549ab3c2ac1597456c3597a1c3a00b99a6bc7e3beb93b95430f273864965c",
     "regions": {
       "startupSettings": {
         "x": 86.31,
@@ -15,7 +15,7 @@
   "loaded-overview.png": {
     "width": 1440,
     "height": 1000,
-    "sha256": "5895d8c2a959beca741a116288d3fffbefb51de7992f152cf51899b154c94089",
+    "sha256": "9aa7306bbf890e92ccd32c78c0991812f8728b3feb64e974d7c70470e7642ed3",
     "regions": {
       "virtualCels": {
         "x": 0,
@@ -46,7 +46,7 @@
   "whole-preview.png": {
     "width": 1440,
     "height": 1000,
-    "sha256": "1191922a224587778c069c71a44a473b73ee4ccd24b6744168b23e08746a3987",
+    "sha256": "bb7b2a80ea946d808cc565b366d2286f8ce13386a81a933e84d27891fa7125cf",
     "regions": {
       "navigator": {
         "x": 16.94,

@@ -21,7 +21,7 @@ export function resolveLayerRowState(layer: CspLayer, manualIndividual: boolean,
 }
 
 export interface LayerAction {
-  id: 'rename' | 'individual' | 'animation' | 'info'
+  id: 'rename' | 'individual' | 'animation' | 'info' | 'remove' | 'quicklook' | 'newFolder'
   label: string
   checked?: boolean
   disabled?: boolean

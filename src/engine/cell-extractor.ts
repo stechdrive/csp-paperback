@@ -19,7 +19,8 @@ import type { VirtualSet } from '../types/marks'
 import { flattenTree } from './flatten'
 import { collectAnimFolderAncestorIds } from './tree-builder'
 import { applyLayerMask, compositeGroup, compositeStack, createCanvas } from './compositor'
-import { collectMembersInTreeOrder, buildMemberFlatsWithOverride } from '../utils/virtual-set-utils'
+import { buildMemberFlatsWithOverride } from '../utils/virtual-set-utils'
+import { resolveVirtualSetLayers } from '../utils/virtual-set-tree'
 import { buildAssignmentFromDetectedFolders } from './anim-folder-assignment'
 import { computeDisplayNames } from './anim-folder-display-name'
 import { isAutoMarkedContainerOutputSuppressed } from '../utils/auto-marked-container'
@@ -566,7 +567,7 @@ function collectVsContextFlats(
 /** Match virtual-cell export eligibility without allocating compositing canvases. */
 export function hasVirtualSetOutput(tree: CspLayer[], vs: VirtualSet): boolean {
   if (!vs.insertionLayerId || vs.members.length === 0) return false
-  const memberLayers = collectMembersInTreeOrder(tree, new Set(vs.members.map(member => member.layerId)))
+  const memberLayers = resolveVirtualSetLayers(tree, vs)
   if (hasDefaultFlattenedContent(memberLayers, vs.visibilityOverrides)) return true
 
   const context = collectVsContextLayers(vs.insertionLayerId, vs.insertionPosition, tree)
@@ -615,8 +616,7 @@ export function planVirtualSetEntries(
       )
 
       // VSメンバーをフラット化（visibilityOverrides・blendModeオーバーライド適用済み）
-      const memberIds = new Set(vs.members.map(m => m.layerId))
-      const memberLayers = collectMembersInTreeOrder(tree, memberIds)
+      const memberLayers = resolveVirtualSetLayers(tree, vs)
       const vsFlats = buildMemberFlatsWithOverride(
         vs.members, memberLayers, docWidth, docHeight, vs.visibilityOverrides, vs.layerOverrides ?? {}
       )

@@ -4,7 +4,8 @@ import type { OutputFile } from './output-plan'
 import { virtualOutputId } from './output-identity'
 import { collectContextSourceLayers } from '../engine/cell-extractor'
 import { flattenTree, compositeRoot } from '../engine/flatten'
-import { collectMembersInTreeOrder, buildMemberFlatsWithOverride } from './virtual-set-utils'
+import { buildMemberFlatsWithOverride } from './virtual-set-utils'
+import { resolveVirtualSetLayers } from './virtual-set-tree'
 import { recordOutputSources } from '../engine/render-sources'
 import { createOutputRenderKey } from './output-render-key'
 import { createRegionPreview } from '../engine/preview-region'
@@ -17,14 +18,14 @@ export function buildDraftOutputs(tree: CspLayer[], state: Pick<AppStore, 'virtu
     outputId: virtualOutputId(vs.id), gateId: virtualOutputId(vs.id), sourceLayerId: vs.id, flatName: vs.name, path: '',
     relativePath: vs.name, fileName: vs.name, segments: [], names: { flatName: vs.name, path: '' },
     preview: createRegionPreview(tree, state.docWidth, state.docHeight, (regionTree, w, h) => {
-      const members = collectMembersInTreeOrder(regionTree, new Set(vs.members.map(m => m.layerId)))
+      const members = resolveVirtualSetLayers(regionTree, vs)
       const flats = buildMemberFlatsWithOverride(vs.members, members, w, h, vs.visibilityOverrides, vs.layerOverrides ?? {})
       const context = flattenTree(collectContextSourceLayers(regionTree), w, h)
       return compositeRoot([...context, ...flats], w, h, state.outputConfig.background)
     }),
     renderCanvas: () => {
       const { docWidth: w, docHeight: h } = state
-      const members = collectMembersInTreeOrder(tree, new Set(vs.members.map(m => m.layerId)))
+      const members = resolveVirtualSetLayers(tree, vs)
       const flats = buildMemberFlatsWithOverride(vs.members, members, w, h, vs.visibilityOverrides, vs.layerOverrides ?? {})
       const context = flattenTree(collectContextSourceLayers(tree), w, h)
       return recordOutputSources(compositeRoot([...context, ...flats], w, h, state.outputConfig.background), flats)

@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useAppStore } from '../store'
 import { selectLayerTreeWithVisibility, selectOutputAliasTargets } from '../store/selectors'
 import { describeOutputSource } from '../utils/output-alias'
 import { findLayerPath } from '../utils/layerNavigation'
 import { compositeRoot, flattenTree } from '../engine/flatten'
 import { buildMemberFlatsWithOverride } from '../utils/virtual-set-utils'
+import { resolveVirtualSetLayers } from '../utils/virtual-set-tree'
 import { collectRenderMaterials } from '../engine/material-dependencies'
 import { withPreparedMaterials } from '../engine/material-cache'
 import { withCanvasResources } from '../engine/render-resources'
@@ -19,7 +20,9 @@ export function QuickLook() {
   const width = useAppStore(s => s.docWidth), height = useAppStore(s => s.docHeight)
   const dialog = useRef<HTMLDialogElement>(null), canvas = useRef<HTMLCanvasElement>(null)
   const close = useAppStore(s => s.closeQuickLook)
-  const layer = target ? findLayerPath(tree, target.layerId).at(-1) : undefined
+  const virtualSet = sets.find(vs => vs.id === target?.virtualSetId)
+  const materialTree = useMemo(() => virtualSet ? resolveVirtualSetLayers(tree, virtualSet) : tree, [tree, virtualSet])
+  const layer = target ? findLayerPath(materialTree, target.layerId).at(-1) : undefined
   const [error, setError] = useState<string | null>(null)
   useEffect(() => {
     if (!layer || !width || !height) return

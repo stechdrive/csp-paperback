@@ -1,10 +1,10 @@
 import type { StateCreator } from 'zustand'
 import type { SingleMark, VirtualSet } from '../types'
 import type { CspLayer } from '../types'
-import type { VirtualSetLayerOverride } from '../types/marks'
+import type { VirtualSetDropTarget, VirtualSetLayerOverride } from '../types/marks'
 import type { AppStore } from './index'
 import type { HistoryOptions } from './history-slice'
-import { collectMembersInTreeOrder } from '../utils/virtual-set-utils'
+import { findVirtualNode, planVirtualFolderCreation, planVirtualSetDrop, removeVirtualNodes, renameVirtualNode, resolveVirtualSetLayers, virtualNodeIds, virtualSetTree, withVirtualSetTree } from '../utils/virtual-set-tree'
 
 export interface MarksSlice {
   singleMarks: Map<string, SingleMark>
@@ -14,7 +14,11 @@ export interface MarksSlice {
   updateVirtualSet: (id: string, updates: Partial<Omit<VirtualSet, 'id'>>, options?: HistoryOptions) => void
   removeVirtualSet: (id: string) => void
   addVirtualSetMember: (setId: string, layerId: string) => void
+  insertVirtualSetLayers: (setId: string, layerIds: string[], target: VirtualSetDropTarget) => void
+  addVirtualSetFolder: (setId: string, target: VirtualSetDropTarget) => string | null
+  renameVirtualSetLayer: (setId: string, layerId: string, name: string) => void
   removeVirtualSetMember: (setId: string, layerId: string) => void
+  removeVirtualSetMembers: (setId: string, layerIds: string[]) => void
   reorderVirtualSetMembers: (setId: string, newOrder: string[]) => void
   setVirtualSetMemberBlendMode: (setId: string, layerId: string, blendMode: string | null, options?: HistoryOptions) => void
   setVirtualSetMemberOpacity: (setId: string, layerId: string, opacity: number | null, options?: HistoryOptions) => void
@@ -169,6 +173,13 @@ export const createMarksSlice: StateCreator<AppStore, [], [], MarksSlice> = (set
     if (!vs) return
     if (vs.members.some(m => m.layerId === layerId)) return
 
+    if (vs.tree) {
+      get().insertVirtualSetLayers(setId, [layerId], vs.tree[0]
+        ? { layerId: vs.tree[0].layerId, position: 'above' }
+        : { layerId: null, position: 'inside' })
+      return
+    }
+
     get().pushHistory()
     // 追加するレイヤー（フォルダも含む）のサブツリーについて、
     // 現在のグローバル表示状態を初期オーバーライドとして取得する
@@ -193,14 +204,67 @@ export const createMarksSlice: StateCreator<AppStore, [], [], MarksSlice> = (set
     })
   },
 
-  removeVirtualSetMember: (setId, layerId) => {
+  insertVirtualSetLayers: (setId, layerIds, target) => {
+    const state = get(), vs = state.virtualSets.find(item => item.id === setId)
+    if (!vs) return
+    const tree = planVirtualSetDrop(vs, state.layerTree, layerIds, target)
+    if (!tree) return
+    const oldIds = virtualNodeIds(virtualSetTree(vs, state.layerTree))
+    const next = withVirtualSetTree(vs, tree)
+    next.visibilityOverrides = { ...vs.visibilityOverrides }
+    for (const id of virtualNodeIds(tree)) {
+      if (oldIds.has(id)) continue
+      const layer = findLayerInTree(state.layerTree, id)
+      if (!layer) continue
+      next.visibilityOverrides[id] = state.visibilityOverrides.has(id)
+        ? !state.visibilityOverrides.get(id)! : !layer.hidden && !layer.uiHidden
+      next.layerOverrides![id] = { blendMode: layer.blendMode, opacity: layer.opacity }
+    }
+    state.pushHistory()
+    set({ virtualSets: state.virtualSets.map(item => item.id === setId ? next : item),
+      selectedVirtualSetId: setId, selectedVsMemberSetId: setId, selectedVsMemberId: layerIds[0] ?? null })
+  },
+
+  addVirtualSetFolder: (setId, target) => {
+    const state = get(), vs = state.virtualSets.find(item => item.id === setId)
+    if (!vs) return null
+    const folderId = `virtual-folder-${crypto.randomUUID()}`
+    const tree = planVirtualFolderCreation(vs, state.layerTree, folderId, target)
+    if (!tree) return null
+    const next = withVirtualSetTree(vs, tree)
+    next.visibilityOverrides = { ...vs.visibilityOverrides, [folderId]: true }
+    next.layerOverrides![folderId] = { blendMode: 'pass through', opacity: 100 }
+    state.pushHistory()
+    set({ virtualSets: state.virtualSets.map(item => item.id === setId ? next : item),
+      selectedVirtualSetId: setId, selectedVsMemberSetId: setId, selectedVsMemberId: folderId })
+    return folderId
+  },
+
+  renameVirtualSetLayer: (setId, layerId, name) => {
+    const state = get(), vs = state.virtualSets.find(item => item.id === setId)
+    if (!vs) return
+    const tree = virtualSetTree(vs, state.layerTree), node = findVirtualNode(tree, layerId)
+    const nextName = name.trim()
+    const currentName = node?.name ?? findLayerInTree(state.layerTree, layerId)?.originalName
+    if (!node || !nextName || nextName === currentName) return
+    const next = withVirtualSetTree(vs, renameVirtualNode(tree, layerId, nextName))
+    state.pushHistory()
+    set({ virtualSets: state.virtualSets.map(item => item.id === setId ? next : item) })
+  },
+
+  removeVirtualSetMember: (setId, layerId) => get().removeVirtualSetMembers(setId, [layerId]),
+
+  removeVirtualSetMembers: (setId, layerIds) => {
     const state = get()
     const vs = state.virtualSets.find(v => v.id === setId)
-    if (!vs?.members.some(member => member.layerId === layerId)) return
+    if (!vs) return
+    const tree = virtualSetTree(vs, state.layerTree), existing = virtualNodeIds(tree)
+    const ids = new Set(layerIds.filter(id => existing.has(id)))
+    if (!ids.size) return
     get().pushHistory()
-    const nextSet = { ...vs, members: vs.members.filter(member => member.layerId !== layerId) }
+    const nextSet = withVirtualSetTree(vs, removeVirtualNodes(tree, ids))
     const selectedMemberExists = state.selectedVsMemberId !== null && !!findLayerInTree(
-      collectMembersInTreeOrder(state.layerTree, new Set(nextSet.members.map(member => member.layerId))),
+      resolveVirtualSetLayers(state.layerTree, nextSet),
       state.selectedVsMemberId,
     )
     set({
@@ -220,7 +284,8 @@ export const createMarksSlice: StateCreator<AppStore, [], [], MarksSlice> = (set
         const reordered = newOrder
           .map(id => memberMap.get(id))
           .filter((m): m is NonNullable<typeof m> => m !== undefined)
-        return { ...vs, members: reordered }
+        const nodes = new Map(vs.tree?.map(node => [node.layerId, node]))
+        return { ...vs, members: reordered, ...(vs.tree ? { tree: reordered.map(member => nodes.get(member.layerId)!) } : {}) }
       }),
     })
   },
