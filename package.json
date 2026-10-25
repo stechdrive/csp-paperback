@@ -1,7 +1,7 @@
 {
   "name": "csp-paperback",
   "private": true,
-  "version": "1.40.308",
+  "version": "1.40.309",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -40,7 +40,7 @@
     "@tauri-apps/plugin-dialog": "^2.8.3",
     "@tauri-apps/plugin-fs": "^2.7.1",
     "@tauri-apps/plugin-opener": "^2.7.2",
-    "ag-psd": "^31.0.3",
+    "ag-psd": "^33.0.0",
     "client-zip": "^2.5.1",
     "pako": "^3.0.2",
     "react": "^19.3.1",

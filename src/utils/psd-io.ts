@@ -8,7 +8,7 @@ function dimensions(rect: { left?: number; right?: number; top?: number; bottom?
   return [(rect.right ?? 0) - (rect.left ?? 0), (rect.bottom ?? 0) - (rect.top ?? 0)]
 }
 
-/** ag-psd's ZIP decoder inflates without a size limit. Check the stream without retaining its output. */
+/** Enforce each ZIP channel's declared dimensions before decoding, without retaining its output. */
 function checkZipChannels(layer: Layer): void {
   const raw = layer.rawData
   if (!raw) return
