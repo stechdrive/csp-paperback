@@ -15,6 +15,7 @@ import { Tooltip } from './Tooltip'
 import { PaneMenu } from './PaneMenu'
 import { PaneIcon } from './PaneIcon'
 import type { BlendMode } from '../types'
+import { isMediaLayer } from '../utils/layer-display'
 import { findLayerPath, mergeExpandedFolders } from '../utils/layerNavigation'
 import styles from './LayerTreePanel.module.css'
 
@@ -151,13 +152,13 @@ export function LayerTreePanel({ active = true, onPreviewOutput }: { active?: bo
       <BlendOpacityBar
         blendMode={selectedLayer?.blendMode ?? 'normal'}
         opacity={selectedLayer?.opacity ?? 100}
-        disabled={!selectedLayer}
+        disabled={!selectedLayer || isMediaLayer(selectedLayer)}
         showPassThrough={selectedLayer?.isFolder ?? true}
         onBlendModeChange={handleBlendModeChange}
         onOpacityChangeStart={handleOpacityChangeStart}
         onOpacityChange={handleOpacityChange}
         actions={<>
-          <Tooltip content="素材単体を確認（Space）"><button className={styles.paneIcon} type="button" disabled={!selectedLayer} aria-label="選択素材をクイックルック"
+          <Tooltip content="素材単体を確認（Space）"><button className={styles.paneIcon} type="button" disabled={!selectedLayer || isMediaLayer(selectedLayer)} aria-label="選択素材をクイックルック"
             onClick={() => selectedLayerId && useAppStore.getState().openQuickLook(selectedLayerId)}><PaneIcon kind="quicklook" /></button></Tooltip>
           <PaneMenu label="素材レイヤーのメニュー">
             <button role="menuitem" disabled={!selectedLayerId || !aliasTargets.has(selectedLayerId)} onClick={event => {

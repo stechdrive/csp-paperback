@@ -1,6 +1,7 @@
 import type { CspLayer, VirtualSet } from '../types'
 import type { VirtualSetDropTarget, VirtualSetNode } from '../types/marks'
 import { MAX_LAYER_DEPTH } from './image-budget'
+import { isMediaLayer } from './layer-display'
 
 function indexLayers(layers: CspLayer[]): Map<string, CspLayer> {
   const result = new Map<string, CspLayer>()
@@ -31,10 +32,19 @@ export function renameVirtualNode(nodes: VirtualSetNode[], id: string, name: str
 
 /** Materialize legacy members lazily, preserving their visual order and source subtrees. */
 export function virtualSetTree(vs: VirtualSet, source: CspLayer[]): VirtualSetNode[] {
-  if (vs.tree) return vs.tree
   const index = indexLayers(source), seen = new Set<string>()
+  if (vs.tree) {
+    const filter = (nodes: VirtualSetNode[]): VirtualSetNode[] => {
+      const next = nodes.filter(node => node.virtualFolder || !isMediaLayer(index.get(node.layerId))).map(node => {
+        const children = filter(node.children)
+        return children === node.children ? node : { ...node, children }
+      })
+      return next.length === nodes.length && next.every((node, i) => node === nodes[i]) ? nodes : next
+    }
+    return filter(vs.tree)
+  }
   const convert = (layer: CspLayer): VirtualSetNode[] => {
-    if (seen.has(layer.id)) return []
+    if (isMediaLayer(layer) || seen.has(layer.id)) return []
     seen.add(layer.id)
     return [{ layerId: layer.id, children: layer.children.flatMap(convert) }]
   }
@@ -56,7 +66,7 @@ export function resolveVirtualSetLayers(source: CspLayer[], vs: VirtualSet): Csp
       singleMark: false, autoMarked: false, virtualSetMembership: [vs.id], uiHidden: false,
       expanded: false, hasAdjustmentLayer: false, display: { kind: 'folder' },
     } : index.get(node.layerId)
-    if (!layer) return []
+    if (!layer || isMediaLayer(layer)) return []
     return [{ ...layer, ...(node.name !== undefined ? { name: node.name, originalName: node.name } : {}),
       parentId, depth, children: resolve(node.children, node.layerId, depth + 1) }]
   })
@@ -115,9 +125,10 @@ export function planVirtualSetDrop(
   const selected = new Set(layerIds)
   const ids = [...ordered.filter(id => selected.has(id)), ...layerIds.filter(id => !existing.has(id))]
   const build = (layer: CspLayer): VirtualSetNode => existing.get(layer.id) ?? {
-    layerId: layer.id, children: layer.children.map(build),
+    layerId: layer.id, children: layer.children.filter(child => !isMediaLayer(child)).map(build),
   }
   const candidates = ids.flatMap(id => {
+    if (isMediaLayer(sources.get(id))) return []
     const node = existing.get(id)
     if (node) return [node]
     const layer = sources.get(id)

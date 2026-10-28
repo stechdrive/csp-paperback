@@ -10,6 +10,7 @@ import { readAdjustment } from './adjustment'
 import { readVectorStrokes, renderVectors, type BrushPattern, type VectorBrushes } from './vector'
 import { layerRenderingDiagnostics } from './rendering-status'
 import { ImageResourceError, rethrowImageResourceError } from '../image-budget'
+import { isMediaKind } from '../layer-display'
 
 /** Decode only drawing effects; palette label colors are deliberately unrelated. */
 export function readMaterialEffects(row: ClipRow, report?: (message: string) => void): MaterialEffects | undefined {
@@ -158,6 +159,7 @@ export function createMaterialDecoder(t: MaterialTables, width: number, height: 
     return decoded
   }
   return async (layer: ClipLayer, row: ClipRow) => {
+    if (isMediaKind(layer.kind)) return
     const failures: string[] = []
     const useOriginal = !!num(row, 'TimeLineLayerKeyFrameEnabled') || num(row, 'TimeLineOriginalMipmap') > 0 || num(row, 'TimeLineOriginalMaskMipmap') > 0
     const report = (message: string, part: ClipDiagnostic['part'] = 'material', outcome: ClipDiagnostic['outcome'] = 'approximate') =>

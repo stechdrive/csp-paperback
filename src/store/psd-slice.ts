@@ -11,6 +11,7 @@ import { nativeBlendOverride } from '../utils/clip/blend'
 import { emptyOutputSelection } from './output-selection'
 import { outputRenderQueue } from '../utils/output-render-queue'
 import { clearProjectSelectorCaches } from './selectors'
+import { isMediaLayer } from '../utils/layer-display'
 
 export interface PsdSlice {
   rawPsd: Psd | null
@@ -46,7 +47,7 @@ function updateLayerBlendMode(
   let changed = false
   const next = layers.map(layer => {
     if (layer.id === layerId) {
-      if (layer.blendMode === blendMode) return layer
+      if (isMediaLayer(layer) || layer.blendMode === blendMode) return layer
       layer.agPsdRef.blendMode = blendMode
       changed = true
       return { ...layer, blendMode, nativeBlendMode: nativeBlendOverride(layer.nativeBlendMode, blendMode) }
@@ -70,7 +71,7 @@ function updateLayerOpacity(
   let changed = false
   const next = layers.map(layer => {
     if (layer.id === layerId) {
-      if (layer.opacity === opacity) return layer
+      if (isMediaLayer(layer) || layer.opacity === opacity) return layer
       // agPsdRef.opacity は ag-psd が 0〜1 スケールで扱う
       layer.agPsdRef.opacity = opacity / 100
       changed = true

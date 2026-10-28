@@ -1,7 +1,8 @@
 import type { CspLayer } from '../types'
+import { isMediaLayer } from './layer-display'
 
 function isVisible(layer: CspLayer): boolean {
-  return !layer.hidden && !layer.uiHidden
+  return !isMediaLayer(layer) && !layer.hidden && !layer.uiHidden
 }
 
 function isDirectOutputUnit(layer: CspLayer): boolean {
@@ -12,7 +13,7 @@ function isDirectOutputUnit(layer: CspLayer): boolean {
 // Inspect structure, not pixels or visibility: a transparent/hidden artwork
 // layer still represents an intentional output. Descend through empty folders.
 function hasArtworkLayer(layer: CspLayer): boolean {
-  return !layer.isFolder || layer.children.some(hasArtworkLayer)
+  return !isMediaLayer(layer) && (!layer.isFolder || layer.children.some(hasArtworkLayer))
 }
 
 /**
@@ -37,7 +38,7 @@ export function isAutoMarkedContainerOutputSuppressed(layer: CspLayer, includeHi
 }
 
 export function isAutoMarkedOutputTarget(layer: CspLayer): boolean {
-  return layer.autoMarked &&
+  return !isMediaLayer(layer) && layer.autoMarked &&
     !layer.singleMark &&
     !layer.isAnimationFolder &&
     !isAutoMarkedContainerOutputSuppressed(layer)

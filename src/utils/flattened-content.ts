@@ -1,6 +1,7 @@
 import type { CspLayer } from '../types'
 import { resolveSelectedAnimCell } from './anim-cell-selection'
 import { hasDeferredMaterial } from '../engine/material-cache'
+import { isMediaLayer } from './layer-display'
 
 /**
  * Whether default flattening emits any FlatLayer, without drawing.
@@ -20,7 +21,7 @@ export function hasDefaultFlattenedContent(
 
   function hasContent(sourceLayer: CspLayer): boolean {
     const layer = withVisibility(sourceLayer)
-    if (layer.hidden || layer.uiHidden) return false
+    if (isMediaLayer(layer) || layer.hidden || layer.uiHidden) return false
     if (layer.isAnimationFolder) {
       const selection = resolveSelectedAnimCell({ ...layer, children: layer.children.map(withVisibility) }, undefined)
       return selection !== null && hasContent(selection.cell)

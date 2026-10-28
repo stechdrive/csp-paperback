@@ -14,6 +14,8 @@ const paths: Record<LayerIconKind, ReactNode> = {
   'text': <><rect x=".5" y=".5" width="15" height="15" fill="#fff" stroke="#292b2c" strokeWidth="1"/><path d="M2.5 13.5 6.4 2.5h1.8l4 11h-2l-.9-2.8H5.4l-.9 2.8Zm3.5-4.4h2.8L7.4 5Z" fill="#626568" fillRule="evenodd" stroke="none"/><path d="m11.6 8.8 3.3 1.8v3.5L11.6 16l-3.3-1.9v-3.5Z" fill="#fff" stroke="#fff" strokeWidth="1.5"/><path d="m11.6 9.4 2.9 1.6v3l-2.9 1.6L8.7 14v-3Zm-2.9 1.6 2.9 1.6 2.9-1.6m-2.9 1.6v3" stroke="#626568" strokeWidth=".9" strokeLinejoin="round"/></>,
   'adjustment': <><circle cx="8" cy="8" r="5.6"/><path d="M8 2.4a5.6 5.6 0 0 1 0 11.2Z" fill="currentColor" stroke="none"/></>,
   'camera': <><rect x="1.5" y="4" width="9" height="8" rx="1"/><path d="m10.5 6 4-2v8l-4-2Z"/></>,
+  'audio': <><path d="M6 11V3l7-1v8M6 5l7-1"/><ellipse cx="4" cy="11.5" rx="2" ry="1.5" fill="currentColor"/><ellipse cx="11" cy="10.5" rx="2" ry="1.5" fill="currentColor"/></>,
+  'video': <><rect x="1.5" y="2" width="13" height="12" rx="1"/><path d="M4 2v12M12 2v12M1.5 6H4m8 0h2.5M1.5 10H4m8 0h2.5"/><path d="m6.5 5.5 3 2.5-3 2.5Z" fill="currentColor" stroke="none"/></>,
   'folder': <><path d="M1.5 4h5l1.5 2h6.5v7H1.5Z" fill="currentColor" fillOpacity=".14"/><path d="M1.5 6.5h13l-1.5 6.5H1.5Z"/></>,
   'folder-add': <><path d="M1.5 4h5l1.5 2h6.5v7H1.5Z"/><path d="M8 8v3.5M6.25 9.75h3.5"/></>,
   'trash': <path d="M3 4.5h10M6 4.5v-2h4v2M4 4.5l.7 9h6.6l.7-9M6.5 7v4M9.5 7v4"/>,

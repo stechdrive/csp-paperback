@@ -142,6 +142,9 @@
 .visibilityCell[data-palette-color] .visibilityBtn:not(.visibilityReadOnly):hover { background: color-mix(in srgb, currentColor 12%, transparent); }
 .visibilityBtn:focus-visible { outline: 2px solid var(--layer-palette-foreground, var(--color-accent)); outline-offset: -2px; }
 .visibilityReadOnly { cursor: default; }
+.visibilityUnavailable { opacity: 0.5; }
+.rowMedia .name { color: var(--color-text-secondary); }
+.rowMedia .typeIcon { opacity: 0.65; }
 .visibilityIcon { width: 14px; height: 14px; }
 .typeIcon { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 17px; height: 18px; margin-inline-end: 1px; color: var(--color-text-secondary); }
 .typeIconCell { color: var(--color-success); }

@@ -9,11 +9,13 @@ import type { MaterialEffects } from '../types/rendering'
 import type { VirtualSetLayerOverride, VirtualSetMember } from '../types/marks'
 import { collectingMaterials, visitMaterial } from '../engine/material-dependencies'
 import { resolvedMaterialLayer } from '../engine/material-cache'
+import { isMediaLayer } from './layer-display'
 
 /** ツリー順を維持しながら memberIds に含まれるレイヤーを収集する */
 export function collectMembersInTreeOrder(layers: CspLayer[], memberIds: Set<string>): CspLayer[] {
   const result: CspLayer[] = []
   for (const layer of layers) {
+    if (isMediaLayer(layer)) continue
     if (memberIds.has(layer.id)) {
       result.push(layer)
     } else if (layer.children.length > 0) {
@@ -95,7 +97,7 @@ function flattenTreeWithCompositeOverrides(
   const animAncestorIds = collectAnimFolderAncestorIds(rootChildren)
 
   function flattenLayer(layer: CspLayer): FlatLayer[] {
-    if (layer.hidden || layer.uiHidden) return []
+    if (isMediaLayer(layer) || layer.hidden || layer.uiHidden) return []
     if (collectingMaterials()) visitMaterial(layer)
     else layer = resolvedMaterialLayer(layer)
 

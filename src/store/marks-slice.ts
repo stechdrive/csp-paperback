@@ -4,6 +4,7 @@ import type { CspLayer } from '../types'
 import type { VirtualSetDropTarget, VirtualSetLayerOverride } from '../types/marks'
 import type { AppStore } from './index'
 import type { HistoryOptions } from './history-slice'
+import { isMediaLayer } from '../utils/layer-display'
 import { findVirtualNode, planVirtualFolderCreation, planVirtualSetDrop, removeVirtualNodes, renameVirtualNode, resolveVirtualSetLayers, virtualNodeIds, virtualSetTree, withVirtualSetTree } from '../utils/virtual-set-tree'
 
 export interface MarksSlice {
@@ -117,6 +118,7 @@ export const createMarksSlice: StateCreator<AppStore, [], [], MarksSlice> = (set
   virtualSets: [],
 
   toggleSingleMark: (layerId) => {
+    if (isMediaLayer(findLayerInTree(get().layerTree, layerId))) return
     get().pushHistory()
     const current = new Map(get().singleMarks)
     if (current.has(layerId)) {
@@ -169,6 +171,7 @@ export const createMarksSlice: StateCreator<AppStore, [], [], MarksSlice> = (set
 
   addVirtualSetMember: (setId, layerId) => {
     const state = get()
+    if (isMediaLayer(findLayerInTree(state.layerTree, layerId))) return
     const vs = state.virtualSets.find(v => v.id === setId)
     if (!vs) return
     if (vs.members.some(m => m.layerId === layerId)) return

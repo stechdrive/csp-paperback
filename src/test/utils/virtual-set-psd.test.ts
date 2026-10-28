@@ -35,6 +35,20 @@ function virtual(ids: string[], updates: Partial<VirtualSet> = {}): VirtualSet {
 const pixels = (layer: Layer) => [...layer.imageData!.data]
 const options = { width: 4, height: 4, dpiX: 144, dpiY: 144 }
 
+it('omits audio/video, including saved references inside folders, without treating them as missing PSD artwork', async () => {
+  const tree = buildLayerTree({ width: 4, height: 4, children: [{ name: 'group', children: [
+    solid('artwork', '#f00'), solid('movie', '#00f'), solid('sound', '#0f0'),
+  ] }] })
+  const group = tree[0]
+  group.children[0].display = { kind: 'audio' }
+  group.children[1].display = { kind: 'video' }
+  const vs = virtual([group.id], { tree: [{ layerId: group.id, children: group.children.map(layer => ({ layerId: layer.id, children: [] })) }] })
+  const result = await createVirtualSetPsd(tree, vs, options)
+  const psd = readPsd(result.buffer, { useImageData: true })
+  expect(psd.children?.[0].children?.map(layer => layer.name)).toEqual(['artwork'])
+  expect(result.warnings).toEqual([])
+})
+
 function expectSameAppearance(actual: ArrayLike<number>, expected: Uint8ClampedArray) {
   let max = 0
   for (let i = 0; i < actual.length; i += 4) {

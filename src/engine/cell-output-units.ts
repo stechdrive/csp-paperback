@@ -1,6 +1,7 @@
 import type { CspLayer, ProjectSettings } from '../types'
 import { normalizeProcessFolderName } from '../utils/process-folder'
 import { isAutomaticOutputSuppressed } from '../utils/output-target'
+import { isMediaLayer } from '../utils/layer-display'
 
 export interface CellOutputUnit {
   cell: CspLayer
@@ -42,6 +43,7 @@ export function collectCellOutputUnits(
   const explicitlyIncludedBranch = animFolder.individualOutputExcludedBy !== undefined
 
   for (const [cellIndex, cell] of animFolder.children.entries()) {
+    if (isMediaLayer(cell)) continue
     if (!options.includeHidden && (cell.hidden || cell.uiHidden)) continue
     if (!explicitlyIncludedBranch && isAutomaticOutputSuppressed(cell)) continue
     if (!cell.isFolder) {
@@ -53,6 +55,7 @@ export function collectCellOutputUnits(
     const processGroups = new Map<string, CspLayer[]>()
     const processIdentities = new Map<string, string[]>()
     for (const sub of cell.children) {
+      if (isMediaLayer(sub)) continue
       const suffix = sub.isFolder && (explicitlyIncludedBranch || !isAutomaticOutputSuppressed(sub))
         ? folderNameToSuffix.get(normalizeProcessFolderName(sub.originalName))
         : undefined

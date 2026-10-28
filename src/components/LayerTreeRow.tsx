@@ -25,11 +25,14 @@ export function LayerVisibilityIcon() {
   )
 }
 
-export function LayerVisibility({ hidden, readOnly = false, ...props }: {
+export function LayerVisibility({ hidden, readOnly = false, unavailable, ...props }: {
   hidden: boolean
   readOnly?: boolean
+  unavailable?: string
 } & Omit<ComponentPropsWithRef<'button'>, 'hidden' | 'children' | 'className'>) {
   const className = `${styles.visibilityBtn} ${hidden ? styles.visibilityBtnHidden : styles.visibilityBtnVisible}`
+  if (unavailable) return <span className={`${className} ${styles.visibilityReadOnly} ${styles.visibilityUnavailable}`}
+    role="img" aria-label={unavailable} data-layer-column="visibility">—</span>
   if (readOnly) {
     return <span className={`${className} ${styles.visibilityReadOnly}`} role="img"
       aria-label={hidden ? '非表示' : '表示'} data-layer-column="visibility">

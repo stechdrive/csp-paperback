@@ -1,5 +1,6 @@
 import type { CspLayer } from '../types'
 import { isAutoMarkedContainerOutputSuppressed } from './auto-marked-container'
+import { isMediaLayer } from './layer-display'
 
 export type LayerOutputRole = { kind: 'individual'; origin: 'automatic' | 'manual' }
   | { kind: 'animation'; origin: 'manual' | 'autoProcess' }
@@ -12,6 +13,7 @@ export function layerRoleLabel(role: LayerOutputRole): string {
 
 /** Derive badges from effective output precedence without storing duplicate state. */
 export function resolveLayerRowState(layer: CspLayer, manualIndividual: boolean, insideAnimation = false) {
+  if (isMediaLayer(layer)) return { role: undefined, autoIndividual: false, animationSource: undefined }
   const animationSource = layer.isAnimationFolder ? layer.animationFolder?.detectedBy : undefined
   const autoIndividual = !insideAnimation && !layer.isAnimationFolder && layer.autoMarked && !isAutoMarkedContainerOutputSuppressed(layer)
   const role: LayerOutputRole | undefined = layer.isAnimationFolder

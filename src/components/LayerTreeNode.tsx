@@ -22,6 +22,7 @@ import styles from './LayerTree.module.css'
 import type { HistoryOptions } from '../store/history-slice'
 import { selectLayerVirtualInsertions, selectOutputAliasTargets, selectOutputRowStatuses, selectLayerTreeWithVisibility } from '../store/selectors'
 import { visibilityDrag } from '../utils/visibility-gesture'
+import { isMediaLayer, mediaLayerNotice } from '../utils/layer-display'
 
 type DropPlacement = VirtualSetInsertionPosition | 'inside'
 const FOLDER_INSIDE_ZONE_START = 0.35
@@ -208,6 +209,8 @@ export const LayerTreeNode = memo(function LayerTreeNodeView({
   const visibilityMouseHandled = useRef(false)
 
   const { draggable, onDragStart, onDragEnd, onPointerDown } = useDragSource({ type: 'layer', layerId: layer.id })
+  const media = isMediaLayer(layer)
+  const mediaNotice = media ? mediaLayerNotice(layer.display!.kind) : undefined
 
   // override があればその値、なければ PSD の hidden/uiHidden 両方を考慮した実効的な非表示状態
   const isUiHidden = visibilityOverrides.has(layer.id)
@@ -218,7 +221,7 @@ export const LayerTreeNode = memo(function LayerTreeNodeView({
   const { role: outputRole, autoIndividual: isOutputAutoMarked } = resolveLayerRowState(layer, hasSingleMark, insideAnimation)
   const isAutoProcessAnimFolder = layer.animationFolder?.detectedBy === 'autoProcess'
   const isAnimFolder = layer.isAnimationFolder || (layer.isFolder && isManualAnimFolder)
-  const visibilityLabel = isUiHidden ? 'レイヤーを表示する' : 'レイヤーを非表示にする'
+  const visibilityLabel = mediaNotice ?? (isUiHidden ? 'レイヤーを表示する' : 'レイヤーを非表示にする')
 
   const handleRowClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
@@ -351,7 +354,8 @@ export const LayerTreeNode = memo(function LayerTreeNodeView({
         autoProcess={isAutoProcessAnimFolder}
         autoMarked={isOutputAutoMarked}
         outputRole={outputRole}
-        dimmed={isUiHidden}
+        dimmed={!media && isUiHidden}
+        className={media ? styles.rowMedia : ''}
         selected={isSelected}
         activeCell={isCellActive}
         dropTarget={dropPlacement === 'inside'}
@@ -362,15 +366,15 @@ export const LayerTreeNode = memo(function LayerTreeNodeView({
           onEdit={onEditName} onFinish={onFinishName} />}
         data-layer-id={layer.id}
         onClick={handleRowClick}
-        draggable={editingNameId === layer.id ? false : draggable}
-        onDragStart={onDragStart}
+        draggable={media || editingNameId === layer.id ? false : draggable}
+        onDragStart={media ? undefined : onDragStart}
         onDragEnd={onDragEnd}
-        onPointerDown={onPointerDown}
+        onPointerDown={media ? undefined : onPointerDown}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         visibility={<Tooltip content={visibilityLabel}>
-          <LayerVisibility hidden={isUiHidden}
+          <LayerVisibility hidden={isUiHidden} unavailable={mediaNotice}
             onMouseDown={handleVisibilityMouseDown}
             onMouseEnter={handleVisibilityMouseEnter}
             onClick={event => {
@@ -395,7 +399,7 @@ export const LayerTreeNode = memo(function LayerTreeNodeView({
         </>}
         controls={{
           select: () => onSelect(layer.id),
-          actions: createLayerActions({ role: outputRole, isAnimation: isAnimFolder, canAssignAnimation,
+          actions: media ? [{ id: 'info', label: mediaNotice!, disabled: true }] : createLayerActions({ role: outputRole, isAnimation: isAnimFolder, canAssignAnimation,
             insideAnimation, manualIndividual: hasSingleMark,
             rename: canRename && onEditName ? () => onEditName(layer.id) : undefined,
             toggleIndividual: () => onToggleMark(layer.id), toggleAnimation: () => onToggleAnimFolder(layer.id) }),

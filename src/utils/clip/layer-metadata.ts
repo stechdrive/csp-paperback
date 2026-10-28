@@ -1,6 +1,6 @@
 import type { LayerContentKind } from '../../types/layer-display'
 import { readGradientKind } from './gradient'
-import { num, type ClipRow } from './records'
+import { num, str, type ClipRow } from './records'
 
 export function isPaper(row: ClipRow): boolean { return (num(row, 'LayerType') & ~2) === 1584 }
 
@@ -9,10 +9,19 @@ export function hasLayerMask(row: ClipRow): boolean {
   return !!(num(row, 'LayerType') & 2) || num(row, 'TimeLineOriginalMaskMipmap') > 0 || num(row, 'LayerLayerMaskMipmap') > 0
 }
 
-export function readLayerKind(row: ClipRow, hasVectorObjects = false): LayerContentKind {
+/** Only inspect a linked resource's type/extension, never the editable layer name. */
+export function readMediaItemKind(item: ClipRow): 'audio' | 'video' | undefined {
+  const type = str(item.ItemType).toLowerCase()
+  if (type === 'audio') return 'audio'
+  if (type === 'movie' || type === 'video' || /^(avi|mp4|mov)$/i.test(str(item.ItemFileExtension).replace(/^\./, ''))) return 'video'
+}
+
+export function readLayerKind(row: ClipRow, hasVectorObjects = false, mediaKind?: 'audio' | 'video'): LayerContentKind {
+  if (num(row, 'AudioLayer')) return 'audio'
+  if (mediaKind) return mediaKind
   // Paper includes the camera bit; test the complete paper type first.
   if (isPaper(row)) return 'paper'
-  if (num(row, 'LayerType') & 512) return 'camera'
+  if ((num(row, 'LayerType') & 512) && (num(row, 'LayerFolder') & 1)) return 'camera'
   if (num(row, 'LayerFolder') & 1) return 'folder'
   if (row.FilterLayerInfo) return 'adjustment'
   if (num(row, 'Manager3D') || num(row, 'Manager3DOd')) return '3d'

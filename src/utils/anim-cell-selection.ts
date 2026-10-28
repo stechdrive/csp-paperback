@@ -1,7 +1,8 @@
 import type { CspLayer } from '../types'
+import { isMediaLayer } from './layer-display'
 
 function isVisibleCell(layer: CspLayer): boolean {
-  return !layer.hidden && !layer.uiHidden
+  return !isMediaLayer(layer) && !layer.hidden && !layer.uiHidden
 }
 
 /**

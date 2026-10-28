@@ -5,7 +5,8 @@ import { readActionMixer } from './binc'
 import { readCelFrames } from './timeline'
 import { readAttribute } from './raster'
 import { createMaterialDecoder, readMaterialEffects } from './material'
-import { hasLayerMask, readLayerKind, readPaletteColor } from './layer-metadata'
+import { hasLayerMask, readLayerKind, readMediaItemKind, readPaletteColor } from './layer-metadata'
+import { isMediaKind } from '../layer-display'
 import { num, str, errorMessage, type ClipRow as Row } from './records'
 import type { ClipDiagnostic, ClipDocument, ClipLayer, ClipTimeline } from './types'
 
@@ -55,6 +56,13 @@ export async function openClipSession(bytes: Uint8Array, SQL: SqlJsStatic): Prom
     const diagnostics: ClipDiagnostic[] = []
     const vectors = keyed(rows(db, 'VectorObjectList'))
     const vectorLayerIds = new Set([...vectors.values()].map(v => num(v, 'LayerId')))
+    const mediaItems = new Map(rows(db, 'CanvasItem').filter(item => /^[0-9a-f]{32}$/.test(uuid(item.ItemUuid)))
+      .map(item => [uuid(item.ItemUuid), readMediaItemKind(item)]))
+    const mediaObjects = new Map<number, 'audio' | 'video'>()
+    for (const object of rows(db, 'LayerObject')) {
+      const kind = num(object, 'IsAudio') ? 'audio' : mediaItems.get(uuid(object.BankItemUuid))
+      if (kind) mediaObjects.set(num(object, 'LayerId'), kind)
+    }
     const nativeRows = new Map<string, Row>()
     const visited = new Set<number>([num(root, 'MainId')])
     function children(parent: Row, depth: number): ClipLayer[] {
@@ -76,9 +84,10 @@ export async function openClipSession(bytes: Uint8Array, SQL: SqlJsStatic): Prom
         check(/^[0-9a-f]{32}$/.test(key) && !nativeRows.has(key), 'レイヤーUUIDが不正または重複しています')
         nativeRows.set(key, row)
         const composite = num(row, 'LayerComposite')
-        if (!blends[composite]) diagnostics.push({ scope: 'raster', part: 'blend', layerId: key, message: `「${str(row.LayerName)}」の合成モード ${composite} は未対応です（通常で表示）` })
+        const kind = readLayerKind(row, vectorLayerIds.has(next), mediaObjects.get(next) ?? mediaItems.get(uuid(row.BankItemUuid)))
+        if (!isMediaKind(kind) && !blends[composite]) diagnostics.push({ scope: 'raster', part: 'blend', layerId: key, message: `「${str(row.LayerName)}」の合成モード ${composite} は未対応です（通常で表示）` })
         result.push({ id: key, name: str(row.LayerName), isFolder: !!(num(row, 'LayerFolder') & 1),
-          kind: readLayerKind(row, vectorLayerIds.has(next)), paletteColor: readPaletteColor(row),
+          kind, paletteColor: readPaletteColor(row),
           maskState: hasLayerMask(row) ? num(row, 'LayerVisibility') & 2 ? 'enabled' : 'disabled' : undefined,
           nativeBlendMode: composite,
           isAnimationFolder: !!num(row, 'AnimationFolder'), expanded: !(num(row, 'LayerFolder') & 16),
@@ -142,7 +151,7 @@ export async function openClipSession(bytes: Uint8Array, SQL: SqlJsStatic): Prom
     const nativeLayers = new Map<string, ClipLayer>()
     const walk = (layers: ClipLayer[]) => layers.forEach(layer => {
         nativeLayers.set(layer.id, layer)
-        layer.effects = readMaterialEffects(nativeRows.get(layer.id)!, message => diagnostics.push({
+        layer.effects = isMediaKind(layer.kind) ? undefined : readMaterialEffects(nativeRows.get(layer.id)!, message => diagnostics.push({
           scope: 'raster', part: 'effect', layerId: layer.id, message: `「${layer.name}」: ${message}`,
         }))
         walk(layer.children)

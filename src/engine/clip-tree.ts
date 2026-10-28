@@ -10,6 +10,7 @@ import { withCanvasResources } from './render-resources'
 import { clipReader } from '../utils/clip-io'
 import { bindMaterialDiagnostics, hasDeferredMaterial, ownMaterials, registerMaterial } from './material-cache'
 import { layerRenderingDiagnostics } from '../utils/clip/rendering-status'
+import { isMediaKind } from '../utils/layer-display'
 
 function checkClipCanvasBudget(clip: ClipDocument): void {
   imageBytes(clip.width, clip.height)
@@ -41,6 +42,7 @@ export function clipRenderingSource(clip: ClipDocument): Psd {
     const convert = (metadata: ClipLayer): Layer => {
       const target: Layer = { name: metadata.name, hidden: metadata.hidden, opacity: metadata.opacity,
         blendMode: metadata.blendMode, clipping: metadata.clipping, top: 0, left: 0, right: 0, bottom: 0 }
+      if (isMediaKind(metadata.kind)) return target
       if (metadata.isFolder) {
         target.sectionDivider = { type: metadata.expanded ? 1 : 2 }
         target.children = metadata.children.slice().reverse().map(convert)
@@ -73,7 +75,7 @@ export function clipRenderingSource(clip: ClipDocument): Psd {
   function convert(layer: ClipLayer): Layer {
     let rendered: ReturnType<typeof renderClipMaterial>
     try {
-      rendered = layer.adjustment && adjustment ? adjustment : renderClipMaterial(layer, clip.width, clip.height)
+      rendered = isMediaKind(layer.kind) ? undefined : layer.adjustment && adjustment ? adjustment : renderClipMaterial(layer, clip.width, clip.height)
       if (layer.adjustment) adjustment = rendered
     }
     catch (e) { clip.diagnostics.push({ scope: 'raster', layerId: layer.id, message: `「${layer.name}」: ${e instanceof Error ? e.message : String(e)}` }) }
@@ -122,6 +124,7 @@ export function buildClipLayerTree(clip: ClipDocument, source: Psd, timeline: Cl
         mask: n.maskState ?? (n.mask ? n.mask.disabled ? 'disabled' : 'enabled' : undefined),
       }
       r.materialMissing = clip.diagnostics.some(d => d.layerId === n.id && d.outcome === 'missing-content')
+      if (isMediaKind(n.kind)) { r.autoMarked = false; r.singleMark = false; r.materialMissing = false }
       if (paired && !n.isFolder && hasDeferredMaterial(r.agPsdRef)) {
         const ref = r.agPsdRef
         bindMaterialDiagnostics(ref, () => layerRenderingDiagnostics(n, clip.compatibility, true, !!ref.canvas))

@@ -1,6 +1,7 @@
 import type { CspLayer } from '../../types'
 import { ja } from '../../i18n/ja'
 import type { ClipDiagnostic, ClipDocument, ClipLayer } from './types'
+import { isMediaKind } from '../layer-display'
 
 export function compatibilityAdvice(compatibility: ClipDocument['compatibility']): string {
   return compatibility === 'saved'
@@ -20,6 +21,7 @@ export function materialRenderingMessage(kind: 'vector' | 'text' | '3d', missing
 /** Also used by the decoder so callers outside the store get the same notices. */
 export function layerRenderingDiagnostics(layer: ClipLayer, compatibility: ClipDocument['compatibility'], paired = false, hasPsdImage = false): ClipDiagnostic[] {
   const result: ClipDiagnostic[] = []
+  if (isMediaKind(layer.kind)) return result
   const add = (message: string, part: ClipDiagnostic['part'], outcome: ClipDiagnostic['outcome'], materialKind?: ClipDiagnostic['materialKind']) => result.push({
     scope: 'raster', layerId: layer.id, message: `「${layer.name}」: ${message}`, rendering: true, part, outcome, materialKind,
   })
@@ -49,8 +51,10 @@ export function resolveClipDiagnostics(clip: ClipDocument, tree: CspLayer[], pai
   const visitTree = (layers: CspLayer[]) => layers.forEach(l => { rendered.set(l.id, l); visitTree(l.children) })
   visitTree(tree)
   const replaced = new Set<string>()
+  const excluded = new Set<string>()
   const generated: ClipDiagnostic[] = []
   const visit = (layers: ClipLayer[]) => layers.forEach(layer => {
+    if (isMediaKind(layer.kind)) excluded.add(layer.id)
     const ref = rendered.get(`clip:${layer.id}`)?.agPsdRef
     const hasImage = !!ref && (!!ref.canvas || hasDeferredMaterial(ref))
     if (paired && !layer.isFolder && hasImage) replaced.add(layer.id)
@@ -59,7 +63,7 @@ export function resolveClipDiagnostics(clip: ClipDocument, tree: CspLayer[], pai
   })
   visit(clip.layers)
   return [...clip.diagnostics.filter(d => !d.rendering && !(d.scope === 'raster' && d.layerId && (
-    replaced.has(d.layerId) || (paired && d.part === 'blend' && rendered.has(`clip:${d.layerId}`))
+    excluded.has(d.layerId) || replaced.has(d.layerId) || (paired && d.part === 'blend' && rendered.has(`clip:${d.layerId}`))
   ))), ...generated]
 }
 import { hasDeferredMaterial } from '../../engine/material-cache'

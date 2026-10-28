@@ -7,6 +7,7 @@ import { resolveSelectedAnimCell } from '../utils/anim-cell-selection'
 import { withCanvasResources } from './render-resources'
 import { collectingMaterials, visitMaterial } from './material-dependencies'
 import { resolvedMaterialLayer } from './material-cache'
+import { isMediaLayer } from '../utils/layer-display'
 
 /**
  * コアフラット化アルゴリズム
@@ -41,7 +42,7 @@ export function flattenTree(
 
   function flattenLayerContent(layer: CspLayer): FlatLayer[] {
     // 非表示は合成不参加
-    if (layer.hidden || layer.uiHidden) return []
+    if (isMediaLayer(layer) || layer.hidden || layer.uiHidden) return []
     if (collectingMaterials()) visitMaterial(layer)
     else layer = resolvedMaterialLayer(layer)
 

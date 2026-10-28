@@ -1,3 +1,4 @@
+import { isMediaLayer } from '../utils/layer-display'
 import { applyMaterialEffects } from './material-effects'
 import { collectingMaterials, visitMaterial } from './material-dependencies'
 import { withCanvasResources } from './render-resources'
@@ -135,7 +136,7 @@ function planCells(
   // (同名 anim folder の (n) 番号付けは呼び出し側で完了済み)
   const displayName = hierarchyFolder ?? animFolder.originalName.trim()
   const folderName = displayName
-  const visibleChildren = animFolder.children.filter(c => !c.hidden && !c.uiHidden)
+  const visibleChildren = animFolder.children.filter(c => !isMediaLayer(c) && !c.hidden && !c.uiHidden)
   const namingMode = projectSettings.cellNamingMode ?? DEFAULT_PROJECT_SETTINGS.cellNamingMode
   const entries: PlannedOutputEntry[] = []
 
@@ -210,11 +211,11 @@ export function getMaxSequenceNumberForAnimationFolders(tree: CspLayer[]): numbe
 
   function walk(layers: CspLayer[]): void {
     for (const layer of layers) {
-      if (layer.hidden || layer.uiHidden) continue
+      if (isMediaLayer(layer) || layer.hidden || layer.uiHidden) continue
 
       if (layer.isAnimationFolder) {
         if (layer.animationFolder?.detectedBy !== 'autoProcess') {
-          const visibleCellCount = layer.children.filter(c => !c.hidden && !c.uiHidden).length
+          const visibleCellCount = layer.children.filter(c => !isMediaLayer(c) && !c.hidden && !c.uiHidden).length
           maxCellCount = Math.max(maxCellCount, visibleCellCount)
         }
         continue
@@ -261,7 +262,7 @@ export function buildSheetSequenceNumbers(
         const track = tracksByNo.get(layer.animationFolder.trackNo)
         const displayName = displayNameMap.get(layer.id) ?? layer.originalName.trim()
         if (track) {
-          const visibleChildren = layer.children.filter(c => !c.hidden && !c.uiHidden)
+          const visibleChildren = layer.children.filter(c => !isMediaLayer(c) && !c.hidden && !c.uiHidden)
           for (const cell of visibleChildren) {
             const firstFrame = findFirstStartFrame(track, cell.originalName)
             if (firstFrame === null) continue
@@ -450,7 +451,7 @@ function isIndependentOutputUnit(layer: CspLayer): boolean {
  * 子だけ差し替えたレイヤーとして残す。
  */
 function toContextLayer(layer: CspLayer): CspLayer | null {
-  if (layer.hidden || layer.uiHidden) return null
+  if (isMediaLayer(layer) || layer.hidden || layer.uiHidden) return null
   if (isIndependentOutputUnit(layer)) return null
 
   // アニメ子孫を持つフォルダは、その内部の通常レイヤーも該当アニメ枝の
@@ -851,7 +852,7 @@ export function extractMarkedLayers(
 
   function walk(layers: CspLayer[], contextFlats: FlatLayer[]): void {
     for (const layer of layers) {
-      if (layer.hidden || layer.uiHidden) continue
+      if (isMediaLayer(layer) || layer.hidden || layer.uiHidden) continue
 
       if (
         !layer.isAnimationFolder &&
@@ -956,7 +957,7 @@ export function planAllEntries(
   function walk(layers: CspLayer[], inherited: ContextFactory): void {
     for (let i = 0; i < layers.length; i++) {
       const layer = layers[i]
-      if (layer.hidden || layer.uiHidden) continue
+      if (isMediaLayer(layer) || layer.hidden || layer.uiHidden) continue
 
       if (isAutomaticOutputSuppressed(layer)) {
         walkMarkedOrRegularFolderChildren(layers, i, layer, inherited)

@@ -12,6 +12,7 @@ import type { AppTheme } from '../theme'
 import { DEFAULT_APP_THEME } from '../theme'
 import type { AppStore } from './index'
 import type { HistoryOptions } from './history-slice'
+import { isMediaLayer } from '../utils/layer-display'
 import { clearedOutputSelection, emptyOutputSelection, outputSelectionPatch, type OutputSelectionOptions } from './output-selection'
 import { cellOutputId, virtualOutputId } from '../utils/output-identity'
 
@@ -197,7 +198,10 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
     set({ selectedOutputIds })
   },
   setOutputViewMode: outputViewMode => set({ outputViewMode }),
-  openQuickLook: (layerId, virtualSetId) => set({ quickLookTarget: { layerId, virtualSetId } }),
+  openQuickLook: (layerId, virtualSetId) => {
+    if (isMediaLayer(findLayerById(get().layerTree, layerId))) return
+    set({ quickLookTarget: { layerId, virtualSetId } })
+  },
   closeQuickLook: () => set({ quickLookTarget: null }),
   mobileUiScale: DEFAULT_MOBILE_UI_SCALE,
   activeTheme: DEFAULT_APP_THEME,
@@ -322,6 +326,7 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
   },
 
   toggleLayerVisibility: (layerId, options) => {
+    if (isMediaLayer(findLayerById(get().layerTree, layerId))) return
     if (options?.recordHistory !== false) get().pushHistory()
     const current = new Map(get().visibilityOverrides)
     // 実効的な非表示状態を判定: 既存 override があればその値、なければ PSD の hidden/uiHidden を参照
