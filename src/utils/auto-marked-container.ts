@@ -6,7 +6,6 @@ function isVisible(layer: CspLayer): boolean {
 }
 
 function isDirectOutputUnit(layer: CspLayer): boolean {
-  if (!isVisible(layer)) return false
   return layer.isAnimationFolder || layer.autoMarked || layer.singleMark
 }
 
@@ -30,11 +29,12 @@ export function isAutoMarkedContainerOutputSuppressed(layer: CspLayer, includeHi
   if (!includeHidden && !isVisible(layer)) return false
 
   const visibleChildren = includeHidden ? layer.children : layer.children.filter(isVisible)
-  if (visibleChildren.length === 0) return false
-
-  return visibleChildren.every(child => includeHidden
-    ? child.isAnimationFolder || child.autoMarked || child.singleMark
-    : isDirectOutputUnit(child))
+  // Hiding every independent child must not turn its organizer into a new output.
+  // Ordinary artwork still keeps the parent's existing context-only output.
+  const children = visibleChildren.length > 0
+    ? visibleChildren
+    : layer.children.filter(child => !isMediaLayer(child))
+  return children.every(isDirectOutputUnit)
 }
 
 export function isAutoMarkedOutputTarget(layer: CspLayer): boolean {

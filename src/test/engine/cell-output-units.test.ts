@@ -72,6 +72,35 @@ describe('collectCellOutputUnits', () => {
     ])
   })
 
+  it.each(['hidden', 'uiHidden'] as const)('工程だけのセルで全工程を%sにしても本体画像を追加しない', visibility => {
+    const anim = makeAnim([makeFolder('1', [
+      makeFolder('EN', [makeLayer()]), makeFolder('演出', [makeLayer()]),
+    ])])
+    const processTable = [{ suffix: '_e', folderNames: ['EN', '演出'] }]
+    for (const process of anim.children[0].children) process[visibility] = true
+
+    expect(collectCellOutputUnits(anim, processTable)).toEqual([])
+    expect(extractCells(anim, { ...DEFAULT_PROJECT_SETTINGS, processTable }, 100, 100, [])).toEqual([])
+    const candidates = collectCellOutputUnits(anim, processTable, { includeHidden: true })
+    expect(candidates.map(unit => unit.processSuffix)).toEqual(['_e'])
+    expect(candidates[0].layers).toHaveLength(2)
+  })
+
+  it('工程を非表示にしても本体と元から空のセルの出力を保つ', () => {
+    const anim = makeAnim([
+      makeFolder('1', [makeLayer({ name: 'body' }), makeFolder('EN', [makeLayer()])]),
+      makeFolder('empty', []),
+    ])
+    anim.children.find(cell => cell.originalName === '1')!.children
+      .find(child => child.originalName === 'EN')!.uiHidden = true
+    const units = collectCellOutputUnits(anim, [{ suffix: '_e', folderNames: ['EN'] }])
+
+    expect(units.map(unit => [unit.cell.originalName, unit.processSuffix, unit.layers.map(layer => layer.originalName)])).toEqual([
+      ['empty', undefined, []],
+      ['1', undefined, ['body']],
+    ])
+  })
+
   it('空サフィックス工程も本体とは別の出力として保持する', () => {
     const anim = makeAnim([makeFolder('1', [makeLayer({ name: 'body' }), makeFolder('process', [])])])
     const processTable = [{ suffix: '', folderNames: ['PROCESS'] }]

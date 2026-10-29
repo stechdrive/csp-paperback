@@ -64,6 +64,40 @@ describe('auto-marked container suppression', () => {
     expect(isAutoMarkedContainerOutputSuppressed(tree[0])).toBe(true)
   })
 
+  it.each(['hidden', 'uiHidden'] as const)('独立出力の子をすべて%sにしても親画像を追加しない', visibility => {
+    const tree = buildLayerTree(makePsd({ children: [makeFolder('_TEST', [
+      makeFolder('_IMG', [makeLayer()]),
+      makeFolder('ANIME', [makeLayer({ name: '1' })]),
+      makeFolder('手動素材', [makeLayer()]),
+    ])] }))
+    const parent = tree[0]
+    const anime = findByName(tree, 'ANIME')!
+    anime.isAnimationFolder = true
+    anime.animationFolder = { detectedBy: 'clip', trackName: 'ANIME' }
+    findByName(tree, '手動素材')!.singleMark = true
+    for (const child of parent.children) child[visibility] = true
+
+    expect(isAutoMarkedContainerOutputSuppressed(parent)).toBe(true)
+    expect(isAutoMarkedContainerOutputSuppressed(parent, true)).toBe(true)
+    expect(isAutoMarkedOutputTarget(parent)).toBe(false)
+
+    // Explicitly requesting the parent still permits its context-only image.
+    parent.singleMark = true
+    expect(isAutoMarkedContainerOutputSuppressed(parent)).toBe(false)
+  })
+
+  it.each(['layer', 'folder'] as const)('通常の%sを持つ親は全非表示でも従来の単独出力を保つ', kind => {
+    const content = kind === 'folder' ? makeFolder('原画', [makeLayer()]) : makeLayer({ name: '原画' })
+    const tree = buildLayerTree(makePsd({ children: [makeFolder('_TEST', [
+      content, makeFolder('_IMG', [makeLayer()]),
+    ])] }))
+    for (const child of tree[0].children) child.uiHidden = true
+
+    expect(isAutoMarkedContainerOutputSuppressed(tree[0])).toBe(false)
+    expect(isAutoMarkedContainerOutputSuppressed(tree[0], true)).toBe(false)
+    expect(isAutoMarkedOutputTarget(tree[0])).toBe(true)
+  })
+
   it('XDTS/手動由来のアニメーションフォルダも直下の出力単位として扱う', () => {
     const tree = buildLayerTree(makePsd({
       children: [

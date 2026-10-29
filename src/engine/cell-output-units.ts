@@ -74,8 +74,8 @@ export function collectCellOutputUnits(
       }
     }
 
-    // An empty cell still produces its body/context image.
-    if (bodyLayers.length > 0 || processGroups.size === 0) {
+    // Keep empty-cell output, but hidden processes must not create a new body.
+    if (bodyLayers.length > 0 || processIdentities.size === 0) {
       units.push({ cell, cellIndex, sourceLayerId: cell.id, layers: bodyLayers })
     }
     for (const [processSuffix, layers] of processGroups) {
