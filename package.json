@@ -1,7 +1,7 @@
 {
   "name": "csp-paperback",
   "private": true,
-  "version": "1.40.311",
+  "version": "1.40.312",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -46,7 +46,8 @@
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "sql.js": "^1.15.1",
-    "zustand": "^5.0.15"
+    "zustand": "^5.0.15",
+    "celcodec": "file:../celcodec"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
