@@ -8,6 +8,7 @@ import { MainLayout } from './components/MainLayout'
 import { QuickExportDialog } from './components/QuickExportDialog'
 import { ExportStatus } from './components/ExportStatus'
 import { ExportConflictDialog } from './components/ExportConflictDialog'
+import { AutomaticUpdateCheck } from './components/AutomaticUpdateCheck'
 import { useExportJob } from './store/export-job'
 import { useAppStore } from './store'
 import { getQuickExportLaunchPaths } from './platform/launch'
@@ -62,6 +63,7 @@ function NormalApp() {
         </div>
         </div>
         <ExportStatus />
+        <AutomaticUpdateCheck busy={isLoading || isExporting} />
       </div>
     </FileDropZone>
   )

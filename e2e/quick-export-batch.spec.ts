@@ -4,6 +4,11 @@ import { clipVectorFixture } from './helpers/clip-vector-fixture'
 
 test('EXE launch flow exports a mixed batch, shows individual errors/warnings, and fits the small window', async ({ page }, testInfo) => {
   test.setTimeout(90000)
+  let progressAtUpdateCheck: string | null = null
+  await page.route('https://api.github.com/repos/stechdrive/csp-paperback/releases/latest', async route => {
+    progressAtUpdateCheck = await page.getByRole('progressbar').getAttribute('aria-valuenow')
+    await route.fulfill({ json: { tag_name: 'v999.1.2' } })
+  })
   const clip = await readFile('public/sample/c001.clip')
   const psd = await readFile('testdata/c001.psd')
   const inputs: Record<string, Buffer> = {
@@ -51,7 +56,15 @@ test('EXE launch flow exports a mixed batch, shows individual errors/warnings, a
   page.on('pageerror', error => errors.push(error.message))
   await page.setViewportSize({ width: 640, height: 520 })
   await page.goto('./')
-  await expect(page.getByRole('dialog').getByRole('status')).toContainText('成功 3件／失敗 2件／再現状況の案内 1件', { timeout: 60000 })
+  await expect(page.getByRole('dialog', { name: 'クイック書き出し', exact: true }).getByRole('status')).toContainText('成功 3件／失敗 2件／再現状況の案内 1件', { timeout: 60000 })
+  const update = page.getByRole('dialog', { name: '新しいバージョンがあります' })
+  await expect(update).toBeVisible()
+  expect(progressAtUpdateCheck).toBe('100')
+  await expect(update).toContainText('v999.1.2')
+  await page.setViewportSize({ width: 480, height: 360 })
+  await expect(update.getByRole('button', { name: '閉じる', exact: true })).toBeInViewport()
+  await page.screenshot({ path: testInfo.outputPath('batch-update.png') })
+  await update.getByRole('button', { name: '閉じる', exact: true }).click()
   const results = page.getByTestId('quick-export-result')
   await expect(results).toHaveCount(5)
   await expect(results.filter({ hasText: '成功：paired.clip' })).toContainText('出力先: C:/cuts/paired')

@@ -28,6 +28,8 @@ import { processDisplayName } from '../utils/process-folder'
 import { HelpDialog } from './HelpDialog'
 import { Tooltip } from './Tooltip'
 import { useDismissableLayer } from '../hooks/useDismissableLayer'
+import { isDesktopRuntime } from '../platform/runtime'
+import { useDesktopUpdateStore } from '../store/desktop-update'
 
 interface SettingsDialogProps {
   onClose: () => void
@@ -65,6 +67,8 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
   const importSettings = useAppStore(s => s.importSettings)
   const exportSettings = useAppStore(s => s.exportSettings)
   const setActiveTheme = useAppStore(s => s.setActiveTheme)
+  const updateCheckFrequency = useDesktopUpdateStore(s => s.frequency)
+  const setUpdateCheckFrequency = useDesktopUpdateStore(s => s.setFrequency)
   const { t } = useLocale()
   const [importError, setImportError] = useState<string | null>(null)
   const [help, setHelp] = useState<'process' | 'templates' | null>(null)
@@ -447,6 +451,15 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
             ))}
             <button className={styles.addRowBtn} onClick={addArchiveRow}>{t.settings.addPattern}</button>
           </div>
+
+          {isDesktopRuntime() && <section className={styles.section} aria-labelledby="desktop-update-heading">
+            <div className={styles.sectionTitle} id="desktop-update-heading">デスクトップ版の更新確認</div>
+            <label className={styles.radioLabel}><input type="radio" name="update-check-frequency" checked={updateCheckFrequency === 'off'} onChange={() => setUpdateCheckFrequency('off')} /> オフ（手動のみ）</label>
+            <label className={styles.radioLabel}><input type="radio" name="update-check-frequency" checked={updateCheckFrequency === 'startup'} onChange={() => setUpdateCheckFrequency('startup')} /> 起動するたび</label>
+            <label className={styles.radioLabel}><input type="radio" name="update-check-frequency" checked={updateCheckFrequency === 'weekly'} onChange={() => setUpdateCheckFrequency('weekly')} /> 1週間ごと（初期設定）</label>
+            <div className={styles.hint}>起動時に確認し、クイック書き出しでは処理が終わってから確認します。「1週間ごと」は前回の確認から7日以上経過したときに確認し、起動したままでも確認します。</div>
+            <div className={styles.hint}>新版があればリンク付きのダイアログで通知します。自動ダウンロードは行いません。同じ版の自動通知は1回だけです。オフでもメニューの「更新確認」を使えます。</div>
+          </section>}
 
           {/* JSON import/export */}
           {importError && <div role="alert" className={styles.errorMsg}>{importError}</div>}

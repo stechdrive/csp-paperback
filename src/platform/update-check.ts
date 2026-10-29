@@ -32,29 +32,36 @@ export function compareSemver(a: string, b: string): number {
 }
 
 export async function checkDesktopUpdate(): Promise<DesktopUpdateInfo> {
-  const response = await fetch(GITHUB_LATEST_RELEASE_API_URL, {
-    headers: {
-      Accept: 'application/vnd.github+json',
-    },
-  })
-  if (!response.ok) {
-    throw new Error(`GitHub Releases API error: ${response.status}`)
-  }
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 10_000)
+  try {
+    const response = await fetch(GITHUB_LATEST_RELEASE_API_URL, {
+      headers: { Accept: 'application/vnd.github+json' },
+      credentials: 'omit',
+      cache: 'no-store',
+      signal: controller.signal,
+    })
+    if (!response.ok) {
+      throw new Error(`GitHub Releases API error: ${response.status}`)
+    }
 
-  const release = await response.json() as GitHubLatestRelease
-  if (typeof release.tag_name !== 'string') {
-    throw new Error('GitHub Releases API response is missing tag_name')
-  }
+    const release = await response.json() as GitHubLatestRelease | null
+    if (typeof release?.tag_name !== 'string') {
+      throw new Error('GitHub Releases API response is missing tag_name')
+    }
 
-  const latestVersion = normalizeVersion(release.tag_name)
-  const currentVersion = normalizeVersion(__APP_VERSION__)
-  if (!latestVersion || !currentVersion) {
-    throw new Error(`Invalid release version: ${release.tag_name}`)
-  }
+    const latestVersion = normalizeVersion(release.tag_name)
+    const currentVersion = normalizeVersion(__APP_VERSION__)
+    if (!latestVersion || !currentVersion) {
+      throw new Error(`Invalid release version: ${release.tag_name}`)
+    }
 
-  return {
-    currentVersion,
-    latestVersion,
-    hasUpdate: compareSemver(latestVersion, currentVersion) > 0,
+    return {
+      currentVersion,
+      latestVersion,
+      hasUpdate: compareSemver(latestVersion, currentVersion) > 0,
+    }
+  } finally {
+    clearTimeout(timeout)
   }
 }

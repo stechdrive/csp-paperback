@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { isDesktopRuntime } from '../platform/runtime'
 import { runQuickExportBatch, type QuickExportBatchResult, type QuickExportJobResult } from '../utils/quick-export'
+import { AutomaticUpdateCheck } from './AutomaticUpdateCheck'
 import styles from './QuickExportDialog.module.css'
 
 interface QuickExportDialogProps {
@@ -101,6 +102,7 @@ export function QuickExportDialog({ paths }: QuickExportDialogProps) {
           </button>
         </div>
       </div>
+      {canClose && <AutomaticUpdateCheck busy={false} />}
     </div>
   )
 }

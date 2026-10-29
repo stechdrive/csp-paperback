@@ -159,16 +159,3 @@ jobs:
 
       - name: Publish audited release
         run: gh release edit "$TAG_NAME" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease=false
-
-      - name: Delete older release entries
-        shell: bash
-        run: |
-          set -euo pipefail
-          gh release list --repo "$GITHUB_REPOSITORY" --limit 100 --json tagName --jq '.[].tagName' |
-          while IFS= read -r tag; do
-            if [[ -z "$tag" || "$tag" == "$TAG_NAME" ]]; then
-              continue
-            fi
-            echo "Deleting old release entry: $tag"
-            gh release delete "$tag" --repo "$GITHUB_REPOSITORY" --yes
-          done

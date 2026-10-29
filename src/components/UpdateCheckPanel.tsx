@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocale } from '../i18n/locale'
 import { Modal } from './Modal'
 import { isDesktopRuntime } from '../platform/runtime'
-import { checkDesktopUpdate, type DesktopUpdateInfo } from '../platform/update-check'
+import type { DesktopUpdateInfo } from '../platform/update-check'
+import { checkAndRememberDesktopUpdate, useDesktopUpdateStore } from '../store/desktop-update'
 import { openDesktopReleasesPage } from '../platform/external-links'
 import styles from './UpdateCheckPanel.module.css'
 
@@ -12,13 +13,21 @@ type CheckState =
   | { status: 'success'; info: DesktopUpdateInfo }
   | { status: 'error'; message: string }
 
-function useUpdateCheck() {
-  const [state, setState] = useState<CheckState>({ status: 'idle' })
+function useUpdateCheck(initialInfo?: DesktopUpdateInfo) {
+  const [state, setState] = useState<CheckState>(initialInfo ? { status: 'success', info: initialInfo } : { status: 'idle' })
+
+  useEffect(() => {
+    // A response arriving after the dialog was closed has not been seen.
+    if (state.status === 'success' && state.info.hasUpdate) {
+      useDesktopUpdateStore.getState().markNotified(state.info.latestVersion)
+    }
+  }, [state])
 
   const handleCheck = useCallback(async () => {
     setState({ status: 'checking' })
     try {
-      setState({ status: 'success', info: await checkDesktopUpdate() })
+      const info = await checkAndRememberDesktopUpdate()
+      setState({ status: 'success', info })
     } catch {
       setState({
         status: 'error',
@@ -86,7 +95,7 @@ export function UpdateCheckPanel() {
         <div>
           <div className={styles.title}>デスクトップ版の更新確認</div>
           <div className={styles.note}>
-            このボタンを押した時だけ GitHub Releases の最新情報を確認します。
+            自動確認の設定にかかわらず、今すぐ GitHub Releases の最新情報を確認できます。
           </div>
         </div>
         <button
@@ -106,36 +115,39 @@ export function UpdateCheckPanel() {
 
 interface UpdateCheckDialogProps {
   onClose: () => void
+  initialInfo?: DesktopUpdateInfo
 }
 
-export function UpdateCheckDialog({ onClose }: UpdateCheckDialogProps) {
+export function UpdateCheckDialog({ onClose, initialInfo }: UpdateCheckDialogProps) {
   const { t } = useLocale()
-  const { state, handleCheck, handleOpenRelease } = useUpdateCheck()
+  const { state, handleCheck, handleOpenRelease } = useUpdateCheck(initialInfo)
   const startedRef = useRef(false)
 
   useEffect(() => {
-    if (startedRef.current) return
+    if (initialInfo || startedRef.current) return
     startedRef.current = true
     void handleCheck()
-  }, [handleCheck])
+  }, [handleCheck, initialInfo])
 
   return (
     <Modal className={styles.overlay} labelledBy="update-check-title" onClose={onClose}>
       <div className={styles.dialog}>
         <div className={styles.dialogHeader}>
-          <span id="update-check-title" className={styles.dialogTitle}>{t.toolbar.updateCheck}</span>
-          <button className={styles.closeButton} type="button" onClick={onClose} aria-label="閉じる">✕</button>
+          <span id="update-check-title" className={styles.dialogTitle}>{initialInfo ? '新しいバージョンがあります' : t.toolbar.updateCheck}</span>
+          <button className={styles.closeButton} type="button" onClick={onClose} aria-label="更新確認を閉じる">✕</button>
         </div>
         <div className={styles.dialogBody}>
           {state.status === 'checking' && (
             <div className={styles.checking}>GitHub Releases の最新情報を確認しています…</div>
           )}
           <UpdateCheckResult state={state} onOpenRelease={() => void handleOpenRelease()} />
+          {initialInfo && <p className={styles.note}>ダウンロード・インストールは自動で行いません。この版の自動通知は今回だけです。あとから通常画面のメニューの「更新確認」で開けます。</p>}
           {state.status === 'error' && (
             <button className={styles.button} type="button" onClick={() => void handleCheck()}>
               {t.toolbar.updateCheck}
             </button>
           )}
+          <button className={styles.button} type="button" onClick={onClose}>閉じる</button>
         </div>
       </div>
     </Modal>

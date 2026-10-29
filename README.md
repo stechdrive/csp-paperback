@@ -141,6 +141,8 @@ PSDを併用するカットは、同じフォルダにある同名のCLIPとPSD�
 
 ファイルの読み込みと画像生成は、ブラウザ内または端末内で行います。
 
+デスクトップ版はGitHub Releasesの最新バージョン情報を確認し、新版があるときだけリンク付きのダイアログを表示します。ダウンロード・インストールは自動で行いません。「書き出し設定」→「詳細設定…」で、自動確認を「オフ（手動のみ）」「起動するたび」「1週間ごと」から選べます。初期設定は「1週間ごと」で、前回の確認から7日以上経過した起動時、または起動中に確認します。クイック書き出しでは処理が終わってから確認します。同じ版の自動通知は1回だけですが、通常画面のメニューの「更新確認」はいつでも使えます。
+
 ---
 
 ## English
@@ -263,6 +265,8 @@ Detailed settings remembers whether quick export creates folders beside the CLIP
 ### Your artwork stays on your device
 
 Files are read and images are generated within your browser or on your device. Artwork is not uploaded.
+
+The desktop app checks GitHub Releases for newer versions and shows a dialog with a release-page link only when an update is available. It never downloads or installs updates automatically. In Export settings → Detailed settings, choose Off (manual only), Every startup, or Weekly (the default). Weekly checks run on startup or while the app is open once seven days have passed since the last successful check. Quick export checks only after processing has finished. Each version is announced automatically only once; the normal workspace's manual update check remains available at any time.
 
 ---
 

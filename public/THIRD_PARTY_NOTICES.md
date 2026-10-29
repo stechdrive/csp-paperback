@@ -52,7 +52,7 @@ SOFTWARE.
 ## celcodec 0.2.0
 
 Native CLIP containers, materials, BINC, timelines, audio and document writing
-are provided by the local celcodec package. It consolidates MIT code from
+are provided by the bundled celcodec package. It consolidates MIT code from
 csp-paperback (9256c0326dcbb628ed8c601bf17253c3ca2300dd) and xsheet-remap
 (6fb67280fdebb2ecd93e0fd0e369b47b4f29a6e8). Format-research notices above are
 retained. See docs/celcodec.md and celcodec's THIRD_PARTY_NOTICES.md.

@@ -1,6 +1,11 @@
 import { readFile } from 'node:fs/promises'
 import { expect, test, type Page } from './fixtures'
 
+test.beforeEach(async ({ page }) => {
+  await page.route('https://api.github.com/repos/stechdrive/csp-paperback/releases/latest', route =>
+    route.fulfill({ json: { tag_name: 'v0.0.0' } }))
+})
+
 interface Proof {
   writes: { path: string; overwrite: boolean; size: number; signature: number[] }[]
   files: Record<string, number[]>

@@ -1,4 +1,4 @@
-import { ClipError, diagnosticKinds, type DiagnosticCode, type ClipDiagnostic } from 'celcodec'
+import { ClipError, type DiagnosticCode, type ClipDiagnostic } from 'celcodec'
 import { ImageResourceError } from '../image-budget'
 const messages: Partial<Record<DiagnosticCode, string>> = {
   "LIMIT_INTEGER": "サイズが範囲外です。",
@@ -192,4 +192,3 @@ export function codecError(error: unknown): never {
 }
 export function codecCall<T>(run:()=>T): T { try { const value=run();return value instanceof Promise ? value.catch(codecError) as T : value } catch(error) { return codecError(error) } }
 export function codecFunction<A extends unknown[],R>(fn:(...args:A)=>R):(...args:A)=>R { return (...args)=>codecCall(()=>fn(...args)) }
-export const codecIsResource = (code:DiagnosticCode) => diagnosticKinds[code]==='resource-limit'
