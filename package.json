@@ -28,7 +28,7 @@
     "pretest:e2e": "npm run build",
     "test:e2e": "playwright test",
     "test:e2e:built": "playwright test",
-    "test:deploy": "node --test scripts/test-deploy-pages.mjs",
+    "test:deploy": "node --test scripts/test-deploy-pages.mjs scripts/test-prune-releases.mjs",
     "test:ui": "vitest --ui",
     "check": "npm run lint && npm run test:deploy && npm run test:run && npm run build",
     "check:ci": "npm run lint && npm run test:deploy && npm run test:coverage && npm run build && npm run test:e2e:built",

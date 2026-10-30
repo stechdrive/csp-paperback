@@ -138,6 +138,17 @@ jobs:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       TAG_NAME: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
     steps:
+      - name: Checkout release publication tools
+        uses: actions/checkout@v7.0.1
+        with:
+          # Use the executing workflow's tools even when manually rebuilding an older tag.
+          ref: ${{ github.workflow_sha }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7.1.0
+        with:
+          node-version-file: .node-version
+
       - name: Verify release asset set
         shell: bash
         run: |
@@ -159,3 +170,6 @@ jobs:
 
       - name: Publish audited release
         run: gh release edit "$TAG_NAME" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease=false
+
+      - name: Delete older published releases
+        run: node scripts/prune-releases.mjs "$GITHUB_REPOSITORY" "$TAG_NAME" --apply
