@@ -1,7 +1,7 @@
 import { expect, it, vi } from 'vitest'
 import { readFileSync } from 'node:fs'
 import initSqlJs from 'sql.js'
-import { layerRenderingDiagnostics, resolveClipDiagnostics } from '../../utils/clip/rendering-status'
+import { compatibilityAdvice, layerRenderingDiagnostics, resolveClipDiagnostics } from '../../utils/clip/rendering-status'
 import { parseClipDocument } from '../../utils/clip/parser'
 import { buildClipLayerTree, clipRenderingSource } from '../../engine/clip-tree'
 import { DEFAULT_PROJECT_SETTINGS, DEFAULT_OUTPUT_CONFIG } from '../../types'
@@ -20,12 +20,14 @@ it.each(['saved', 'not-saved', 'unknown'] as const)('uses actual image recovery 
   expect(layerRenderingDiagnostics(layer({ kind: 'text', materialSource: 'object-cache' }), compatibility)).toEqual([])
   const [vector] = layerRenderingDiagnostics(layer({ kind: 'vector', vectorRendering: 'approximate' }), compatibility)
   expect(vector.outcome).toBe('approximate')
-  expect(vector.message.includes('［保存する］')).toBe(compatibility !== 'saved')
-  expect(vector.message.includes('保存済みのCLIPで互換情報の保存を後からONにした場合')).toBe(compatibility !== 'saved')
+  expect(vector.message).not.toContain('［保存する］')
+  expect(vector.message).not.toContain('保存済みのCLIPで互換情報の保存を後からONにした場合')
   const [missing] = layerRenderingDiagnostics(layer({ kind: '3d', unsupported3D: true }), compatibility)
   expect(missing.outcome).toBe('missing-content')
   expect(missing.message).toContain('透明な画像')
-  expect(missing.message.includes('保存済みのCLIPで互換情報の保存を後からONにした場合')).toBe(compatibility !== 'saved')
+  expect(missing.message).not.toContain('保存済みのCLIPで互換情報の保存を後からONにした場合')
+  expect(compatibilityAdvice(compatibility).includes('［保存する］')).toBe(compatibility !== 'saved')
+  expect(compatibilityAdvice(compatibility).includes('保存済みのCLIPで互換情報の保存を後からONにした場合')).toBe(compatibility !== 'saved')
 })
 
 it('retains folder effects and unresolved PSD images while removing only replaced leaf notices', () => {

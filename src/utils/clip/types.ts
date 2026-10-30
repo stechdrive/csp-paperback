@@ -45,6 +45,8 @@ export interface ClipLayer {
 export interface ClipDiagnostic {
   scope: 'raster' | 'timeline'
   message: string
+  /** Stable category for grouping localized notices without guessing from prose. */
+  code?: string
   layerId?: string
   /** Generated from the final rendering route, rather than an unsuccessful candidate. */
   rendering?: boolean

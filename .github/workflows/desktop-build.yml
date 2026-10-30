@@ -1,0 +1,99 @@
+name: desktop-build
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build ${{ matrix.assetPlatform }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows-latest
+            assetPlatform: ja-windows-x64-portable
+            args: '--no-bundle'
+            rustTargets: 'x86_64-pc-windows-msvc'
+            extension: '.exe'
+            uploadPlainBinary: true
+          - platform: macos-latest
+            assetPlatform: ja-macos-arm64
+            args: '--target aarch64-apple-darwin --bundles dmg'
+            rustTargets: 'aarch64-apple-darwin'
+            extension: '.dmg'
+            uploadPlainBinary: false
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - name: Configure shared Rust environment
+        shell: bash
+        env:
+          BUILD_CARGO_HOME: ${{ runner.temp }}/cargo-home
+          BUILD_RUSTFLAGS: >-
+            --remap-path-prefix=${{ github.workspace }}=.
+            --remap-path-prefix=${{ runner.temp }}=.
+        run: printf '%s\n' "CARGO_HOME=$BUILD_CARGO_HOME" "RUSTFLAGS=$BUILD_RUSTFLAGS" >> "$GITHUB_ENV"
+      - uses: dtolnay/rust-toolchain@1.99.1
+        with:
+          targets: ${{ matrix.rustTargets }}
+      - name: Restore Rust dependencies for tests and release builds
+        uses: Swatinem/rust-cache@v2.9.3
+        with:
+          workspaces: src-tauri -> target
+          shared-key: desktop-${{ matrix.assetPlatform }}
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+      - run: npm ci
+      - name: Test native export file replacement
+        run: cargo test --locked --manifest-path src-tauri/Cargo.toml --lib
+      - name: Build Tauri assets without publishing
+        id: tauri
+        uses: tauri-apps/tauri-action@action-v1.0.0
+        with:
+          tauriScript: npm run tauri
+          uploadUpdaterJson: false
+          uploadPlainBinary: ${{ matrix.uploadPlainBinary }}
+          args: ${{ matrix.args }}
+      - name: Audit release artifacts for path leaks
+        run: npm run audit:artifacts -- dist --tauri
+      - name: Stage the audited desktop asset
+        shell: bash
+        env:
+          ARTIFACT_PATHS: ${{ steps.tauri.outputs.artifactPaths }}
+          ASSET_PLATFORM: ${{ matrix.assetPlatform }}
+          ASSET_EXTENSION: ${{ matrix.extension }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { copyFileSync, mkdirSync, readFileSync, statSync } from 'node:fs';
+          import { basename, join } from 'node:path';
+          const { version } = JSON.parse(readFileSync('package.json', 'utf8'));
+          const paths = JSON.parse(process.env.ARTIFACT_PATHS);
+          const assets = paths.filter(path => path.endsWith(process.env.ASSET_EXTENSION));
+          if (assets.length !== 1 || statSync(assets[0]).size === 0) {
+            throw new Error(`Expected one nonempty ${process.env.ASSET_EXTENSION} asset`);
+          }
+          const name = `CSP-Paperback_${version}_${process.env.ASSET_PLATFORM}${process.env.ASSET_EXTENSION}`;
+          if (basename(name) !== name) throw new Error('Invalid asset name');
+          mkdirSync('release-assets', { recursive: true });
+          copyFileSync(assets[0], join('release-assets', name));
+          NODE
+      - name: Upload audited desktop asset
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: desktop-${{ matrix.assetPlatform }}
+          path: release-assets/*
+          if-no-files-found: error
+          retention-days: 7

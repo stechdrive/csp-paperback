@@ -89,12 +89,8 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   margin: 0;
-  padding: 0.5rem 0.75rem 0.5rem 1.8rem;
+  padding: 0.5rem 0.75rem;
   overflow-wrap: anywhere;
-}
-
-.list li + li {
-  margin-top: 0.5rem;
 }
 
 @media (pointer: coarse) and (max-width: 1024px) {

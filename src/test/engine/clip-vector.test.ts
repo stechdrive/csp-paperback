@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { readVectorStrokes, renderVectors, sampleVectorStroke, type VectorBrushes } from '../../utils/clip/vector'
 import { vectorBytes } from '../fixtures/clip-vector'
+import { rasterFixture } from '../fixtures/clip-raster'
 import { createMaterialDecoder, type MaterialTables } from '../../utils/clip/material'
 import type { ClipDiagnostic, ClipLayer, ClipPixels } from '../../utils/clip/types'
 
@@ -82,10 +83,76 @@ describe('bounded CLIP vector decoding and approximate rendering', () => {
     expect(layer.materialSource).toBe('vector')
     expect(layer.vectorRendering).toBe('approximate')
     expect(alpha(layer.pixels!, 8, 8)).toBeGreaterThan(0)
-    expect(diagnostics.some(d => d.message.includes('バージョン互換情報の保存'))).toBe(true)
+    expect(diagnostics).toEqual([expect.objectContaining({ code: 'APPROXIMATE_VECTOR', materialKind: 'vector' })])
+    expect(diagnostics[0].message).not.toContain('バージョン互換情報の保存')
     const missing = { ...layer, pixels: undefined, materialSource: undefined }
     await decode(missing, { MainId: 10 })
     expect(missing.vectorRendering).toBe('unavailable')
     expect(missing.pixels).toBeUndefined()
+  })
+  it.each([16, 8192])('accepts an existing empty vector stream without approximation or missing warnings at width=%s', async width => {
+    const tables: MaterialTables = { mipmaps: new Map(), mipInfos: new Map(), offscreens: new Map(), thumbnails: [],
+      external: new Map([['empty', new Uint8Array()]]), vectors: new Map([[42, { LayerId: 9, VectorData: new Uint8Array(Buffer.from('empty')) }]]) }
+    const layer: ClipLayer = { id: 'empty', name: 'line', kind: 'vector', isFolder: false, isAnimationFolder: false,
+      expanded: true, hidden: false, opacity: 1, blendMode: 'normal', clipping: false, children: [] }
+    const diagnostics: ClipDiagnostic[] = []
+    await createMaterialDecoder(tables, width, width, 72, diagnostics)(layer, { MainId: 9, VectorNormalStrokeIndex: 42 })
+    expect(layer).toMatchObject({ kind: 'vector', materialSource: 'vector', pixels: { width: 1, height: 1 } })
+    expect(layer.pixels!.rgba).toEqual(new Uint8ClampedArray(4))
+    expect(layer.vectorRendering).toBeUndefined()
+    expect(diagnostics).toEqual([])
+  })
+  it.each(['absent', 'missing', 'truncated', 'zero-points', 'transparent'] as const)('does not mistake %s geometry for an empty vector stream', async kind => {
+    const raw = kind === 'truncated' ? vectorBytes().subarray(0, 40)
+      : kind === 'zero-points' ? vectorBytes({ points: [] }) : vectorBytes({ opacity: 0 })
+    const tables: MaterialTables = { mipmaps: new Map(), mipInfos: new Map(), offscreens: new Map(), thumbnails: [],
+      external: kind === 'missing' ? new Map() : new Map([['vector', raw]]),
+      vectors: kind === 'absent' ? new Map() : new Map([[42, { LayerId: 9, VectorData: 'vector' }]]), brushes: brushes().styles }
+    const layer: ClipLayer = { id: 'v', name: 'line', kind: 'vector', isFolder: false, isAnimationFolder: false,
+      expanded: true, hidden: false, opacity: 1, blendMode: 'normal', clipping: false, children: [] }
+    const diagnostics: ClipDiagnostic[] = []
+    const decoding = createMaterialDecoder(tables, 16, 16, 72, diagnostics)(layer, { MainId: 9, VectorNormalStrokeIndex: 42 })
+    if (kind === 'zero-points') {
+      await expect(decoding).rejects.toThrow('制御点数')
+      return
+    }
+    await decoding
+    expect(layer.vectorRendering).toBe(kind === 'transparent' ? 'approximate' : 'unavailable')
+    expect(diagnostics.some(d => d.outcome === (kind === 'transparent' ? 'approximate' : 'missing-content'))).toBe(true)
+  })
+  it('still reads saved images, masks and mask failures on empty vector layers', async () => {
+    const saved = rasterFixture(1, 1, new Map(), { hasColor: true, color: 0xffffffff })
+    const tables: MaterialTables = { mipmaps: new Map([[1, { BaseMipmapInfo: 1 }]]), mipInfos: new Map([[1, { Offscreen: 1 }]]),
+      offscreens: new Map([[1, { Attribute: new Uint8Array(saved.attribute) }]]), thumbnails: [], external: new Map([['empty', new Uint8Array()]]),
+      vectors: new Map([[42, { LayerId: 9, VectorData: 'empty' }]]) }
+    const layer = (): ClipLayer => ({ id: 'v', name: 'line', kind: 'vector', isFolder: false, isAnimationFolder: false,
+      expanded: true, hidden: false, opacity: 1, blendMode: 'normal', clipping: false, children: [] })
+    const diagnostics: ClipDiagnostic[] = [], cached = layer(), masked = layer(), broken = layer()
+    const decode = createMaterialDecoder(tables, 16, 16, 72, diagnostics)
+    await decode(cached, { MainId: 9, LayerRenderMipmap: 1 })
+    expect(cached.materialSource).toBe('render')
+    await decode(masked, { MainId: 9, LayerLayerMaskMipmap: 1, LayerType: 2, LayerVisibility: 3 })
+    expect(masked.mask).toBeDefined()
+    expect(diagnostics).toEqual([])
+    await decode(broken, { MainId: 9, TimeLineOriginalMaskMipmap: 99, TimeLineLayerKeyFrameEnabled: 1 })
+    expect(diagnostics.some(d => d.part === 'mask')).toBe(true)
+    expect(diagnostics.some(d => d.code === 'APPROXIMATE_VECTOR')).toBe(false)
+  })
+  it('distinguishes brush approximation from actual missing strokes and normalizes callback metadata', async () => {
+    const tables: MaterialTables = { mipmaps: new Map(), mipInfos: new Map(), offscreens: new Map(), thumbnails: [],
+      external: new Map([['vector', vectorBytes()]]), vectors: new Map([[42, { LayerId: 9, VectorData: 'vector' }]]),
+      brushes: new Map([[7, { RotationEffector: 1 }]]) }
+    const layer = (): ClipLayer => ({ id: 'v', name: 'line', kind: 'vector', isFolder: false, isAnimationFolder: false,
+      expanded: true, hidden: false, opacity: 1, blendMode: 'normal', clipping: false, children: [] })
+    const approximate: ClipDiagnostic[] = [], art = layer()
+    await createMaterialDecoder(tables, 16, 16, 72, approximate)(art, { MainId: 9 })
+    expect(mass(art.pixels!)).toBeGreaterThan(0)
+    expect(approximate.find(d => d.code === 'APPROXIMATE_BRUSH_ROTATION')).toMatchObject({
+      part: 'material', outcome: 'approximate', materialKind: 'vector', message: '「line」: ブラシ先端の向きを近似しています' })
+    expect(approximate.some(d => d.message.includes('描画できません'))).toBe(false)
+    tables.brushes!.set(7, { Hardness: NaN })
+    const failed: ClipDiagnostic[] = []
+    await createMaterialDecoder(tables, 16, 16, 72, failed)(layer(), { MainId: 9 })
+    expect(failed.find(d => d.code === 'MISSING_VECTOR_STROKE')).toMatchObject({ part: 'material', outcome: 'missing-content' })
   })
 })

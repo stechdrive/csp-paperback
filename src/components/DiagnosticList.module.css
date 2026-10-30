@@ -1,0 +1,18 @@
+.advice {
+  padding: 8px 10px;
+  margin-bottom: 10px;
+  border-radius: 4px;
+  background: var(--color-surface-1);
+  color: var(--color-text-secondary);
+}
+.advice p, .groups p { margin: 6px 0; line-height: 1.6; }
+.advice summary, .groups summary { cursor: pointer; }
+.advice summary:focus-visible, .groups summary:focus-visible { outline: 2px solid var(--color-info); outline-offset: 2px; }
+.groups, .layers { list-style: none; padding: 0; margin: 0; }
+.groups > li { padding: 10px 0; border-top: 1px solid var(--color-border-subtle); overflow-wrap: anywhere; }
+.groups > li:first-child { border-top: 0; }
+.groups summary { line-height: 1.6; }
+.groups summary > span { display: inline-block; margin-left: 8px; color: var(--color-text-secondary); font-size: 11px; white-space: nowrap; }
+.layers > li { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px; }
+.layers > li > span { min-width: 0; overflow-wrap: anywhere; }
+.layers button { flex-shrink: 0; }

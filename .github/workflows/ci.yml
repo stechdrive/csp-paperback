@@ -11,48 +11,15 @@ concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   quality-gate:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7.0.1
-        with:
-          fetch-depth: 0
+    uses: ./.github/workflows/quality-gate.yml
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v7.1.0
-        with:
-          node-version-file: .node-version
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Install Chromium for browser tests
-        run: npx playwright install --with-deps chromium
-
-      - name: Run quality gate
-        run: npm run check:ci
-
-      - name: Upload test diagnostics on failure
-        if: failure()
-        uses: actions/upload-artifact@v7.0.2
-        with:
-          name: test-diagnostics
-          path: |
-            playwright-report/
-            test-results/
-            .tmp/*-golden-image-diff/
-          include-hidden-files: true
-          if-no-files-found: ignore
-          retention-days: 7
-
-      - name: Upload coverage summary
-        if: always()
-        uses: actions/upload-artifact@v7.0.2
-        with:
-          name: coverage-summary
-          path: coverage/coverage-summary.json
-          if-no-files-found: ignore
-          retention-days: 7
+  # Tag runs can restore default-branch caches, but cannot restore another tag's cache.
+  # Build with the same inputs as releases so future tags reuse both Rust profiles.
+  build-desktop:
+    if: github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/desktop-build.yml

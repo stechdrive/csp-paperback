@@ -11,126 +11,27 @@ on:
         required: true
         type: string
 
+concurrency:
+  group: desktop-release-${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
 jobs:
   quality-gate:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7.0.1
-        with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
-          fetch-depth: 0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v7.1.0
-        with:
-          node-version-file: .node-version
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Install Chromium for browser tests
-        run: npx playwright install --with-deps chromium
-
-      - name: Run quality gate
-        run: npm run check:ci
-
-      - name: Upload test diagnostics on failure
-        if: failure()
-        uses: actions/upload-artifact@v7.0.2
-        with:
-          name: release-test-diagnostics
-          path: |
-            playwright-report/
-            test-results/
-            .tmp/*-golden-image-diff/
-          include-hidden-files: true
-          if-no-files-found: ignore
-          retention-days: 7
-
-      - name: Upload coverage summary
-        if: always()
-        uses: actions/upload-artifact@v7.0.2
-        with:
-          name: release-coverage-summary
-          path: coverage/coverage-summary.json
-          if-no-files-found: ignore
-          retention-days: 7
+    uses: ./.github/workflows/quality-gate.yml
+    with:
+      ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
 
   build-desktop:
-    name: Build ${{ matrix.assetPlatform }}
-    needs: quality-gate
-    permissions:
-      contents: write
-    strategy:
-      fail-fast: false
-      max-parallel: 1
-      matrix:
-        include:
-          - platform: windows-latest
-            assetPlatform: ja-windows-x64-portable
-            args: '--no-bundle'
-            rustTargets: 'x86_64-pc-windows-msvc'
-            uploadPlainBinary: true
-          - platform: macos-latest
-            assetPlatform: ja-macos-arm64
-            args: '--target aarch64-apple-darwin --bundles dmg'
-            rustTargets: 'aarch64-apple-darwin'
-            uploadPlainBinary: false
-    runs-on: ${{ matrix.platform }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7.0.1
-        with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
-          fetch-depth: 0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v7.1.0
-        with:
-          node-version-file: .node-version
-          cache: npm
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@1.99.1
-        with:
-          targets: ${{ matrix.rustTargets }}
-
-      - name: Install frontend dependencies
-        run: npm ci
-
-      - name: Test native export file replacement
-        run: cargo test --locked --manifest-path src-tauri/Cargo.toml --lib
-
-      - name: Build and upload Tauri release assets
-        uses: tauri-apps/tauri-action@action-v1.0.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CARGO_HOME: ${{ runner.temp }}/cargo-home
-          RUSTFLAGS: >-
-            --remap-path-prefix=${{ github.workspace }}=.
-            --remap-path-prefix=${{ runner.temp }}=.
-        with:
-          tauriScript: npm run tauri
-          tagName: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
-          releaseName: CSP Paperback ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
-          releaseBody: |
-            CSP Paperback 最新デスクトップバイナリ配布。
-            Version: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
-          releaseDraft: true
-          prerelease: false
-          uploadUpdaterJson: false
-          uploadPlainBinary: ${{ matrix.uploadPlainBinary }}
-          releaseAssetNamePattern: CSP-Paperback_[version]_${{ matrix.assetPlatform }}[ext]
-          args: ${{ matrix.args }}
-
-      - name: Audit release artifacts for path leaks
-        run: npm run audit:artifacts -- dist --tauri
+    uses: ./.github/workflows/desktop-build.yml
+    with:
+      ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
 
   publish-desktop-release:
     name: Publish desktop release
-    needs: build-desktop
+    needs: [quality-gate, build-desktop]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -143,33 +44,43 @@ jobs:
         with:
           # Use the executing workflow's tools even when manually rebuilding an older tag.
           ref: ${{ github.workflow_sha }}
-
       - name: Setup Node.js
         uses: actions/setup-node@v7.1.0
         with:
           node-version-file: .node-version
-
-      - name: Verify release asset set
+      - name: Download audited desktop assets
+        uses: actions/download-artifact@v8.0.2
+        with:
+          pattern: desktop-*
+          path: release-assets/
+          merge-multiple: true
+      - name: Verify and upload the complete asset set
         shell: bash
         run: |
           set -euo pipefail
           version="${TAG_NAME#v}"
           expected_windows="CSP-Paperback_${version}_ja-windows-x64-portable.exe"
           expected_macos="CSP-Paperback_${version}_ja-macos-arm64.dmg"
+          mapfile -t files < <(find release-assets -maxdepth 1 -type f -printf '%f\n' | sort)
+          if [[ "${#files[@]}" -ne 2 || "${files[0]}" != "$expected_macos" || "${files[1]}" != "$expected_windows" ]]; then
+            echo "Expected exactly the Windows EXE and macOS DMG for $TAG_NAME." >&2
+            exit 1
+          fi
+          test -s "release-assets/$expected_windows"
+          test -s "release-assets/$expected_macos"
+          # Only this job writes the Release; parallel OS jobs never race to create it.
+          if ! gh release view "$TAG_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$TAG_NAME" --repo "$GITHUB_REPOSITORY" --verify-tag --draft \
+              --title "CSP Paperback $TAG_NAME" --notes "CSP Paperback 最新デスクトップバイナリ配布。Version: $TAG_NAME"
+          fi
+          gh release upload "$TAG_NAME" "release-assets/$expected_windows" "release-assets/$expected_macos" \
+            --repo "$GITHUB_REPOSITORY" --clobber
           mapfile -t assets < <(gh release view "$TAG_NAME" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name' | sort)
-          printf '%s\n' "${assets[@]}"
-          if [[ "${#assets[@]}" -ne 2 ]]; then
-            echo "Expected exactly 2 release assets, found ${#assets[@]}." >&2
+          if [[ "${#assets[@]}" -ne 2 || "${assets[0]}" != "$expected_macos" || "${assets[1]}" != "$expected_windows" ]]; then
+            echo "Unexpected uploaded release asset set." >&2
             exit 1
           fi
-          if [[ "${assets[0]}" != "$expected_macos" || "${assets[1]}" != "$expected_windows" ]]; then
-            echo "Unexpected release assets. Expected:" >&2
-            printf '%s\n' "$expected_macos" "$expected_windows" >&2
-            exit 1
-          fi
-
       - name: Publish audited release
         run: gh release edit "$TAG_NAME" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease=false
-
       - name: Delete older published releases
         run: node scripts/prune-releases.mjs "$GITHUB_REPOSITORY" "$TAG_NAME" --apply

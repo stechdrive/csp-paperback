@@ -3,7 +3,7 @@ import initSqlJs from 'sql.js'
 import { vectorBytes } from '../../src/test/fixtures/clip-vector'
 
 /** Keep the public PSD hierarchy, replacing leaf artwork with synthetic native vectors. */
-export async function clipVectorFixture(kind: 'vector' | '3d' = 'vector') {
+export async function clipVectorFixture(kind: 'vector' | '3d' | 'empty-vector' | 'missing-vector' = 'vector') {
   const bytes = await readFile('public/sample/c001.clip'), SQL = await initSqlJs()
   const chunk = (tag: string, data: Buffer) => {
     const header = Buffer.alloc(16); header.write(tag); header.writeBigUInt64BE(BigInt(data.length), 8)
@@ -33,10 +33,10 @@ export async function clipVectorFixture(kind: 'vector' | '3d' = 'vector') {
           if (!columns.has('Manager3DOd')) db.run('ALTER TABLE Layer ADD COLUMN Manager3DOd INTEGER DEFAULT 0')
           db.run('UPDATE Layer SET Manager3DOd = 1 WHERE VectorNormalStrokeIndex > 0')
         }
-        const raw = vectorBytes({ brush: 900007, diameter: 20, points: [[300, 300], [600, 500]] })
+        const raw = kind === 'empty-vector' ? Buffer.alloc(0) : vectorBytes({ brush: 900007, diameter: 20, points: [[300, 300], [600, 500]] })
         const ref = Buffer.from('test-vector')
         return Buffer.concat([bytes.subarray(0, offset), chunk('CHNKSQLi', Buffer.from(db.export())), bytes.subarray(end),
-          chunk('CHNKExta', Buffer.concat([u64(ref.length), ref, u64(raw.length), raw]))])
+          ...(kind === 'missing-vector' ? [] : [chunk('CHNKExta', Buffer.concat([u64(ref.length), ref, u64(raw.length), raw]))])])
       } finally { db.close() }
     }
     offset = end

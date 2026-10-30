@@ -2,8 +2,8 @@ import { useId, useRef, useState, useSyncExternalStore } from 'react'
 import { createPortal } from 'react-dom'
 import type { CspLayer } from '../types'
 import { useAppStore } from '../store'
-import { findLayerPath } from '../utils/layerNavigation'
 import { renderIssues, type RenderIssue } from '../utils/render-diagnostics'
+import { DiagnosticList } from './DiagnosticList'
 import { materialRevision, subscribeMaterials } from '../engine/material-cache'
 import { useDismissableLayer } from '../hooks/useDismissableLayer'
 import styles from './RenderWarning.module.css'
@@ -11,7 +11,6 @@ import styles from './RenderWarning.module.css'
 export function DiagnosticWarning({ issues = [], error, onRetry }: {
   issues?: RenderIssue[]; error?: string; onRetry?: () => void
 }) {
-  const tree = useAppStore(s => s.layerTree)
   const button = useRef<HTMLButtonElement>(null), popup = useRef<HTMLDivElement>(null)
   const close = useRef<HTMLButtonElement>(null)
   const id = useId()
@@ -45,11 +44,7 @@ export function DiagnosticWarning({ issues = [], error, onRetry }: {
         <button ref={close} type="button" aria-label="警告を閉じる" onClick={dismiss}>✕</button></header>
       {error && <p>{error}</p>}
       {onRetry && <button type="button" onClick={() => { dismiss(); onRetry() }}>再試行</button>}
-      <ul>{issues.map((issue, index) => <li key={`${issue.layerId}:${index}`}>
-        <strong>{findLayerPath(tree, issue.layerId).map(layer => layer.originalName).join(' / ') || issue.layerName}</strong>
-        <p>{issue.message}</p>
-        <button type="button" onClick={() => { dismiss(); useAppStore.getState().openQuickLook(issue.layerId) }}>素材を確認</button>
-      </li>)}</ul>
+      <DiagnosticList issues={issues} onInspect={layerId => { dismiss(); useAppStore.getState().openQuickLook(layerId) }} />
     </div>, document.body)}
   </>
 }

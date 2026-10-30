@@ -85,7 +85,7 @@ export async function openClipSession(bytes: Uint8Array, SQL: SqlJsStatic): Prom
         nativeRows.set(key, row)
         const composite = num(row, 'LayerComposite')
         const kind = readLayerKind(row, vectorLayerIds.has(next), mediaObjects.get(next) ?? mediaItems.get(uuid(row.BankItemUuid)))
-        if (!isMediaKind(kind) && !blends[composite]) diagnostics.push({ scope: 'raster', part: 'blend', layerId: key, message: `「${str(row.LayerName)}」の合成モード ${composite} は未対応です（通常で表示）` })
+        if (!isMediaKind(kind) && !blends[composite]) diagnostics.push({ scope: 'raster', part: 'blend', code: 'UNSUPPORTED_LAYER_BLEND', layerId: key, message: `「${str(row.LayerName)}」: 合成モード ${composite} は未対応です（通常で表示）` })
         result.push({ id: key, name: str(row.LayerName), isFolder: !!(num(row, 'LayerFolder') & 1),
           kind, paletteColor: readPaletteColor(row),
           maskState: hasLayerMask(row) ? num(row, 'LayerVisibility') & 2 ? 'enabled' : 'disabled' : undefined,
@@ -151,8 +151,8 @@ export async function openClipSession(bytes: Uint8Array, SQL: SqlJsStatic): Prom
     const nativeLayers = new Map<string, ClipLayer>()
     const walk = (layers: ClipLayer[]) => layers.forEach(layer => {
         nativeLayers.set(layer.id, layer)
-        layer.effects = isMediaKind(layer.kind) ? undefined : readMaterialEffects(nativeRows.get(layer.id)!, message => diagnostics.push({
-          scope: 'raster', part: 'effect', layerId: layer.id, message: `「${layer.name}」: ${message}`,
+        layer.effects = isMediaKind(layer.kind) ? undefined : readMaterialEffects(nativeRows.get(layer.id)!, (message, code) => diagnostics.push({
+          scope: 'raster', part: 'effect', outcome: 'missing-effect', code, layerId: layer.id, message: `「${layer.name}」: ${message}`,
         }))
         walk(layer.children)
       })

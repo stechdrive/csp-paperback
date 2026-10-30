@@ -1,9 +1,11 @@
 import { useDismissableLayer } from '../hooks/useDismissableLayer'
 import { Tooltip } from './Tooltip'
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState, useSyncExternalStore } from 'react'
 import { createPortal } from 'react-dom'
 import { useAppStore } from '../store'
-import type { ClipDiagnostic } from '../utils/clip/types'
+import { documentRenderIssues, type RenderIssue } from '../utils/render-diagnostics'
+import { materialRevision, subscribeMaterials } from '../engine/material-cache'
+import { DiagnosticList } from './DiagnosticList'
 import styles from './ClipPreviewControls.module.css'
 
 function popupPosition(button: HTMLButtonElement) {
@@ -19,7 +21,7 @@ function popupPosition(button: HTMLButtonElement) {
   }
 }
 
-function Diagnostics({ items }: { items: ClipDiagnostic[] }) {
+function Diagnostics({ items }: { items: RenderIssue[] }) {
   const id = useId()
   const trigger = useRef<HTMLButtonElement>(null)
   const popup = useRef<HTMLDivElement>(null)
@@ -69,9 +71,12 @@ function Diagnostics({ items }: { items: ClipDiagnostic[] }) {
             trigger.current?.focus()
           }}>✕</button>
         </div>
-        <ul className={styles.list} tabIndex={0} aria-label="再現状況の一覧">
-          {items.map((item, index) => <li key={index}>{item.message}</li>)}
-        </ul>
+        <div className={styles.list} tabIndex={0} role="region" aria-label="再現状況の一覧">
+          <DiagnosticList issues={items} onInspect={layerId => {
+            setPosition(null)
+            useAppStore.getState().openQuickLook(layerId)
+          }} />
+        </div>
       </div>, document.body,
     )}
   </>
@@ -82,7 +87,10 @@ export function ClipDiagnosticsControl() {
   const clip = useAppStore(s => s.clipDocument)
   const timelineId = useAppStore(s => s.clipTimelineId)
   const diagnostics = useAppStore(s => s.clipDiagnostics)
-  return clip && diagnostics.length > 0 ? <Diagnostics key={timelineId} items={diagnostics} /> : null
+  const tree = useAppStore(s => s.layerTree)
+  useSyncExternalStore(subscribeMaterials, materialRevision)
+  const issues = clip ? documentRenderIssues(tree, diagnostics) : []
+  return clip && issues.length > 0 ? <Diagnostics key={timelineId} items={issues} /> : null
 }
 
 export function ClipTimelineSelect() {

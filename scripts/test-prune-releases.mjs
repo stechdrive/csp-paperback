@@ -101,3 +101,21 @@ test('release workflow runs cleanup after publication and quality gates include 
   assert.ok(scripts['test:deploy'].includes('scripts/test-prune-releases.mjs'))
   assert.ok(scripts['check:ci'].includes('npm run test:deploy'))
 })
+
+test('parallel release publication still requires all original quality checks and both audited builds', () => {
+  const readWorkflow = name => readFileSync(new URL(`../.github/workflows/${name}.yml`, import.meta.url), 'utf8')
+  const release = readWorkflow('desktop-release')
+  const quality = readWorkflow('quality-gate')
+  const desktop = readWorkflow('desktop-build')
+  const { scripts } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
+  for (const command of scripts['check:ci'].split(' && ')) {
+    assert.ok(quality.includes(command), `Shared CI must retain ${command}`)
+  }
+  assert.match(release, /needs: \[quality-gate, build-desktop\]/)
+  assert.match(quality, /fail-fast: false/)
+  assert.match(quality, /needs: \[checks, browser-tests\]/)
+  assert.ok(quality.includes('test "$CHECKS_RESULT" = success && test "$BROWSER_RESULT" = success'))
+  assert.match(desktop, /cargo test --locked --manifest-path src-tauri\/Cargo.toml --lib/)
+  assert.ok(desktop.indexOf('npm run audit:artifacts -- dist --tauri') < desktop.indexOf('name: Upload audited desktop asset'))
+  assert.doesNotMatch(desktop, /tagName:|releaseId:|contents: write/)
+})
