@@ -3,6 +3,9 @@ import { readFile } from 'node:fs/promises'
 import { unzipSync } from 'fflate'
 import { manyOutputs } from './helpers/many-outputs'
 
+// Exercise real scrollbar geometry, including Windows WebView's classic bars.
+test.use({ launchOptions: { ignoreDefaultArgs: ['--hide-scrollbars'] } })
+
 const list = (page: Page) => page.getByRole('listbox', { name: '出力ファイル' })
 const active = (page: Page) => list(page).locator('[data-active-output="true"]')
 const search = (page: Page) => page.getByRole('searchbox', { name: '出力ファイル名を検索' })
@@ -27,6 +30,35 @@ async function expectActiveVisible(page: Page) {
   const id = await list(page).getAttribute('aria-activedescendant')
   await expect(active(page)).toHaveAttribute('id', id!)
 }
+
+test('スクロールバーの境目でも行の再計測が収束し、一覧を操作できる', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.goto('./')
+  await page.addStyleTag({ content: `
+    [role="listbox"][aria-label="出力ファイル"] { flex: none; height: 730px; }
+    [role="listbox"][aria-label="出力ファイル"]::-webkit-scrollbar { width: 15px; }
+  ` })
+  // 13 estimated rows overflow (13 * 57 + 8), but measured rows fit
+  // (13 * 54 + 8). A classic scrollbar must not keep invalidating the widths.
+  await page.locator('input[type=file][multiple]').setInputFiles(manyOutputs(13))
+  const rows = list(page).getByRole('option')
+  await expect(rows).toHaveCount(13)
+  await expect.poll(() => list(page).evaluate(el => el.scrollHeight <= el.clientHeight)).toBe(true)
+  const fittingWidth = await list(page).evaluate(el => el.clientWidth)
+  await list(page).evaluate(el => { el.style.height = '600px' })
+  await expect.poll(() => list(page).evaluate(el => el.scrollHeight > el.clientHeight)).toBe(true)
+  // Check that this test really uses a scrollbar that consumes layout width.
+  expect(await list(page).evaluate(el => (el as HTMLElement).offsetWidth - el.clientWidth)).toBeGreaterThanOrEqual(15)
+  expect(await list(page).evaluate(el => el.clientWidth)).toBe(fittingWidth)
+  await list(page).press('End')
+  await expect(active(page)).toHaveAttribute('aria-posinset', '13')
+  await expectActiveVisible(page)
+  await list(page).evaluate(el => { el.style.height = '730px' })
+  await list(page).press('Home')
+  await expect(active(page)).toHaveAttribute('aria-posinset', '1')
+  await expectActiveVisible(page)
+  await expect(rows).toHaveCount(13)
+})
 
 test('1200件の画面外を含む検索・範囲選択・キー移動・接続線・選択書き出しを保つ', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 820 })

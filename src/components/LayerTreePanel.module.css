@@ -134,7 +134,12 @@
 
 
 .fileCount { flex-shrink: 0; font-size: .72rem; color: var(--color-text-secondary); }
-.fileList { flex: 1; min-height: 0; overflow: auto; padding: .25rem 0; }
+/* Row measurement can remove overflow. Keep the content width stable so that
+   the scrollbar cannot repeatedly invalidate measured heights. */
+.fileList { flex: 1; min-height: 0; overflow: auto; overflow-y: scroll; scrollbar-gutter: stable; padding: .25rem 0; }
+@supports (scrollbar-gutter: stable) {
+  .fileList { overflow-y: auto; }
+}
 .fileRow {
   padding: 7px 12px;
   font-size: .78rem;
