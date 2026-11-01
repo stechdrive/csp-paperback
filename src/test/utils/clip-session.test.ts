@@ -6,11 +6,15 @@ import * as codec from 'celcodec'
 import { openClipSession, parseClipDocument } from '../../utils/clip/parser'
 import { sessionFixture, sessionIds } from '../fixtures/clip-session'
 
-const observed = vi.hoisted(() => ({ sessions: [] as codec.DocumentSession[] }))
+const observed = vi.hoisted(() => ({ sessions: [] as codec.DocumentSession[], savedComposite: false }))
 vi.mock('celcodec', async importOriginal => {
   const actual = await importOriginal<typeof import('celcodec')>()
   return { ...actual, openDocument: (...args: Parameters<typeof actual.openDocument>) => {
-    const session = actual.openDocument(...args); observed.sessions.push(session); return session
+    const session = actual.openDocument(...args); observed.sessions.push(session)
+    return { ...session, decodeLayer: async (...decodeArgs: Parameters<typeof session.decodeLayer>) => {
+      const result = await session.decodeLayer(...decodeArgs)
+      return observed.savedComposite ? { ...result, layer: { ...result.layer, savedComposite: true } } : result
+    } }
   } }
 })
 
@@ -19,7 +23,7 @@ beforeAll(async () => {
   SQL = await initSqlJs({ wasmBinary: new Uint8Array(readFileSync('node_modules/sql.js/dist/sql-wasm.wasm')).buffer })
   bytes = await sessionFixture(SQL)
 })
-afterEach(() => vi.restoreAllMocks())
+afterEach(() => { observed.savedComposite = false; vi.restoreAllMocks() })
 
 function observeSessions() {
   observed.sessions.length = 0
@@ -27,6 +31,16 @@ function observeSessions() {
 }
 
 describe('public document session integration', () => {
+  it('rejects missing identities, unconfigured Canvas and saved folder composites without substituting content', async () => {
+    const sessions = observeSessions(), session = await openClipSession(bytes, SQL)
+    try {
+      await expect(session.decode('missing')).rejects.toMatchObject({ diagnostic: { code: 'MISSING_ROW' } })
+      expect(() => session.render({ layers: [] }, { left: 0, top: 0, width: 1, height: 1 })).toThrow('Canvas')
+      observed.savedComposite = true
+      await expect(session.decode(sessionIds.folder)).rejects.toThrow('保存合成画像')
+    } finally { session.dispose() }
+    expect(sessions[0].resources().closed).toBe(true)
+  })
   it('keeps saved opacity immutable, owns input copies and decodes fresh pixels by UUID', async () => {
     const sessions = observeSessions(), input = bytes.slice(), session = await openClipSession(input, SQL)
     input.fill(0)

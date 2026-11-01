@@ -1,3 +1,4 @@
+import type { CompositionRenderResult } from 'celcodec/render'
 import { readFileSync } from 'node:fs'
 import initSqlJs from 'sql.js'
 import { expect, test } from './fixtures'
@@ -21,7 +22,7 @@ test('公開APIの文書を実Worker/WASMで遅延復元し、転送・解放・
   await expect(slider).toHaveAttribute('aria-valuenow', '28')
 
   const results = await page.evaluate(async ({ url, base64, largeBase64, ids }) => {
-    type Reply = { id: number; document?: ClipDocument; layer?: ClipLayer; diagnostic?: { code: string; kind: string }; error?: string }
+    type Reply = { result?: CompositionRenderResult; id: number; document?: ClipDocument; layer?: ClipLayer; diagnostic?: { code: string; kind: string }; error?: string }
     const worker = new Worker(url, { type: 'module' })
     const pending = new Map<number, (reply: Reply) => void>()
     worker.onmessage = (event: MessageEvent<Reply>) => { pending.get(event.data.id)?.(event.data); pending.delete(event.data.id) }
@@ -41,6 +42,8 @@ test('公開APIの文書を実Worker/WASMで遅延復元し、転送・解放・
       const original = Array.from(first.layer!.pixels!.rgba)
       first.layer!.pixels!.rgba.fill(0)
       const second = await send({ layerId: ids.cel })
+      const composed = await send({ composition: { layers: [{ id: 'placement', layerId: ids.folder, opacity: 1, children: [{ id: 'cel', layerId: ids.cel }] }] },
+        region: { left: 3, top: 5, width: 1, height: 1 } })
       const folder = await send({ layerId: ids.folder })
       worker.postMessage({ dispose: true })
       const closed = await send({ layerId: ids.cel })
@@ -55,14 +58,14 @@ test('公開APIの文書を実Worker/WASMで遅延復元し、転送・解放・
       const limited = await send({ layerId: ids.cel, maxDecodedBytes: 3 })
       // Termination must also be possible while requests are queued in a real Worker.
       worker.postMessage({ id: ++id, layerId: ids.cel })
-      return { detached, width: opened.document?.width, timeline: opened.document?.timelines[0],
+      return { composed: Array.from(composed.result!.pixels!.rgba), detached, width: opened.document?.width, timeline: opened.document?.timelines[0],
         original, fresh: Array.from(second.layer!.pixels!.rgba), folderHasPixels: !!folder.layer?.pixels,
         closed: closed.diagnostic, failed: failed.diagnostic, reopened: reopened.document?.width,
         afterReopen: Array.from(again.layer!.pixels!.rgba), large: largeDoc.document?.width,
         sparse: Array.from(sparse.layer!.pixels!.rgba), limit: limited.diagnostic }
     } finally { worker.terminate() }
   }, { url: appWorker.url(), base64: bytes.toString('base64'), largeBase64: large.toString('base64'), ids: sessionIds })
-  expect(results).toMatchObject({ detached: true, width: 64, original: [255, 0, 0, 255], fresh: [255, 0, 0, 255],
+  expect(results).toMatchObject({ composed: [255, 0, 0, 255], detached: true, width: 64, original: [255, 0, 0, 255], fresh: [255, 0, 0, 255],
     folderHasPixels: false, closed: { code: 'CLOSED_DOCUMENT' }, failed: { kind: 'malformed' },
     reopened: 64, afterReopen: [255, 0, 0, 255], large: 50000, sparse: [255, 0, 0, 255],
     limit: { code: 'LIMIT_MATERIAL_BYTES', kind: 'resource-limit' } })

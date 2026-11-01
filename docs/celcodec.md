@@ -1,69 +1,62 @@
-# celcodecによるCLIP形式処理
+# celcodecとの接続
 
-CLIPの形式処理はcelcodec 0.3.1の公開APIへ集約する。コンテナ・SQLite・階層・保存属性・媒体・タイムライン・素材復元は文書セッションが担当し、Paperbackは不変の文書ビューをUUIDで参照して表示用モデルへ投影する。ライブラリ内部ファイルの直接importや、形式処理の再実装は行わない。
+## 固定するパッケージ
 
-## 固定した同梱パッケージ
+- 版: **0.7.0**
+- 提供側コミット: `b5b2405d20936ac6531557fee943569632738556`
+- 同梱ファイル: `vendor/celcodec-0.7.0-814d8f201b88.tgz`
+- SHA-256: `814d8f201b883867ad092429b4d7ba6f2825df871c6cbf8d633bc1b3a2ce5500`
 
-- 版: **0.3.1**
-- コミット: `bce2530ab99da5acde531da8d95200e405d847f7`（`fix: restore sparse materials on large canvases (0.3.1)`）
-- 同梱ファイル: `vendor/celcodec-0.3.1.tgz`
-- SHA-256: `76b60bc93043fa3bf831fa8f307ee529cee8bba68ec1f4d663aa35e8b60db115`
-
-検証済みtarballを無変更で同梱し、package-lockのintegrityで固定する。このリポジトリだけをcloneして `npm ci` でインストールでき、隣接checkoutや絶対パス依存は不要。198ファイルの許可リスト、ライセンス、ローカルパス・秘密情報の検査を行い、唯一のCLIPが監査済み空seedであることと、そのSHA-256 `6fb3efa8066af90b2d0e042ddc3d2aee7572691e5cc658f89cdb02467e377a82` を照合した。空seedの出自はパッケージ内 `assets/README.md` に保持する。実制作素材・開発設定・ソースマップは同梱しない。
+検証済みtarballを無変更で同梱し、package-lockのintegrityで固定する。このリポジトリだけをcloneして `npm ci` でインストールでき、隣接checkoutや絶対パス依存は不要。214ファイルの許可リスト、ライセンス、公開exportsを提供側で監査する。0.6.0以降のパッケージは空テンプレートを含むCLIP、採取画像、native blobを同梱しない。
 
 ## 形式処理とアプリの責務
 
-`openDocument` のセッションから `readLayerProperties`、`readTimeline`、`readKeyframes`、`decodeLayer` を呼ぶ。素材は明示的に `source: 'original'`、`budget: 'cropped'`、復元画素384 MiB上限で取得する。元画像が必要な素材に現在フレームの保存画像を代用せず、フォルダー／動画の保存合成画像と子素材を二重合成しない。空ベクターと欠落・破損・未対応の区別もライブラリ診断に従う。
+CLIP単独の描画は `createCompositionRenderer` に、元のUUIDを参照する描画用階層を渡す。CLIPの元文書を変更せず、選択した子だけ・並べ替えた子・合成用フォルダーを持つ構成を評価する。元の親を保持するか、隠れたクリッピング基底を残すかも描画用階層へ明示する。その階層に対するクリッピング、マスク、変形、効果、合成モード、色調補正、周辺画素の読み出しはライブラリが担当する。
 
-単一素材のCanvas描画・効果、ネイティブ合成式、色調補正は公開 `celcodec/canvas`・`celcodec/render` APIを使う。素材の選択と重ね順、工程分離、出力計画・名前、仮想セル、PSD照合・補完、UI・store・履歴はPaperbackが担当する。Canvasの確保・解放、WASM・フォントの初期化もアプリの責務である。
+Paperbackは工程選択、構造フォルダーの出力不透明度100%、仮想セル、表示設定、出力計画・名前、PSD照合・補完、UI・store・履歴を担当する。これらを一般的なレイヤー構成へ変換する[アダプター](../src/engine/clip-composition.ts)と、形式を解釈するライブラリを分離する。未知の合成モードは従来どおり警告し、アプリが通常合成を明示指定する。既知の発光モードは汎用PSD名に丸めず、ネイティブ値を保つ。
 
-構造フォルダーの出力不透明度100%はアプリの合成モデルへ適用し、CLIPに保存された不透明度やライブラリの文書ビューを書き換えない。セルタイミングは反映するが、独立した作画素材を出力するためカメラ・変形アニメーションは適用しない。これは一時的な出力方針で、CLIP内のカメラ表示やキーフレーム設定を変更する操作ではない。
+CLIP＋PSDとPSD＋XDTSはPSD用のアプリ合成経路を使う。PSD画像にCLIPの効果を二重適用しない。CLIP描画が失敗したときにアプリ独自のCLIPデコーダーへ切り替えることはない。PSD出力に必要な素材単位の復元は、引き続き公開 `decodeLayer` を使う。
 
-タイムラインの開始・終了・セル位置は負数と小数を保持する。セル公開APIとキーフレーム公開APIから排他的な露出終了を取得する。整数フレームへのサンプリングはシークバー等の表示境界だけで行う。
+現在の出力とプレビューは `source: 'original'`、撮影用の時間評価なし。2Dカメラ・レイヤーキーフレームを適用しない。ナビゲーターのセル選択はPaperbackで行い、静止画出力はタイムライン露出で選択済みのセルを落とさない。将来の時間再生ではライブラリの `timelineId` / `frame` と、各描画ノードの `camera` / `layerKeyframes` 方針を使える。現在のUIへその切替を追加する変更ではない。
+
+タイムラインの開始・終了・セル位置は負数と小数を保持する。整数フレームへの丸めはシークバー等の表示境界だけで行う。Canvas生成、WASM・フォントの初期化とUI用の文言はアプリ側へ残す。
 
 ## 所有権と診断
 
-メインスレッドから入力ArrayBufferの所有権をWorkerへtransferし、Workerはその存続中だけセッションへborrowする。Worker外の解析入口は既定のcopyを使う。遅延セッションは圧縮入力とSQLiteを保持し、復元画素は要求ごとに独立したバッファとしてメインスレッドへtransferする。使用済みの画素は素材キャッシュの既存ルールで解放・再生成する。
+メインスレッドから入力ArrayBufferの所有権をWorkerへtransferし、その存続中だけ文書セッションへborrowする。Worker外の解析入口は既定のcopyを使う。Workerの直列要求から合成rendererを再利用し、元のUUIDに基づく素材キャッシュを共有する。各描画結果は独立した画素バッファで転送する。複数配置のIDと元のUUIDは分け、メモリ管理用ハンドルはstoreや保存プロジェクトへ入れない。
 
-通常の文書切替、PSD差替え、読み込み失敗、タイムアウト、AbortSignalによる中止ではWorkerをterminateしてセッションとWASMのヒープをまとめて解放する。Worker内の明示disposeはセッションを閉じ、待機中の古い要求を無効化する。一括解析は成功・失敗のいずれでもfinallyでdisposeする。文書の再読込に以前の画素やセッションを流用しない。
+文書切替・PSD差替え・タイムアウト・中止ではWorkerを終了し、圧縮入力、SQLite、rendererをまとめて解放する。明示disposeではrendererを先に閉じ、待機中の古い要求を無効化する。通常の描画失敗だけで文書を破棄せず、別の領域や構成で再試行できる。
 
-診断はcode・kind・data・layerIdを保持し、日本語の案内へ変換する。資源不足は再試行可能な `ImageResourceError`、キャンセルは `AbortError` に変換し、画像欠落へ置き換えない。例外メッセージからCLIP形式や失敗原因を推測しない。
+欠落・未対応の素材は従来の出力方針に合わせ `missingMaterials: 'omit'` を明示し、透明として処理する。この結果はライブラリでは `partial` となり、アプリは欠落を含む結果としてプレビュー・素材一覧・書き出し結果に警告を残す。空ベクターは正常な空素材であり、この警告にはならない。マスク・変形・効果・合成の未解決エラーや破損まで省略する指定ではなく、完成できない描画は失敗として表示する。
+
+診断のcode・kind・data・元UUID・描画配置IDを保持し、日本語の案内へ変換する。同じ素材の複数配置は区別し、素材自体の警告との二重表示を除く。資源不足は再試行可能な `ImageResourceError`、キャンセルは `AbortError` に変換し、欠落画像へ置き換えない。合成・色調補正に常時付く数値近似の基礎診断はライブラリ結果に残るが、個別素材の対処を求めるUI警告にはしない。CSPとの完全な画素一致を保証するものではない。
 
 ## 大判文書の対応と残る制約
 
-CSPで有効な寸法と、実際に確保する画素・Canvasのメモリ予算を分ける。5万pxという一辺の長さだけで文書を拒否しない。0.3.0で50,000×50,000px内の1px素材が `INVALID_IMAGE_DIMENSIONS` になる問題を再現し、公開APIを維持して修正された0.3.1を採用した。
+CLIP単独は通常サイズも大判も同じ領域合成を使い、用紙色、親フォルダーのマスク・効果、元の配置までライブラリへ委ねる。縮小画像は小領域ずつ組み立て、ナビゲーターとQuick Lookも原寸の全面Canvasを作らない。50,000×50,000pxの用紙と疎な素材について、離れた領域の描画、使用量、解放を回帰テストする。
 
-素材サイズが不明な初回は、文書面積による一律の予約を行わず、同時保持可能な残り容量をWorkerへ渡す。復元前の画素予算は384 MiB以下のまま、実際の画像・マスクの累積量で検査する。Canvas化した後は実寸を素材キャッシュへ記録し、次回以降の見積もりに使う。キャッシュ・同時作業・描画の既存上限は緩和しない。
+CLIP単独のPNG出力は、領域描画から行バッファを作り `encodePngRows` で順次圧縮する。DPIと確認フチも反映する。全面RGBAや原寸Canvasは不要だが、現行の保存先接続は圧縮済みPNGをBlobとして保持する。全画素を計算する時間、行バッファ、複雑な効果・元画像の作業予算は必要であり、無制限の出力ではない。
 
-用紙なしの50,000×50,000px文書内で、1pxのラスターを遅延復元し、32×32pxの部分領域に正しい色・位置・不透明度で合成できることを[統合テスト](../src/test/engine/clip-large-document.test.ts)で確認した。Workerでも4 bytes予算で復元し、3 bytesなら構造化された資源不足を返す。50,000×64px文書のメタデータと素材復元も確認する。
+JPEG、PSD出力、およびPSDを画像元にする合成は既存のCanvas・素材予算を受ける。PNGの分割対応をこれらの全面出力へ拡大して説明しない。EXEもWebViewのJavaScript・Canvas・Blob制約があるため、PCの空きメモリ全量を自動的に使えるわけではない。
 
-全面を塗る用紙・塗り・グラデーション、広い復元矩形、元の全矩形が必要な変形画像、ベクターの描き起こしなどは、引き続きライブラリの画素・描画予算を受ける。とくに用紙ありの5万px四方は用紙だけでも復元予算を超え、疎なラスターだけの文書と同じ保証にはならない。用紙を勝手に消したり、失敗を透明画像へ置き換えたりしない。
+## 同じ作業窓口での開発
 
-またPaperbackの実書き出しは原寸Canvasを使い、実行環境のCanvas寸法と画像予算の制約を受ける。大判文書を最後まで処理するには、領域ごとの素材復元・合成・画像エンコードを接続する必要がある。メタデータ・疎な素材・部分合成の成功を、大判の全画素出力の成功とは扱わない。ライブラリ側の不足をアプリ独自CLIPデコーダーで回避しない。
+両リポジトリを同じ作業環境で開き、Git履歴は分ける。ライブラリ側で次を実行する。
 
-## 統合の検証根拠
+```sh
+npm run consumer:setup -- <paperback-repository>
+npm run consumer:status
+npm run consumer:sync
+```
 
-ライブラリ単体の検証とPaperbackの統合検証は区別する。0.3.0の2,019テスト・境界監査312条件・複合18ケース・CSP往復検証、および0.3.1の2,039テスト・大判のNode／Chromium Worker consumerは提供側の記録であり、アプリ統合の成功件数に加算しない。
+ignoredのローカル設定に接続先を保持する。`sync`はライブラリをbuild/packし、内容ハッシュ付きのtarballをこのリポジトリへ導入する。内部ソースへのimportやsymlinkを使わず、公開APIの実物で接続する。ライブラリのHEAD・ソースハッシュ・tarball SHA、アプリ側HEADをローカルの検証記録へ残す。両リポの変更・検証・コミットを個別に確認し、不要になった古いtarballだけを削除する。公開操作は含めない。
 
-アプリでは[セッション回帰](../src/test/utils/clip-session.test.ts)、[Workerプロトコル](../src/test/utils/clip-worker.test.ts)、[クライアントの中止・所有権](../src/test/utils/clip-io.test.ts)、[実ブラウザーのセッション](../e2e/clip-session.spec.ts)を追加し、CLIP単独・CLIP＋PSD・PSD＋XDTSの既存goldenと出力規則を検証する。既存のCSP由来goldenは変更しない。
+## 検証の範囲
 
-ベクター回帰はCSPで採取した元のストロークバイト（保存された間隔残量・乱数状態を含む）を使う。旧テストの座標だけの再構成では0.3.0の復元精度を検証できないためで、期待アルファ画像と許容幅は据え置く。採取元とSHA-256は[fixture](../src/test/fixtures/native-vector-goldens.json)に保持する。クレジットは[THIRD_PARTY_NOTICES.md](../public/THIRD_PARTY_NOTICES.md)を参照。
+ライブラリの全回帰とPaperbackの統合検証は別に数える。提供側は2,088件、TypeScript 6/7、API互換性、packしたconsumer、Chromium Worker、既存CSP採取golden、性能・解放の検証を行った。
 
-色調補正7種類は、提供側のCSP EX 5.1.5採取データから変更せず取り出した不透明カラーランプを、アプリのCanvas接続経由で照合する。[補正の画像テスト](../src/test/engine/clip-adjustment-native.test.ts)に出自・SHA-256・元の許容幅を保持する。
+Paperbackは127ファイル・1,165件のカバレッジ付きテスト、lint、型検査、公開スクリプト13件、Webビルドを確認した。ブラウザーは全132シナリオを実行し、失敗箇所を修正して関係するspecを再実行した。既存のPNG goldenと許容差は変更していない。CLIP／CLIP＋PSD／PSD＋XDTS、工程・仮想セル、警告、Worker、PNG出力を含む。Windows EXEの生成と生成物監査は実機UIの確認と区別する。
 
-0.3.1接続時のPaperback側の検証結果（2026-11-01、Windows）:
+[構成描画](../src/test/engine/clip-composition.test.ts)、[セッション](../src/test/utils/clip-session.test.ts)、[Worker](../src/test/utils/clip-worker.test.ts)、[実ブラウザー](../e2e/clip-session.spec.ts)を主な接続の回帰とする。テスト用の空構造は既存の公開サンプルからメモリ上で導出し、公開writerで合成素材を加える。追加の非公開データなしで通常のCIを実行できる。必要なら `CELCODEC_TEST_TEMPLATE` に利用者所有の空アニメーションCLIPを指定できる。この合成テストを独立したCSP採取値と混同しない。
 
-| 検証 | 結果 |
-|---|---|
-| 移行前 `npm run test:run` | 122ファイル・1,133件成功 |
-| `npm run lint` / `npm run test:deploy` | lint成功・公開スクリプトのローカルテスト13件成功 |
-| `npm run test:coverage` | 126ファイル・1,156件成功、既定のカバレッジ基準を充足 |
-| `npm run build` | TypeScript・Web用base `/csp-paperback/` のビルド成功 |
-| Playwright（ビルド済みWeb） | 全132件成功。CLIP／CLIP＋PSD／PSD＋XDTSのPNG golden、仮想セル、Worker・WASM・解放を含む |
-| `npm run audit:artifacts -- dist vendor/celcodec-0.3.1.tgz` | Web生成物とtarballのパス監査成功 |
-| `npm run tauri:build` | base `./` のビルドとWindows portable EXE生成成功。build番号のみ既存フックで同期 |
-| `npm run audit:artifacts -- dist --tauri` | Tauri用生成物とWindows EXEのパス監査成功 |
-
-Playwrightは `npm run test:e2e:built -- e2e/clip-preview-controls.spec.ts e2e/clip-session.spec.ts` の4件と、`node node_modules/@playwright/test/cli.js test --grep-invert "clip-preview-controls|clip-session"` の残り128件に分けて実行した。同一のWebビルドで、成功済みケースを重ねて実行していない。追跡対象と追加ファイルは生成物のパス監査とは別に検査し、個人パス・秘密情報・非公開作業ファイルの混入がないことを確認した。
-
-撮影用カメラとキーフレームを含むCSP採取fixtureでも、元画素・保存位置・マスクを使うPaperbackの出力を追加照合した。今回CSP実機の新たな操作・保存往復、デスクトップアプリの実機UI、macOSでのビルド・実機確認は行っていない。
+素材の独立対照試験は既存のベクター・マスク・効果・色調補正のCSP採取goldenを維持する。新たなCSP実機操作・保存往復、Windows EXEの実機UI、macOS実機確認は今回行っていない。クレジットは[THIRD_PARTY_NOTICES.md](../public/THIRD_PARTY_NOTICES.md)を参照。

@@ -1,7 +1,12 @@
 import { ClipError, type DiagnosticCode, type ClipDiagnostic } from 'celcodec'
+import { materialRenderingMessage } from './rendering-messages'
 import { ImageResourceError } from '../image-budget'
 import type { ClipDiagnostic as AppDiagnostic } from './types'
 const messages: Partial<Record<DiagnosticCode, string>> = {
+  APPROXIMATE_VECTOR: materialRenderingMessage('vector', false),
+  APPROXIMATE_TEXT: materialRenderingMessage('text', false),
+  MISSING_VECTOR_DATA: materialRenderingMessage('vector', true),
+  UNSUPPORTED_3D: materialRenderingMessage('3d', true),
   "CLOSED_DOCUMENT": "CLIPの読み込みセッションが終了しています。ファイルを開き直してください。",
   "LIMIT_INTEGER": "サイズが範囲外です。",
   "UNSUPPORTED_SQL_TRIGGER": "対応していないデータベーストリガーがあります。",
@@ -128,7 +133,6 @@ const messages: Partial<Record<DiagnosticCode, string>> = {
   "LIMIT_BRUSH_BYTES": "ブラシ画像の展開量が上限を超えました",
   "LIMIT_MATERIAL_BYTES": "画像展開の合計が512 MiBを超えました",
   "UNSUPPORTED_ADJUSTMENT_BLEND": "通常以外の合成モードの色調補正には未対応です",
-  "MISSING_VECTOR_DATA": "ベクターのストロークデータがありません",
   "MISSING_ORIGINAL_MASK": "元素材のマスク画像がありません",
   "MISSING_MASK": "マスク画像を復元できません",
   "INVALID_NUMBER": "数値が不正です",

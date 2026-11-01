@@ -1,5 +1,8 @@
 import type { SqlJsStatic } from 'sql.js'
 import { ClipError, openDocument, type LayerView, type SessionOptions } from 'celcodec'
+import { createCompositionRenderer, type CompositionRenderer, type RenderComposition, type CompositionRenderResult } from 'celcodec/render'
+import type { CanvasFactory } from 'celcodec/canvas'
+import type { ImageRegion } from 'celcodec'
 import { CLIP_BLEND_MODES as blends } from './blend'
 import { isMediaKind } from '../layer-display'
 import { MAX_LAYER_COUNT, MAX_LAYER_DEPTH } from '../image-budget'
@@ -11,17 +14,20 @@ import type { ClipDiagnostic, ClipDocument, ClipLayer } from './types'
 export interface ClipSession {
   document: ClipDocument
   decode: (id: string, maxDecodedBytes?: number) => Promise<{ layer: ClipLayer; diagnostics: ClipDiagnostic[] }>
+  render(composition: RenderComposition, region: ImageRegion): Promise<CompositionRenderResult>
   dispose(): void
 }
 
 /** Own a public celcodec session; only the application's presentation model is mutable. */
 export async function openClipSession(bytes: Uint8Array, SQL: SqlJsStatic,
-  options: Pick<SessionOptions, 'ownership' | 'signal'> = {}): Promise<ClipSession> {
+  options: Pick<SessionOptions, 'ownership' | 'signal'> & { canvas?: CanvasFactory } = {}): Promise<ClipSession> {
   // Normalize Buffer/foreign-realm views without copying; the session then
   // implements the requested copy/borrow ownership.
   const input = new Uint8Array(bytes.buffer, bytes.byteOffset, bytes.byteLength)
+  const { canvas, ...sessionOptions } = options
+  let renderer: CompositionRenderer | undefined
   const native = openDocument(SQL, input, {
-    ...options, maxRows: MAX_LAYER_COUNT, maxDepth: MAX_LAYER_DEPTH,
+    ...sessionOptions, maxRows: MAX_LAYER_COUNT, maxDepth: MAX_LAYER_DEPTH,
     // Document dimensions follow CSP. Pixel allocations have independent budgets.
   })
   try {
@@ -38,7 +44,7 @@ export async function openClipSession(bytes: Uint8Array, SQL: SqlJsStatic,
         const layer: ClipLayer = {
           id: node.id, name: node.name, isFolder: node.folder, isAnimationFolder: node.animation,
           expanded: node.expanded ?? true, hidden: node.visible === false,
-          opacity: node.opacity ?? 1, blendMode: blends[blend] ?? 'normal',
+          opacity: (properties.keyframesEnabled ? properties.originalOpacity : undefined) ?? node.opacity ?? 1, blendMode: blends[blend] ?? 'normal',
           nativeBlendMode: blend, clipping: properties.clipping ?? false,
           kind: node.kind, paletteColor: node.labelColor, maskState: node.mask,
           effects: media ? undefined : properties.effects,
@@ -70,7 +76,13 @@ export async function openClipSession(bytes: Uint8Array, SQL: SqlJsStatic,
         const layer: ClipLayer = { ...metadata, ...decoded.layer, children: [] }
         return { layer, diagnostics: materialDiagnostics(decoded.diagnostics, layer, document.compatibility) }
       },
-      dispose() { native.dispose(); layersById.clear() },
+      render(composition, region) {
+        if (!canvas) throw new Error('CLIP描画用Canvasが設定されていません')
+        renderer ??= createCompositionRenderer(native, { canvas, source: 'original', missingMaterials: 'omit',
+          maxWorkingBytes: 384 * 1024 * 1024, maxCacheBytes: 64 * 1024 * 1024 })
+        return renderer.render(composition, { region })
+      },
+      dispose() { renderer?.dispose(); native.dispose(); layersById.clear() },
     }
   } catch (error) { native.dispose(); throw error }
 }

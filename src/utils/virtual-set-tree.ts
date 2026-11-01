@@ -1,3 +1,4 @@
+import { syntheticClipGroup } from '../engine/clip-source'
 import type { CspLayer, VirtualSet } from '../types'
 import type { VirtualSetDropTarget, VirtualSetNode } from '../types/marks'
 import { MAX_LAYER_DEPTH } from './image-budget'
@@ -60,7 +61,7 @@ export function resolveVirtualSetLayers(source: CspLayer[], vs: VirtualSet): Csp
   const resolve = (nodes: VirtualSetNode[], parentId: string | null, depth: number): CspLayer[] => nodes.flatMap(node => {
     const layer: CspLayer | undefined = node.virtualFolder ? {
       id: node.layerId, name: node.name ?? '新規フォルダ', originalName: node.name ?? '新規フォルダ',
-      agPsdRef: {}, children: [], parentId, depth, blendMode: 'pass through', opacity: 100,
+      agPsdRef: syntheticClipGroup({}), children: [], parentId, depth, blendMode: 'pass through', opacity: 100,
       hidden: false, clipping: false, isFolder: true, isAnimationFolder: false,
       top: 0, left: 0, width: 0, height: 0, animationFolder: null,
       singleMark: false, autoMarked: false, virtualSetMembership: [vs.id], uiHidden: false,

@@ -1,3 +1,6 @@
+import { createClipPreview } from '../engine/clip-composition'
+import { renderClipOverview } from '../utils/output-region-render'
+import { releaseCanvas } from '../engine/render-resources'
 import { useEffect, useRef, useCallback, useState } from 'react'
 import { useAppStore } from '../store'
 import { selectLayerTreeForNavigator } from '../store/selectors'
@@ -51,6 +54,17 @@ export function usePreview(canvasRef: React.RefObject<HTMLCanvasElement | null>,
       return
     }
     try {
+    const native = createClipPreview(layerTree, docWidth, docHeight, { selectedCells })
+    if (native) {
+      const result = await renderClipOverview(native, 2048, () => current !== generation.current)
+      try {
+        if (current !== generation.current) return
+        canvas.width = result.width; canvas.height = result.height
+        canvas.getContext('2d')?.drawImage(result, 0, 0)
+        setError(null)
+      } finally { releaseCanvas(result) }
+      return
+    }
     const layers = collectRenderMaterials(() => flattenTree(layerTree, docWidth, docHeight, selectedCells))
     const result = await withPreparedMaterials(layers, () => {
       if (current !== generation.current) return null

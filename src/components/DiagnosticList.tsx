@@ -25,7 +25,7 @@ export function DiagnosticList({ issues, onInspect }: { issues: RenderIssue[]; o
           <ul className={styles.layers}>
             {group.issues.filter(issue => issue.layerId).map(issue => {
               const path = findLayerPath(tree, issue.layerId)
-              return <li key={issue.layerId}>
+              return <li key={JSON.stringify([issue.layerId, issue.renderNodeId])}>
                 <span>{path.map(layer => layer.originalName).join(' / ') || issue.layerName || issue.layerId}</span>
                 {path.length > 0 && <button type="button" onClick={() => onInspect(issue.layerId)}>素材を確認</button>}
               </li>

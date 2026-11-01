@@ -68,7 +68,8 @@ describe('bounded CLIP vector decoding and approximate rendering', () => {
     expect(() => readVectorStrokes(bad)).toThrow('未対応')
     const nan = Buffer.from(bytes); nan.writeDoubleBE(NaN, 92)
     expect(() => readVectorStrokes(nan)).toThrow('数値')
-    expect(() => renderVectors([], brushes(), 100000, 100000)).toThrow('16 Mpx')
+    // Empty/sparse vectors no longer allocate a whole-document bitmap.
+    expect(renderVectors([], brushes(), 100000, 100000)).toMatchObject({ width: 1, height: 1, rgba: new Uint8ClampedArray(4) })
     const [far] = readVectorStrokes(vectorBytes({ points: [[-900000, 0], [900000, 0]] }))
     const reports: string[] = []
     renderVectors([far], brushes(), 16, 16, 0, 0, m => reports.push(m))

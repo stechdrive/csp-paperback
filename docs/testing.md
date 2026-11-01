@@ -137,3 +137,9 @@ GitHubのキャッシュは別タグから参照できないため、mainのCI�
 実行環境の設計根拠: [Playwrightの型検査](https://playwright.dev/docs/test-typescript)、
 [Webサーバー管理](https://playwright.dev/docs/test-webserver)、
 [Vitestのカバレッジ設定](https://vitest.dev/config/coverage)。
+
+## celcodecとの共同検証
+
+固定tarballの導入と責任境界は[celcodec接続](celcodec.md)を参照する。通常の `test:coverage` とE2Eはこのリポジトリの公開サンプルだけで実行でき、ライブラリの資料庫を必要としない。セッション回帰はサンプルからメモリ上で空の構造を導出し、公開APIで描画・タイムラインを作る。これはCSPネイティブgoldenとは別のconsumerテストである。
+
+利用者所有の空テンプレートでも確認する場合だけ `CELCODEC_TEST_TEMPLATE` を指定する。テンプレートや生成CLIPをGitやパッケージに追加しない。ライブラリ側の資料庫・往復保存試験は、そのリポジトリで実行する。

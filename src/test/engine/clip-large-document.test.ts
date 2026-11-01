@@ -32,7 +32,7 @@ it('restores and composites a real sparse material in a 50,000px square without 
     return canvas
   } })
   const bytes = await sessionFixture(SQL, [{ type: 'resizeCanvas', width: 50000, height: 50000, anchor: 'top-left' }], false)
-  const session = await openClipSession(bytes, SQL), dispose = vi.spyOn(session, 'dispose')
+  const session = await openClipSession(bytes, SQL, { canvas: createCanvas }), dispose = vi.spyOn(session, 'dispose')
   vi.mocked(clipReader).mockReturnValue(session)
   const clip = session.document, source = clipRenderingSource(clip)
   try {
@@ -45,7 +45,7 @@ it('restores and composites a real sparse material in a 50,000px square without 
     expect(materialStats().bytes).toBeLessThanOrEqual(8)
     expect(Math.max(...allocations)).toBeLessThan(100)
     releaseCanvas(image.canvas)
-    // Full-resolution output still needs a streaming encoder. Never silently
+    // The Canvas/JPEG path still has an allocation limit. Never silently
     // turn an allocation failure into a successful blank export.
     await expect(renderOutputFileAsync(files[0], [], false)).rejects.toBeInstanceOf(ImageResourceError)
   } finally { disposeMaterials(source) }

@@ -1,3 +1,5 @@
+import { createClipPreview, virtualDrawingOptions } from '../engine/clip-composition'
+import { renderClipOverview } from '../utils/output-region-render'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useAppStore } from '../store'
 import { selectLayerTreeWithVisibility, selectOutputAliasTargets } from '../store/selectors'
@@ -40,6 +42,21 @@ export function QuickLook() {
     ) : flattenTree([root], width, height, cells)
     return compositeRoot(flats, width, height, 'transparent')
     }
+    const vs = sets.find(vs => vs.id === target?.virtualSetId)
+    const root = { ...layer, hidden: false, uiHidden: false, clipping: false }
+    const nativeOptions = vs ? virtualDrawingOptions(vs) : { selectedCells: cells }
+    const native = createClipPreview([root], width, height,
+      { ...nativeOptions, visibility: { ...nativeOptions.visibility, [layer.id]: true } })
+    if (native) {
+      void renderClipOverview(native, 2048, () => cancelled).then(image => {
+        if (!cancelled && canvas.current) {
+          canvas.current.width = image.width; canvas.current.height = image.height
+          canvas.current.getContext('2d')?.drawImage(image, 0, 0); setError(null)
+        }
+        image.width = 1; image.height = 1
+      }, error => { if (!cancelled) setError(error instanceof Error ? error.message : '素材を描画できませんでした') })
+      return () => { cancelled = true; if (targetCanvas) { targetCanvas.width = 1; targetCanvas.height = 1 } }
+    }
     const dependencies = collectRenderMaterials(draw)
     void withPreparedMaterials(dependencies, () => {
       if (cancelled) return
@@ -67,7 +84,7 @@ export function QuickLook() {
     onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); close() } }}
     onClick={event => { if (event.target === event.currentTarget) close() }}>
     <header><strong>{layer ? describeOutputSource(layer, alias) : '素材が見つかりません'}</strong><button autoFocus onClick={close} aria-label="クイックルックを閉じる">✕</button></header>
-    <div className={styles.image}><canvas ref={canvas} />{error && <p role="alert">{error}</p>}</div>
+    <div className={styles.image}><canvas ref={canvas} width={1} height={1} />{error && <p role="alert">{error}</p>}</div>
     <p>素材単体の確認{target.virtualSetId ? ' · 仮想セル内の設定' : ''}。合成先の背景・用紙は含みません。</p>
   </dialog>
 }

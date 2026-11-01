@@ -46,12 +46,17 @@ export interface OutputContext {
 }
 export type ContextFactory = (cache: OutputRenderCache) => OutputContext
 export type OutputRenderCache = Map<ContextFactory, OutputContext>
+export type OutputDrawing =
+  | { type: 'cell'; folder: CspLayer; unit: import('./cell-output-units').CellOutputUnit }
+  | { type: 'layer'; layer: CspLayer }
+  | { type: 'virtual'; set: VirtualSet }
 export interface PlannedOutputEntry extends Omit<OutputEntry, 'canvas'> {
   outputId: string
   gateId: string
   animFolderId?: string
   outputBaseName?: string
   outputTarget?: OutputTarget
+  drawing?: OutputDrawing
   renderCanvas: (cache: OutputRenderCache) => HTMLCanvasElement
 }
 
@@ -160,6 +165,8 @@ function planCells(
   )
 
   const visibleCellIndices = new Map(visibleChildren.map((cell, index) => [cell.id, index]))
+  // Hidden bases remain structural clipping boundaries in the effective tree.
+  const completeUnits = collectCellOutputUnits(animFolder, projectSettings.processTable, { includeHidden: true })
   for (const unit of collectCellOutputUnits(animFolder, projectSettings.processTable)) {
     const { cell } = unit
     const cellIdx = visibleCellIndices.get(cell.id)!
@@ -188,6 +195,7 @@ function planCells(
       suppressDuplicateProcessSuffix,
     })
     entries.push({
+      drawing: { type: 'cell', folder: animFolder, unit: completeUnits.find(u => u.cell.id === unit.cell.id && u.processSuffix === unit.processSuffix) ?? unit },
       outputId: cellOutputId(animFolder.id, cell.id, unit.processSuffix),
       gateId: cellGateId(animFolder.id, cell.id, unit.processLayerIds),
       path: `${folderName}/${fileName}`,
@@ -638,7 +646,7 @@ export function planVirtualSetEntries(
         collectMaterialOutputContext(insertionLayerId, tree, docWidth, docHeight, vs.insertionPosition)), vsFlats)
     }
     const fileName = `${vs.name}.jpg`
-    entries.push({ outputId: virtualOutputId(vs.id), gateId: virtualOutputId(vs.id), path: fileName, flatName: fileName, renderCanvas, sourceLayerId: vs.id })
+    entries.push({ drawing: { type: 'virtual', set: vs }, outputId: virtualOutputId(vs.id), gateId: virtualOutputId(vs.id), path: fileName, flatName: fileName, renderCanvas, sourceLayerId: vs.id })
   }
   resolveFlatNameCollisions(entries)
   return entries
@@ -1017,7 +1025,7 @@ export function planAllEntries(
         }
         const outputBaseName = outputAliases?.get(layer.id) ?? layer.originalName
         const fileName = `${outputBaseName}.jpg`
-        entries.push({ outputId: layerOutputId(layer.id), gateId: layerOutputId(layer.id), path: fileName, flatName: fileName, renderCanvas, sourceLayerId: layer.id,
+        entries.push({ drawing: { type: 'layer', layer }, outputId: layerOutputId(layer.id), gateId: layerOutputId(layer.id), path: fileName, flatName: fileName, renderCanvas, sourceLayerId: layer.id,
           outputBaseName, outputTarget: individualOutputTarget(layer, projectSettings.processTable) })
 
         // フォルダなら子も走査して内包マーク済みレイヤーを出力する。

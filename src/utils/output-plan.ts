@@ -1,3 +1,4 @@
+import { createClipOutput, type ClipDrawing } from '../engine/clip-composition'
 import { planAllEntries, planVirtualSetEntries, type PlannedOutputEntry } from '../engine/cell-extractor'
 import type { AppStore } from '../store'
 import type { CspLayer, OutputConfig } from '../types'
@@ -10,6 +11,7 @@ export type OutputFile = PlannedOutputEntry & PreparedOutputEntry & {
   /** Shared by metadata-only revisions; never use outputId alone as an image key. */
   renderKey: string
   preview?: RegionPreview
+  clipDrawing?: ClipDrawing
 }
 
 /** Export order matters: resolve collisions before sorting or searching the list. */
@@ -28,6 +30,7 @@ export function buildOutputPlan(
   const renderKey = createOutputRenderKey(tree, state.docWidth, state.docHeight, config.background,
     state.virtualSets, state.projectSettings.processTable, config.revisionBorderEnabled)
   return plans.map((plan, index) => ({ ...plan, ...names[index], renderKey: renderKey(plan),
+    clipDrawing: createClipOutput(tree, plan, state.docWidth, state.docHeight, config.background),
     preview: createRegionPreview(tree, state.docWidth, state.docHeight, (regionTree, width, height) => {
       const entries = [...planAllEntries(regionTree, state.projectSettings, width, height,
         config.background, false, config.processSuffixPosition, state.timelineData),

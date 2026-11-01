@@ -1,9 +1,7 @@
-import { readFileSync } from 'node:fs'
-import { createRequire } from 'node:module'
+import { sessionTemplate } from './session-template'
 import { createDocument, type EditOperation } from 'celcodec'
 import type { SqlJsStatic } from 'sql.js'
 
-const require = createRequire(import.meta.url)
 export const sessionIds = {
   folder: '11111111111111111111111111111111',
   cel: '22222222222222222222222222222222',
@@ -12,7 +10,7 @@ export const sessionIds = {
 
 /** Synthetic artwork authored through the installed package's public API. */
 export async function sessionFixture(SQL: SqlJsStatic, extra: EditOperation[] = [], includePaper = true): Promise<Uint8Array> {
-  const seed = new Uint8Array(readFileSync(require.resolve('celcodec/blank.clip')))
+  const seed = await sessionTemplate(SQL)
   const session = await createDocument(SQL, seed, {
     width: 64, height: 64, dpi: 72, basisWidth: 32, basisHeight: 32, offsetX: 0, offsetY: 0,
   })

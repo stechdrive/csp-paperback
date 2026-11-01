@@ -1,3 +1,4 @@
+import { bindClipSource } from './clip-source'
 import type { Layer, Psd } from 'ag-psd'
 import type { CspLayer, ProjectSettings } from '../types'
 import type { ClipDocument, ClipLayer, ClipTimeline } from '../utils/clip/types'
@@ -42,6 +43,7 @@ export function clipRenderingSource(clip: ClipDocument): Psd {
       const target: Layer = { name: metadata.name, hidden: metadata.hidden, opacity: metadata.opacity,
         blendMode: metadata.blendMode, clipping: metadata.clipping, top: 0, left: 0, right: 0, bottom: 0 }
       if (isMediaKind(metadata.kind)) return target
+      bindClipSource(target, metadata.id, reader)
       if (metadata.isFolder) {
         target.sectionDivider = { type: metadata.expanded ? 1 : 2 }
         target.children = metadata.children.slice().reverse().map(convert)
@@ -129,7 +131,7 @@ export function buildClipLayerTree(clip: ClipDocument, source: Psd, timeline: Cl
         const ref = r.agPsdRef
         bindMaterialDiagnostics(ref, () => layerRenderingDiagnostics(n, clip.compatibility, true, !!ref.canvas))
       }
-      if (!paired) { r.materialEffects = hasDrawableMaterialEffects(n.effects) ? n.effects : undefined; r.nativeBlendMode = n.nativeBlendMode; r.adjustment = n.adjustment; r.vectorRendering = n.vectorRendering; r.unsupported3D = n.unsupported3D }
+      if (!paired) { r.opacity = n.opacity * 100; r.materialEffects = hasDrawableMaterialEffects(n.effects) ? n.effects : undefined; r.nativeBlendMode = n.nativeBlendMode; r.adjustment = n.adjustment; r.vectorRendering = n.vectorRendering; r.unsupported3D = n.unsupported3D }
       else if (!r.agPsdRef.canvas && !hasDeferredMaterial(r.agPsdRef)) {
         if (n.kind === '3d') r.unsupported3D = true
         if (n.kind === 'vector') r.vectorRendering = 'unavailable'

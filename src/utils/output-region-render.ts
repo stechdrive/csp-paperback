@@ -1,9 +1,13 @@
+import { codecDiagnostic } from './clip/celcodec'
+import { imageBytes, ImageResourceError } from './image-budget'
+import { pixelCanvas } from '../engine/material-image'
+import type { ClipDrawing } from '../engine/clip-composition'
 import type { OutputFile } from './output-plan'
 import type { ProjectSettings } from '../types'
 import type { PreviewRegion } from '../engine/preview-region'
 import { collectRenderMaterials } from '../engine/material-dependencies'
-import { withPreparedMaterials } from '../engine/material-cache'
-import { outputSources } from '../engine/render-sources'
+import { withPreparedMaterials, updateRenderedMaterialDiagnostics } from '../engine/material-cache'
+import { outputSources, recordEvaluatedSources } from '../engine/render-sources'
 import { hasVectorWarning, hasUnsupported3D } from '../engine/render-warning'
 import { withCanvasResources, releaseCanvas } from '../engine/render-resources'
 import { applyRevisionBorders } from './revision-border'
@@ -22,6 +26,41 @@ function materials(file: OutputFile) {
 async function renderNativeRegion(file: OutputFile, region: PreviewRegion, scale: number,
   table: ProjectSettings['processTable'], border: boolean, diagnostics: ClipDiagnostic[] = [], cancelled = () => false): Promise<RenderedOutput> {
   const preview = file.preview!
+  if (file.clipDrawing) {
+    if (cancelled()) throw new Error('描画要求が変更されたため中止しました')
+    const result = await file.clipDrawing.render(region)
+    if (cancelled()) throw new Error('描画要求が変更されたため中止しました')
+    const layers = [...file.clipDrawing.placements.values()]
+    // Baseline numerical compositor/adjustment approximation is documented in
+    // compatibility notes. It is not a per-material problem requiring user action.
+    const converted = result.diagnostics.filter(d => !['APPROXIMATE_COMPOSITING', 'APPROXIMATE_ADJUSTMENT'].includes(d.code)).map(d => codecDiagnostic(d))
+    for (const node of result.nodes) if (node.visible && node.layerId) {
+      const layer = file.clipDrawing.placements.get(node.id)
+      if (layer) updateRenderedMaterialDiagnostics(layer.agPsdRef, converted.filter(d => d.layerId === node.layerId))
+    }
+    if (result.status === 'unavailable') throw new Error(converted.map(d => d.message).join('\n') || 'CLIPを描画できませんでした')
+    const sources = { all: new Set<string>(), content: new Set<string>() }
+    for (const node of result.nodes) if (node.visible) {
+      const layer = file.clipDrawing.placements.get(node.id)
+      if (layer) { sources.all.add(layer.id); if (file.clipDrawing.content.has(layer.id)) sources.content.add(layer.id) }
+    }
+    const raw = pixelCanvas(result.pixels)
+    try {
+      const painted = applyRevisionBorders([{ ...file, canvas: raw }], table, border,
+        { left: region.left, top: region.top, width: preview.width, height: preview.height })[0].canvas
+      const canvas = document.createElement('canvas')
+      canvas.width = Math.max(1, Math.round(region.width * scale)); canvas.height = Math.max(1, Math.round(region.height * scale))
+      const ctx = canvas.getContext('2d')!; ctx.imageSmoothingQuality = 'high'
+      ctx.drawImage(painted, 0, 0, canvas.width, canvas.height)
+      if (painted !== raw) releaseCanvas(painted)
+      const own = renderIssues(layers.filter(l => sources.all.has(l.id)), [...diagnostics, ...converted])
+      const global = converted.filter(d => !d.layerId).map(d => ({ ...d, layerId: '', layerName: '' }))
+      recordEvaluatedSources(canvas, sources)
+      return { canvas, sources, vectorWarning: converted.some(d => d.materialKind === 'vector' && d.outcome !== undefined),
+        unsupported3D: converted.some(d => d.code === 'UNSUPPORTED_3D'), diagnostics: [...own, ...global],
+        nativeWidth: region.width, nativeHeight: region.height }
+    } finally { releaseCanvas(raw) }
+  }
   const layers = materials(file)
   return withPreparedMaterials(layers, () => withCanvasResources(() => {
     const raw = preview.render(region), sources = outputSources(raw)
@@ -43,6 +82,8 @@ async function renderNativeRegion(file: OutputFile, region: PreviewRegion, scale
 /** Downsampled windows are assembled in bounded native chunks, including very distant overviews. */
 export async function renderOutputRegion(file: OutputFile, region: PreviewRegion, scale: number,
   table: ProjectSettings['processTable'], border: boolean, diagnostics: ClipDiagnostic[] = [], cancelled = () => false): Promise<RenderedOutput> {
+  try { imageBytes(Math.max(1, Math.round(region.width * scale)), Math.max(1, Math.round(region.height * scale))) }
+  catch (error) { throw new ImageResourceError(error instanceof Error ? error.message : '出力画像の容量が上限を超えました') }
   if (region.width <= 1024 && region.height <= 1024) return renderNativeRegion(file, region, scale, table, border, diagnostics, cancelled)
   const { width, height } = region
   // Power-of-two sampling keeps chunk boundaries on integer destination pixels.
@@ -71,11 +112,16 @@ export async function renderOutputRegion(file: OutputFile, region: PreviewRegion
       // Give gestures/cancellation a chance between native windows, including cached materials.
       await new Promise<void>(resolve => setTimeout(resolve, 0))
     }
+    if (workingScale === scale && canvas.width === Math.round(width * scale) && canvas.height === Math.round(height * scale)) {
+      recordEvaluatedSources(canvas, sources)
+      return { canvas, sources, vectorWarning, unsupported3D, diagnostics: [...issues.values()], nativeWidth: width, nativeHeight: height }
+    }
     const result = document.createElement('canvas')
     result.width = Math.max(1, Math.round(width * scale)); result.height = Math.max(1, Math.round(height * scale))
     const output = result.getContext('2d')!; output.imageSmoothingQuality = 'high'
     output.drawImage(canvas, 0, 0, result.width, result.height)
     releaseCanvas(canvas)
+    recordEvaluatedSources(result, sources)
     return { canvas: result, sources, vectorWarning, unsupported3D, diagnostics: [...issues.values()], nativeWidth: width, nativeHeight: height }
   } catch (error) { releaseCanvas(canvas); throw error }
 }
@@ -86,4 +132,12 @@ export async function renderOutputOverview(file: OutputFile, edge: number, table
   if (edge === 0) return { ...await renderNativeRegion(file, { left: 0, top: 0, width: 1, height: 1 }, 1, table, border, diagnostics, cancelled),
     nativeWidth: width, nativeHeight: height }
   return renderOutputRegion(file, { left: 0, top: 0, width, height }, scale, table, border, diagnostics, cancelled)
+}
+
+export async function renderClipOverview(drawing: ClipDrawing, edge: number, cancelled: () => boolean): Promise<HTMLCanvasElement> {
+  const file: OutputFile = { outputId: 'preview', gateId: 'preview', path: '', flatName: '', sourceLayerId: '',
+    relativePath: '', segments: [], fileName: '', names: { path: '', flatName: '' }, renderKey: '',
+    clipDrawing: drawing, preview: { width: drawing.width, height: drawing.height, render() { throw new Error('Native preview') } },
+    renderCanvas() { throw new Error('Native preview') } }
+  return (await renderOutputOverview(file, edge, [], false, [], cancelled)).canvas
 }

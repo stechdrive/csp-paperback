@@ -7,8 +7,8 @@ import { ClipError, type ClipDiagnostic as NativeDiagnostic } from 'celcodec'
 vi.mock('sql.js', () => ({ default: vi.fn().mockResolvedValue({}) }))
 vi.mock('../../utils/clip/parser', () => ({ openClipSession: vi.fn(), parseClipDocument: vi.fn() }))
 
-type Request = { id: number; buffer?: ArrayBuffer; includeRaster?: boolean; lazy?: boolean; layerId?: string; maxDecodedBytes?: number; dispose?: boolean }
-type Reply = { id: number; document?: ClipDocument; layer?: ClipLayer; diagnostics?: ClipDiagnostic[]; error?: string; diagnostic?: NativeDiagnostic }
+type Request = { composition?: import('celcodec/render').RenderComposition; region?: import('celcodec').ImageRegion; id: number; buffer?: ArrayBuffer; includeRaster?: boolean; lazy?: boolean; layerId?: string; maxDecodedBytes?: number; dispose?: boolean }
+type Reply = { result?: import('celcodec/render').CompositionRenderResult; id: number; document?: ClipDocument; layer?: ClipLayer; diagnostics?: ClipDiagnostic[]; error?: string; diagnostic?: NativeDiagnostic }
 const awaiting = new Map<number, (value: Reply) => void>()
 const scope = {
   onmessage: null as ((event: MessageEvent<Request>) => void) | null,
@@ -42,6 +42,23 @@ beforeEach(async () => {
 afterEach(() => vi.unstubAllGlobals())
 
 describe('CLIP Worker protocol', () => {
+  it('transfers native composition results, preserves structured failures and keeps the session usable', async () => {
+    expect(await send({ id: 0, composition: { layers: [] }, region: { left: 0, top: 0, width: 1, height: 1 } })).toMatchObject({ diagnostic: { code: 'CLOSED_DOCUMENT' } })
+    const ownPixels = pixels(100), render = vi.fn().mockResolvedValueOnce({ status: 'rendered', pixels: ownPixels, nodes: [], diagnostics: [] })
+      .mockRejectedValueOnce(new ClipError('LIMIT_COMPOSITE_BYTES'))
+      .mockResolvedValueOnce({ status: 'unavailable', pixels: undefined, nodes: [], diagnostics: [] })
+    const dispose = vi.fn()
+    vi.mocked(openClipSession).mockResolvedValue({ document: document(), decode: vi.fn(), render, dispose })
+    await send({ id: 1, buffer: new ArrayBuffer(1), lazy: true })
+    const request = { composition: { layers: [] }, region: { left: 0, top: 0, width: 1, height: 1 } }
+    const composed = (await send({ id: 2, ...request })).result!
+    expect(composed.status).toBe('rendered')
+    expect([...composed.pixels!.rgba]).toEqual([100, 0, 0, 255])
+    expect(ownPixels.rgba.byteLength).toBe(0)
+    expect(await send({ id: 3, ...request })).toMatchObject({ diagnostic: { code: 'LIMIT_COMPOSITE_BYTES' } })
+    expect(await send({ id: 4, ...request })).toMatchObject({ result: { status: 'unavailable' } })
+    expect(dispose).not.toHaveBeenCalled()
+  })
   it('transfers nested artwork, fragments and masks without losing their pixel bytes', async () => {
     const art = { ...layer(), pixels: pixels(10), fragments: [pixels(20)], mask: pixels(30), children: [{ ...layer('child'), pixels: pixels(40) }] }
     vi.mocked(parseClipDocument).mockResolvedValue(document([art, layer('empty')]))
@@ -58,7 +75,7 @@ describe('CLIP Worker protocol', () => {
 
   it('keeps lazy decode requests in order and returns layer diagnostics with each request ID', async () => {
     const decode = vi.fn()
-    vi.mocked(openClipSession).mockResolvedValue({ document: document([layer()]), decode, dispose: vi.fn() })
+    vi.mocked(openClipSession).mockResolvedValue({ document: document([layer()]), decode, render: vi.fn(), dispose: vi.fn() })
     await send({ id: 1, buffer: new ArrayBuffer(1), lazy: true })
     expect(parseClipDocument).not.toHaveBeenCalled()
     let finish!: (value: { layer: ClipLayer; diagnostics: ClipDiagnostic[] }) => void
@@ -90,7 +107,7 @@ describe('CLIP Worker protocol', () => {
   it('turns decode errors into isolated replies and continues with the next layer', async () => {
     const decode = vi.fn().mockRejectedValueOnce(new Error('破損した素材')).mockRejectedValueOnce('unknown failure')
       .mockResolvedValueOnce({ layer: layer(), diagnostics: [] })
-    vi.mocked(openClipSession).mockResolvedValue({ document: document(), decode, dispose: vi.fn() })
+    vi.mocked(openClipSession).mockResolvedValue({ document: document(), decode, render: vi.fn(), dispose: vi.fn() })
     await send({ id: 1, buffer: new ArrayBuffer(1), lazy: true })
     expect(await send({ id: 2, layerId: 'broken' })).toEqual({ id: 2, error: '破損した素材' })
     expect(await send({ id: 3, layerId: 'unknown' })).toEqual({ id: 3, error: 'CLIPを読み込めませんでした' })
@@ -99,8 +116,8 @@ describe('CLIP Worker protocol', () => {
 
   it('disposes the previous session on replacement and on failed opens, reusing WASM', async () => {
     const dispose = vi.fn(), secondDispose = vi.fn()
-    vi.mocked(openClipSession).mockResolvedValueOnce({ document: document(), decode: vi.fn(), dispose })
-      .mockResolvedValueOnce({ document: document(), decode: vi.fn(), dispose: secondDispose })
+    vi.mocked(openClipSession).mockResolvedValueOnce({ document: document(), decode: vi.fn(), render: vi.fn(), dispose })
+      .mockResolvedValueOnce({ document: document(), decode: vi.fn(), render: vi.fn(), dispose: secondDispose })
       .mockRejectedValueOnce(new ClipError('INVALID_CONTAINER_HEADER'))
     await send({ id: 1, buffer: new ArrayBuffer(1), lazy: true })
     await send({ id: 2, buffer: new ArrayBuffer(1), lazy: true })
@@ -114,7 +131,7 @@ describe('CLIP Worker protocol', () => {
 
   it('keeps resource diagnostics structured and does not transfer partial material', async () => {
     const decode = vi.fn().mockRejectedValueOnce(new ClipError('LIMIT_MATERIAL_BYTES', { limit: 384 }))
-    vi.mocked(openClipSession).mockResolvedValue({ document: document(), decode, dispose: vi.fn() })
+    vi.mocked(openClipSession).mockResolvedValue({ document: document(), decode, render: vi.fn(), dispose: vi.fn() })
     await send({ id: 1, buffer: new ArrayBuffer(1), lazy: true })
     expect(await send({ id: 2, layerId: 'art' })).toEqual({ id: 2, diagnostic: {
       code: 'LIMIT_MATERIAL_BYTES', kind: 'resource-limit', severity: 'error', data: { limit: 384 },
@@ -125,7 +142,7 @@ describe('CLIP Worker protocol', () => {
     let finish!: (value: { layer: ClipLayer; diagnostics: ClipDiagnostic[] }) => void
     const decode = vi.fn(() => new Promise<{ layer: ClipLayer; diagnostics: ClipDiagnostic[] }>(resolve => { finish = resolve }))
     const dispose = vi.fn()
-    vi.mocked(openClipSession).mockResolvedValue({ document: document(), decode, dispose })
+    vi.mocked(openClipSession).mockResolvedValue({ document: document(), decode, render: vi.fn(), dispose })
     await send({ id: 1, buffer: new ArrayBuffer(1), lazy: true })
     const first = send({ id: 2, layerId: 'art' }), queued = send({ id: 3, layerId: 'other' })
     await vi.waitFor(() => expect(decode).toHaveBeenCalledOnce())

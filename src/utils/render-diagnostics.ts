@@ -5,6 +5,7 @@ import { isMediaLayer } from './layer-display'
 
 export interface RenderIssue extends Pick<ClipDiagnostic, 'code' | 'part' | 'outcome' | 'materialKind'> {
   layerId: string
+  renderNodeId?: string
   layerName: string
   message: string
   scope?: ClipDiagnostic['scope']
@@ -23,11 +24,16 @@ export function renderIssues(layers: CspLayer[], diagnostics: ClipDiagnostic[] =
   for (const layer of layers) {
     if (isMediaLayer(layer)) continue
     const own = [...(byLayer.get(layer.id) ?? []), ...layerMaterialDiagnostics(layer)]
+    const signature = (d: ClipDiagnostic) => JSON.stringify([d.scope, d.part, d.outcome, d.code,
+      d.message.startsWith(`「${layer.originalName}」: `) ? d.message.slice(layer.originalName.length + 4) : d.message])
+    const located = new Set(own.filter(d => typeof d.data?.renderNodeId === 'string').map(signature))
     for (const diagnostic of own) {
-      const key = JSON.stringify([layer.id, diagnostic.scope, diagnostic.part, diagnostic.outcome, diagnostic.code, diagnostic.message])
+      // Prefer evaluated placements over a duplicate source-material notice.
+      if (diagnostic.data?.renderNodeId === undefined && located.has(signature(diagnostic))) continue
+      const key = JSON.stringify([layer.id, signature(diagnostic), diagnostic.data?.renderNodeId])
       if (seen.has(key)) continue
       seen.add(key)
-      issues.push({ ...diagnostic, layerId: layer.id, layerName: layer.originalName, outcome: diagnostic.outcome })
+      issues.push({ ...diagnostic, ...(typeof diagnostic.data?.renderNodeId === 'string' ? { renderNodeId: diagnostic.data.renderNodeId } : {}), layerId: layer.id, layerName: layer.originalName, outcome: diagnostic.outcome })
     }
   }
   return issues
@@ -80,7 +86,7 @@ export function groupRenderIssues(issues: RenderIssue[]): RenderIssueGroup[] {
       group = { key, title: titles[issue.code ?? ''] ?? message, message, issues: [] }
       groups.set(key, group)
     }
-    if (!group.issues.some(item => item.layerId === issue.layerId)) group.issues.push(issue)
+    if (!group.issues.some(item => item.layerId === issue.layerId && item.renderNodeId === issue.renderNodeId)) group.issues.push(issue)
   }
   return [...groups.values()]
 }

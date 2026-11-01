@@ -76,7 +76,7 @@ async function injectDpiJpeg(blob: Blob, dpiX: number, dpiY: number): Promise<Bl
  * PNGのpHYsチャンクにDPI情報を埋め込む
  * 既存のpHYsがある場合は置換、ない場合はIHDRの直後に挿入。
  */
-async function injectDpiPng(blob: Blob, dpiX: number, dpiY: number): Promise<Blob> {
+export async function injectDpiPng(blob: Blob, dpiX: number, dpiY: number): Promise<Blob> {
   // pixels per meter に変換（1 inch = 0.0254 m）
   const ppmX = Math.round(dpiX / 0.0254)
   const ppmY = Math.round(dpiY / 0.0254)

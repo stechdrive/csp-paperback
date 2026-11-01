@@ -49,7 +49,7 @@ function applyVsVisibilityOverrides(
   return { ...layer, hidden, uiHidden, children }
 }
 
-function buildCompositeOverrideMap(
+export function buildCompositeOverrideMap(
   members: VirtualSetMember[],
   layerOverrides: Record<string, VirtualSetLayerOverride>,
 ): Record<string, VirtualSetLayerOverride> {

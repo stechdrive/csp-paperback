@@ -218,7 +218,7 @@ export function renderOutputFile(file: OutputFile, table: ProjectSettings['proce
 
 export function renderOutputFileAsync(file: OutputFile, table: ProjectSettings['processTable'], border: boolean,
   cache?: OutputRenderCache, diagnostics: ClipDiagnostic[] = [], cancelled?: () => boolean, edge = Infinity): Promise<RenderedOutput> {
-  if (file.preview && Number.isFinite(edge) && file.preview.width * file.preview.height > 4 * 1024 * 1024) {
+  if (file.clipDrawing || (file.preview && Number.isFinite(edge) && file.preview.width * file.preview.height > 4 * 1024 * 1024)) {
     return renderOutputOverview(file, edge, table, border, diagnostics, cancelled ?? (() => false))
   }
   const layers = collectRenderMaterials(() => file.renderCanvas(new Map()))

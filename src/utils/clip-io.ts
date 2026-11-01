@@ -1,15 +1,18 @@
+import type { RenderComposition, CompositionRenderResult } from 'celcodec/render'
+import type { ImageRegion } from 'celcodec'
 import { deserializeClipError, type ClipDiagnostic as NativeDiagnostic } from 'celcodec'
 import type { ClipDocument, ClipLayer, ClipDiagnostic } from './clip/types'
 import { codecException } from './clip/celcodec'
 import { MAX_INPUT_BYTES } from './image-budget'
 
-interface ClipReader {
+export interface ClipReader {
+  render(composition: RenderComposition, region: ImageRegion): Promise<CompositionRenderResult>
   decode(id: string, maxDecodedBytes?: number): Promise<{ layer: ClipLayer; diagnostics: ClipDiagnostic[] }>
   dispose(): void
 }
 const readers = new WeakMap<ClipDocument, ClipReader>()
 export const clipReader = (document: ClipDocument) => readers.get(document)
-type Reply = { id: number; document: ClipDocument; layer: ClipLayer; diagnostics: ClipDiagnostic[];
+type Reply = { result: CompositionRenderResult; id: number; document: ClipDocument; layer: ClipLayer; diagnostics: ClipDiagnostic[];
   diagnostic?: NativeDiagnostic; error?: string }
 
 /** Consumes buffer by transfer. Abort/dispose terminates the Worker, including synchronous SQL. */
@@ -56,7 +59,7 @@ export async function readClipFile(buffer: ArrayBuffer, includeRaster = true, la
   try {
     const deferred = lazy && includeRaster
     const { document } = await request({ buffer, includeRaster, lazy: deferred }, [buffer])
-    if (deferred) readers.set(document, { decode: (id, maxDecodedBytes) => request({ layerId: id, maxDecodedBytes }), dispose })
+    if (deferred) readers.set(document, { render: async (composition, region) => (await request({ composition, region })).result, decode: (id, maxDecodedBytes) => request({ layerId: id, maxDecodedBytes }), dispose })
     else dispose()
     return document
   } catch (error) { dispose(); throw error }

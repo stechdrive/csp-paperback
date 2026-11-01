@@ -20,6 +20,7 @@ interface Material {
   error?: string
   diagnose?: () => ClipDiagnostic[]
 }
+const renderedDiagnostics = new WeakMap<Layer, ClipDiagnostic[]>()
 const materials = new WeakMap<Layer, Material>()
 const owners = new WeakMap<Psd, () => void>()
 const resident = new Set<Material>()
@@ -135,10 +136,20 @@ export function withPreparedMaterials<T>(layers: CspLayer[], draw: () => T, canc
   return result
 }
 
+/** Publish source-material findings without retaining any rendered pixel buffer. */
+export function updateRenderedMaterialDiagnostics(layer: Layer, diagnostics: ClipDiagnostic[]): void {
+  const own = diagnostics.filter(d => d.part === 'material').map(d => {
+    const data = { ...d.data }; delete data.renderNodeId
+    return { ...d, data }
+  })
+  if (JSON.stringify(renderedDiagnostics.get(layer) ?? []) === JSON.stringify(own)) return
+  renderedDiagnostics.set(layer, own); notify()
+}
+
 export function layerMaterialDiagnostics(layer: CspLayer): ClipDiagnostic[] {
   const material = materials.get(layer.agPsdRef)
   return material?.error ? [{ scope: 'raster', part: 'material', message: `${material.error}（再試行可能）` }]
-    : material?.result?.diagnostics ?? []
+    : [...(material?.result?.diagnostics ?? []), ...(renderedDiagnostics.get(layer.agPsdRef) ?? [])]
 }
 
 /** Geometry/status belong to the source, not to cloned visibility/Undo trees. */

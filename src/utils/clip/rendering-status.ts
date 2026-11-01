@@ -9,14 +9,8 @@ export function compatibilityAdvice(compatibility: ClipDocument['compatibility']
     : ja.input.clipCompatibilityResave
 }
 
-export function materialRenderingMessage(kind: 'vector' | 'text' | '3d', missing: boolean): string {
-  const description = missing
-    ? `${kind === '3d' ? '3D' : 'ベクター'}レイヤーの描画画像を取得できません。このレイヤーは透明な画像として扱い、ほかの素材の書き出しは続けます。`
-    : kind === 'vector'
-      ? 'ベクターレイヤーを近似描画しています。線幅・濃さ・ブラシ形状に差が生じる場合があります。'
-      : '文字情報から描画します。フォント・縦書き・組版に差が生じる場合があります。'
-  return description
-}
+export { materialRenderingMessage } from './rendering-messages'
+import { materialRenderingMessage } from './rendering-messages'
 
 /** Also used by the decoder so callers outside the store get the same notices. */
 export function layerRenderingDiagnostics(layer: ClipLayer, _compatibility: ClipDocument['compatibility'], paired = false, hasPsdImage = false): ClipDiagnostic[] {

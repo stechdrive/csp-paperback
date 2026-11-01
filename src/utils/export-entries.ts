@@ -1,3 +1,5 @@
+import { renderClipPng } from './clip-png-export'
+import type { RenderIssue } from './render-diagnostics'
 import { renderOutputPlans } from '../engine/cell-extractor'
 import { selectLayerTreeWithVisibility, selectOutputFiles } from '../store/selectors'
 import type { AppStore } from '../store'
@@ -18,12 +20,21 @@ export function planExportEntriesFromState(
     : buildOutputPlan(selectLayerTreeWithVisibility(state), state, outputConfig)
   const selected = plans.filter(plan => !state.outputExclusions?.has(plan.gateId) && (!selectedIds || selectedIds.has(plan.outputId)))
   const contextCache = new OutputContextCache(24 * 1024 * 1024, 2, 64 * 1024 * 1024)
-  return selected.map(file => ({
+  return selected.map(file => {
+    const issues = new Map<string, RenderIssue>()
+    const observe = (values: RenderIssue[]) => values.forEach(issue => issues.set(JSON.stringify(issue), issue))
+    return ({
     path: file.path, flatName: file.flatName, sourceLayerId: file.sourceLayerId,
     sourceCellId: file.sourceCellId, processSuffixes: file.processSuffixes, prepared: file,
-    createCanvas: async () => (await renderOutputFileAsync(file, state.projectSettings.processTable, outputConfig.revisionBorderEnabled, contextCache, state.clipDiagnostics)).canvas,
+    createCanvas: async () => {
+      const result = await renderOutputFileAsync(file, state.projectSettings.processTable, outputConfig.revisionBorderEnabled, contextCache, state.clipDiagnostics)
+      observe(result.diagnostics ?? []); return result.canvas
+    },
+    ...(file.clipDrawing ? { createPng: (dx: number, dy: number) => renderClipPng(file, state.projectSettings.processTable,
+      outputConfig.revisionBorderEnabled, state.clipDiagnostics, dx, dy, observe) } : {}),
+    renderDiagnostics: () => [...issues.values()],
     releaseRenderCache: () => contextCache.clear(),
-  }))
+  }) })
 }
 
 export function buildOutputEntriesFromState(

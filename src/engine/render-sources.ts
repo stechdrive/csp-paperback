@@ -31,6 +31,11 @@ export function recordOutputSources(canvas: HTMLCanvasElement, flats: readonly F
   return canvas
 }
 
+/** Native renderer reports evaluated placements; this is not per-pixel attribution. */
+export function recordEvaluatedSources(canvas: HTMLCanvasElement, evaluated: { all: ReadonlySet<string>; content: ReadonlySet<string> }): void {
+  sources.set(canvas, evaluated.all); content.set(canvas, evaluated.content)
+}
+
 export function outputSources(canvas: HTMLCanvasElement) {
   return { all: canvasSources(canvas), content: content.get(canvas) ?? canvasSources(canvas) }
 }

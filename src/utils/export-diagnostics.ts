@@ -8,7 +8,13 @@ import { renderIssues } from './render-diagnostics'
 export function trackExportDiagnostics(entries: ExportEntry[], diagnostics: ClipDiagnostic[], config: OutputConfig, tree: CspLayer[] = []) {
   if (!diagnostics.length && !tree.length) return { entries, messages: () => [] as string[] }
   const messages = new Set(diagnostics.filter(d => !d.layerId).map(d => d.message))
+  const observedDiagnostics = (entry: ExportEntry) => {
+    if (!('createCanvas' in entry)) return
+    const name = config.structure === 'flat' ? entry.flatName : entry.path
+    entry.renderDiagnostics?.().forEach(issue => messages.add(`${name} — ${issue.message}`))
+  }
   const observe = (canvas: HTMLCanvasElement, entry: ExportEntry) => {
+    observedDiagnostics(entry)
     const ids = canvasSources(canvas)
     const name = config.structure === 'flat' ? entry.flatName : entry.path
     for (const d of diagnostics) if (d.layerId && ids.has(`clip:${d.layerId}`)) messages.add(`${name} — ${d.message}`)
@@ -23,7 +29,8 @@ export function trackExportDiagnostics(entries: ExportEntry[], diagnostics: Clip
   }
   return {
     entries: entries.map(entry => 'createCanvas' in entry
-      ? { ...entry, createCanvas: async () => observe(await entry.createCanvas(), entry) }
+      ? { ...entry, createCanvas: async () => observe(await entry.createCanvas(), entry),
+        ...(entry.createPng ? { createPng: async (dx: number, dy: number) => { const blob = await entry.createPng!(dx, dy); observedDiagnostics(entry); return blob } } : {}) }
       : { ...entry, canvas: observe(entry.canvas, entry) }),
     messages: () => [...messages],
   }

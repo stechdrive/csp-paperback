@@ -45,6 +45,8 @@ export interface OutputEntry {
 /** Lazy entries own their rendered canvas; the encoder releases it after each file. */
 export type ExportEntry = OutputEntry | (Omit<OutputEntry, 'canvas'> & {
   createCanvas: () => HTMLCanvasElement | Promise<HTMLCanvasElement>
+  createPng?: (dpiX: number, dpiY: number) => Promise<Blob>
+  renderDiagnostics?: () => readonly { message: string }[]
   releaseRenderCache?: () => void
 })
 export interface ExportProgressDetail {
