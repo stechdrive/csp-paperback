@@ -1,7 +1,7 @@
 {
   "name": "csp-paperback",
   "private": true,
-  "version": "1.41.319",
+  "version": "1.42.320",
   "type": "module",
   "scripts": {
     "dev": "vite",
