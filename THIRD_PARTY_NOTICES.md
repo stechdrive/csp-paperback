@@ -14,7 +14,7 @@ reference to the following MIT-licensed format research and implementations:
   was also consulted for the modern 92-byte vector stroke layout.
 - [dobrokot/clip_to_psd](https://github.com/dobrokot/clip_to_psd), commit
   `e8db68c768f52ec91ba7530820f52537261cbad0` (text attributes, image effects and fill metadata).
-- [sql.js](https://github.com/sql-js/sql.js), `1.14.2` (bundled SQLite WebAssembly).
+- [sql.js](https://github.com/sql-js/sql.js), `1.15.1` (bundled SQLite WebAssembly).
   SQLite itself is in the public domain.
 
 Copyright (c) 2024
@@ -49,13 +49,16 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-## celcodec 0.2.0
+## celcodec 0.3.1
 
 Native CLIP containers, materials, BINC, timelines, audio and document writing
 are provided by the bundled celcodec package. It consolidates MIT code from
 csp-paperback (9256c0326dcbb628ed8c601bf17253c3ca2300dd) and xsheet-remap
 (6fb67280fdebb2ecd93e0fd0e369b47b4f29a6e8). Format-research notices above are
 retained. See docs/celcodec.md and celcodec's THIRD_PARTY_NOTICES.md.
+
+celcodec uses [fflate](https://github.com/101arrowz/fflate) 0.8.3 (MIT),
+Copyright (c) 2026 Arjun Barrett. The MIT permission notice below also applies.
 
 MIT License
 
