@@ -1,32 +1,3 @@
-export interface EdgeEffect {
-  radius: number
-  color: [number, number, number]
-  reflectOpacity?: boolean
-  antialias?: boolean
-}
-export interface WatercolorEffect { range: number; opacity: number; darkness: number; blur: number; style?: number }
-export interface MaterialEffects {
-  layerColor?: { main: [number, number, number]; sub: [number, number, number] }
-  edge?: EdgeEffect
-  watercolor?: WatercolorEffect
-  /** Detected for guidance only; tone rasterization is intentionally unsupported. */
-  tone?: boolean
-}
-
-export type MaterialAdjustment = { kind: 'invert' } | { kind: 'threshold'; threshold: number }
-
-/** Corners in document space: top left, top right, bottom right, bottom left. */
-export type MaterialQuad = [number, number, number, number, number, number, number, number]
-
-export interface TextObject {
-  text: string
-  left: number
-  top: number
-  width: number
-  height: number
-  font: string
-  size: number
-  color: [number, number, number]
-  align: 'left' | 'center' | 'right'
-  runs: { start: number; length: number; font: string; size: number; color: [number, number, number] }[]
-}
+// Drawing descriptions are shared; selection, opacity policy and Canvas ownership stay here.
+export type { EdgeEffect, WatercolorEffect, MaterialEffects, MaterialAdjustment,
+  MaterialQuad, TextObject } from 'celcodec/material'

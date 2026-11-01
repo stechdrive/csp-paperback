@@ -318,7 +318,7 @@ PSD経路にはこのネイティブ補完を適用しない。CLIP＋PSDの画�
 | PSD経路のCanvas未対応合成モード | dissolve、linear burn、darker color、linear dodge、lighter color、vivid light、linear light、pin light、hard mix、subtract、divideは通常合成で代替 |
 | 描画効果のないPass Throughフォルダのマスク | 子を親へ通す経路ではフォルダマスクを適用しない。CLIPの描画効果によって隔離合成する経路とは区別する |
 | PSDのベクターマスク（`realMask`） | 独自には描画しない。入力画像に反映済みかどうかを個別に確認する |
-| PSDの調整レイヤー | 独自には補正を再現しない。CLIP単独の通常合成の階調反転・2値化とは対応範囲が異なる |
+| PSDの調整レイヤー | 独自には補正を再現しない。CLIP単独ではcelcodecが対応する通常合成の7種類の補正を使う。詳細は[CLIP読み込み](clip-import.md)を参照 |
 
 通常のレイヤーマスクはグレースケール値を透明度へ掛け、マスク外では既定色を使う。
 クリッピングは直前の非クリッピングレイヤーの透明度を基準にし、基準がなければ描画しない。

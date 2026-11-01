@@ -281,7 +281,7 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
   seekToFrame: (frameIndex) => {
     const { timelineData, layerTree, selectedCells } = get()
     if (!timelineData || timelineData.duration <= 0) return
-    const clamped = Math.max(0, Math.min(timelineData.duration - 1, frameIndex))
+    const clamped = Math.max(0, Math.min(Math.ceil(timelineData.duration) - 1, frameIndex))
     const resolved = resolveCellsAtFrameByTrackNo(timelineData.tracks, clamped)
     // Untimed/manual folders keep their chosen cel when the playhead moves.
     const newSelectedCells = new Map([...selectedCells].filter(([id]) => findLayerById(layerTree, id)))

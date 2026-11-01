@@ -47,6 +47,8 @@ export interface ClipDiagnostic {
   message: string
   /** Stable category for grouping localized notices without guessing from prose. */
   code?: string
+  kind?: import('celcodec').DiagnosticKind
+  data?: import('celcodec').ClipDiagnostic['data']
   layerId?: string
   /** Generated from the final rendering route, rather than an unsuccessful candidate. */
   rendering?: boolean
@@ -57,6 +59,10 @@ export interface ClipDiagnostic {
 
 export interface ClipTimeline {
   id: number
+  uuid?: string
+  /** Absolute saved coordinates; never rounded to the UI's integer frame grid. */
+  startFrame?: number
+  endFrame?: number
   data: TimelineData
   /** Native layer identity -> track number; never a name-based guess. */
   bindings: Record<string, number>

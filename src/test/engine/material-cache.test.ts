@@ -23,6 +23,20 @@ function deferred(name: string, size = 4) {
 }
 
 describe('reloadable material residency', () => {
+  it('passes remaining memory to an unknown-size decoder, then remembers the actual allocation', async () => {
+    const fixed = deferred('fixed', 4096), ref: Layer = { name: 'sparse', opacity: 1 }
+    const load = vi.fn(async () => {
+      ref.canvas = document.createElement('canvas'); ref.canvas.width = ref.canvas.height = 1
+      return { diagnostics: [] }
+    })
+    disposers.push(registerMaterial(ref, undefined, load))
+    const sparse = buildLayerTree({ width: 50000, height: 50000, children: [ref] })[0]
+    await withPreparedMaterials([fixed.layer, sparse], () => {
+      expect(load).toHaveBeenCalledWith((768 - 64) * 1024 * 1024)
+      expect(materialInfo(ref)?.estimate).toBe(4)
+    })
+  })
+
   it('processes more than 512 MiB cumulatively, evicts and reloads', async () => {
     // The mocked canvas has no backing pixels; exercise byte accounting without
     // consuming hundreds of MiB in the test runner.

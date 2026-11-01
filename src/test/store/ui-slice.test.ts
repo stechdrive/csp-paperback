@@ -40,6 +40,26 @@ function markManualAnimFolder(layer: CspLayer): void {
 }
 
 describe('ui-slice XDTS timeline sync', () => {
+  it('小数の保存境界を保ったまま、最後の整数フレームへ移動できる', () => {
+    const tree = buildLayerTree(makePsd({ children: [makeFolder('A', [makeLayer({ name: '1' }), makeLayer({ name: '2' })])] }))
+    const timeline: XdtsData = {
+      tracks: [{ name: 'A', trackNo: 0, cellNames: ['1', '2'], frames: [
+        { frameIndex: -1.25, cellName: '1' }, { frameIndex: 26.75, cellName: '2' },
+      ] }],
+      version: 10, header: { cut: '', scene: '' }, timeTableName: 'fractional', duration: 27.5, fps: 30,
+    }
+    detectAnimationFoldersByXdts(tree, timeline)
+    useAppStore.setState({ layerTree: tree, timelineData: timeline })
+    useAppStore.getState().seekToFrame(26)
+    expect(tree[0].children[useAppStore.getState().selectedCells.get(tree[0].id)!].originalName).toBe('1')
+    useAppStore.getState().seekToFrame(100)
+    expect(useAppStore.getState().currentFrame).toBe(27)
+    expect(tree[0].children[useAppStore.getState().selectedCells.get(tree[0].id)!].originalName).toBe('2')
+    expect(useAppStore.getState().timelineData).toBe(timeline)
+    expect(timeline.duration).toBe(27.5)
+    expect(timeline.tracks[0].frames.map(f => f.frameIndex)).toEqual([-1.25, 26.75])
+  })
+
   it.each(['row', 'output'] as const)('同名セルの%s明示選択を保持し、初出フレームで他トラックだけ同期する', mode => {
     const tree = buildLayerTree(makePsd({ children: [
       makeFolder('A', [makeLayer({ name: '1' }), makeLayer({ name: '1' })]),

@@ -15,6 +15,7 @@ import type { ClipDiagnostic, ClipDocument, ClipLayer, ClipPixels } from '../../
 import { hasVectorWarning, hasUnsupported3D } from '../../engine/render-warning'
 import { extractCells } from '../../engine/cell-extractor'
 import { createRevisionBorderCanvas } from '../../utils/revision-border'
+import { ImageResourceError } from '../../utils/image-budget'
 
 const createElement = document.createElement.bind(document)
 beforeAll(() => {
@@ -34,6 +35,23 @@ const solid = (width: number, height: number, rgba: number[], left = 0, top = 0)
 const clip = (layers: ClipLayer[], width = 8, height = 4): ClipDocument => ({ width, height, dpi: 72, layers, timelines: [], defaultTimelineId: null, diagnostics: [] })
 
 describe('CLIP rendering source memory', () => {
+  it('releases earlier canvases and propagates allocation failure instead of exporting partial artwork', () => {
+    const original = document.createElement.bind(document), made: HTMLCanvasElement[] = []
+    const create = vi.spyOn(document, 'createElement').mockImplementation((tag: string, options?: ElementCreationOptions) => {
+      if (tag === 'canvas' && made.length === 1) throw new ImageResourceError('test allocation limit')
+      const element = original(tag, options)
+      if (tag === 'canvas') made.push(element as HTMLCanvasElement)
+      return element
+    })
+    const doc = clip(['a', 'b'].map(id => ({ ...layer(id), pixels: solid(2, 2, [20, 40, 60, 255]) })))
+    try {
+      expect(() => clipRenderingSource(doc)).toThrow(ImageResourceError)
+      expect(made).toHaveLength(1)
+      expect([made[0].width, made[0].height]).toEqual([1, 1])
+      expect(doc.diagnostics).toEqual([])
+    } finally { create.mockRestore() }
+  })
+
   it('shares immutable adjustment coverage, keeping separate masks and identical output', () => {
     const adjustments = Array.from({ length: 8 }, (_, i) => ({ ...layer(String(i)), adjustment: { kind: 'invert' as const } }))
     adjustments[0] = { ...adjustments[0], mask: solid(8, 4, [255, 255, 255, 128]) } as typeof adjustments[0]

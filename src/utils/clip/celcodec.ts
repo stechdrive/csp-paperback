@@ -1,6 +1,8 @@
 import { ClipError, type DiagnosticCode, type ClipDiagnostic } from 'celcodec'
 import { ImageResourceError } from '../image-budget'
+import type { ClipDiagnostic as AppDiagnostic } from './types'
 const messages: Partial<Record<DiagnosticCode, string>> = {
+  "CLOSED_DOCUMENT": "CLIPの読み込みセッションが終了しています。ファイルを開き直してください。",
   "LIMIT_INTEGER": "サイズが範囲外です。",
   "UNSUPPORTED_SQL_TRIGGER": "対応していないデータベーストリガーがあります。",
   "LIMIT_CONTAINER_BYTES": "ファイルサイズが範囲外です。",
@@ -184,11 +186,28 @@ export function codecMessage(code: DiagnosticCode, data?: ClipDiagnostic['data']
 }
 export function codecError(error: unknown): never {
  if(error instanceof ClipError) {
-  const message=codecMessage(error.diagnostic.code,error.diagnostic.data)
-  if(error.diagnostic.kind==='resource-limit')throw new ImageResourceError(message)
-  throw new Error('CLIP: '+message,{cause:error})
+  throw codecException(error)
  }
  throw error
 }
 export function codecCall<T>(run:()=>T): T { try { const value=run();return value instanceof Promise ? value.catch(codecError) as T : value } catch(error) { return codecError(error) } }
 export function codecFunction<A extends unknown[],R>(fn:(...args:A)=>R):(...args:A)=>R { return (...args)=>codecCall(()=>fn(...args)) }
+
+export function codecException(error: ClipError): Error {
+  const message = codecMessage(error.diagnostic.code, error.diagnostic.data)
+  if (error.diagnostic.kind === 'resource-limit') return new ImageResourceError(message, { cause: error })
+  if (error.diagnostic.kind === 'cancelled') return new DOMException('CLIPの読み込みを中止しました', 'AbortError')
+  return new Error('CLIP: ' + message, { cause: error })
+}
+
+/** Preserve machine-readable detail alongside application-owned Japanese wording. */
+export function codecDiagnostic(d: ClipDiagnostic, layer?: { id: string; name: string },
+  scope: AppDiagnostic['scope'] = d.part === 'timeline' ? 'timeline' : 'raster'): AppDiagnostic {
+  const part = d.part === 'timeline' ? undefined : d.part ?? 'material'
+  return { scope, code: d.code, kind: d.kind, data: d.data, layerId: d.layerId ?? layer?.id,
+    part, outcome: d.outcome ?? (d.kind === 'approximate' ? 'approximate'
+      : part === 'effect' ? 'missing-effect' : 'missing-content'),
+    materialKind: ['vector', 'text', '3d'].includes(d.materialKind ?? '')
+      ? d.materialKind as AppDiagnostic['materialKind'] : undefined,
+    message: (layer ? `「${layer.name}」: ` : '') + codecMessage(d.code, d.data) }
+}

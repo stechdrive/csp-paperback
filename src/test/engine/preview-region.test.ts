@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { createCanvas as nativeCanvas } from '@napi-rs/canvas'
 import { buildLayerTree } from '../../engine/tree-builder'
-import { makeFolder, makeLayer, makePsd } from '../helpers/psd-factory'
+import { makeLayer, makePsd } from '../helpers/psd-factory'
 import { DEFAULT_OUTPUT_CONFIG, DEFAULT_PROJECT_SETTINGS, type CspLayer } from '../../types'
 import { buildOutputPlan } from '../../utils/output-plan'
 import { renderOutputFileAsync } from '../../utils/output-render-queue'
@@ -36,10 +36,11 @@ function plan(tree: CspLayer[], width = 1103, height = 713) {
 describe('native preview regions', () => {
   it.each(['plain', 'mask', 'relative mask', 'folder mask', 'edge', 'watercolor', 'native blend', 'adjustment', 'fractional'])(
     'matches full composition across chunk boundaries: %s', async kind => {
-      const tree = buildLayerTree(makePsd({ children: [makeFolder('_sheet', [
-        makeLayer({ name: 'base', canvas: paint(800, 580), left: 97, top: 61 }),
-        makeLayer({ name: 'ink', canvas: paint(520, 340, '#36b289'), left: 341, top: 251, clipping: true, opacity: 170 }),
-      ])] }))
+      // ag-psd exposes opacity as 0..1, not the PSD file's 0..255 byte.
+      const tree = buildLayerTree(makePsd({ children: [makeLayer({ name: '_sheet', opacity: 1, children: [
+        makeLayer({ name: 'base', canvas: paint(800, 580), left: 97, top: 61, opacity: 1 }),
+        makeLayer({ name: 'ink', canvas: paint(520, 340, '#36b289'), left: 341, top: 251, clipping: true, opacity: 170 / 255 }),
+      ] })] }))
       const base = tree[0].children.find(layer => layer.originalName === 'base')!
       if (kind.includes('mask')) {
         const layer = kind === 'folder mask' ? tree[0] : base

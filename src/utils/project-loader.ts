@@ -1,6 +1,6 @@
 import { useAppStore } from '../store'
 import type { LoadableFile } from '../platform/files'
-import { readClipFile } from './clip-io'
+import { clipReader, readClipFile } from './clip-io'
 import { readPsdFile } from './psd-io'
 import { MAX_INPUT_BYTES } from './image-budget'
 import { MAX_SETTINGS_JSON_LENGTH, validateProjectSettings } from './settings-validation'
@@ -40,8 +40,10 @@ export async function loadProjectFiles(files: LoadableFile[]): Promise<string | 
       : undefined
     const clip = await readClipFile(await clipFile.arrayBuffer(), !psdFile && !existingPsd, true)
     const source = psdFile ? { psd: psd!, name: psdFile.name, sourceDirectory: psdFile.sourceDirectory } : existingPsd
-    for (const json of settingsJson) importSettings(json)
-    useAppStore.getState().loadClip(clip, clipFile.name, clipFile.sourceDirectory, source)
+    try {
+      for (const json of settingsJson) importSettings(json)
+      useAppStore.getState().loadClip(clip, clipFile.name, clipFile.sourceDirectory, source)
+    } catch (error) { clipReader(clip)?.dispose(); throw error }
     // Native timeline identity always takes precedence over a supplied XDTS.
     return null
   }

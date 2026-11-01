@@ -5,7 +5,7 @@ import { buildLayerTree } from './tree-builder'
 import { hasDrawableMaterialEffects } from './material-effects'
 
 import { pixelCanvas, renderClipMaterial } from './material-image'
-import { ImageBudget, imageBytes, MAX_LAYER_COUNT, MAX_LAYER_DEPTH } from '../utils/image-budget'
+import { ImageBudget, MAX_LAYER_COUNT, MAX_LAYER_DEPTH } from '../utils/image-budget'
 import { withCanvasResources } from './render-resources'
 import { clipReader } from '../utils/clip-io'
 import { bindMaterialDiagnostics, hasDeferredMaterial, ownMaterials, registerMaterial } from './material-cache'
@@ -13,7 +13,6 @@ import { layerRenderingDiagnostics } from '../utils/clip/rendering-status'
 import { isMediaKind } from '../utils/layer-display'
 
 function checkClipCanvasBudget(clip: ClipDocument): void {
-  imageBytes(clip.width, clip.height)
   const budget = new ImageBudget(), stack = clip.layers.map(layer => ({ layer, depth: 1 }))
   let count = 0, adjustment = false
   while (stack.length) {
@@ -47,8 +46,10 @@ export function clipRenderingSource(clip: ClipDocument): Psd {
         target.sectionDivider = { type: metadata.expanded ? 1 : 2 }
         target.children = metadata.children.slice().reverse().map(convert)
       }
-      disposers.push(registerMaterial(target, clip.width * clip.height * 8, async () => {
-        const { layer, diagnostics } = await reader.decode(metadata.id)
+      // The document can be much larger than its sparse cropped artwork. Let
+      // the decoder bound actual pixels before allocating, then account for canvases.
+      disposers.push(registerMaterial(target, undefined, async availableBytes => {
+        const { layer, diagnostics } = await reader.decode(metadata.id, availableBytes)
         withCanvasResources(() => {
           const rendered = renderClipMaterial(layer, clip.width, clip.height)
           if (rendered) Object.assign(target, { canvas: rendered.canvas, top: rendered.top, left: rendered.left,
@@ -73,12 +74,11 @@ export function clipRenderingSource(clip: ClipDocument): Psd {
   let adjustment: ReturnType<typeof renderClipMaterial>
   const retained: HTMLCanvasElement[] = []
   function convert(layer: ClipLayer): Layer {
-    let rendered: ReturnType<typeof renderClipMaterial>
-    try {
-      rendered = isMediaKind(layer.kind) ? undefined : layer.adjustment && adjustment ? adjustment : renderClipMaterial(layer, clip.width, clip.height)
-      if (layer.adjustment) adjustment = rendered
-    }
-    catch (e) { clip.diagnostics.push({ scope: 'raster', layerId: layer.id, message: `「${layer.name}」: ${e instanceof Error ? e.message : String(e)}` }) }
+    // Missing material is diagnosed during decoding. Canvas/resource failures
+    // must abort the operation, not silently replace artwork with transparency.
+    const rendered = isMediaKind(layer.kind) ? undefined : layer.adjustment && adjustment
+      ? adjustment : renderClipMaterial(layer, clip.width, clip.height)
+    if (layer.adjustment) adjustment = rendered
     const result: Layer = {
       name: layer.name, hidden: layer.hidden, opacity: layer.opacity, blendMode: layer.blendMode, clipping: layer.clipping,
       top: rendered?.top ?? 0, left: rendered?.left ?? 0,

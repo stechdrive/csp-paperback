@@ -9,8 +9,9 @@ export interface MaterialResult {
 }
 interface Material {
   layer: Layer
-  load: () => Promise<MaterialResult>
-  estimate: number
+  load: (availableBytes: number) => Promise<MaterialResult>
+  /** Undefined until the bounded decoder knows the cropped material extent. */
+  estimate: number | undefined
   state: MaterialState
   result?: MaterialResult
   bytes: number
@@ -56,7 +57,7 @@ function release(material: Material) {
   eviction++
 }
 
-export function registerMaterial(layer: Layer, estimate: number, load: Material['load']): () => void {
+export function registerMaterial(layer: Layer, estimate: number | undefined, load: Material['load']): () => void {
   const material: Material = { layer, load, estimate, state: 'unloaded', bytes: 0, used: 0, disposed: false }
   materials.set(layer, material)
   return () => { material.disposed = true; release(material); materials.delete(layer) }
@@ -92,9 +93,9 @@ export function withPreparedMaterials<T>(layers: CspLayer[], draw: () => T, canc
         if (material.disposed) throw new Error('文書が切り替わったため描画を中止しました')
         material.used = ++clock
         if (material.state === 'ready') continue
-        trim(pinned, Math.max(0, CACHE_BYTES - material.estimate))
+        trim(pinned, material.estimate === undefined ? 0 : Math.max(0, CACHE_BYTES - material.estimate))
         const used = needed.reduce((n, item) => n + item.bytes, 0)
-        if (used + material.estimate > WORKING_BYTES) {
+        if (used + (material.estimate ?? 0) > WORKING_BYTES || used >= WORKING_BYTES) {
           material.state = 'failed'
           material.error = 'この画像の合成に必要な素材を同時に保持できません。表示する素材を減らして再試行してください。出力は中止しました。'
           notify()
@@ -104,11 +105,12 @@ export function withPreparedMaterials<T>(layers: CspLayer[], draw: () => T, canc
         material.error = undefined
         notify()
         try {
-          const result = await material.load()
+          const result = await material.load(WORKING_BYTES - used)
           if (material.disposed) { release(material); throw new Error('文書が切り替わったため描画を中止しました') }
           material.result = { ...result, diagnostics: [...result.diagnostics, ...(material.diagnose?.() ?? [])] }
           material.bytes = [material.layer, material.layer.mask, material.layer.realMask]
             .reduce((n, item) => n + (item?.canvas ? item.canvas.width * item.canvas.height * 4 : 0), 0)
+          material.estimate = material.bytes
           resident.add(material)
           if (used + material.bytes > WORKING_BYTES) {
             release(material)
