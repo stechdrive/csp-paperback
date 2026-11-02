@@ -42,6 +42,7 @@
     ],
     "macOS": {
       "minimumSystemVersion": "10.13",
+      "signingIdentity": "-",
       "dmg": {
         "windowSize": {
           "width": 660,
