@@ -58,9 +58,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          version="${TAG_NAME#v}"
-          expected_windows="CSP-Paperback_${version}_ja-windows-x64-portable.exe"
-          expected_macos="CSP-Paperback_${version}_ja-macos-arm64.dmg"
+          expected_windows="csp-paperback.exe"
+          expected_macos="csp-paperback.dmg"
           mapfile -t files < <(find release-assets -maxdepth 1 -type f -printf '%f\n' | sort)
           if [[ "${#files[@]}" -ne 2 || "${files[0]}" != "$expected_macos" || "${files[1]}" != "$expected_windows" ]]; then
             echo "Expected exactly the Windows EXE and macOS DMG for $TAG_NAME." >&2
@@ -71,7 +70,7 @@ jobs:
           # Only this job writes the Release; parallel OS jobs never race to create it.
           if ! gh release view "$TAG_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release create "$TAG_NAME" --repo "$GITHUB_REPOSITORY" --verify-tag --draft \
-              --title "CSP Paperback $TAG_NAME" --notes "CSP Paperback 最新デスクトップバイナリ配布。Version: $TAG_NAME"
+              --title "CSP Paperback $TAG_NAME" --notes-file /dev/null
           fi
           gh release upload "$TAG_NAME" "release-assets/$expected_windows" "release-assets/$expected_macos" \
             --repo "$GITHUB_REPOSITORY" --clobber
@@ -83,10 +82,8 @@ jobs:
       - name: Publish audited release
         shell: bash
         run: |
-          {
-            printf 'CSP Paperback 最新デスクトップバイナリ配布。Version: %s\n\n' "$TAG_NAME"
-            cat .github/release-notes.md
-          } > "$RUNNER_TEMP/release-notes.md"
+          published_at="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$TAG_NAME" --jq '.published_at // empty')"
+          node scripts/release-notes.mjs "$TAG_NAME" "$published_at" > "$RUNNER_TEMP/release-notes.md"
           gh release edit "$TAG_NAME" --repo "$GITHUB_REPOSITORY" \
             --draft=false --prerelease=false --notes-file "$RUNNER_TEMP/release-notes.md"
       - name: Delete older published releases

@@ -21,10 +21,7 @@ function verifyLatest(release, tag, id = release?.id) {
     || release.draft !== false || release.prerelease !== false || !release.published_at) {
     throw new Error(`Latest published release changed or is not ready: ${tag}`)
   }
-  const expected = [
-    `CSP-Paperback_${tag.slice(1)}_ja-macos-arm64.dmg`,
-    `CSP-Paperback_${tag.slice(1)}_ja-windows-x64-portable.exe`,
-  ]
+  const expected = ['csp-paperback.dmg', 'csp-paperback.exe']
   const assets = release.assets ?? []
   if (assets.length !== expected.length || assets.some(asset => asset.state !== 'uploaded' || !(asset.size > 0))
     || assets.map(asset => asset.name).sort().some((name, i) => name !== expected[i])) {

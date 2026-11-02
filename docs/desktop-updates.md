@@ -4,6 +4,8 @@ GitHubの[最新リリースAPI](https://docs.github.com/en/rest/releases/releas
 
 ## リリースの保持
 
+配布ファイル名は毎回 `csp-paperback.exe` と `csp-paperback.dmg` に固定する。版番号はアプリ本体とリリースタグで管理する。本文は[生成処理](../scripts/release-notes.mjs)で、リリース日・バージョンと[固定案内](../.github/release-notes.md)だけを組み立てる。更新内容や作業記録は加えない。日付は公開日時を日本時間に変換し、公開済みリリースを再実行しても元の公開日を維持する。
+
 GitHub Releasesには公開済みの最新版だけを残す。両OSのビルド・監査・配布ファイル確認と正式公開が成功してから、
 [公開ワークフロー](../.github/workflows/desktop-release.yml)が[旧リリース整理](../scripts/prune-releases.mjs)を実行する。
 最新リリースAPIが今回の版を返し、Windows EXEとmacOS DMGが揃っていることを確認したうえで、公開済みの旧Releaseとその配布ファイルを削除する。

@@ -5,8 +5,8 @@ import { pruneReleases } from './prune-releases.mjs'
 
 function release(id, tag, extra = {}) {
   return { id, tag_name: tag, draft: false, prerelease: false, published_at: '2026-01-01T00:00:00Z',
-    assets: ['ja-macos-arm64.dmg', 'ja-windows-x64-portable.exe'].map(platform => ({
-      name: `CSP-Paperback_${tag.slice(1)}_${platform}`, state: 'uploaded', size: 100,
+    assets: ['csp-paperback.dmg', 'csp-paperback.exe'].map(name => ({
+      name, state: 'uploaded', size: 100,
     })), ...extra }
 }
 
@@ -53,6 +53,8 @@ test('unpublished, prerelease, wrong latest and incomplete assets prevent all de
     { assets: [] }, { assets: [{ name: 'wrong.exe', state: 'uploaded', size: 100 }] },
     { assets: release(3, 'v1.41.315').assets.map(asset => ({ ...asset, state: 'new' })) },
     { assets: release(3, 'v1.41.315').assets.map(asset => ({ ...asset, size: 0 })) },
+    { assets: ['CSP-Paperback_1.41.315_ja-macos-arm64.dmg', 'CSP-Paperback_1.41.315_ja-windows-x64-portable.exe']
+      .map(name => ({ name, state: 'uploaded', size: 100 })) },
   ]) {
     const f = fixture({ latest: release(3, 'v1.41.315', extra) })
     assert.throws(() => f.run(), /not ready|completed desktop assets/)

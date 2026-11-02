@@ -73,19 +73,17 @@ jobs:
         shell: bash
         env:
           ARTIFACT_PATHS: ${{ steps.tauri.outputs.artifactPaths }}
-          ASSET_PLATFORM: ${{ matrix.assetPlatform }}
           ASSET_EXTENSION: ${{ matrix.extension }}
         run: |
           node --input-type=module <<'NODE'
-          import { copyFileSync, mkdirSync, readFileSync, statSync } from 'node:fs';
+          import { copyFileSync, mkdirSync, statSync } from 'node:fs';
           import { basename, join } from 'node:path';
-          const { version } = JSON.parse(readFileSync('package.json', 'utf8'));
           const paths = JSON.parse(process.env.ARTIFACT_PATHS);
           const assets = paths.filter(path => path.endsWith(process.env.ASSET_EXTENSION));
           if (assets.length !== 1 || statSync(assets[0]).size === 0) {
             throw new Error(`Expected one nonempty ${process.env.ASSET_EXTENSION} asset`);
           }
-          const name = `CSP-Paperback_${version}_${process.env.ASSET_PLATFORM}${process.env.ASSET_EXTENSION}`;
+          const name = `csp-paperback${process.env.ASSET_EXTENSION}`;
           if (basename(name) !== name) throw new Error('Invalid asset name');
           mkdirSync('release-assets', { recursive: true });
           copyFileSync(assets[0], join('release-assets', name));
