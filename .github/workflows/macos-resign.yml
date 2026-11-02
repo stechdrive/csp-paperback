@@ -1,0 +1,112 @@
+name: macos-resign
+run-name: Re-sign the macOS DMG for ${{ inputs.tag }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing published release tag
+        required: true
+        type: string
+      expected_sha256:
+        description: SHA-256 of the currently published DMG
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-release-${{ inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  resign:
+    runs-on: macos-latest
+    timeout-minutes: 10
+    env:
+      TAG_NAME: ${{ inputs.tag }}
+      EXPECTED_SHA256: ${{ inputs.expected_sha256 }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Validate the release and download its existing DMG
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          [[ "$TAG_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          [[ "$EXPECTED_SHA256" =~ ^[0-9a-f]{64}$ ]]
+          ASSET_NAME="CSP-Paperback_${TAG_NAME#v}_ja-macos-arm64.dmg"
+          export ASSET_NAME
+          printf '%s\n' "ASSET_NAME=$ASSET_NAME" >> "$GITHUB_ENV"
+          mkdir -p macos-resign/original macos-resign/candidate macos-resign/evidence
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/$TAG_NAME" > macos-resign/evidence/release-before.json
+          gh api "repos/$GITHUB_REPOSITORY/releases/latest" > macos-resign/evidence/latest-before.json
+          python3 <<'PY'
+          import json, os, pathlib, subprocess
+          tag = os.environ["TAG_NAME"]
+          evidence = pathlib.Path("macos-resign/evidence")
+          release = json.loads((evidence / "release-before.json").read_text())
+          latest = json.loads((evidence / "latest-before.json").read_text())
+          assert release["tag_name"] == tag and release["id"] == latest["id"]
+          assert not release["draft"] and not release["prerelease"]
+          asset, = [a for a in release["assets"] if a["name"] == os.environ["ASSET_NAME"]]
+          assert asset["state"] == "uploaded" and asset["size"] > 0
+          assert asset["digest"] == "sha256:" + os.environ["EXPECTED_SHA256"]
+          changed = set(subprocess.check_output(["git", "diff", "--name-only", tag, "HEAD"], text=True).splitlines())
+          assert changed <= {"src-tauri/tauri.conf.json", ".github/workflows/macos-resign.yml"}, changed
+          path = "src-tauri/tauri.conf.json"
+          original = json.loads(subprocess.check_output(["git", "show", tag + ":" + path], text=True))
+          current = json.loads(pathlib.Path(path).read_text())
+          assert current["bundle"]["macOS"].pop("signingIdentity") == "-"
+          original["bundle"]["macOS"].pop("signingIdentity", None)
+          assert current == original, "Only the macOS signing identity may change"
+          assert current["bundle"]["macOS"].get("hardenedRuntime", True)
+          assert not current["bundle"]["macOS"].get("entitlements")
+          PY
+          gh release download "$TAG_NAME" --repo "$GITHUB_REPOSITORY" --pattern "$ASSET_NAME" --dir macos-resign/original
+          printf '%s  %s\n' "$EXPECTED_SHA256" "macos-resign/original/$ASSET_NAME" | shasum -a 256 -c -
+      - name: Sign the app and verify the repackaged DMG
+        shell: bash
+        run: |
+          set -euo pipefail
+          work_dir="$(mktemp -d "$RUNNER_TEMP/paperback-resign.XXXXXX")"
+          mount_dir="$work_dir/mount"
+          mkdir "$mount_dir"
+          mounted=false
+          trap 'if $mounted; then hdiutil detach "$mount_dir"; fi' EXIT
+          hdiutil verify "macos-resign/original/$ASSET_NAME"
+          hdiutil convert "macos-resign/original/$ASSET_NAME" -format UDRW -o "$work_dir/writable.dmg"
+          hdiutil attach "$work_dir/writable.dmg" -nobrowse -readwrite -owners off -mountpoint "$mount_dir"
+          mounted=true
+          app="$mount_dir/CSP Paperback.app"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app/Contents/Info.plist")" = "${TAG_NAME#v}"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Contents/Info.plist")" = "com.stechdrive.csp-paperback"
+          lipo -verify_arch arm64 "$app/Contents/MacOS/csp-paperback"
+          codesign --force --sign - --options runtime --timestamp=none "$app"
+          codesign --verify --deep --strict --verbose=2 "$app"
+          test -s "$app/Contents/_CodeSignature/CodeResources"
+          hdiutil detach "$mount_dir"
+          mounted=false
+          hdiutil convert "$work_dir/writable.dmg" -format UDZO -o "macos-resign/candidate/$ASSET_NAME"
+          hdiutil verify "macos-resign/candidate/$ASSET_NAME"
+          hdiutil attach "macos-resign/candidate/$ASSET_NAME" -nobrowse -readonly -mountpoint "$mount_dir"
+          mounted=true
+          codesign --verify --deep --strict --verbose=2 "$app" 2>&1 | tee macos-resign/evidence/signature-verification.txt
+          codesign --display --verbose=4 "$app" 2>&1 | tee macos-resign/evidence/signature-details.txt
+          grep -Fx 'Signature=adhoc' macos-resign/evidence/signature-details.txt
+          test -s "$app/Contents/_CodeSignature/CodeResources"
+          hdiutil detach "$mount_dir"
+          mounted=false
+          shasum -a 256 "macos-resign/candidate/$ASSET_NAME" | tee macos-resign/evidence/SHA256SUMS
+      - name: Upload the candidate and verification evidence
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: macos-resign
+          path: macos-resign/
+          if-no-files-found: error
+          retention-days: 7
