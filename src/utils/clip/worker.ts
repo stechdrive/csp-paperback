@@ -25,7 +25,7 @@ function transfers(layers: ClipLayer[]): ArrayBuffer[] {
     ...transfers(layer.children),
   ])
 }
-self.onmessage = (event: MessageEvent<{ id: number; buffer?: ArrayBuffer; includeRaster?: boolean; lazy?: boolean; layerId?: string; maxDecodedBytes?: number; composition?: RenderComposition; region?: ImageRegion; dispose?: boolean }>) => {
+self.onmessage = (event: MessageEvent<{ id: number; buffer?: ArrayBuffer; includeRaster?: boolean; lazy?: boolean; layerId?: string; maxDecodedBytes?: number; render?: boolean; composition?: RenderComposition; region?: ImageRegion; scale?: number; dispose?: boolean }>) => {
   const request = event.data
   if (request.dispose) {
     generation++
@@ -37,9 +37,9 @@ self.onmessage = (event: MessageEvent<{ id: number; buffer?: ArrayBuffer; includ
   serial = serial.then(async () => {
     try {
       active()
-      if (request.composition) {
+      if (request.render || request.composition) {
         if (!session || !request.region) throw new ClipError('CLOSED_DOCUMENT')
-        const result = await session.render(request.composition, request.region)
+        const result = await session.render(request.composition, request.region, request.scale)
         active()
         self.postMessage({ id: request.id, result }, { transfer: result.pixels ? [result.pixels.rgba.buffer] : [] })
       } else if (request.layerId) {
@@ -61,7 +61,7 @@ self.onmessage = (event: MessageEvent<{ id: number; buffer?: ArrayBuffer; includ
         self.postMessage({ id: request.id, document }, { transfer: [...new Set(transfers(document.layers))] })
       }
     } catch (error) {
-      if (!request.layerId && !request.composition) { session?.dispose(); session = undefined }
+      if (!request.layerId && !request.composition && !request.render) { session?.dispose(); session = undefined }
       self.postMessage(error instanceof ClipError ? { id: request.id, diagnostic: serializeClipError(error) }
         : { id: request.id, error: error instanceof Error ? error.message : 'CLIPを読み込めませんでした' })
     }

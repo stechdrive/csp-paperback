@@ -6,7 +6,7 @@ import { codecException } from './clip/celcodec'
 import { MAX_INPUT_BYTES } from './image-budget'
 
 export interface ClipReader {
-  render(composition: RenderComposition, region: ImageRegion): Promise<CompositionRenderResult>
+  render(composition: RenderComposition, region: ImageRegion, scale?: number): Promise<CompositionRenderResult>
   decode(id: string, maxDecodedBytes?: number): Promise<{ layer: ClipLayer; diagnostics: ClipDiagnostic[] }>
   dispose(): void
 }
@@ -59,7 +59,17 @@ export async function readClipFile(buffer: ArrayBuffer, includeRaster = true, la
   try {
     const deferred = lazy && includeRaster
     const { document } = await request({ buffer, includeRaster, lazy: deferred }, [buffer])
-    if (deferred) readers.set(document, { render: async (composition, region) => (await request({ composition, region })).result, decode: (id, maxDecodedBytes) => request({ layerId: id, maxDecodedBytes }), dispose })
+    if (deferred) {
+      let registered: string | undefined
+      readers.set(document, { render: async (composition, region, scale = 1) => {
+        // Content comparison also handles edits to a caller-owned drawing object.
+        // postMessage preserves order; at most one tree is registered in the Worker.
+        const signature = JSON.stringify(composition), changed = signature !== registered
+        registered = signature
+        try { return (await request({ render: true, ...(changed ? { composition } : {}), region, scale })).result }
+        catch (error) { registered = undefined; throw error }
+      }, decode: (id, maxDecodedBytes) => request({ layerId: id, maxDecodedBytes }), dispose })
+    }
     else dispose()
     return document
   } catch (error) { dispose(); throw error }

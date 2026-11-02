@@ -3,7 +3,7 @@ import type { OutputFile } from './output-plan'
 import type { ProjectSettings } from '../types'
 import type { ClipDiagnostic } from './clip/types'
 import type { RenderIssue } from './render-diagnostics'
-import { renderOutputRegion } from './output-region-render'
+import { renderOutputRegion, renderOutputPixels } from './output-region-render'
 import { injectDpiPng } from './image-export'
 import { releaseCanvas } from '../engine/render-resources'
 
@@ -18,7 +18,15 @@ export async function renderClipPng(file: OutputFile, table: ProjectSettings['pr
       const h = Math.min(step, height - top), row = new Uint8Array(width * h * 4)
       for (let left = 0; left < width; left += 768) {
         const w = Math.min(768, width - left)
-        const result = await renderOutputRegion(file, { left, top, width: w, height: h }, 1, table, border, diagnostics)
+        const region = { left, top, width: w, height: h }
+        if (!border) {
+          const result = await renderOutputPixels(file, region, diagnostics)
+          for (let y = 0; y < h; y++) row.set(result.pixels.rgba.subarray(y * w * 4, (y + 1) * w * 4), (y * width + left) * 4)
+          observe(result.diagnostics)
+          await new Promise<void>(resolve => setTimeout(resolve, 0))
+          continue
+        }
+        const result = await renderOutputRegion(file, region, 1, table, border, diagnostics)
         try {
           const pixels = result.canvas.getContext('2d')!.getImageData(0, 0, w, h).data
           for (let y = 0; y < h; y++) row.set(pixels.subarray(y * w * 4, (y + 1) * w * 4), (y * width + left) * 4)

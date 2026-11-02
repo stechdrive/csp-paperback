@@ -14,12 +14,41 @@ import { applyRevisionBorders } from './revision-border'
 import { renderIssues } from './render-diagnostics'
 import type { ClipDiagnostic } from './clip/types'
 import type { RenderedOutput } from './output-render-queue'
+import type { CompositionRenderResult } from 'celcodec/render'
+import { ClipError } from 'celcodec'
 
 const dependencies = new WeakMap<OutputFile, ReturnType<typeof collectRenderMaterials>>()
 function materials(file: OutputFile) {
   let layers = dependencies.get(file)
   if (!layers) { layers = collectRenderMaterials(() => file.renderCanvas(new Map())); dependencies.set(file, layers) }
   return layers
+}
+
+function nativeResult(file: OutputFile, result: CompositionRenderResult, diagnostics: ClipDiagnostic[]) {
+  const drawing = file.clipDrawing!, layers = [...drawing.placements.values()]
+  const converted = result.diagnostics.filter(d => !['APPROXIMATE_COMPOSITING', 'APPROXIMATE_ADJUSTMENT'].includes(d.code)).map(d => codecDiagnostic(d))
+  for (const node of result.nodes) if (node.visible && node.layerId) {
+    const layer = drawing.placements.get(node.id)
+    if (layer) updateRenderedMaterialDiagnostics(layer.agPsdRef, converted.filter(d => d.layerId === node.layerId))
+  }
+  if (result.status === 'unavailable') throw new Error(converted.map(d => d.message).join('\n') || 'CLIPを描画できませんでした')
+  const sources = { all: new Set<string>(), content: new Set<string>() }
+  for (const node of result.nodes) if (node.visible) {
+    const layer = drawing.placements.get(node.id)
+    if (layer) { sources.all.add(layer.id); if (drawing.content.has(layer.id)) sources.content.add(layer.id) }
+  }
+  const own = renderIssues(layers.filter(l => sources.all.has(l.id)), [...diagnostics, ...converted])
+  const global = converted.filter(d => !d.layerId).map(d => ({ ...d, layerId: '', layerName: '' }))
+  return { pixels: result.pixels, sources, vectorWarning: converted.some(d => d.materialKind === 'vector' && d.outcome !== undefined),
+    unsupported3D: converted.some(d => d.code === 'UNSUPPORTED_3D'), diagnostics: [...own, ...global] }
+}
+
+/** Caller-owned straight RGBA, preserving low-alpha color during PNG encoding. */
+export async function renderOutputPixels(file: OutputFile, region: PreviewRegion, diagnostics: ClipDiagnostic[] = []) {
+  const result = nativeResult(file, await file.clipDrawing!.render(region), diagnostics)
+  if (result.pixels.width !== region.width || result.pixels.height !== region.height || result.pixels.left !== region.left || result.pixels.top !== region.top)
+    throw new Error('CLIPの描画範囲が要求と一致しません')
+  return result
 }
 
 /** Native windows and downsampled windows use the same compositor as export. */
@@ -30,21 +59,8 @@ async function renderNativeRegion(file: OutputFile, region: PreviewRegion, scale
     if (cancelled()) throw new Error('描画要求が変更されたため中止しました')
     const result = await file.clipDrawing.render(region)
     if (cancelled()) throw new Error('描画要求が変更されたため中止しました')
-    const layers = [...file.clipDrawing.placements.values()]
-    // Baseline numerical compositor/adjustment approximation is documented in
-    // compatibility notes. It is not a per-material problem requiring user action.
-    const converted = result.diagnostics.filter(d => !['APPROXIMATE_COMPOSITING', 'APPROXIMATE_ADJUSTMENT'].includes(d.code)).map(d => codecDiagnostic(d))
-    for (const node of result.nodes) if (node.visible && node.layerId) {
-      const layer = file.clipDrawing.placements.get(node.id)
-      if (layer) updateRenderedMaterialDiagnostics(layer.agPsdRef, converted.filter(d => d.layerId === node.layerId))
-    }
-    if (result.status === 'unavailable') throw new Error(converted.map(d => d.message).join('\n') || 'CLIPを描画できませんでした')
-    const sources = { all: new Set<string>(), content: new Set<string>() }
-    for (const node of result.nodes) if (node.visible) {
-      const layer = file.clipDrawing.placements.get(node.id)
-      if (layer) { sources.all.add(layer.id); if (file.clipDrawing.content.has(layer.id)) sources.content.add(layer.id) }
-    }
-    const raw = pixelCanvas(result.pixels)
+    const { pixels, ...metadata } = nativeResult(file, result, diagnostics)
+    const raw = pixelCanvas(pixels)
     try {
       const painted = applyRevisionBorders([{ ...file, canvas: raw }], table, border,
         { left: region.left, top: region.top, width: preview.width, height: preview.height })[0].canvas
@@ -53,11 +69,8 @@ async function renderNativeRegion(file: OutputFile, region: PreviewRegion, scale
       const ctx = canvas.getContext('2d')!; ctx.imageSmoothingQuality = 'high'
       ctx.drawImage(painted, 0, 0, canvas.width, canvas.height)
       if (painted !== raw) releaseCanvas(painted)
-      const own = renderIssues(layers.filter(l => sources.all.has(l.id)), [...diagnostics, ...converted])
-      const global = converted.filter(d => !d.layerId).map(d => ({ ...d, layerId: '', layerName: '' }))
-      recordEvaluatedSources(canvas, sources)
-      return { canvas, sources, vectorWarning: converted.some(d => d.materialKind === 'vector' && d.outcome !== undefined),
-        unsupported3D: converted.some(d => d.code === 'UNSUPPORTED_3D'), diagnostics: [...own, ...global],
+      recordEvaluatedSources(canvas, metadata.sources)
+      return { canvas, ...metadata,
         nativeWidth: region.width, nativeHeight: region.height }
     } finally { releaseCanvas(raw) }
   }
@@ -84,6 +97,35 @@ export async function renderOutputRegion(file: OutputFile, region: PreviewRegion
   table: ProjectSettings['processTable'], border: boolean, diagnostics: ClipDiagnostic[] = [], cancelled = () => false): Promise<RenderedOutput> {
   try { imageBytes(Math.max(1, Math.round(region.width * scale)), Math.max(1, Math.round(region.height * scale))) }
   catch (error) { throw new ImageResourceError(error instanceof Error ? error.message : '出力画像の容量が上限を超えました') }
+  if (file.clipDrawing && !border && scale < 1) {
+    const sampleScale = Math.max(1 / 256, 2 ** -Math.max(0, Math.floor(Math.log2(1 / scale))))
+    if (sampleScale < 1) {
+      const left = Math.floor(region.left * sampleScale), top = Math.floor(region.top * sampleScale)
+      const request = { left, top, width: Math.ceil((region.left + region.width) * sampleScale) - left,
+        height: Math.ceil((region.top + region.height) * sampleScale) - top }
+      if (cancelled()) throw new Error('描画要求が変更されたため中止しました')
+      let previewResult: CompositionRenderResult | undefined
+      try { previewResult = await file.clipDrawing.render(request, sampleScale) }
+      catch (error) {
+        // Older CLIPs may have no usable Mipmap. Their native fallback can exceed
+        // the preview budget, while bounded original tiles still fit.
+        if (!(error instanceof ImageResourceError) && !(error instanceof ClipError && error.diagnostic.kind === 'resource-limit')) throw error
+      }
+      if (cancelled()) throw new Error('描画要求が変更されたため中止しました')
+      if (previewResult && previewResult.status !== 'unavailable') {
+        const { pixels, ...metadata } = nativeResult(file, previewResult, diagnostics), raw = pixelCanvas(pixels)
+        try {
+          const canvas = document.createElement('canvas')
+          canvas.width = Math.max(1, Math.round(region.width * scale)); canvas.height = Math.max(1, Math.round(region.height * scale))
+          const context = canvas.getContext('2d')!; context.imageSmoothingQuality = 'high'
+          context.drawImage(raw, region.left * sampleScale - left, region.top * sampleScale - top,
+            region.width * sampleScale, region.height * sampleScale, 0, 0, canvas.width, canvas.height)
+          recordEvaluatedSources(canvas, metadata.sources)
+          return { canvas, ...metadata, nativeWidth: region.width, nativeHeight: region.height }
+        } finally { releaseCanvas(raw) }
+      }
+    }
+  }
   if (region.width <= 1024 && region.height <= 1024) return renderNativeRegion(file, region, scale, table, border, diagnostics, cancelled)
   const { width, height } = region
   // Power-of-two sampling keeps chunk boundaries on integer destination pixels.

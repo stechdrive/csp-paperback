@@ -1,6 +1,6 @@
 import type { SqlJsStatic } from 'sql.js'
 import { ClipError, openDocument, type LayerView, type SessionOptions } from 'celcodec'
-import { createCompositionRenderer, type CompositionRenderer, type RenderComposition, type CompositionRenderResult } from 'celcodec/render'
+import { createCompositionRenderer, type CompositionRenderer, type RenderComposition, type CompositionRenderResult, type PreparedComposition } from 'celcodec/render'
 import type { CanvasFactory } from 'celcodec/canvas'
 import type { ImageRegion } from 'celcodec'
 import { CLIP_BLEND_MODES as blends } from './blend'
@@ -14,7 +14,7 @@ import type { ClipDiagnostic, ClipDocument, ClipLayer } from './types'
 export interface ClipSession {
   document: ClipDocument
   decode: (id: string, maxDecodedBytes?: number) => Promise<{ layer: ClipLayer; diagnostics: ClipDiagnostic[] }>
-  render(composition: RenderComposition, region: ImageRegion): Promise<CompositionRenderResult>
+  render(composition: RenderComposition | undefined, region: ImageRegion, scale?: number): Promise<CompositionRenderResult>
   dispose(): void
 }
 
@@ -26,6 +26,7 @@ export async function openClipSession(bytes: Uint8Array, SQL: SqlJsStatic,
   const input = new Uint8Array(bytes.buffer, bytes.byteOffset, bytes.byteLength)
   const { canvas, ...sessionOptions } = options
   let renderer: CompositionRenderer | undefined
+  let prepared: PreparedComposition | undefined
   const native = openDocument(SQL, input, {
     ...sessionOptions, maxRows: MAX_LAYER_COUNT, maxDepth: MAX_LAYER_DEPTH,
     // Document dimensions follow CSP. Pixel allocations have independent budgets.
@@ -76,11 +77,18 @@ export async function openClipSession(bytes: Uint8Array, SQL: SqlJsStatic,
         const layer: ClipLayer = { ...metadata, ...decoded.layer, children: [] }
         return { layer, diagnostics: materialDiagnostics(decoded.diagnostics, layer, document.compatibility) }
       },
-      render(composition, region) {
+      render(composition, region, scale = 1) {
         if (!canvas) throw new Error('CLIP描画用Canvasが設定されていません')
         renderer ??= createCompositionRenderer(native, { canvas, source: 'original', missingMaterials: 'omit',
           maxWorkingBytes: 384 * 1024 * 1024, maxCacheBytes: 64 * 1024 * 1024 })
-        return renderer.render(composition, { region })
+        try {
+          if (composition) {
+            prepared?.dispose()
+            prepared = renderer.prepare(composition)
+          }
+          if (!prepared) throw new ClipError('CLOSED_FRAME_RENDERER')
+          return prepared.render({ region, scale })
+        } catch (error) { return Promise.reject(error) }
       },
       dispose() { renderer?.dispose(); native.dispose(); layersById.clear() },
     }

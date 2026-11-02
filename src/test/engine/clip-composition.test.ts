@@ -18,6 +18,9 @@ import { openClipSession, type ClipSession } from '../../utils/clip/parser'
 import type { ClipReader } from '../../utils/clip-io'
 import type { ClipLayer } from '../../utils/clip/types'
 import { sessionFixture, sessionIds } from '../fixtures/clip-session'
+import { unzlibSync } from 'fflate'
+import type { OutputFile } from '../../utils/output-plan'
+import { ImageResourceError } from '../../utils/image-budget'
 
 let SQL: SqlJsStatic
 beforeAll(async () => {
@@ -26,6 +29,25 @@ beforeAll(async () => {
 })
 afterAll(() => vi.unstubAllGlobals())
 const settings = { ...DEFAULT_PROJECT_SETTINGS, processTable: [{ folderNames: ['EN'], suffix: '_e' }], autoMarkFolderNames: [], archivePatterns: [] }
+it('encodes low-alpha straight RGB without allocating Canvas surfaces', async () => {
+  const rgba = new Uint8ClampedArray([17, 93, 201, 1, 123, 45, 67, 2]),
+    file = { clipDrawing: { width: 2, height: 1, placements: new Map(), content: new Set(),
+      render: async () => ({ status: 'rendered', pixels: { width: 2, height: 1, left: 0, top: 0, rgba }, diagnostics: [], nodes: [] }) } } as unknown as OutputFile,
+    spy = vi.spyOn(document, 'createElement')
+  try {
+    const blob = await renderClipPng(file, [], false, [], 72, 72, vi.fn()), bytes = new Uint8Array(await blob.arrayBuffer()),
+      view = new DataView(bytes.buffer), chunks: Uint8Array[] = []
+    for (let at = 8; at < bytes.length;) {
+      const length = view.getUint32(at), type = String.fromCharCode(...bytes.subarray(at + 4, at + 8))
+      if (type === 'IDAT') chunks.push(bytes.slice(at + 8, at + 8 + length))
+      at += 12 + length
+    }
+    const compressed = new Uint8Array(chunks.reduce((sum, chunk) => sum + chunk.length, 0))
+    let at = 0; for (const chunk of chunks) { compressed.set(chunk, at); at += chunk.length }
+    expect([...unzlibSync(compressed)]).toEqual([0, ...rgba])
+    expect(spy).not.toHaveBeenCalled()
+  } finally { spy.mockRestore() }
+})
 const flat = (nodes: readonly RenderNode[]): RenderNode[] => nodes.flatMap(n => [n, ...flat(n.children ?? [])])
 function fakeTree(roots: Layer[], bind = true) {
   const tree = buildLayerTree({ width: 64, height: 64, children: roots.slice().reverse() }, undefined, [], [])
@@ -120,6 +142,12 @@ it('runs normal output, native regions and streamed PNG through the installed pu
     canvas.getContext('2d').drawImage(decoded, 0, 0)
     expect([...canvas.getContext('2d').getImageData(3, 5, 1, 1).data]).toEqual([255, 0, 0, 255])
     expect(original.sources.content.size).toBe(2)
+    const preview = vi.spyOn(file.clipDrawing!, 'render').mockRejectedValueOnce(new ImageResourceError('no usable mipmap'))
+    const reduced = await renderOutputRegion(file, { left: 0, top: 0, width: 64, height: 64 }, 0.5, [], false)
+    expect(reduced.canvas.width).toBe(32)
+    expect(preview).toHaveBeenCalledTimes(2)
+    expect(preview.mock.calls[0][1]).toBe(0.5)
+    preview.mockRestore()
     vi.spyOn(file.clipDrawing!, 'render').mockResolvedValueOnce({ status: 'unavailable', pixels: undefined, nodes: [],
       diagnostics: [{ code: 'MISSING_MATERIAL', kind: 'missing', severity: 'error' }] })
     await expect(renderClipPng(file, [], false, [], 72, 72, vi.fn())).rejects.toThrow('素材画像')

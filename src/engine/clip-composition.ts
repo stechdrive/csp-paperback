@@ -18,7 +18,7 @@ export interface ClipDrawing {
   composition: RenderComposition
   placements: ReadonlyMap<string, CspLayer>
   content: ReadonlySet<string>
-  render(region: PreviewRegion): Promise<CompositionRenderResult>
+  render(region: PreviewRegion, scale?: number): Promise<CompositionRenderResult>
 }
 type DrawingOptions = {
   selectedCells?: Map<string, number>
@@ -62,7 +62,7 @@ function builder(tree: CspLayer[], width: number, height: number, background: 'w
   }
   const finish = (layers: RenderNode[]): ClipDrawing => {
     const composition: RenderComposition = { layers, ...(background === 'white' ? { background: [255, 255, 255, 255] as const } : {}) }
-    return { width, height, composition, placements, content, render: region => reader.render(composition, region) }
+    return { width, height, composition, placements, content, render: (region, scale) => reader.render(composition, region, scale) }
   }
   return { node, finish, reader }
 }

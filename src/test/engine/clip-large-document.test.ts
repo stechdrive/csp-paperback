@@ -9,7 +9,7 @@ import { clipRenderingSource, buildClipLayerTree } from '../../engine/clip-tree'
 import { disposeMaterials, materialStats } from '../../engine/material-cache'
 import { releaseCanvas } from '../../engine/render-resources'
 import { buildOutputPlan } from '../../utils/output-plan'
-import { renderOutputRegion } from '../../utils/output-region-render'
+import { renderOutputRegion, renderOutputOverview } from '../../utils/output-region-render'
 import { renderOutputFileAsync } from '../../utils/output-render-queue'
 import { ImageResourceError } from '../../utils/image-budget'
 import { DEFAULT_PROJECT_SETTINGS, DEFAULT_OUTPUT_CONFIG } from '../../types'
@@ -45,6 +45,14 @@ it('restores and composites a real sparse material in a 50,000px square without 
     expect(materialStats().bytes).toBeLessThanOrEqual(8)
     expect(Math.max(...allocations)).toBeLessThan(100)
     releaseCanvas(image.canvas)
+    const render = vi.spyOn(files[0].clipDrawing!, 'render')
+    const overview = await renderOutputOverview(files[0], 128, [], false, [], () => false)
+    expect(overview.canvas.width).toBe(128)
+    expect(overview.canvas.height).toBe(128)
+    expect(render).toHaveBeenCalledTimes(1)
+    expect(render.mock.calls[0][1]).toBe(1 / 256)
+    expect(Math.max(...allocations)).toBeLessThanOrEqual(196)
+    releaseCanvas(overview.canvas)
     // The Canvas/JPEG path still has an allocation limit. Never silently
     // turn an allocation failure into a successful blank export.
     await expect(renderOutputFileAsync(files[0], [], false)).rejects.toBeInstanceOf(ImageResourceError)

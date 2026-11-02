@@ -22,6 +22,24 @@ beforeEach(() => { TestWorker.instances = []; vi.stubGlobal('Worker', TestWorker
 afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals() })
 
 describe('CLIP Worker ownership', () => {
+  it('registers a composition once, pulls only one pixel result per request and replaces edited trees', async () => {
+    const pending = readClipFile(new ArrayBuffer(4), true, true), worker = TestWorker.instances[0]
+    worker.reply({ document: document() })
+    const reader = clipReader(await pending)!, composition = { layers: [{ id: 'art', layerId: 'a', opacity: 1 }] },
+      region = { left: 0, top: 0, width: 1, height: 1 }, result = { status: 'rendered', nodes: [], diagnostics: [], pixels: { ...region, rgba: new Uint8ClampedArray(4) } }
+    const first = reader.render(composition, region)
+    expect(worker.sent.at(-1)).toMatchObject({ render: true, composition, region, scale: 1 })
+    worker.reply({ result }); await first
+    const second = reader.render(composition, { ...region, left: 1 }, 0.5)
+    expect(worker.sent.at(-1)).not.toHaveProperty('composition')
+    expect(worker.sent.at(-1)).toHaveProperty('scale', 0.5)
+    worker.reply({ result }); await second
+    composition.layers[0].opacity = 0.25
+    const third = reader.render(composition, region)
+    expect(worker.sent.at(-1)).toMatchObject({ composition })
+    worker.reply({ result }); await third
+    reader.dispose()
+  })
   it('transfers input and terminates eager metadata reads', async () => {
     const bytes = new ArrayBuffer(4), pending = readClipFile(bytes, false)
     const worker = TestWorker.instances[0]
