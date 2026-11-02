@@ -81,6 +81,13 @@ jobs:
             exit 1
           fi
       - name: Publish audited release
-        run: gh release edit "$TAG_NAME" --repo "$GITHUB_REPOSITORY" --draft=false --prerelease=false
+        shell: bash
+        run: |
+          {
+            printf 'CSP Paperback 最新デスクトップバイナリ配布。Version: %s\n\n' "$TAG_NAME"
+            cat .github/release-notes.md
+          } > "$RUNNER_TEMP/release-notes.md"
+          gh release edit "$TAG_NAME" --repo "$GITHUB_REPOSITORY" \
+            --draft=false --prerelease=false --notes-file "$RUNNER_TEMP/release-notes.md"
       - name: Delete older published releases
         run: node scripts/prune-releases.mjs "$GITHUB_REPOSITORY" "$TAG_NAME" --apply
