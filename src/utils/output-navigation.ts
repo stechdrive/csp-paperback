@@ -36,7 +36,7 @@ export function collectOutputNavigation(
   projectSettings: ProjectSettings,
   outputConfig: OutputConfig,
   virtualSets: VirtualSet[],
-  options: { includeHidden?: boolean; includeExcluded?: boolean; outputAliases?: ReadonlyMap<string, string> } = {},
+  options: { includeHidden?: boolean; includeExcluded?: boolean; outputAliases?: ReadonlyMap<string, string>; excludedCellIds?: ReadonlySet<string> } = {},
 ): OutputNavigation {
   const rowPositions = new Map<string, number>()
   const ancestors = new Map<string, string[]>()

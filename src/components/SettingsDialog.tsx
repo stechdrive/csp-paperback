@@ -13,6 +13,7 @@ import { APP_THEME_SWATCHES, type AppTheme } from '../theme'
 import { pickSettingsJsonFile, saveTextFile, supportsNativeOpenDialog } from '../platform/files'
 import styles from './SettingsDialog.module.css'
 import { getMaxSequenceNumberForAnimationFolders } from '../engine/cell-extractor'
+import { timelineOutputPolicy } from '../utils/timeline-output'
 import {
   makeCellFileName,
   makeCellLabel,
@@ -56,6 +57,7 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
   const projectSettings = useAppStore(s => s.projectSettings)
   const outputConfig = useAppStore(s => s.outputConfig)
   const layerTree = useAppStore(selectLayerTreeWithVisibility)
+  const timelinePolicy = useAppStore(timelineOutputPolicy)
   const activeTheme = useAppStore(s => s.activeTheme)
   const directoryExportMode = useAppStore(s => s.directoryExportMode)
   const setDirectoryExportMode = useAppStore(s => s.setDirectoryExportMode)
@@ -96,7 +98,7 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
   const errors = selectProcessTableErrors(useAppStore.getState())
   const sampleDigits = resolveSequenceDigits(
     projectSettings.sequenceDigitMode ?? 'auto',
-    getMaxSequenceNumberForAnimationFolders(layerTree),
+    getMaxSequenceNumberForAnimationFolders(layerTree, timelinePolicy.excludedCellIds),
   )
   const sampleCellLabel = makeCellLabel(
     projectSettings.cellNamingMode,

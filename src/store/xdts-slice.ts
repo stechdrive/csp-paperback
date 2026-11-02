@@ -3,7 +3,7 @@ import type { CspLayer, TimelineData, TimelineTrack } from '../types'
 import { parseXdts } from '../utils/xdts-parser'
 import { detectAnimationFoldersByXdts, clearXdtsAnimFolders } from '../engine/tree-builder'
 import { sanitizeManualAnimFolderIds } from '../utils/manual-animation-folder'
-import { addXdtsAnimationFolderShowOverrides, addXdtsUnusedCellHiddenOverrides } from '../utils/default-visibility'
+import { addXdtsUnusedCellHiddenOverrides } from '../utils/default-visibility'
 import type { AppStore } from './index'
 import { normalizePreviewSelection } from './selection-validity'
 
@@ -49,9 +49,7 @@ export const createXdtsSlice: StateCreator<AppStore, [], [], XdtsSlice> = (set, 
     clearXdtsAnimFolders(layerTree)
     const assignResult = detectAnimationFoldersByXdts(layerTree, xdts)
     const manualAnimFolderIds = sanitizeManualAnimFolderIds(layerTree, get().manualAnimFolderIds)
-    const visibilityOverrides = get().projectSettings.sharedCutMode
-      ? addXdtsAnimationFolderShowOverrides(layerTree, new Map(get().visibilityOverrides))
-      : addXdtsUnusedCellHiddenOverrides(
+    const visibilityOverrides = addXdtsUnusedCellHiddenOverrides(
         layerTree,
         xdts,
         new Map(get().visibilityOverrides),

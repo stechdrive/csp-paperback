@@ -53,7 +53,7 @@ export const ja = {
     processSuffixAfterCell: '後ろ',
     processSuffixBeforeCell: '前',
     sharedCut: '兼用カット',
-    sharedCutHint: 'ON: タイムライン未使用セルも含め、表示されているセルを書き出します。\nOFF: 選択中のタイムラインで未使用のセルは初期OFFになります。\n複数のタイムラインがあるCLIPを読み込むと、自動でONになります。読み込み後は自由に切り替えられます。',
+    sharedCutHint: '複数のタイムラインがあるCLIPでのみ適用します。\nON: 全タイムラインのいずれかで使用されているセルが対象です。\nOFF、またはタイムラインが1本: 選択中のタイムラインの使用セルが対象です。未使用セルは目がONでも出力一覧に含みません。\n複数のタイムラインがあるCLIPの読み込み時は自動でONになります。シート合わせの連番はファイル内のタイムライン順で決め、先に決まった番号を保持します。',
     switchOn: 'ON',
     switchOff: 'OFF',
     quality: '品質',

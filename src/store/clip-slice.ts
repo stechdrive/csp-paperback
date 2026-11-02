@@ -9,6 +9,7 @@ import { resolveClipDiagnostics } from '../utils/clip/rendering-status'
 import { clearProjectSelectorCaches } from './selectors'
 import { outputRenderQueue } from '../utils/output-render-queue'
 import { disposeMaterials } from '../engine/material-cache'
+import { isSharedCutMode, timelineOutputPolicy } from '../utils/timeline-output'
 
 export interface ClipPsdSource { psd: Psd; name: string; sourceDirectory?: string }
 export interface ClipSlice {
@@ -58,12 +59,12 @@ export const createClipSlice: StateCreator<AppStore, [], [], ClipSlice> = (set, 
       // Canvases own the decoded pixels now. Retain only identities and metadata for later pairing.
       clipDocument: { ...clip, layers: metadataOnly(clip.layers) }, clipFileName: name, clipSourceDirectory: sourceDirectory ?? null,
       clipTimelineId: timeline?.id ?? null,
-      clipDiagnostics: [...resolveClipDiagnostics(clip, tree, !!psd), ...(timeline?.diagnostics ?? [])],
+      clipDiagnostics: [...resolveClipDiagnostics(clip, tree, !!psd), ...timelineOutputPolicy({ clipDocument: clip, clipTimelineId: timeline?.id, projectSettings }).diagnostics],
       rawPsd: source, psdFileName: psd?.name ?? null, psdSourceDirectory: psd?.sourceDirectory ?? null,
       layerTree: tree, docWidth: clip.width, docHeight: clip.height, docDpiX: clip.dpi, docDpiY: clip.dpi,
       // Shared timeline representation. xdtsFileName remains null for a native timeline.
       timelineData: timeline?.data ?? null,
-      visibilityOverrides: buildDefaultVisibilityOverrides(tree, timeline?.data, !!projectSettings.sharedCutMode,
+      visibilityOverrides: buildDefaultVisibilityOverrides(tree, timeline?.data, isSharedCutMode({ clipDocument: clip, projectSettings }),
         projectSettings.showIndividualFoldersOnLoad !== false),
       expandedFolders: new Set(all.filter(l => l.isFolder && l.expanded).map(l => l.id)),
       focusedAnimFolderId: all.find(l => l.isAnimationFolder)?.id ?? null,
@@ -82,7 +83,7 @@ export const createClipSlice: StateCreator<AppStore, [], [], ClipSlice> = (set, 
     // Stable native IDs preserve marks, virtual sets, selections and process settings.
     // Render attributes and masks come entirely from the corresponding native PSD.
     set({ rawPsd: psd, psdFileName: name, psdSourceDirectory: sourceDirectory ?? null, layerTree: tree,
-      clipDiagnostics: [...resolveClipDiagnostics(clip, tree, true), ...(timeline?.diagnostics ?? [])],
+      clipDiagnostics: [...resolveClipDiagnostics(clip, tree, true), ...timelineOutputPolicy(state).diagnostics],
       _past: [], _future: [], canUndo: false, canRedo: false })
   },
 
@@ -98,8 +99,8 @@ export const createClipSlice: StateCreator<AppStore, [], [], ClipSlice> = (set, 
     }))
     const tree = bind(state.layerTree)
     set({ layerTree: tree, timelineData: timeline.data, clipTimelineId: id,
-      clipDiagnostics: [...resolveClipDiagnostics(clip, tree, !!state.psdFileName), ...timeline.diagnostics],
-      visibilityOverrides: retainManualVisibility(buildDefaultVisibilityOverrides(tree, timeline.data, !!state.projectSettings.sharedCutMode,
+      clipDiagnostics: [...resolveClipDiagnostics(clip, tree, !!state.psdFileName), ...timelineOutputPolicy({ ...state, clipTimelineId: id }).diagnostics],
+      visibilityOverrides: retainManualVisibility(buildDefaultVisibilityOverrides(tree, timeline.data, isSharedCutMode(state),
         state.projectSettings.showIndividualFoldersOnLoad !== false), state.visibilityOverrides, state.manualVisibilityIds),
       selectedCells: new Map(), currentFrame: 0,
       _past: [], _future: [], canUndo: false, canRedo: false })

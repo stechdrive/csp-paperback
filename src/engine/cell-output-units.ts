@@ -34,7 +34,7 @@ export function buildFolderNameToSuffixMap(
 export function collectCellOutputUnits(
   animFolder: CspLayer,
   processTable: ProjectSettings['processTable'],
-  options: { includeHidden?: boolean } = {},
+  options: { includeHidden?: boolean; excludedCellIds?: ReadonlySet<string> } = {},
 ): CellOutputUnit[] {
   if (!animFolder.isAnimationFolder || isAutomaticOutputSuppressed(animFolder)) return []
 
@@ -43,6 +43,7 @@ export function collectCellOutputUnits(
   const explicitlyIncludedBranch = animFolder.individualOutputExcludedBy !== undefined
 
   for (const [cellIndex, cell] of animFolder.children.entries()) {
+    if (options.excludedCellIds?.has(cell.id)) continue
     if (isMediaLayer(cell)) continue
     if (!options.includeHidden && (cell.hidden || cell.uiHidden)) continue
     if (!explicitlyIncludedBranch && isAutomaticOutputSuppressed(cell)) continue

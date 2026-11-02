@@ -22,6 +22,7 @@ import { collectAnimFolderAncestorIds } from './tree-builder'
 import { applyLayerMask, compositeGroup, compositeStack, createCanvas } from './compositor'
 import { buildMemberFlatsWithOverride } from '../utils/virtual-set-utils'
 import { resolveVirtualSetLayers } from '../utils/virtual-set-tree'
+import { outputTimelineTrack, timelineCellIds, type TimelineOutputPolicy } from '../utils/timeline-output'
 import { buildAssignmentFromDetectedFolders } from './anim-folder-assignment'
 import { computeDisplayNames } from './anim-folder-display-name'
 import { isAutoMarkedContainerOutputSuppressed } from '../utils/auto-marked-container'
@@ -134,6 +135,7 @@ function planCells(
   sequenceDigits?: number,
   sheetSequenceNumbers?: Map<string, number>,
   parentProcessSuffix?: string,
+  excludedCellIds?: ReadonlySet<string>,
 ): PlannedOutputEntry[] {
   if (!animFolder.isAnimationFolder) return []
 
@@ -141,7 +143,7 @@ function planCells(
   // (同名 anim folder の (n) 番号付けは呼び出し側で完了済み)
   const displayName = hierarchyFolder ?? animFolder.originalName.trim()
   const folderName = displayName
-  const visibleChildren = animFolder.children.filter(c => !isMediaLayer(c) && !c.hidden && !c.uiHidden)
+  const visibleChildren = animFolder.children.filter(c => !isMediaLayer(c) && !c.hidden && !c.uiHidden && !excludedCellIds?.has(c.id))
   const namingMode = projectSettings.cellNamingMode ?? DEFAULT_PROJECT_SETTINGS.cellNamingMode
   const entries: PlannedOutputEntry[] = []
 
@@ -167,7 +169,7 @@ function planCells(
   const visibleCellIndices = new Map(visibleChildren.map((cell, index) => [cell.id, index]))
   // Hidden bases remain structural clipping boundaries in the effective tree.
   const completeUnits = collectCellOutputUnits(animFolder, projectSettings.processTable, { includeHidden: true })
-  for (const unit of collectCellOutputUnits(animFolder, projectSettings.processTable)) {
+  for (const unit of collectCellOutputUnits(animFolder, projectSettings.processTable, { excludedCellIds })) {
     const { cell } = unit
     const cellIdx = visibleCellIndices.get(cell.id)!
     // ファイル名プレフィックスはフォルダ名と同じ displayName を使う(Q3: 統一)
@@ -214,7 +216,7 @@ function planCells(
   return entries
 }
 
-export function getMaxSequenceNumberForAnimationFolders(tree: CspLayer[]): number {
+export function getMaxSequenceNumberForAnimationFolders(tree: CspLayer[], excludedCellIds?: ReadonlySet<string>): number {
   let maxCellCount = 1
 
   function walk(layers: CspLayer[]): void {
@@ -223,7 +225,7 @@ export function getMaxSequenceNumberForAnimationFolders(tree: CspLayer[]): numbe
 
       if (layer.isAnimationFolder) {
         if (layer.animationFolder?.detectedBy !== 'autoProcess') {
-          const visibleCellCount = layer.children.filter(c => !isMediaLayer(c) && !c.hidden && !c.uiHidden).length
+          const visibleCellCount = layer.children.filter(c => !isMediaLayer(c) && !c.hidden && !c.uiHidden && !excludedCellIds?.has(c.id)).length
           maxCellCount = Math.max(maxCellCount, visibleCellCount)
         }
         continue
@@ -237,12 +239,6 @@ export function getMaxSequenceNumberForAnimationFolders(tree: CspLayer[]): numbe
   return maxCellCount
 }
 
-interface SheetSequenceCell {
-  cellId: string
-  firstFrame: number
-  order: number
-}
-
 export interface SheetSequenceNumberPlan {
   numbers: Map<string, number>
   maxSequenceNumber: number
@@ -252,54 +248,48 @@ export function buildSheetSequenceNumbers(
   tree: CspLayer[],
   timelineData: TimelineData | null | undefined,
   displayNameMap: Map<string, string>,
+  policy?: TimelineOutputPolicy,
 ): SheetSequenceNumberPlan {
   const numbers = new Map<string, number>()
-  if (!timelineData) return { numbers, maxSequenceNumber: 1 }
-
-  const tracksByNo = new Map(timelineData.tracks.map(track => [track.trackNo, track]))
-  const groups = new Map<string, SheetSequenceCell[]>()
-  let order = 0
-
-  function walk(layers: CspLayer[]): void {
-    for (const layer of layers) {
-      if (
-        layer.isAnimationFolder &&
-        (layer.animationFolder?.detectedBy === 'xdts' || layer.animationFolder?.detectedBy === 'clip') &&
-        typeof layer.animationFolder.trackNo === 'number'
-      ) {
-        const track = tracksByNo.get(layer.animationFolder.trackNo)
-        const displayName = displayNameMap.get(layer.id) ?? layer.originalName.trim()
-        if (track) {
-          const visibleChildren = layer.children.filter(c => !isMediaLayer(c) && !c.hidden && !c.uiHidden)
-          for (const cell of visibleChildren) {
-            const firstFrame = findFirstStartFrame(track, cell.originalName)
-            if (firstFrame === null) continue
-
-            const group = groups.get(displayName) ?? []
-            group.push({ cellId: cell.id, firstFrame, order: order++ })
-            groups.set(displayName, group)
+  const sources = policy?.timelines.length
+    ? policy.timelines.map(timeline => ({ data: timeline.data, timeline }))
+    : timelineData ? [{ data: timelineData, timeline: undefined }] : []
+  const lastNumber = new Map<string, number>()
+  let maxSequenceNumber = 1
+  for (const { data, timeline } of sources) {
+    const groups = new Map<string, Map<number, string[]>>()
+    const walk = (layers: CspLayer[]) => {
+      for (const layer of layers) {
+        if (layer.isAnimationFolder && ['xdts', 'clip'].includes(layer.animationFolder?.detectedBy ?? '')) {
+          const track = outputTimelineTrack(layer, data, timeline)
+          if (track) {
+            const reachable = timelineCellIds(layer, track)
+            const name = displayNameMap.get(layer.id) ?? layer.originalName.trim()
+            for (const cell of layer.children) {
+              if (isMediaLayer(cell) || cell.hidden || cell.uiHidden || policy?.excludedCellIds.has(cell.id) || numbers.has(cell.id)) continue
+              // Preserve legacy XDTS naming; native duplicate names follow cel selection.
+              if (timeline && !reachable.has(cell.id)) continue
+              const firstFrame = findFirstStartFrame(track, cell.originalName)
+              if (firstFrame === null) continue
+              const frames = groups.get(name) ?? new Map<number, string[]>()
+              frames.set(firstFrame, [...(frames.get(firstFrame) ?? []), cell.id])
+              groups.set(name, frames)
+            }
           }
         }
+        walk(layer.children)
       }
-
-      if (layer.children.length > 0) walk(layer.children)
     }
-  }
-
-  walk(tree)
-
-  let maxSequenceNumber = 1
-  for (const cells of groups.values()) {
-    const frames = [...new Set(cells.map(cell => cell.firstFrame))].sort((a, b) => a - b)
-    maxSequenceNumber = Math.max(maxSequenceNumber, frames.length)
-    const frameToNumber = new Map<number, number>()
-    for (let i = 0; i < frames.length; i++) {
-      frameToNumber.set(frames[i], i + 1)
-    }
-
-    for (const cell of cells.sort((a, b) => a.order - b.order)) {
-      const number = frameToNumber.get(cell.firstFrame)
-      if (number) numbers.set(cell.cellId, number)
+    walk(tree)
+    // First timeline wins. Later timelines append only previously unseen cels.
+    for (const [name, frames] of groups) {
+      let next = lastNumber.get(name) ?? 0
+      for (const [, ids] of [...frames].sort(([a], [b]) => a - b)) {
+        next++
+        for (const id of ids) numbers.set(id, next)
+      }
+      lastNumber.set(name, next)
+      maxSequenceNumber = Math.max(maxSequenceNumber, next)
     }
   }
 
@@ -316,10 +306,11 @@ export function buildSequenceNamingPlan(
   projectSettings: ProjectSettings,
   timelineData: TimelineData | null | undefined,
   displayNameMap: Map<string, string>,
+  policy?: TimelineOutputPolicy,
 ): SequenceNamingPlan {
-  const maxFolderSequenceNumber = getMaxSequenceNumberForAnimationFolders(tree)
+  const maxFolderSequenceNumber = getMaxSequenceNumberForAnimationFolders(tree, policy?.excludedCellIds)
   const sheetPlan = projectSettings.cellNamingMode === 'sheet-sequence'
-    ? buildSheetSequenceNumbers(tree, timelineData, displayNameMap)
+    ? buildSheetSequenceNumbers(tree, timelineData, displayNameMap, policy)
     : undefined
   const maxSequenceNumber = Math.max(
     maxFolderSequenceNumber,
@@ -927,6 +918,7 @@ export function planAllEntries(
   processSuffixPosition: ProcessSuffixPosition = 'after-cell',
   timelineData?: TimelineData | null,
   outputAliases?: ReadonlyMap<string, string>,
+  timelinePolicy?: TimelineOutputPolicy,
 ): PlannedOutputEntry[] {
   const entries: PlannedOutputEntry[] = []
 
@@ -953,6 +945,7 @@ export function planAllEntries(
     projectSettings,
     timelineData,
     sequenceGroupNames,
+    timelinePolicy,
   )
 
   /**
@@ -994,6 +987,7 @@ export function planAllEntries(
           sequenceNamingPlan.digits,
           sequenceNamingPlan.sheetSequenceNumbers,
           animParentSuffixMap.get(layer.id),
+          timelinePolicy?.excludedCellIds,
         )
         entries.push(...cellEntries)
         continue

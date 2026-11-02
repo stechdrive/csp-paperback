@@ -456,7 +456,7 @@ test('非表示工程の素材を選んでも出力は変わらず、再表示�
     await selected.locator('[data-layer-name]').click()
     await expect(selected).toHaveClass(/_rowSelected_/)
     await expect(previewNames(page)).toHaveCount(0)
-    await expect(page.getByTestId('output-view')).toContainText('現在の表示・書き出し設定では出力されません')
+    await expect(page.getByTestId('output-view')).toContainText('現在のタイムライン・表示・書き出し設定では出力されません')
     await visibility(process).click()
     await expect(previewNames(page)).toHaveText(['B_1_s.jpg'])
     await expect(file).toHaveAttribute('data-active-output', 'true')

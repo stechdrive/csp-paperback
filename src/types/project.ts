@@ -36,7 +36,7 @@ export interface ProjectSettings {
   animationSequenceSeparator?: AnimationSequenceSeparator
   /** セル名モードのXDTS検出フォルダで、ファイル名へフォルダ名を付けるか */
   includeXdtsTrackPrefixInCellName?: boolean
-  /** 兼用カット: XDTS未使用セルを初期OFFにせず、XDTS検出アニメフォルダ自体を表示ONにする */
+  /** 複数タイムラインのCLIPだけに適用し、全タイムラインの使用セルを出力対象とする */
   sharedCutMode?: boolean
   /** 個別書き出し対象の非表示フォルダを、読み込み時に表示ONにする */
   showIndividualFoldersOnLoad?: boolean

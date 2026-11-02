@@ -7,6 +7,7 @@ import { UnmatchedTracksWarning } from './UnmatchedTracksWarning'
 import { resolveCellPrefixSeparator, resolveIncludeXdtsTrackPrefixInCellName } from '../types'
 import { OutputTargetControls } from './OutputTargetControls'
 import { getMaxSequenceNumberForAnimationFolders } from '../engine/cell-extractor'
+import { timelineOutputPolicy } from '../utils/timeline-output'
 import type { OutputConfigTarget } from '../store/output-slice'
 import { normalizeProcessFolderName } from '../utils/process-folder'
 import { resolveProcessBorderColor } from '../utils/process-color'
@@ -56,6 +57,7 @@ export function ExportSettings({ configTarget = 'current' }: { configTarget?: Ou
   const outputConfig = useAppStore(s => configTarget === 'saved' ? s.savedOutputConfig : s.outputConfig)
   const projectSettings = useAppStore(s => s.projectSettings)
   const layerTree = useAppStore(selectLayerTreeWithVisibility)
+  const timelinePolicy = useAppStore(timelineOutputPolicy)
   const unmatchedTracks = useAppStore(s => s.unmatchedTracks)
   const setFormat = useAppStore(s => s.setFormat)
   const setBackground = useAppStore(s => s.setBackground)
@@ -88,7 +90,7 @@ export function ExportSettings({ configTarget = 'current' }: { configTarget?: Ou
     }
   }, [])
 
-  const maxSequenceNumber = useMemo(() => getMaxSequenceNumberForAnimationFolders(layerTree), [layerTree])
+  const maxSequenceNumber = useMemo(() => getMaxSequenceNumberForAnimationFolders(layerTree, timelinePolicy.excludedCellIds), [layerTree, timelinePolicy])
   const isSequenceMode = isSequenceNamingMode(projectSettings.cellNamingMode)
   const isCellNameMode = projectSettings.cellNamingMode === 'cellname'
   const separator = resolveCellPrefixSeparator(projectSettings)

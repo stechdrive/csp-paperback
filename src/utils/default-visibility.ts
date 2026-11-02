@@ -1,5 +1,6 @@
-import type { CspLayer, TimelineData, TimelineTrack } from '../types'
+import type { CspLayer, TimelineData } from '../types'
 import { isAutomaticOutputSuppressed } from './output-target'
+import { timelineCellIds } from './timeline-output'
 
 /**
  * PSD 読み込み時・表示状態リセット時に使うアプリ側の初期 visibility override。
@@ -48,7 +49,7 @@ export function addXdtsUnusedCellHiddenOverrides(
         const trackNo = layer.animationFolder.trackNo
         const track = typeof trackNo === 'number' ? tracksByNo.get(trackNo) : undefined
         if (track) {
-          const usedCellIds = collectTimelineReachableCellIds(layer, track)
+          const usedCellIds = timelineCellIds(layer, track)
           for (const child of layer.children) {
             if (usedCellIds.has(child.id)) continue
             if (overwrite || !overrides.has(child.id)) {
@@ -95,30 +96,6 @@ export function addXdtsAnimationFolderShowOverrides(
     if (layer.children.length > 0) addXdtsAnimationFolderShowOverrides(layer.children, overrides)
   }
   return overrides
-}
-
-function collectTimelineReachableCellIds(
-  animFolder: CspLayer,
-  track: TimelineTrack,
-): Set<string> {
-  const usedNames = new Set(track.cellNames)
-  for (const frame of track.frames) {
-    if (frame.cellName !== null) usedNames.add(frame.cellName)
-  }
-
-  const usedIds = new Set<string>()
-  for (const cellName of usedNames) {
-    const idx = findBottomFirstCellIndex(animFolder, cellName)
-    if (idx >= 0) usedIds.add(animFolder.children[idx].id)
-  }
-  return usedIds
-}
-
-function findBottomFirstCellIndex(animFolder: CspLayer, cellName: string): number {
-  for (let i = animFolder.children.length - 1; i >= 0; i--) {
-    if (animFolder.children[i].originalName === cellName) return i
-  }
-  return -1
 }
 
 /** Recompute timeline defaults without discarding deliberate eye-button choices. */

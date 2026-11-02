@@ -1,4 +1,6 @@
 import type { StateCreator } from 'zustand'
+import { resolveClipDiagnostics } from '../utils/clip/rendering-status'
+import { timelineOutputPolicy } from '../utils/timeline-output'
 import type { SingleMark, VirtualSet, ProjectSettings, OutputConfig, CspLayer, BlendMode } from '../types'
 import type { AppStore } from './index'
 import { resolveVirtualSetLayers } from '../utils/virtual-set-tree'
@@ -162,7 +164,11 @@ function restoreSnapshot(
     selectedVsMemberId: selectedVsMemberSetId ? current.selectedVsMemberId : null,
     ...historyState,
   }
-  set({ ...nextState, ...normalizePreviewSelection({ ...current, ...nextState }) })
+  const restored = { ...current, ...nextState }
+  if (restored.clipDocument) nextState.clipDiagnostics = [
+    ...resolveClipDiagnostics(restored.clipDocument, restored.layerTree, !!restored.psdFileName), ...timelineOutputPolicy(restored).diagnostics,
+  ]
+  set({ ...nextState, ...normalizePreviewSelection(restored) })
 }
 
 export const createHistorySlice: StateCreator<AppStore, [], [], HistorySlice> = (set, get) => ({

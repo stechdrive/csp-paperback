@@ -3,6 +3,7 @@ import type { CspLayer } from '../types'
 import type { TimelineTrack } from '../types/timeline'
 import { findFirstFrameOfCell, resolveCellsAtFrameByTrackNo } from '../utils/xdts-parser'
 import { buildDefaultVisibilityOverrides } from '../utils/default-visibility'
+import { isSharedCutMode } from '../utils/timeline-output'
 import { DEFAULT_MOBILE_UI_SCALE, clampMobileUiScale } from '../utils/mobile-ui-scale'
 import { selectLayerTreeWithVisibility, selectOutputNavigation, selectOutputFiles, selectDraftOutputs } from './selectors'
 import { collectOutputRevealFolders, type OutputNavigationEntry } from '../utils/output-navigation'
@@ -396,7 +397,7 @@ export const createUiSlice: StateCreator<AppStore, [], [], UiSlice> = (set, get)
   resetVisibility: () => {
     get().pushHistory()
     const { layerTree, timelineData, projectSettings } = get()
-    set({ visibilityOverrides: buildDefaultVisibilityOverrides(layerTree, timelineData, !!projectSettings.sharedCutMode,
+    set({ visibilityOverrides: buildDefaultVisibilityOverrides(layerTree, timelineData, isSharedCutMode(get()),
       projectSettings.showIndividualFoldersOnLoad !== false), manualVisibilityIds: new Set() })
   },
 })

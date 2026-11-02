@@ -15,6 +15,8 @@ import { buildDefaultVisibilityOverrides, retainManualVisibility } from '../util
 import { normalizeProcessTable } from '../utils/process-table'
 import type { AppStore } from './index'
 import { MAX_SETTINGS_JSON_LENGTH, validateProjectSettings } from '../utils/settings-validation'
+import { isSharedCutMode, timelineOutputPolicy } from '../utils/timeline-output'
+import { resolveClipDiagnostics } from '../utils/clip/rendering-status'
 
 export interface ProjectSlice {
   projectSettings: ProjectSettings
@@ -32,6 +34,18 @@ export interface ProjectSlice {
   updateArchivePatterns: (patterns: string[]) => void
   importSettings: (json: string) => void
   exportSettings: () => string
+}
+
+function applyTimelineSettings(state: AppStore, projectSettings: ProjectSettings): Partial<AppStore> {
+  const next = { ...state, projectSettings }
+  return {
+    projectSettings,
+    visibilityOverrides: retainManualVisibility(buildDefaultVisibilityOverrides(state.layerTree, state.timelineData,
+      isSharedCutMode(next), projectSettings.showIndividualFoldersOnLoad !== false), state.visibilityOverrides, state.manualVisibilityIds),
+    ...(state.clipDocument ? { clipDiagnostics: [
+      ...resolveClipDiagnostics(state.clipDocument, state.layerTree, !!state.psdFileName), ...timelineOutputPolicy(next).diagnostics,
+    ] } : {}),
+  }
 }
 
 export const createProjectSlice: StateCreator<AppStore, [], [], ProjectSlice> = (set, get) => ({
@@ -97,19 +111,11 @@ export const createProjectSlice: StateCreator<AppStore, [], [], ProjectSlice> = 
   },
 
   setSharedCutMode: (enabled) => {
-    const { projectSettings, layerTree, timelineData } = get()
+    const { projectSettings } = get()
     if (!!projectSettings.sharedCutMode === enabled) return
 
     get().pushHistory()
-    const nextSettings = { ...projectSettings, sharedCutMode: enabled }
-    const nextState: Partial<AppStore> = { projectSettings: nextSettings }
-
-    if (layerTree.length > 0) {
-      nextState.visibilityOverrides = retainManualVisibility(buildDefaultVisibilityOverrides(layerTree, timelineData, enabled,
-        projectSettings.showIndividualFoldersOnLoad !== false), get().visibilityOverrides, get().manualVisibilityIds)
-    }
-
-    set(nextState as AppStore)
+    set(applyTimelineSettings(get(), { ...projectSettings, sharedCutMode: enabled }))
   },
 
   updateAutoMarkFolderNames: (names) => {
@@ -131,7 +137,7 @@ export const createProjectSlice: StateCreator<AppStore, [], [], ProjectSlice> = 
     if (json.length > MAX_SETTINGS_JSON_LENGTH) throw new Error('設定JSONが大きすぎます（1 Mi文字まで）')
     const projectSettings = validateProjectSettings(JSON.parse(json), true)
     get().pushHistory()
-    set({ projectSettings })
+    set(applyTimelineSettings(get(), projectSettings))
   },
 
   exportSettings: () => {

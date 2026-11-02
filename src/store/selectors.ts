@@ -10,6 +10,7 @@ import { buildOutputPlan, type OutputFile } from '../utils/output-plan'
 import { isOutputTargetExcluded } from '../utils/output-target'
 import { buildDraftOutputs } from '../utils/draft-output'
 import { collectOutputAliasTargets } from '../utils/output-alias'
+import { timelineOutputPolicy, type TimelineOutputPolicy } from '../utils/timeline-output'
 
 const aliasTargets = new WeakMap<CspLayer[], Map<string, CspLayer>>()
 export function selectOutputAliasTargets(state: AppStore): Map<string, CspLayer> {
@@ -56,7 +57,7 @@ let outputPlanCache: {
 export function selectOutputFiles(state: AppStore): OutputFile[] {
   const tree = selectLayerTreeWithVisibility(state)
   const inputs = [tree, state.projectSettings, state.outputConfig, state.virtualSets,
-    state.timelineData, state.docWidth, state.docHeight, state.outputAliases]
+    state.timelineData, state.docWidth, state.docHeight, state.outputAliases, timelineOutputPolicy(state)]
   if (outputPlanCache && inputs.every((value, index) => value === outputPlanCache!.inputs[index])) {
     return outputPlanCache.result
   }
@@ -71,18 +72,20 @@ let outputNavigationCache: {
   outputConfig: AppStore['outputConfig']
   virtualSets: AppStore['virtualSets']
   outputAliases: AppStore['outputAliases']
+  policy: TimelineOutputPolicy
   result: OutputNavigation
 } | null = null
 
-let candidateCache: { tree: CspLayer[]; settings: AppStore['projectSettings']; virtualSets: AppStore['virtualSets']; aliases: AppStore['outputAliases']; result: OutputNavigation['entries'] } | null = null
+let candidateCache: { tree: CspLayer[]; settings: AppStore['projectSettings']; virtualSets: AppStore['virtualSets']; aliases: AppStore['outputAliases']; policy: TimelineOutputPolicy; result: OutputNavigation['entries'] } | null = null
 
 /** Keep detected choices present when an eye or output checkbox is turned off. */
 export function selectOutputCandidates(state: AppStore): OutputNavigation['entries'] {
   const tree = selectLayerTreeWithVisibility(state)
-  if (candidateCache?.tree === tree && candidateCache.settings === state.projectSettings && candidateCache.virtualSets === state.virtualSets && candidateCache.aliases === state.outputAliases) return candidateCache.result
+  const policy = timelineOutputPolicy(state)
+  if (candidateCache?.tree === tree && candidateCache.settings === state.projectSettings && candidateCache.virtualSets === state.virtualSets && candidateCache.aliases === state.outputAliases && candidateCache.policy === policy) return candidateCache.result
   const result = collectOutputNavigation(tree, state.projectSettings, state.outputConfig, state.virtualSets,
-    { includeHidden: true, includeExcluded: true, outputAliases: state.outputAliases }).entries
-  candidateCache = { tree, settings: state.projectSettings, virtualSets: state.virtualSets, aliases: state.outputAliases, result }
+    { includeHidden: true, includeExcluded: true, outputAliases: state.outputAliases, excludedCellIds: policy.excludedCellIds }).entries
+  candidateCache = { tree, settings: state.projectSettings, virtualSets: state.virtualSets, aliases: state.outputAliases, policy, result }
   return result
 }
 
@@ -110,12 +113,13 @@ export function selectOutputRowStatuses(state: AppStore): Map<string, OutputRowS
 export function selectOutputNavigation(state: AppStore): OutputNavigation {
   const tree = selectLayerTreeWithVisibility(state)
   const { projectSettings, outputConfig, virtualSets, outputAliases } = state
+  const policy = timelineOutputPolicy(state)
   if (outputNavigationCache?.tree === tree && outputNavigationCache.projectSettings === projectSettings &&
-    outputNavigationCache.outputConfig === outputConfig && outputNavigationCache.virtualSets === virtualSets && outputNavigationCache.outputAliases === outputAliases) {
+    outputNavigationCache.outputConfig === outputConfig && outputNavigationCache.virtualSets === virtualSets && outputNavigationCache.outputAliases === outputAliases && outputNavigationCache.policy === policy) {
     return outputNavigationCache.result
   }
-  const result = collectOutputNavigation(tree, projectSettings, outputConfig, virtualSets, { outputAliases })
-  outputNavigationCache = { tree, projectSettings, outputConfig, virtualSets, outputAliases, result }
+  const result = collectOutputNavigation(tree, projectSettings, outputConfig, virtualSets, { outputAliases, excludedCellIds: policy.excludedCellIds })
+  outputNavigationCache = { tree, projectSettings, outputConfig, virtualSets, outputAliases, policy, result }
   return result
 }
 
