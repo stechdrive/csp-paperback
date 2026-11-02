@@ -86,7 +86,7 @@ jobs:
           app="$mount_dir/CSP Paperback.app"
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app/Contents/Info.plist")" = "${TAG_NAME#v}"
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Contents/Info.plist")" = "com.stechdrive.csp-paperback"
-          lipo -verify_arch arm64 "$app/Contents/MacOS/csp-paperback"
+          lipo "$app/Contents/MacOS/csp-paperback" -verify_arch arm64
           codesign --force --sign - --options runtime --timestamp=none "$app"
           codesign --verify --deep --strict --verbose=2 "$app"
           test -s "$app/Contents/_CodeSignature/CodeResources"
