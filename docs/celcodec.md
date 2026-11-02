@@ -41,15 +41,11 @@ JPEG、PSD出力、およびPSDを画像元にする合成は既存のCanvas・�
 
 ## 同じ作業窓口での開発
 
-両リポジトリを同じ作業環境で開き、Git履歴は分ける。ライブラリ側で次を実行する。
+共通の接続・検証・並行作業の手順は、celcodec側の `docs/linked-development.md` を正本とする。この文書はPaperbackが固定するパッケージとアダプターの契約を担当する。共通手順をここへ複製しない。
 
-```sh
-npm run consumer:setup -- <paperback-repository>
-npm run consumer:status
-npm run consumer:sync
-```
+新しい作業では両checkoutの開発指示・HEAD・branch・statusを読み、対象リポジトリの規則を適用する。Paperback単独の改修は現在の固定tarballで検証し、ライブラリのbuild・全回帰・consumer同期は不要。文書だけの変更では参照と内容の整合性を確認し、アプリのbuildや版同期も行わない。
 
-ignoredのローカル設定に接続先を保持する。`sync`はライブラリをbuild/packし、内容ハッシュ付きのtarballをこのリポジトリへ導入する。内部ソースへのimportやsymlinkを使わず、公開APIの実物で接続する。ライブラリのHEAD・ソースハッシュ・tarball SHA、アプリ側HEADをローカルの検証記録へ残す。両リポの変更・検証・コミットを個別に確認し、不要になった古いtarballだけを削除する。公開操作は含めない。
+途中でライブラリの変更が必要になった場合は、原因と契約の修正を同じ作業単位で追い、共通手順で検証したパッケージへ更新してから利用側を検証する。変更があるリポジトリだけを個別にコミットし、パッケージ更新時はこの文書の固定情報、依存tarball、lockも合わせる。文書だけでライブラリのHEADが進んでも、上記の提供側コミットは実際に導入したパッケージの出自として保持する。
 
 ## 検証の範囲
 
