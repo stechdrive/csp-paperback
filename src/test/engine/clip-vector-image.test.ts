@@ -47,14 +47,15 @@ describe('image brush transforms', () => {
     expect(reports).toHaveLength(7)
     expect(reports.every(m => m.includes('反転'))).toBe(true)
   })
-  it('preserves the previous sub-2px footprint and AA instead of losing thin marks', () => {
+  it('retains tiny marks without stretching rectangular tip data into a square', () => {
     const b = brushes(), st = readVectorStrokes(vectorBytes({ points: [[16, 16]], diameter: 1.75 }))
     const p = renderVectors(st, b, 32, 32)
-    // The old square mapping remains for unverified minification of extremely fine tips.
+    expect(p.rgba.some((v, i) => i % 4 === 3 && v > 0)).toBe(true)
+    // Independent native minimum-footprint captures in celcodec supersede the square fallback.
     const square = { width: 6, height: 6, alpha: new Uint8Array(36) }
     for (let y = 0; y < 6; y++) for (let x = 0; x < 6; x++) square.alpha[y * 6 + x] = tip().alpha[Math.floor(y / 3) * 3 + Math.floor(x / 2)]
     b.patterns.set(2, square)
-    expect(renderVectors(st, b, 32, 32)).toEqual(p)
+    expect(renderVectors(st, b, 32, 32)).not.toEqual(p)
   })
 })
 
