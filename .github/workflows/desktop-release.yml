@@ -82,7 +82,7 @@ jobs:
       - name: Publish audited release
         shell: bash
         run: |
-          published_at="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$TAG_NAME" --jq '.published_at // empty')"
+          published_at="$(gh release view "$TAG_NAME" --repo "$GITHUB_REPOSITORY" --json publishedAt --jq '.publishedAt // empty')"
           node scripts/release-notes.mjs "$TAG_NAME" "$published_at" > "$RUNNER_TEMP/release-notes.md"
           gh release edit "$TAG_NAME" --repo "$GITHUB_REPOSITORY" \
             --draft=false --prerelease=false --notes-file "$RUNNER_TEMP/release-notes.md"
