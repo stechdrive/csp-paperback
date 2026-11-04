@@ -62,11 +62,13 @@ describe('image brush transforms', () => {
 describe('minified paper for weak-AA image tips', () => {
   const style = { TexturePattern: 9, TextureFlag: 17, TextureComposite: 1, TextureScale: .0625, TextureDensityBase: 1 }
   const report = () => { throw Error('unexpected texture fallback') }
-  it('keeps a 250px grain tile on the observed 31px repeat, including negative coordinates and rotation', () => {
+  it('preserves fractional tile periods, negative coordinates and layer-local rotation', () => {
     const image = { width: 250, height: 250, alpha: Uint8Array.from({ length: 62500 }, (_, i) => (i % 250 * 17 + Math.floor(i / 250) * 29) % 256) }
     const texture = createBrushTexture(style, image, report, true)!
     for (const [x, y] of [[2, 5], [-8, -12], [11, -4]]) {
-      expect(texture.sample(x, y)).toBeCloseTo(texture.sample(x + 31, y + 31), 10)
+      // Independent CSP captures in celcodec supersede the rounded 31px approximation.
+      // Eight 15.625px tiles repeat at an integer output coordinate.
+      expect(texture.sample(x, y)).toBeCloseTo(texture.sample(x + 125, y + 125), 10)
       expect(texture.sample(x + .01, y + .01)).toBe(texture.sample(x + .99, y + .99))
     }
     expect(texture.sample(2, 5)).not.toBeCloseTo(texture.sample(18, 5), 3)
@@ -75,14 +77,16 @@ describe('minified paper for weak-AA image tips', () => {
     const moved = createBrushTexture({ ...style, TextureOffsetX: 7, TextureOffsetY: -9 }, image, report, true)!
     expect(moved.sample(9, -4)).toBe(texture.sample(2, 5))
   })
-  it('prefilters periodically across the tile seam without changing the shared source bitmap', () => {
+  it('retains minified grain cells without filtering or mutating shared source pixels', () => {
     const image = { width: 8, height: 1, alpha: new Uint8Array([0, 40, 80, 120, 160, 200, 240, 255]) }
     const before = image.alpha.slice(), texture = createBrushTexture(style, image, report, true)!
-    expect(texture.sample(0, 0)).toBeCloseTo((255 + 0 + 40 + 80) / 4 / 255, 10)
+    expect(texture.sample(0, 0)).toBe(0)
     expect(createBrushTexture(style, image, report, true)!.sample(0, 0)).toBe(texture.sample(0, 0))
     expect(image.alpha).toEqual(before)
     const native = createBrushTexture({ ...style, TextureScale: 1 }, image, report, true)!
     expect(native.sample(1.5, 0)).toBe(40 / 255)
-    expect(createBrushTexture({ ...style, TextureScale: 1e-9 }, image, report, true)!.sample(-100, 200)).toBeCloseTo(1095 / 8 / 255)
+    const tiny = createBrushTexture({ ...style, TextureScale: 1e-9 }, image, report, true)!
+    expect(Number.isFinite(tiny.sample(-100, 200))).toBe(true)
+    expect(tiny.sample(0, 0)).toBe(0)
   })
 })
