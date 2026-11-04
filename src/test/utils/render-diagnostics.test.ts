@@ -1,11 +1,30 @@
 import { describe, expect, it } from 'vitest'
+import { diagnostic } from 'celcodec'
 import { buildLayerTree } from '../../engine/tree-builder'
 import { renderIssues, groupRenderIssues, type RenderIssue } from '../../utils/render-diagnostics'
+import { codecDiagnostic } from '../../utils/clip/celcodec'
 
 const vector = (id: string, name = 'line'): RenderIssue => ({ layerId: id, layerName: name, code: 'APPROXIMATE_VECTOR',
   scope: 'raster', part: 'material', outcome: 'approximate', materialKind: 'vector', message: `「${name}」: ベクターレイヤーを近似描画しています。` })
 
 describe('grouped rendering warnings', () => {
+  it('keeps omitted brush features separate from the overall vector approximation', () => {
+    const codes = ['UNSUPPORTED_BRUSH_SEQUENCE','UNSUPPORTED_BRUSH_COLOR','UNSUPPORTED_BRUSH_INPUT','MISSING_BRUSH_GRAPH','INVALID_BRUSH_PATTERN'] as const
+    const issues = codes.flatMap(code=>['a','b'].map(layerId=>({
+      ...codecDiagnostic({...diagnostic(code,{patternId:3}),outcome:'approximate',materialKind:'vector'}, {id:layerId,name:'line'}),
+      layerId,layerName:'line',
+    })))
+    const groups = groupRenderIssues([vector('a'),...issues])
+    expect(groups).toHaveLength(6)
+    expect(groups.slice(1).map(g=>g.title)).toEqual([
+      '複数先端・繰り返し順序が未対応','ブラシ先端の色・サブカラーが未対応',
+      'ブラシの入力設定が未対応','ブラシの入力応答の代用','ブラシ先端の参照情報が不正',
+    ])
+    expect(groups.slice(1).every(g=>g.issues.length===2)).toBe(true)
+    expect(groups.every(g=>g.issues.every(i=>i.outcome==='approximate'))).toBe(true)
+    expect(issues.every(i=>i.data?.patternId===3)).toBe(true)
+    expect(issues.every(i=>!i.message.includes('未対応のCLIP形式'))).toBe(true)
+  })
   it('groups repeated causes across same-name layers without losing layer identity', () => {
     const groups = groupRenderIssues([vector('a'), vector('b'), vector('c', '「別の線」'), vector('a')])
     expect(groups).toHaveLength(1)
