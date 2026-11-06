@@ -1,5 +1,6 @@
 import { useCallback } from 'react'
 import { useAppStore } from '../store'
+import { selectProjectSourceDirectory } from '../store/selectors'
 import { useExportJob, isExportInProgress } from '../store/export-job'
 import type { OutputDestination, ExportProgressCallback } from '../types/output'
 import { buildZipStream, saveZipStream, makeZipFileName } from '../utils/zip-builder'
@@ -43,7 +44,7 @@ export function useExport(observeProgress = true): UseExportResult {
           ...(detail ? { currentFile: detail.path, phase: detail.phase } : {}),
           ...(done === total ? { phase: 'saving' as const } : {}) })
       }
-      const directory = state.clipSourceDirectory ?? state.psdSourceDirectory ?? state.xdtsSourceDirectory ?? undefined
+      const directory = selectProjectSourceDirectory(state)
       // Preserve user activation for the native picker; pixels are rendered on consumption.
       if (destination !== 'zip') {
         if (!supportsDirectoryExport()) throw new Error('このブラウザではフォルダ書き出しに対応していません')

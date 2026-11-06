@@ -12,6 +12,10 @@ import { buildDraftOutputs } from '../utils/draft-output'
 import { collectOutputAliasTargets } from '../utils/output-alias'
 import { timelineOutputPolicy, type TimelineOutputPolicy } from '../utils/timeline-output'
 
+export function selectProjectSourceDirectory(state: AppStore): string | undefined {
+  return state.clipSourceDirectory ?? state.psdSourceDirectory ?? state.xdtsSourceDirectory ?? undefined
+}
+
 const aliasTargets = new WeakMap<CspLayer[], Map<string, CspLayer>>()
 export function selectOutputAliasTargets(state: AppStore): Map<string, CspLayer> {
   const tree = selectLayerTreeWithVisibility(state)

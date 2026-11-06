@@ -4,6 +4,7 @@ import { savePsdFile } from '../../platform/psd-save'
 const mocks = vi.hoisted(() => ({ native: false, save: vi.fn(), invoke: vi.fn(), download: vi.fn() }))
 vi.mock('../../platform/runtime', () => ({ isDesktopRuntime: () => mocks.native, createAbortError: () => new DOMException('cancel', 'AbortError') }))
 vi.mock('@tauri-apps/plugin-dialog', () => ({ save: mocks.save }))
+vi.mock('@tauri-apps/api/path', async () => ({ join: (await import('node:path')).win32.join }))
 vi.mock('@tauri-apps/api/core', () => ({ invoke: mocks.invoke }))
 vi.mock('../../utils/zip-builder', () => ({ downloadBlob: mocks.download }))
 
@@ -46,9 +47,10 @@ describe('PSD save transaction', () => {
     expect(mocks.download).toHaveBeenCalledWith(expect.objectContaining({ type: 'image/vnd.adobe.photoshop' }), '原図.psd')
   })
 
-  it('uses the native atomic writer only for the selected PSD path', async () => {
+  it('suggests the source directory but writes only to the chosen PSD path', async () => {
     mocks.native = true; mocks.save.mockResolvedValue('C:/art/原図.psd')
-    await savePsdFile('原図.psd', async () => new Uint8Array([56, 66, 80, 83]).buffer)
+    await savePsdFile('原図.psd', async () => new Uint8Array([56, 66, 80, 83]).buffer, String.raw`D:\作画\カット 01`)
+    expect(mocks.save).toHaveBeenCalledWith(expect.objectContaining({ defaultPath: String.raw`D:\作画\カット 01\原図.psd` }))
     expect(mocks.invoke).toHaveBeenCalledWith('write_export_file', new Uint8Array([56, 66, 80, 83]), {
       headers: { path: encodeURIComponent('C:/art/原図.psd'), overwrite: 'true' },
     })
@@ -58,6 +60,7 @@ describe('PSD save transaction', () => {
     mocks.native = true; mocks.save.mockResolvedValueOnce(null).mockResolvedValueOnce('C:/art/原図.clip')
     const create = vi.fn()
     await expect(savePsdFile('原図.psd', create)).rejects.toMatchObject({ name: 'AbortError' })
+    expect(mocks.save).toHaveBeenCalledWith(expect.objectContaining({ defaultPath: '原図.psd' }))
     await expect(savePsdFile('原図.psd', create)).rejects.toThrow('.psd')
     expect(create).not.toHaveBeenCalled(); expect(mocks.invoke).not.toHaveBeenCalled()
   })

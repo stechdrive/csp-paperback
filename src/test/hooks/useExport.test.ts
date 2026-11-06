@@ -21,8 +21,12 @@ vi.mock('../../utils/directory-builder', () => ({
   supportsDirectoryExport: vi.fn(),
 }))
 
+vi.mock('../../platform/psd-save', () => ({ savePsdFile: vi.fn() }))
+
 import { useAppStore } from '../../store'
 import { useExport } from '../../hooks/useExport'
+import { useVirtualSetPsdExport } from '../../hooks/useVirtualSetPsdExport'
+import { savePsdFile } from '../../platform/psd-save'
 import { planExportEntriesFromState } from '../../utils/export-entries'
 import { buildZipStream, saveZipStream } from '../../utils/zip-builder'
 import { saveEntriesToDirectory, supportsDirectoryExport } from '../../utils/directory-builder'
@@ -66,6 +70,22 @@ beforeEach(() => {
 })
 
 afterEach(cleanup)
+
+describe('useVirtualSetPsdExport', () => {
+  it.each([null, String.raw`C:\補助素材`])('CLIPのフォルダを保存先に提案する（補助PSDの場所=%s）', async psdSourceDirectory => {
+    const state = {
+      clipFileName: 'cut001.clip',
+      clipSourceDirectory: String.raw`D:\作画\カット 01`,
+      psdFileName: psdSourceDirectory ? 'cut001.psd' : null,
+      psdSourceDirectory,
+      virtualSets: [{ id: 'virtual-1', name: '原図/確認' }],
+    }
+    mockedGetState.mockReturnValue(state as never)
+    const { result } = renderHook(() => useVirtualSetPsdExport())
+    await act(async () => { await result.current.exportPsd('virtual-1') })
+    expect(savePsdFile).toHaveBeenCalledWith('原図_確認.psd', expect.any(Function), state.clipSourceDirectory)
+  })
+})
 
 describe('useExport', () => {
   it('直接出力は全件の名前計画をフラットにし、現在の階層設定を書き換えない', async () => {

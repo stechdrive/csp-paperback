@@ -2,10 +2,12 @@ import { downloadBlob } from '../utils/zip-builder'
 import { createAbortError, isDesktopRuntime } from './runtime'
 
 /** Choose the destination before rendering; cancellation never creates/truncates a file. */
-export async function savePsdFile(name: string, create: () => Promise<ArrayBuffer>): Promise<void> {
+export async function savePsdFile(name: string, create: () => Promise<ArrayBuffer>, defaultDirectory?: string): Promise<void> {
   if (isDesktopRuntime()) {
     const { save } = await import('@tauri-apps/plugin-dialog')
-    const path = await save({ title: 'PSDを書き出す', defaultPath: name, filters: [{ name: 'Photoshop document', extensions: ['psd'] }] })
+    const { join } = await import('@tauri-apps/api/path')
+    const defaultPath = defaultDirectory ? await join(defaultDirectory, name) : name
+    const path = await save({ title: 'PSDを書き出す', defaultPath, filters: [{ name: 'Photoshop document', extensions: ['psd'] }] })
     if (path === null) throw createAbortError()
     if (!/\.psd$/i.test(path)) throw new Error('保存ファイル名の末尾を .psd にしてください')
     const bytes = new Uint8Array(await create())

@@ -1,5 +1,6 @@
 import { useCallback } from 'react'
 import { useAppStore } from '../store'
+import { selectProjectSourceDirectory } from '../store/selectors'
 import { isExportInProgress, useExportJob } from '../store/export-job'
 import { outputRenderQueue } from '../utils/output-render-queue'
 import { createVirtualSetPsd, virtualSetPsdName } from '../utils/virtual-set-psd'
@@ -22,7 +23,7 @@ export function useVirtualSetPsdExport() {
           dpiX: state.docDpiX, dpiY: state.docDpiY, cancelled: () => useAppStore.getState().rawPsd !== state.rawPsd })
         useExportJob.setState({ phase: 'writing', progress: .9, warnings: result.warnings })
         return result.buffer
-      })
+      }, selectProjectSourceDirectory(state))
       useExportJob.setState({ phase: 'done', done: 1, progress: 1 })
     } catch (error) {
       useExportJob.setState(error instanceof DOMException && error.name === 'AbortError'
