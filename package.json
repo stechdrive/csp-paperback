@@ -1,7 +1,7 @@
 {
   "name": "csp-paperback",
   "private": true,
-  "version": "1.43.347",
+  "version": "1.43.348",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -41,7 +41,7 @@
     "@tauri-apps/plugin-fs": "^2.7.1",
     "@tauri-apps/plugin-opener": "^2.7.2",
     "ag-psd": "^33.0.0",
-    "celcodec": "file:vendor/celcodec-0.8.13-36dd1120e3b5.tgz",
+    "celcodec": "file:vendor/celcodec-0.8.14-df68c2f02f57.tgz",
     "client-zip": "^2.5.1",
     "pako": "^3.0.2",
     "react": "^19.3.1",
