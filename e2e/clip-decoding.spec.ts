@@ -3,7 +3,7 @@ import { unzipSync } from 'fflate'
 import { expect, test } from './fixtures'
 import { clipDecodingFixture } from './helpers/clip-decoding'
 
-for (const kind of ['raster', 'vector'] as const) test(`疎な${kind}素材をWorkerで復元し、全出力と文書切り替えを保つ`, async ({ page }) => {
+for (const kind of ['raster', 'vector', 'empty-vector'] as const) test(`疎な${kind}素材をWorkerで復元し、全出力と文書切り替えを保つ`, async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', e => errors.push(e.message))
   await page.addInitScript(() => {
@@ -24,6 +24,9 @@ for (const kind of ['raster', 'vector'] as const) test(`疎な${kind}素材をWo
   const files = unzipSync(await readFile((await (await download).path())!))
   expect(Object.keys(files).sort()).toEqual([1, 2, 3].map(n => `${prefix}_${String(n).padStart(3, '0')}.jpg`))
   for (const bytes of Object.values(files)) expect(bytes.length).toBeGreaterThan(1000)
+  if (kind === 'empty-vector') {
+    await expect(page.getByRole('button', { name: /^描画の警告|^再現状況/ })).toHaveCount(0)
+  }
   await page.locator('input[type=file][multiple]').setInputFiles('public/sample/c001.clip')
   // File import has eight outputs; the sample button adds a ninth virtual cel.
   await expect(page.getByText('8件', { exact: true })).toBeVisible()

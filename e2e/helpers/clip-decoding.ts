@@ -7,7 +7,7 @@ const u64 = (n: number) => { const b = Buffer.alloc(8); b.writeBigUInt64BE(BigIn
 const chunk = (tag: string, body: Uint8Array) => Buffer.concat([Buffer.from(tag), u64(body.length), body])
 
 /** Large blank paper with small raster/vector artwork; no production data. */
-export async function clipDecodingFixture(kind: 'raster' | 'vector', width = 4096, height = 3072, count = 12): Promise<Buffer> {
+export async function clipDecodingFixture(kind: 'raster' | 'vector' | 'empty-vector', width = 4096, height = 3072, count = 12): Promise<Buffer> {
   const SQL = await initSqlJs({ wasmBinary: new Uint8Array(readFileSync('node_modules/sql.js/dist/sql-wasm.wasm')).buffer })
   const db = new SQL.Database(), external: Buffer[] = []
   const addExternal = (id: string, data: Uint8Array) => external.push(chunk('CHNKExta', Buffer.concat([u64(id.length), Buffer.from(id), u64(data.length), data])))
@@ -46,6 +46,8 @@ export async function clipDecodingFixture(kind: 'raster' | 'vector', width = 409
           db.run('INSERT INTO Offscreen VALUES (?, ?, ?)', [mid, f.attribute, key]); addExternal(key, f.body)
         }
         layer(id, 'ink', 0, 3, 0, 0, id * 2, id * 2 + 1)
+      } else if (kind === 'empty-vector') {
+        layer(id, 'ink', 0, 0, 0, 0)
       } else {
         layer(id, 'ink', 0, 0, 0, 0, 0, 0, id)
         const key = `vector-${id}`, x = width / 2, y = height / 2
@@ -55,6 +57,13 @@ export async function clipDecodingFixture(kind: 'raster' | 'vector', width = 409
         ])
         db.run('INSERT INTO VectorObjectList VALUES (?, ?, ?)', [id, id, key]); addExternal(key, strokes)
       }
+    }
+    if (kind === 'empty-vector') {
+      for (const field of ['DrawToRenderOffscreenType', 'VectorNormalType', 'VectorNormalFillIndex', 'VectorNormalBalloonIndex']) {
+        db.run(`ALTER TABLE Layer ADD COLUMN ${field} INTEGER`)
+      }
+      db.run(`UPDATE Layer SET DrawToRenderOffscreenType = 10, VectorNormalType = 0,
+        VectorNormalFillIndex = 0, VectorNormalBalloonIndex = 0 WHERE LayerFolder = 0`)
     }
     const header = Buffer.alloc(24); header.write('CSFCHUNK')
     return Buffer.concat([header, chunk('CHNKSQLi', db.export()), ...external])
