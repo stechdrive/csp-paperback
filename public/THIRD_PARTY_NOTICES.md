@@ -8,6 +8,8 @@ reference to the following MIT-licensed format research and implementations:
 - [animeops/clip-tools](https://github.com/animeops/clip-tools), commit
   `8807134932a39a009c980fb29acd1ae934354a7c` (BINC serialization, CLIP structure,
   vector spline sampling, brush dynamics and stamp rasterization).
+- [nekomimianko/clipvec](https://github.com/nekomimianko/clipvec), commit
+  `29130f54311b35f7d8bd4c1d1d357a5a9253f1cd` (closed vector strokes, pen inputs and corner records).
 - [Aodaruma/clipfile-rs](https://github.com/Aodaruma/clipfile-rs), commit
   `bd88467fa80e63ad48c6c713fbfb5a8a116d798a` (native timeline identities and correction metadata).
   Release `clipfile-svg-v0.2.0`, commit `b3c4aefe3ba944f47f27aaf0777cbffc1038e75c`,
@@ -26,6 +28,8 @@ Copyright (c) 2024
 Copyright (c) 2026 wamsoft
 
 Copyright (c) 2026 AnimeOps
+
+Copyright (c) 2026 nekomimianko
 
 Copyright (c) 2026 Aodaruma
 
@@ -51,18 +55,18 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-## celcodec 0.8.19 (MIT)
+## celcodec 0.10.0 (GPL-3.0-or-later)
 
-Native CLIP containers, materials, BINC, timelines, audio and document writing
-are provided by the bundled celcodec package. It consolidates MIT code from
-csp-paperback (9256c0326dcbb628ed8c601bf17253c3ca2300dd) and xsheet-remap
-(6fb67280fdebb2ecd93e0fd0e369b47b4f29a6e8). Format-research notices above are
-retained. The application source tree includes the corresponding TypeScript and
-build scripts in `vendor/celcodec-0.8.19-source.tar.gz`, with celcodec's full
-THIRD_PARTY_NOTICES.md.
+Copyright (c) 2025-2026 stechdrive. celcodec is licensed under the GNU General
+Public License, version 3 or (at your option) any later version. The application
+source tree includes the library, its corresponding TypeScript source, build
+script, compiler configuration and THIRD_PARTY_NOTICES.md together in
+`vendor/celcodec-0.10.0-78ee60458a5c.tgz`.
 
-celcodec uses [fflate](https://github.com/101arrowz/fflate) 0.8.3 (MIT),
-Copyright (c) 2026 Arjun Barrett. The MIT permission notice below also applies.
+The MIT permission notice below applies to the earlier code adapted from
+csp-paperback (`9256c0326dcbb628ed8c601bf17253c3ca2300dd`) and xsheet-remap
+(`6fb67280fdebb2ecd93e0fd0e369b47b4f29a6e8`), and to
+[fflate](https://github.com/101arrowz/fflate) 0.8.3, Copyright (c) 2026 Arjun Barrett.
 
 MIT License
 

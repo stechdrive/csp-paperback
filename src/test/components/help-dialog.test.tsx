@@ -140,6 +140,6 @@ describe('HelpDialog information architecture', () => {
     fireEvent.click(license)
     expect(license.closest('details')).toHaveTextContent('END OF TERMS AND CONDITIONS')
     expect(screen.getByText(/Copyright \(c\) 2025 stechdrive · GPL-3.0-or-later/)).toBeInTheDocument()
-    expect(screen.getByText('CLIP 関連の第三者ライセンス・謝辞').closest('details')).toHaveTextContent('celcodec 0.8.19 (MIT)')
+    expect(screen.getByText('CLIP 関連の第三者ライセンス・謝辞').closest('details')).toHaveTextContent('celcodec 0.10.0 (GPL-3.0-or-later)')
   })
 })

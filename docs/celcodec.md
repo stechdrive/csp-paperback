@@ -2,13 +2,14 @@
 
 ## 固定するパッケージ
 
-- 版: **0.8.19**
-- 提供側コミット: `c66bd634e31b8dc6d33b5b28e262b9a2cd2ef372`
-- 同梱ファイル: `vendor/celcodec-0.8.19-68ad5f37c95f.tgz`
-- SHA-256: `68ad5f37c95f357953919869d4cacd60c9f9c5d83e075509539f720aa818f5c2`
-- [0.8.19の対応ソース](../vendor/celcodec-0.8.19-source.tar.gz)（MIT、SHA-256 `7a4023ffd6b6006394fc115d1c8af0a09c4413514bb6880145f12799866d182b`）。展開したディレクトリで `npm ci --ignore-scripts`、`npm run build` の順に実行すると同梱版のJSと型定義を再生成できる。
+- 版: **0.10.0**（`GPL-3.0-or-later`）
+- 提供側コミット: `1b0cb17d59bb994427b2cc002a7fa142698507fe`
+- [同梱パッケージと対応ソース](../vendor/celcodec-0.10.0-78ee60458a5c.tgz)
+- SHA-256: `78ee60458a5ceaa036565773c9293afdcee0bb6c5e89981cba7c0edf4e046cbe`
 
-検証済みtarballを無変更で同梱し、package-lockのintegrityで固定する。このリポジトリだけをcloneして `npm ci` でインストールでき、隣接checkoutや絶対パス依存は不要。250ファイルの許可リスト、ライセンス、公開exportsを提供側で監査する。0.6.0以降のパッケージは空テンプレートを含むCLIP、採取画像、native blobを同梱しない。
+検証済みの379ファイルのtarballをpackage-lockのintegrityで固定する。このリポジトリだけをcloneして `npm ci` でインストールできる。パッケージには実行用JS・型定義と、それに対応するTypeScriptソース、`tsconfig.json`、ビルドスクリプトが入っている。展開先で開発依存を入れると `npm run build` で再ビルドできる。
+
+0.10.0では、CLIP単独読み込みで閉じたベクター線の終点から始点までを復元する。CSPで保存した3本の閉じ線について、各3点で復元したレイヤーに線色が出ることを保存プレビューと照合した。ブラシ描画の近似診断は引き続き表示する。
 
 ## 0.8.19のベクター領域描画
 
