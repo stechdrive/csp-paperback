@@ -2,6 +2,8 @@ import { SampleTemplateDownloadButton } from '../SampleTemplateDownloadButton'
 import { UpdateCheckPanel } from '../UpdateCheckPanel'
 import { HelpLayerTree } from './HelpLayerTree'
 import { sampleLayers } from './layerExamples'
+import projectLicense from '../../../LICENSE?raw'
+import clipNotices from '../../../public/THIRD_PARTY_NOTICES.md?raw'
 import styles from '../HelpDialog.module.css'
 
 function Section({
@@ -307,6 +309,21 @@ export function AboutGuide() {
             label="サンプル作画テンプレート（.clip）をダウンロード"
           />
         </div>
+      </Section>
+      <Section id="license" title="7. ライセンス">
+        <p className={styles.paragraph}>Copyright (c) 2025 stechdrive · GPL-3.0-or-later</p>
+        <p className={styles.paragraph}><a href="https://github.com/stechdrive/csp-paperback" target="_blank" rel="noreferrer">CSP Paperback のソースコード</a></p>
+        <details className={styles.licenseNotice}>
+          <summary>GNU GPL バージョン3の全文</summary>
+          <pre>{projectLicense}</pre>
+        </details>
+        <details className={styles.licenseNotice}>
+          <summary>CLIP 関連の第三者ライセンス・謝辞</summary>
+          <pre>{clipNotices}</pre>
+        </details>
+        {import.meta.env.PROD && <p className={styles.paragraph}>
+          <a href={`${import.meta.env.BASE_URL}DEPENDENCY_LICENSES.txt`} download>同梱 JavaScript のライセンス一覧</a>
+        </p>}
       </Section>
     </article>
   )

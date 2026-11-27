@@ -30,6 +30,7 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "licenseFile": "../LICENSE",
     "category": "GraphicsAndDesign",
     "shortDescription": "Animation artwork exporter for Clip Studio Paint.",
     "longDescription": "CSP Paperback reads CLIP files locally, with an optional matching PSD exported from Clip Studio Paint, and exports composited still-image animation materials without uploading project data.",

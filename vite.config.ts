@@ -8,6 +8,9 @@ const { version } = JSON.parse(readFileSync('./package.json', 'utf-8')) as { ver
 export default defineConfig({
   plugins: [react()],
   base: '/csp-paperback/',
+  build: {
+    license: { fileName: 'DEPENDENCY_LICENSES.txt' },
+  },
   define: {
     __APP_VERSION__: JSON.stringify(version),
   },

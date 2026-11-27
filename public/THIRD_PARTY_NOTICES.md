@@ -14,12 +14,14 @@ reference to the following MIT-licensed format research and implementations:
   was also consulted for the modern 92-byte vector stroke layout.
 - [dobrokot/clip_to_psd](https://github.com/dobrokot/clip_to_psd), commit
   `e8db68c768f52ec91ba7530820f52537261cbad0` (text attributes, image effects and fill metadata).
+- [al3ks1s/clip-tools](https://github.com/al3ks1s/clip-tools), commit
+  `e1d3d7ed4701ac84e9220127daa73c2cf90dd803` (CLIP container and SQLite extraction research via xsheet-remap).
 - [sql.js](https://github.com/sql-js/sql.js), `1.15.1` (bundled SQLite WebAssembly).
   SQLite itself is in the public domain.
 
 Copyright (c) 2024
 
-(The copyright line above is reproduced from dobrokot/clip_to_psd.)
+(Both dobrokot/clip_to_psd and al3ks1s/clip-tools use the copyright line above.)
 
 Copyright (c) 2026 wamsoft
 
@@ -49,13 +51,15 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-## celcodec 0.3.1
+## celcodec 0.8.19 (MIT)
 
 Native CLIP containers, materials, BINC, timelines, audio and document writing
 are provided by the bundled celcodec package. It consolidates MIT code from
 csp-paperback (9256c0326dcbb628ed8c601bf17253c3ca2300dd) and xsheet-remap
 (6fb67280fdebb2ecd93e0fd0e369b47b4f29a6e8). Format-research notices above are
-retained. See docs/celcodec.md and celcodec's THIRD_PARTY_NOTICES.md.
+retained. The application source tree includes the corresponding TypeScript and
+build scripts in `vendor/celcodec-0.8.19-source.tar.gz`, with celcodec's full
+THIRD_PARTY_NOTICES.md.
 
 celcodec uses [fflate](https://github.com/101arrowz/fflate) 0.8.3 (MIT),
 Copyright (c) 2026 Arjun Barrett. The MIT permission notice below also applies.

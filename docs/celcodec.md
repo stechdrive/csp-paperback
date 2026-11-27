@@ -6,6 +6,7 @@
 - 提供側コミット: `c66bd634e31b8dc6d33b5b28e262b9a2cd2ef372`
 - 同梱ファイル: `vendor/celcodec-0.8.19-68ad5f37c95f.tgz`
 - SHA-256: `68ad5f37c95f357953919869d4cacd60c9f9c5d83e075509539f720aa818f5c2`
+- [0.8.19の対応ソース](../vendor/celcodec-0.8.19-source.tar.gz)（MIT、SHA-256 `7a4023ffd6b6006394fc115d1c8af0a09c4413514bb6880145f12799866d182b`）。展開したディレクトリで `npm ci --ignore-scripts`、`npm run build` の順に実行すると同梱版のJSと型定義を再生成できる。
 
 検証済みtarballを無変更で同梱し、package-lockのintegrityで固定する。このリポジトリだけをcloneして `npm ci` でインストールでき、隣接checkoutや絶対パス依存は不要。250ファイルの許可リスト、ライセンス、公開exportsを提供側で監査する。0.6.0以降のパッケージは空テンプレートを含むCLIP、採取画像、native blobを同梱しない。
 

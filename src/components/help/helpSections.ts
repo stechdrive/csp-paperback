@@ -20,4 +20,5 @@ export const ABOUT_SECTIONS = [
   { id: 'opacity', label: '不透明度の扱い' },
   { id: 'privacy', label: '通信とファイル' },
   { id: 'template', label: 'サンプルテンプレート' },
+  { id: 'license', label: 'ライセンス' },
 ] as const

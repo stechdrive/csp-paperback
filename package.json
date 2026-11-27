@@ -1,7 +1,8 @@
 {
   "name": "csp-paperback",
   "private": true,
-  "version": "1.43.353",
+  "version": "1.43.354",
+  "license": "GPL-3.0-or-later",
   "type": "module",
   "scripts": {
     "dev": "vite",

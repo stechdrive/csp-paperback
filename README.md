@@ -272,6 +272,4 @@ The desktop app checks GitHub Releases for newer versions and shows a dialog wit
 
 ## License
 
-MIT License — © stechdrive
-
-See [LICENSE](LICENSE) for details.
+Copyright (c) 2025 stechdrive. CSP Paperback is licensed under the [GNU General Public License, version 3 or (at your option) any later version](LICENSE) (`GPL-3.0-or-later`). See the [third-party notices](public/THIRD_PARTY_NOTICES.md) for the bundled CLIP components.

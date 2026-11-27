@@ -248,6 +248,19 @@
   margin-bottom: 0;
 }
 
+.licenseNotice {
+  margin: 0.75rem 0;
+}
+
+.licenseNotice summary {
+  cursor: pointer;
+}
+
+.licenseNotice pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .sectionTitle {
   margin: 0 0 1rem;
   padding-bottom: 0.55rem;

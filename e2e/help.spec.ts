@@ -3,6 +3,21 @@ import { manyOutputs } from './helpers/many-outputs'
 import { clickLayerAction } from './helpers/layer-action'
 import screenshots from '../src/components/help/helpScreenshots.json' with { type: 'json' }
 
+test('ヘルプで本体のGPL全文と同梱CLIPライブラリのMIT表示を読める', async ({ page, context }) => {
+  await page.goto('./')
+  await page.getByRole('button', { name: 'ヘルプ', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: 'CSP Paperback ヘルプ' })
+  await dialog.getByRole('tab', { name: /このツールについて/ }).click()
+  await dialog.getByRole('button', { name: /ライセンス/ }).click()
+  await context.setOffline(true)
+  await dialog.getByText('GNU GPL バージョン3の全文', { exact: true }).click()
+  await expect(dialog.getByText(/END OF TERMS AND CONDITIONS/)).toBeVisible()
+  await expect(dialog.getByText(/Copyright \(c\) 2025 stechdrive · GPL-3.0-or-later/)).toBeVisible()
+  await dialog.getByText('CLIP 関連の第三者ライセンス・謝辞', { exact: true }).click()
+  await expect(dialog.getByText(/celcodec 0\.8\.19 \(MIT\)/)).toBeVisible()
+  await expect(dialog.getByRole('link', { name: '同梱 JavaScript のライセンス一覧' })).toHaveAttribute('href', /DEPENDENCY_LICENSES\.txt$/)
+})
+
 test('独立したタブから各社テンプレート向けの設定と共有方法を確認できる', async ({ page }) => {
   const pageErrors: string[] = []
   page.on('pageerror', error => pageErrors.push(error.message))
